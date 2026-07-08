@@ -1,0 +1,4 @@
+node_modules/
+dist/
+src/big/
+pkg/lib.d.ts
