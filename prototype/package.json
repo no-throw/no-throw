@@ -1,0 +1,16 @@
+{
+  "name": "no-throw-spike",
+  "private": true,
+  "type": "module",
+  "description": "THROWAWAY spike for no-throw wayfinder ticket #6 — delete once findings are captured",
+  "scripts": {
+    "report": "node report.mjs",
+    "lint": "eslint fixtures"
+  },
+  "devDependencies": {
+    "@typescript-eslint/utils": "^8",
+    "eslint": "^9",
+    "typescript": "^5.7",
+    "typescript-eslint": "^8"
+  }
+}
