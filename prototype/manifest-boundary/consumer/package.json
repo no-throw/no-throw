@@ -1,0 +1,10 @@
+{
+  "name": "spike-consumer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PROTOTYPE consumer package for no-throw ticket #15 — delete with the spike",
+  "dependencies": {
+    "@spike/mathkit": "0.0.0"
+  }
+}

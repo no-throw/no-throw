@@ -5,7 +5,8 @@
   "description": "THROWAWAY spike for no-throw wayfinder ticket #6 — delete once findings are captured",
   "scripts": {
     "report": "node report.mjs",
-    "lint": "eslint fixtures"
+    "lint": "eslint fixtures",
+    "boundary": "node manifest-boundary/emit-manifest.mjs && node manifest-boundary/install-dep.mjs && node manifest-boundary/report.mjs"
   },
   "devDependencies": {
     "@typescript-eslint/utils": "^8",

@@ -1,0 +1,10 @@
+{
+  "name": "@spike/mathkit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PROTOTYPE producer package for no-throw ticket #15 — delete with the spike",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "nothrow": "./nothrow.json"
+}

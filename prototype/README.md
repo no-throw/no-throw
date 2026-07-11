@@ -34,3 +34,10 @@ One portable engine, two thin shells (this is the [#10](https://github.com/Midni
 | `math.ts` | shared callees; also `double` (inferred non-throwing) & `mustBePositive` (inferred throwing) | — |
 
 Findings: **[NOTES.md](NOTES.md)**.
+
+## Second spike on the same engine: the package boundary (ticket #15)
+
+[`manifest-boundary/`](manifest-boundary/) reuses this engine to answer the
+half this spike couldn't reach: the emitted-JSON manifest as the cross-package
+color transport, including the #12 `async` flag. Run with `pnpm boundary`;
+findings in [manifest-boundary/NOTES.md](manifest-boundary/NOTES.md).
