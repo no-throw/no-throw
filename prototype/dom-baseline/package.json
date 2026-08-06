@@ -1,0 +1,12 @@
+{
+  "name": "dom-baseline-spike",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@webref/idl": "^3.82.1",
+    "browser-specs": "^5",
+    "typescript": "^5.9.3",
+    "web-specs": "^4.7.0",
+    "webidl2": "^24"
+  }
+}
