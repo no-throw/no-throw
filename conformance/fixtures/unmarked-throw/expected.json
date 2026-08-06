@@ -1,0 +1,4 @@
+{
+  "description": "An unmarked function may throw: throwing is the default, so there is nothing to enforce.",
+  "diagnostics": []
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@nothrow/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The no-throw command line tool. Hosts `nothrow emit`.",
+  "license": "MIT",
+  "bin": {
+    "nothrow": "./dist/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}
