@@ -13,11 +13,16 @@ design reserves the right to replace.
 A fixture is a whole project, not a snippet:
 
 ```
+fixtures/tsconfig.base.json   what a fixture is compiled as unless it says otherwise
 fixtures/<name>/
   tsconfig.json     the project the fixture is analyzed as
   expected.json     the diagnostics it must produce
   src/**/*.ts       the code
 ```
+
+A fixture's `tsconfig.json` extends the shared base and names its own file set,
+so what a fixture overrides is what is load-bearing about it — the `lib` setting
+in particular decides which standard-library baseline applies.
 
 Fixtures import nothing from `@nothrow/*` and contain no test-framework
 constructs. They are what a user's project looks like.
@@ -42,9 +47,14 @@ constructs. They are what a user's project looks like.
 ```
 
 Positions are 1-based; `endColumn` is one past the last character, matching
-ESLint. `message` is optional and is asserted only where the spec makes the
-text normative — a floor diagnostic must name why it floored and what your outs
-are, and that contract lives in the text.
+ESLint. `message` is optional, and asserting it is mandatory wherever the spec
+makes the text normative — a floor diagnostic must name why it floored and what
+your outs are, and that contract lives in the text.
+
+Two things the format cannot express yet, both of which the driver turns into a
+loud failure rather than a silent drop: an autofix, which no rule may ever offer
+because wrapping a call in a bridge changes behavior, and a suggestion, which
+rules will offer once there is a bridge edit to suggest.
 
 ## The driver is thin, and swappable
 

@@ -14,33 +14,24 @@ export interface Finding {
 }
 
 /**
- * The program the analysis runs against. The core never builds one: hosts pass
- * in theirs, so the ESLint adapter shares the program typescript-eslint already
- * built and the CLI shares the one it builds itself.
+ * Collect every escape in a file. The core never builds a `ts.Program`: hosts
+ * hand it source files off the program they already own, which is how the
+ * ESLint adapter reuses the one typescript-eslint built.
  */
-export interface AnalysisHost {
-  readonly checker: ts.TypeChecker;
-}
-
-/**
- * Collect the escapes of `node`, if it is a marked function. Unmarked functions
- * have nothing to enforce: throwing is the default.
- */
-export function analyzeFunction(
-  node: ts.Node,
-  host: AnalysisHost,
+export function analyzeSourceFile(
+  sourceFile: ts.SourceFile,
 ): readonly Finding[] {
-  // The color-resolution seam takes the host's checker; the escape sites the
-  // walk owns so far are answered by syntax alone, so nothing reads it yet.
-  void host;
-
-  if (!ts.isFunctionLike(node) || !isMarked(node)) return [];
-
-  const body = (node as ts.FunctionLikeDeclaration).body;
-  if (body === undefined) return [];
-
   const findings: Finding[] = [];
-  collectEscapes(body, findings);
+
+  const visit = (node: ts.Node): void => {
+    // Unmarked functions have nothing to enforce: throwing is the default.
+    if (ts.isFunctionLike(node) && isMarked(node)) {
+      collectEscapes(node, findings);
+    }
+    node.forEachChild(visit);
+  };
+
+  visit(sourceFile);
   return findings;
 }
 
@@ -54,16 +45,25 @@ function isMarked(node: ts.Node): boolean {
     .some((tag) => tag.tagName.escapedText === "nothrow");
 }
 
-function collectEscapes(node: ts.Node, out: Finding[]): void {
-  if (ts.isThrowStatement(node) && !isBridged(node)) {
-    out.push({ kind: "uncaught-throw", node });
-  }
+function collectEscapes(fn: ts.SignatureDeclaration, out: Finding[]): void {
+  const body = (fn as ts.FunctionLikeDeclaration).body;
+  if (body === undefined) return;
 
-  node.forEachChild((child) => {
-    // A nested function or class member is its own body with its own color.
-    if (ts.isFunctionLike(child) || ts.isClassLike(child)) return;
-    collectEscapes(child, out);
-  });
+  const walk = (node: ts.Node): void => {
+    if (ts.isThrowStatement(node) && !isBridged(node)) {
+      out.push({ kind: "uncaught-throw", node });
+    }
+
+    node.forEachChild((child) => {
+      // A nested function is its own body with its own color, and module
+      // evaluation — where `static {}` and `extends` expressions run — is
+      // outside the color model entirely.
+      if (ts.isFunctionLike(child) || ts.isClassLike(child)) return;
+      walk(child);
+    });
+  };
+
+  walk(body);
 }
 
 /**

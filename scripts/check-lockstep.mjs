@@ -1,6 +1,6 @@
-// The three published packages are versioned in lockstep (spec #30 §A). This
-// makes that a build failure rather than a convention, and pins internal deps
-// to `workspace:*` so a release cannot ship a package against a stale sibling.
+// The published packages are versioned in lockstep. This makes that a build
+// failure rather than a convention, and pins internal deps to `workspace:*` so
+// a release cannot ship a package against a stale sibling.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";

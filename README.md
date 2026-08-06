@@ -24,12 +24,38 @@ export function attempt(): void {
 
 **CI is where the guarantee lives; the editor is feedback.**
 
+## Wiring it up
+
+The rule is type-aware, so it needs typescript-eslint's parser and a project:
+
+```js
+// eslint.config.js
+import nothrow from "@nothrow/eslint-plugin";
+import tseslint from "typescript-eslint";
+
+export default [
+  {
+    files: ["src/**/*.ts"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: { projectService: true },
+    },
+    plugins: { nothrow },
+    rules: { "nothrow/no-escaping-throw": "error" },
+  },
+];
+```
+
+`nothrow/no-escaping-throw` carries the whole invariant and takes no options.
+There is no configuration in which the guarantee means something different.
+
 ## Status
 
-This is the walking skeleton. What works today is the mark, the body walk and
-the `try`/`catch` bridge for an uncaught `throw`. Unbridged calls, async, the
-carrier chain, the standard-library baseline and `nothrow emit` are not built
-yet. The design is locked and lives in
+This is the walking skeleton, and **nothing is published to npm yet**. What
+works today is the mark, the body walk and the `try`/`catch` bridge for an
+uncaught `throw`. Unbridged calls, async, the carrier chain, the
+standard-library baseline, the `configs.recommended` preset and `nothrow emit`
+are not built yet. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages

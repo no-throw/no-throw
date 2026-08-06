@@ -1,5 +1,6 @@
-import { analyzeFunction, type FindingKind } from "@nothrow/core";
+import { analyzeSourceFile, type FindingKind } from "@nothrow/core";
 import { ESLintUtils, type TSESTree } from "@typescript-eslint/utils";
+import type ts from "typescript";
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/MidnightDesign/no-throw#${name}`,
@@ -19,18 +20,12 @@ const messageIdByKind: Record<FindingKind, MessageId> = {
   "uncaught-throw": "uncaughtThrow",
 };
 
-type FunctionNode =
-  | TSESTree.ArrowFunctionExpression
-  | TSESTree.FunctionDeclaration
-  | TSESTree.FunctionExpression;
-
 export const noEscapingThrow = createRule<[], MessageId>({
   name: "no-escaping-throw",
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Enforce that no throw escapes a function marked `@nothrow`.",
+      description: "Enforce that no throw escapes a function marked `@nothrow`.",
     },
     messages,
     schema: [],
@@ -38,24 +33,23 @@ export const noEscapingThrow = createRule<[], MessageId>({
   defaultOptions: [],
   create(context) {
     const services = ESLintUtils.getParserServices(context);
-    const host = { checker: services.program.getTypeChecker() };
-
-    const check = (node: FunctionNode): void => {
-      const tsNode = services.esTreeNodeToTSNodeMap.get(node);
-
-      for (const finding of analyzeFunction(tsNode, host)) {
-        const reportAt = services.tsNodeToESTreeNodeMap.get(finding.node);
-        context.report({
-          node: reportAt ?? node,
-          messageId: messageIdByKind[finding.kind],
-        });
-      }
-    };
 
     return {
-      ArrowFunctionExpression: check,
-      FunctionDeclaration: check,
-      FunctionExpression: check,
+      // The whole file goes to the core in one piece: deciding which nodes are
+      // candidate marks is analysis, and the adapter does none.
+      Program(node: TSESTree.Program): void {
+        const sourceFile = services.esTreeNodeToTSNodeMap.get(
+          node,
+        ) as ts.SourceFile;
+
+        for (const finding of analyzeSourceFile(sourceFile)) {
+          const reportAt = services.tsNodeToESTreeNodeMap.get(finding.node);
+          context.report({
+            node: reportAt ?? node,
+            messageId: messageIdByKind[finding.kind],
+          });
+        }
+      },
     };
   },
 });

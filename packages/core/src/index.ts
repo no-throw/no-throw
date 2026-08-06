@@ -1,2 +1,2 @@
-export { analyzeFunction } from "./analyze.js";
-export type { AnalysisHost, Finding, FindingKind } from "./analyze.js";
+export { analyzeSourceFile } from "./analyze.js";
+export type { Finding, FindingKind } from "./analyze.js";

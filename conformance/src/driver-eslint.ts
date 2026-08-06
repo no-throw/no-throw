@@ -53,6 +53,20 @@ export async function runFixture(
           `${file}:${message.line}:${message.column}: \`${message.ruleId}\` reported without a messageId`,
         );
       }
+      // Wrapping a call in a bridge changes behavior, so the edit is always the
+      // reader's to accept: an autofix is a spec violation, not a fixture one.
+      if (message.fix !== undefined) {
+        throw new Error(
+          `${file}:${message.line}:${message.column}: \`${message.ruleId}\` offered an autofix; no rule may`,
+        );
+      }
+      // Suggestions are legal, but nothing in `expected.json` can express one
+      // yet. Fail loudly rather than drop them from the seam silently.
+      if (message.suggestions !== undefined) {
+        throw new Error(
+          `${file}:${message.line}:${message.column}: \`${message.ruleId}\` offered suggestions, which the expectation format cannot yet assert`,
+        );
+      }
 
       diagnostics.push({
         file,
