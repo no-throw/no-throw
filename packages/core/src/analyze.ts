@@ -109,17 +109,16 @@ export function analyzeSourceFile(
         continue;
       }
 
-      const { site } = escape;
-      if (site.protocol.kind === "throw") {
-        findings.push({ kind: "iterator-throw", node: site.node });
+      if (escape.kind === "iterator-throw") {
+        findings.push({ kind: "iterator-throw", node: escape.node });
         continue;
       }
 
-      const consumed = colors.consuming(site);
+      const consumed = colors.consuming(escape.site);
       if (consumed.color === "throwing") {
         findings.push({
           kind: "throwing-consumption",
-          node: site.node,
+          node: escape.site.node,
           reason: consumed.reason,
         });
       }

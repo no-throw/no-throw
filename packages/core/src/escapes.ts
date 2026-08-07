@@ -5,7 +5,7 @@ import {
   fieldInitializers,
   type Bodied,
 } from "./declarations.js";
-import { iterationSiteAt, type Consumption } from "./iteration.js";
+import { iterationEscapeAt, type IterationEscape } from "./iteration.js";
 
 /**
  * A site that transfers control into some other body, with the syntax naming
@@ -18,13 +18,14 @@ export type Transfer =
 
 /**
  * A site that transfers control out of the body it is written in: a `throw`, a
- * transfer into a named body, or a consumption site running a body some earlier
- * call only *produced*.
+ * transfer into a named body, or one of the iteration protocol's — a
+ * consumption site running a body some earlier call only *produced*, or a
+ * `.throw()` throwing through one.
  */
 export type Escape =
   | { readonly kind: "throw"; readonly node: ts.ThrowStatement }
   | { readonly kind: "transfer"; readonly node: Transfer }
-  | { readonly kind: "consumption"; readonly site: Consumption };
+  | IterationEscape;
 
 /**
  * Which of a call's work is being looked at. For every function kind but one
@@ -123,8 +124,8 @@ function escapeAt(node: ts.Node, checker: ts.TypeChecker): Escape | undefined {
   // The iteration protocol claims a call before the call rule does: `it.next()`
   // enters a body the syntax does not name, and its own declaration — the
   // standard library's `Generator` — is not the one that runs.
-  const site = iterationSiteAt(node, checker);
-  if (site !== undefined) return { kind: "consumption", site };
+  const iterating = iterationEscapeAt(node, checker);
+  if (iterating !== undefined) return iterating;
   return isTransfer(node) ? { kind: "transfer", node } : undefined;
 }
 

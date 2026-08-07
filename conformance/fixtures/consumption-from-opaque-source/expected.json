@@ -1,0 +1,23 @@
+{
+  "description": "A consumption site whose iterator traces to no call floors, and the message says which problem it is: a parameter is unknowable from here, a `let` is a refinement not made yet. `returned-iterator-from-opaque-source` is the same rule on the producing side.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 9,
+      "column": 23,
+      "endLine": 9,
+      "endColumn": 29,
+      "messageId": "unbridgedConsumption",
+      "message": "Consuming this iterator escapes this `@nothrow` function: nothing in the syntax names the call that produced it, so nothing can say whether consuming it throws. Your outs, in precedence order: bridge this consumption with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 17,
+      "column": 23,
+      "endLine": 17,
+      "endColumn": 25,
+      "messageId": "unbridgedConsumption",
+      "message": "Consuming this iterator escapes this `@nothrow` function: it reaches here through a binding this rule does not follow yet — only a direct call, or a `const` initialized by one, traces to the call that produced it — so it is assumed to throw. Your outs, in precedence order: bridge this consumption with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

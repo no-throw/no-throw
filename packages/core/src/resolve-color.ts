@@ -1,6 +1,7 @@
 import ts from "typescript";
 import type {
   CalleeColor,
+  Colored,
   ConsumptionColor,
   ConsumptionReason,
   FloorReason,
@@ -18,6 +19,7 @@ import {
 import { calleeExpression, unbridgedEscapes, type Transfer } from "./escapes.js";
 import { createFixpoint, type BodyEdges } from "./infer.js";
 import {
+  constituentsOf,
   isIteratorType,
   protocolMember,
   type Consumption,
@@ -74,10 +76,6 @@ interface Surface<Reason extends string> {
   readonly nodes: readonly ColorNode[];
 }
 
-type Colored<Reason extends string> =
-  | { readonly color: "non-throwing" }
-  | { readonly color: "throwing"; readonly reason: Reason | "inferred" };
-
 const CLEAN: Surface<never> = { floors: [], nodes: [] };
 
 export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
@@ -119,13 +117,24 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   }
 
   /**
-   * The color of consuming what an expression denotes. The originating call
-   * answers first and answers for everything, because the mark it carries is a
-   * promise about the whole surface; only where the syntax names no call is the
-   * protocol resolved member by member.
+   * The color of consuming what an expression denotes, joined over every type
+   * the value can have: a union runs whichever protocol the value turns out to
+   * carry, so coloring one constituent would color by coin toss.
    */
   function consumptionSurface(site: Consumption): Surface<ConsumptionReason> {
-    const type = checker.getTypeAtLocation(site.typeAt);
+    const types = constituentsOf(checker.getTypeAtLocation(site.typeAt), checker);
+    return join(types.map((type) => constituentSurface(site, type)));
+  }
+
+  /**
+   * The originating call answers first and answers for everything, because the
+   * mark it carries is a promise about the whole surface; only where the syntax
+   * names no call is the protocol resolved member by member.
+   */
+  function constituentSurface(
+    site: Consumption,
+    type: ts.Type,
+  ): Surface<ConsumptionReason> {
     const iterator = isIteratorType(type, checker);
     const origin =
       site.source === undefined
@@ -200,7 +209,9 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
 
     if (facet === "iteration" && !isGenerator(declaration)) {
       // A plain function's iterator is whatever it returns, and consuming that
-      // is what consuming this one is.
+      // is what consuming this one is. Every return counts, unfiltered: a
+      // branch handing back something that is not an iterator is a question
+      // with no answer rather than one to skip.
       const returned = returnedExpressions(declaration);
       if (returned.length === 0) return { throws: true, callees: [] };
       for (const expression of returned) follow(producedSurface(expression));
@@ -220,7 +231,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
         throws = true;
       } else if (escape.kind === "transfer") {
         follow(surfaceOf(targetOf(escape.node, checker), "call"));
-      } else if (escape.site.protocol.kind === "throw") {
+      } else if (escape.kind === "iterator-throw") {
         // `.throw()` is the consumer throwing, with a detour through the
         // iterator. Nothing colors it.
         throws = true;
@@ -244,7 +255,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
 
   function colorOf<Reason extends string>(
     surface: Surface<Reason>,
-  ): Colored<Reason> {
+  ): Colored<Reason | "inferred"> {
     const [reason] = surface.floors;
     if (reason !== undefined) return { color: "throwing", reason };
     return surface.nodes.some((node) => fixpoint.isThrowing(node))

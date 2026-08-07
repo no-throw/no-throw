@@ -19,10 +19,13 @@ export type FloorReason =
  */
 export type ThrowingReason = FloorReason | "inferred";
 
-/** A callee's color at a call site, plus — when it is throwing — why. */
-export type CalleeColor =
+/** A color, plus — when it is throwing — why, in whatever vocabulary fits. */
+export type Colored<Reason extends string> =
   | { readonly color: "non-throwing" }
-  | { readonly color: "throwing"; readonly reason: ThrowingReason };
+  | { readonly color: "throwing"; readonly reason: Reason };
+
+/** A callee's color at a call site. */
+export type CalleeColor = Colored<ThrowingReason>;
 
 /**
  * Why consuming an iterator is throwing. The floors a callee can hit are all
@@ -39,7 +42,5 @@ export type ConsumptionReason =
   /** Nothing in the syntax names the producing call at all. */
   | "untraced-opaque";
 
-/** The color of consuming an iterator, plus — when it is throwing — why. */
-export type ConsumptionColor =
-  | { readonly color: "non-throwing" }
-  | { readonly color: "throwing"; readonly reason: ConsumptionReason };
+/** The color of consuming an iterator. */
+export type ConsumptionColor = Colored<ConsumptionReason>;

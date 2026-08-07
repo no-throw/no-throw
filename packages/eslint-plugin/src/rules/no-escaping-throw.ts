@@ -53,12 +53,12 @@ const messages = {
     "producing its values was analyzed and can throw. Your outs: bridge this " +
     "consumption with `try`/`catch`, or make that producer non-throwing — " +
     "mark it `@nothrow` and the escapes inside it are reported too.",
-  // No carrier can color this away: the value being thrown is written right
-  // here, and a throw cannot be laundered through a generator.
+  // No carrier can color this away, and no body can either: the value being
+  // thrown is written right here.
   iteratorThrow:
     "`.throw()` escapes this `@nothrow` function: it throws the value into " +
-    "the iterator, and a throw cannot be laundered through a generator. " +
-    "Bridge it with `try`/`catch`.",
+    "the iterator, whatever the iterator makes of it — a throw cannot be " +
+    "laundered through one. Bridge it with `try`/`catch`.",
   unprovableReturnedIterator:
     "This `@nothrow` function returns an iterator, so the mark covers " +
     "consuming it too: {{reason}}. " +

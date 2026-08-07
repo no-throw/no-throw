@@ -148,8 +148,8 @@ makes a plain function markable as an iterator producer: `return inner()` is
 provable, `return someIterator` is not.
 
 `yield` is not a throw site — it can throw only because a consumer called
-`.throw()` — and `.throw()` itself always escapes, because a throw cannot be
-laundered through a generator.
+`.throw()` — and `.throw()` itself always escapes, whatever the iterator makes
+of it: a throw cannot be laundered through one.
 
 Iteration over anything else resolves through `[Symbol.iterator]` and the
 `next` it hands back, so an in-program iterable is colored by its own bodies.
