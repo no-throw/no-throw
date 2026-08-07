@@ -1,6 +1,6 @@
 import ts from "typescript";
 import type { CalleeColor } from "./colors.js";
-import { isMarked } from "./marks.js";
+import { bodyOf, isMarked } from "./declarations.js";
 
 /**
  * The color-resolution seam. Every "what color is this callee?" question goes
@@ -22,11 +22,8 @@ export function resolveCalleeColor(
   }
   if (isMarked(declaration)) return { color: "non-throwing" };
 
-  // A signature — an overload, an interface method, a `.d.ts` declaration, the
-  // type of a parameter — has no body to read a color off.
-  const body = (declaration as ts.FunctionLikeDeclaration).body;
   return {
     color: "throwing",
-    reason: body === undefined ? "bodyless" : "unmarked",
+    reason: bodyOf(declaration) === undefined ? "bodyless" : "unmarked",
   };
 }

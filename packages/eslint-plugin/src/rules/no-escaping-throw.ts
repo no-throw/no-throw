@@ -24,8 +24,8 @@ const OUTS =
 const messages = {
   uncaughtThrow: "Uncaught `throw` escapes this `@nothrow` function.",
   unbridgedCall:
-    "Call to `{{callee}}` escapes this `@nothrow` function: " +
-    `{{reason}}. ${OUTS}`,
+    "Call to `{{callee}}` escapes this `@nothrow` function: {{reason}}. " +
+    OUTS,
 } as const;
 
 type MessageId = keyof typeof messages;
@@ -44,23 +44,28 @@ const whyFloored: Record<FloorReason, string> = {
     "whether it throws",
 };
 
-interface Report {
-  readonly messageId: MessageId;
-  readonly data: Record<string, string>;
-}
+type Report =
+  | { readonly messageId: "uncaughtThrow" }
+  | {
+      readonly messageId: "unbridgedCall";
+      readonly data: { readonly callee: string; readonly reason: string };
+    };
 
 /**
- * The whole invariant is one rule, so every escape kind the core reports has to
- * land on a message inside it. An unhandled kind is a compile error here.
+ * The whole invariant is one rule, so every escape the core reports has to land
+ * on a message inside it. A finding kind with no `case` here stops returning a
+ * `Report` on every path, which is a compile error.
  */
-function describe(finding: Finding): Report {
-  if (finding.kind === "uncaught-throw") {
-    return { messageId: "uncaughtThrow", data: {} };
+function reportFor(finding: Finding): Report {
+  switch (finding.kind) {
+    case "uncaught-throw":
+      return { messageId: "uncaughtThrow" };
+    case "unbridged-call":
+      return {
+        messageId: "unbridgedCall",
+        data: { callee: finding.callee, reason: whyFloored[finding.reason] },
+      };
   }
-  return {
-    messageId: "unbridgedCall",
-    data: { callee: finding.callee, reason: whyFloored[finding.reason] },
-  };
 }
 
 export const noEscapingThrow = createRule<[], MessageId>({
@@ -88,7 +93,7 @@ export const noEscapingThrow = createRule<[], MessageId>({
 
         for (const finding of analyzeSourceFile(sourceFile, checker)) {
           const reportAt = services.tsNodeToESTreeNodeMap.get(finding.node);
-          context.report({ node: reportAt ?? node, ...describe(finding) });
+          context.report({ node: reportAt ?? node, ...reportFor(finding) });
         }
       },
     };

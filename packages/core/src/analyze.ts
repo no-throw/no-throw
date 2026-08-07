@@ -1,14 +1,7 @@
 import ts from "typescript";
 import type { FloorReason } from "./colors.js";
-import { isMarked } from "./marks.js";
+import { bodyOf, isMarked } from "./declarations.js";
 import { resolveCalleeColor } from "./resolve-color.js";
-
-/**
- * The kinds of escape a marked function can be reported for. Every kind is a
- * facet of the one invariant, so adapters surface them inside a single rule
- * rather than as separate, individually disableable ones.
- */
-export type FindingKind = "uncaught-throw" | "unbridged-call";
 
 interface UncaughtThrow {
   readonly kind: "uncaught-throw";
@@ -24,6 +17,11 @@ interface UnbridgedCall {
   readonly reason: FloorReason;
 }
 
+/**
+ * The escapes a marked function can be reported for. Every kind is a facet of
+ * the one invariant, so adapters surface them inside a single rule rather than
+ * as separate, individually disableable ones.
+ */
 export type Finding = UncaughtThrow | UnbridgedCall;
 
 /**
@@ -54,7 +52,7 @@ function collectEscapes(
   checker: ts.TypeChecker,
   out: Finding[],
 ): void {
-  const body = (fn as ts.FunctionLikeDeclaration).body;
+  const body = bodyOf(fn);
   if (body === undefined) return;
 
   const walk = (node: ts.Node): void => {
@@ -68,16 +66,17 @@ function collectEscapes(
         out.push({
           kind: "unbridged-call",
           node,
-          callee: describeCallee(node),
+          callee: calleeText(node),
           reason: callee.reason,
         });
       }
     }
 
     node.forEachChild((child) => {
-      // A nested function is its own body with its own color, and module
-      // evaluation — where `static {}` and `extends` expressions run — is
-      // outside the color model entirely.
+      // A nested function is its own body with its own color. A class is not
+      // body code either: its members are bodies of their own, and evaluating
+      // the class — heritage expressions, static blocks, decorators — is ruled
+      // out of the color model.
       if (ts.isFunctionLike(child) || ts.isClassLike(child)) return;
       walk(child);
     });
@@ -110,6 +109,6 @@ function isBridged(node: ts.Node): boolean {
   return false;
 }
 
-function describeCallee(call: ts.CallExpression): string {
+function calleeText(call: ts.CallExpression): string {
   return call.expression.getText().replace(/\s+/gu, " ");
 }
