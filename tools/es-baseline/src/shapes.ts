@@ -175,8 +175,7 @@ export interface Shape {
 const TRAP_DISPATCH = /^\[\[\w+\]\]$/;
 
 export function shapeOf(hazard: Hazard): Shape {
-  const rootOp = hazard.rootOp === "EXPLICIT" ? "EXPLICIT" : hazard.rootOp;
-  const condition = hazard.condition;
+  const { rootOp, condition } = hazard;
 
   if ([...hazard.via, rootOp].some((op) => TRAP_DISPATCH.test(op))) {
     return { id: "proxy", domain: undefined, rootOp, condition };

@@ -1,3 +1,8 @@
+import {
+  constructTypedArray,
+  TYPED_ARRAY_NAMES,
+} from "../typed-arrays.js";
+
 /**
  * The hostile pool. Every value here is **type-conformant** — it satisfies the
  * declared type without lying to the checker — and every one of them breaks
@@ -54,21 +59,6 @@ function hostileSpeciesArray(): unknown {
   return Hostile.from([1, 2, 3]);
 }
 
-const TYPED_ARRAYS = [
-  "Int8Array",
-  "Uint8Array",
-  "Uint8ClampedArray",
-  "Int16Array",
-  "Uint16Array",
-  "Int32Array",
-  "Uint32Array",
-  "Float16Array",
-  "Float32Array",
-  "Float64Array",
-  "BigInt64Array",
-  "BigUint64Array",
-];
-
 // An array with a throwing index *accessor* is deliberately not in the pool:
 // installing one takes `Object.defineProperty`, which #14 §7 names in the trust
 // base alongside `Proxy` and `as`. It refutes nothing we claim, and it does
@@ -119,10 +109,10 @@ export function receiverPool(): ReadonlyMap<string, readonly unknown[]> {
     pool.set("SharedArrayBuffer", [new SharedArrayBuffer(8)]);
   }
 
-  for (const name of TYPED_ARRAYS) {
-    const Constructor = (globalThis as Record<string, unknown>)[name];
-    if (typeof Constructor !== "function") continue;
-    pool.set(name, [Reflect.construct(Constructor, [4]), ...detachedView(name)]);
+  for (const name of TYPED_ARRAY_NAMES) {
+    const fresh = constructTypedArray(name, 4);
+    if (fresh === undefined) continue;
+    pool.set(name, [fresh, ...detachedView(name)]);
   }
 
   return pool;

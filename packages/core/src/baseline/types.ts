@@ -56,7 +56,7 @@ export interface BaselineData {
   readonly version: 1;
   /**
    * Members the generator proposed clean but the fuzz gate could not reach for
-   * want of a constructible receiver or a modellable argument. They ship
+   * want of a constructible receiver or a modelable argument. They ship
    * floored — unprobed is not refuted, and it is never evidence either.
    */
   readonly unprobed: readonly string[];

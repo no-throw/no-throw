@@ -2,7 +2,6 @@ export { analyzeSourceFile } from "./analyze.js";
 export type { Finding, FindingKind } from "./analyze.js";
 export { lookupBaselineEntry } from "./baseline/data.js";
 export {
-  globalKey,
   libTargetOfFileName,
   memberKey,
   symbolMemberName,

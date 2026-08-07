@@ -70,7 +70,6 @@ const OPERATION_TYPES = new Set([
 interface Operation {
   readonly name: string;
   readonly params: readonly string[];
-  readonly steps: readonly Step[];
   readonly trace: OperandTrace;
   readonly ownThrows: readonly { condition: string; error: string }[];
   readonly calls: readonly { name: string; args: readonly string[] }[];
@@ -237,7 +236,6 @@ function buildOperation(name: string, clause: Clause): Operation {
   return {
     name,
     params,
-    steps,
     trace: new OperandTrace(
       params,
       steps.map((step) => step.text),

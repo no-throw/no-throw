@@ -1,6 +1,8 @@
 import type { LibProgram } from "@nothrow/core/baseline";
 import type ts from "typescript";
 
+import { constructTypedArray, isTypedArrayName } from "../typed-arrays.js";
+
 /**
  * Values for a declared type, driven off the `ts.Type` rather than off the
  * text of a type node. Refusing is a first-class answer: **refuse to fuzz what
@@ -21,7 +23,7 @@ export class Arbitrary {
     this.#checker = checker;
   }
 
-  /** `undefined` means "cannot be modelled conformantly" — the caller skips. */
+  /** `undefined` means "cannot be modeled conformantly" — the caller skips. */
   valuesFor(declared: ts.Type): readonly unknown[] | undefined {
     const { TypeFlags } = this.#ts;
     const type = declared;
@@ -91,7 +93,7 @@ export class Arbitrary {
     }
 
     // An empty collection conforms to *any* element type, so it probes members
-    // whose element type could not be modelled on its own.
+    // whose element type could not be modeled on its own.
     const element = this.#elementValues(type);
     switch (name) {
       case "Array":
@@ -138,29 +140,15 @@ export class Arbitrary {
         return [{}];
       case "Function":
         return [(): number => 1];
-      case "Int8Array":
-      case "Uint8Array":
-      case "Uint8ClampedArray":
-      case "Int16Array":
-      case "Uint16Array":
-      case "Int32Array":
-      case "Uint32Array":
-      case "Float16Array":
-      case "Float32Array":
-      case "Float64Array":
-      case "BigInt64Array":
-      case "BigUint64Array": {
-        const Constructor = (globalThis as Record<string, unknown>)[name];
-        return typeof Constructor === "function"
-          ? [Reflect.construct(Constructor, [4])]
-          : undefined;
+      default: {
+        if (!isTypedArrayName(name)) return undefined;
+        const fresh = constructTypedArray(name, 4);
+        return fresh === undefined ? undefined : [fresh];
       }
-      default:
-        return undefined;
     }
   }
 
-  /** A short array of the element type, when the element type is modellable. */
+  /** A short array of the element type, when the element type is modelable. */
   #elementValues(type: ts.Type): unknown[] | undefined {
     const argument = this.#checker.getTypeArguments(type as ts.TypeReference)[0];
     const element =

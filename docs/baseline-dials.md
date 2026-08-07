@@ -68,7 +68,7 @@ stating plainly:
 
 ## What the doctrine costs
 
-Measured against a ceiling where all four dials sit at `trust-base`: roughly a
+Measured against a ceiling where every dial sits at `trust-base`: roughly a
 third of the members that could be called clean are not. That is the price of
 the doctrine, and it is paid deliberately.
 

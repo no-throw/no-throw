@@ -11,12 +11,13 @@ import {
 
 const args = process.argv.slice(2);
 const selfCheck = args.includes("--self-check");
-const against = args[args.indexOf("--against") + 1];
+const againstAt = args.indexOf("--against");
+const against = againstAt < 0 ? undefined : args[againstAt + 1];
 
 const current = currentSymbolSet(ts);
 
 let before: SymbolSet;
-if (args.includes("--against") && against !== undefined) {
+if (against !== undefined) {
   const other = (await import(pathToFileURL(against).href)) as {
     default?: typeof ts;
   };

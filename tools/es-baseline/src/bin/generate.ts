@@ -1,9 +1,15 @@
+import { formatCounterexample } from "../gates/fuzz.js";
 import { generateBaseline, writeBaseline } from "../generate.js";
 
 const report = generateBaseline();
 
-for (const [name, value] of Object.entries(report.summary)) {
+const { reviewRules, ...counts } = report.summary;
+for (const [name, value] of Object.entries(counts)) {
   console.log(`${name.padEnd(18)} ${value}`);
+}
+console.log("\nresidue — condition shapes with no rule, largest first:");
+for (const [rule, count] of reviewRules) {
+  console.log(`  ${String(count).padStart(4)}  ${rule}`);
 }
 console.log(
   `gate sensitivity   ${report.gate.sensitivity.reproduced}/${report.gate.sensitivity.attempted}`,
@@ -20,9 +26,7 @@ if (report.counterexamples.length > 0) {
     `\n${report.counterexamples.length} counterexample(s) to a proposed-clean entry — the generator is wrong, not the gate:`,
   );
   for (const found of report.counterexamples.slice(0, 40)) {
-    console.error(
-      `  ${found.key.padEnd(38)} ${found.probe} ${found.error}: ${found.message} [receiver ${found.receiver}, args ${JSON.stringify(found.args)}]`,
-    );
+    console.error(`  ${formatCounterexample(found)}`);
   }
   process.exit(1);
 }

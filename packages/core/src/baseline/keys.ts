@@ -13,10 +13,6 @@ export function memberKey(owner: string, member: string): string {
   return `${owner}#${member}`;
 }
 
-export function globalKey(name: string): string {
-  return name;
-}
-
 /** `[Symbol.iterator]` → `@@iterator`; a plain name passes through. */
 export function symbolMemberName(text: string): string {
   const match = /^\[\s*Symbol\.([A-Za-z_$][\w$]*)\s*\]$/.exec(text);

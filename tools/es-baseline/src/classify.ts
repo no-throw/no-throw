@@ -11,6 +11,7 @@ import { DIALS, type DialValue, type Dials } from "./dials.js";
 import { shapeOf, type Domain, type Shape } from "./shapes.js";
 import type { Hazard, SpecBuiltin, SpecCorpus } from "./spec/extract.js";
 import type { Operand } from "./spec/operands.js";
+import { toTypedArrayIntrinsic } from "./typed-arrays.js";
 
 export type SiteVerdict =
   | "type-excluded"
@@ -69,8 +70,6 @@ const RANK: Record<SiteVerdict, number> = {
   "type-excluded": 0,
 };
 
-const TYPED_ARRAY =
-  /^(Int8|Uint8|Uint8Clamped|Int16|Uint16|Int32|Uint32|Float16|Float32|Float64|BigInt64|BigUint64)Array/;
 const NATIVE_ERROR = /^(EvalError|RangeError|ReferenceError|SyntaxError|TypeError|URIError)/;
 
 export function classifyMembers(
@@ -82,10 +81,10 @@ export function classifyMembers(
   return members.map((member) => classifyMember(member, corpus, domains, dials));
 }
 
-function specFor(corpus: SpecCorpus, specKey: string): SpecBuiltin | undefined {
+export function specFor(corpus: SpecCorpus, specKey: string): SpecBuiltin | undefined {
   return (
     corpus.builtins.get(specKey) ??
-    corpus.builtins.get(specKey.replace(TYPED_ARRAY, "%TypedArray%")) ??
+    corpus.builtins.get(toTypedArrayIntrinsic(specKey)) ??
     corpus.builtins.get(specKey.replace(NATIVE_ERROR, "NativeError"))
   );
   // Deliberately no `get X` fallback here: reading a property is not a call, so
@@ -174,12 +173,7 @@ export function classifyAgainstSpec(
   return { sites, color: "non-throwing", conditions, reviewSites: 0 };
 }
 
-export function specClauseFor(
-  corpus: SpecCorpus,
-  specKey: string,
-): SpecBuiltin | undefined {
-  return specFor(corpus, specKey);
-}
+
 
 function classifySite(
   hazard: Hazard,

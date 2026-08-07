@@ -1,3 +1,5 @@
+import type { PathSegment } from "@nothrow/core/baseline";
+
 import { argumentsOf, splitArguments } from "./parse.js";
 
 /**
@@ -10,25 +12,21 @@ import { argumentsOf, splitArguments } from "./parse.js";
  *
  * The segments make the result a *path* rather than a position, which is what
  * lets `Array.prototype.push` discharge (its coercion is about `O.length`, not
- * about `O`) and what conditional entries are written in.
+ * about `O`) and what conditional entries are written in — so they are the wire
+ * format's own segment type, not a parallel one.
  */
-export type OperandSegment =
-  | { readonly kind: "member"; readonly name: string }
-  | { readonly kind: "symbol"; readonly name: string }
-  | { readonly kind: "element" };
-
 export interface Operand {
   readonly root: "param" | "receiver" | "internal";
   /** Meaningful only when `root` is `"param"`. */
   readonly index: number;
-  readonly segments: readonly OperandSegment[];
+  readonly segments: readonly PathSegment[];
   /** The spec expression this was read off, for the audit trail. */
   readonly text: string;
 }
 
 const INTERNAL: Operand = { root: "internal", index: -1, segments: [], text: "" };
 
-const withSegment = (base: Operand, segment: OperandSegment): Operand => ({
+const withSegment = (base: Operand, segment: PathSegment): Operand => ({
   root: base.root,
   index: base.index,
   segments: [...base.segments, segment],
@@ -36,7 +34,7 @@ const withSegment = (base: Operand, segment: OperandSegment): Operand => ({
 });
 
 /** `"length"` → `.length`; `%Symbol.iterator%` → `.@@iterator`. */
-function keySegment(key: string | undefined): OperandSegment | undefined {
+function keySegment(key: string | undefined): PathSegment | undefined {
   if (key === undefined) return undefined;
   const symbol = /%Symbol\.(\w+)%/.exec(key);
   if (symbol?.[1] !== undefined) return { kind: "symbol", name: symbol[1] };
@@ -45,19 +43,47 @@ function keySegment(key: string | undefined): OperandSegment | undefined {
   return undefined;
 }
 
-/** Property reads: the hazard is about the property, not about the object. */
-const PROPERTY_OPS = new Set(["Get", "GetV", "GetMethod", "Invoke"]);
-/** Definitionally `Get(obj, "length")` followed by a coercion. */
-const LENGTH_OPS = new Set(["LengthOfArrayLike"]);
-const ITERATOR_OPS = new Set(["GetIterator", "GetIteratorFromMethod"]);
-/** Yield the *elements* of whatever was iterated. */
-const ELEMENT_OPS = new Set([
-  "IteratorStepValue",
-  "IteratorValue",
-  "IteratorToList",
-  "CreateListFromArrayLike",
-  "IterableToList",
-]);
+/**
+ * How an abstract operation moves the path. Each entry says: when this
+ * operation appears in an expression, the value the expression denotes is the
+ * first argument's, one step further along the path.
+ */
+interface PathStep {
+  readonly ops: readonly string[];
+  /** `undefined` means "the elements of", which replaces rather than appends. */
+  readonly segment: PathSegment | undefined;
+  /** Property reads name the key in a second argument. */
+  readonly keyFromArgument?: true;
+}
+
+const PATH_STEPS: readonly PathStep[] = [
+  // Property reads: the hazard is about the property, not about the object.
+  {
+    ops: ["Get", "GetV", "GetMethod", "Invoke"],
+    segment: undefined,
+    keyFromArgument: true,
+  },
+  // Definitionally `Get(obj, "length")` followed by a coercion.
+  {
+    ops: ["LengthOfArrayLike"],
+    segment: { kind: "member", name: "length" },
+  },
+  {
+    ops: ["GetIterator", "GetIteratorFromMethod"],
+    segment: { kind: "symbol", name: "iterator" },
+  },
+  // Yield the *elements* of whatever was iterated.
+  {
+    ops: [
+      "IteratorStepValue",
+      "IteratorValue",
+      "IteratorToList",
+      "CreateListFromArrayLike",
+      "IterableToList",
+    ],
+    segment: undefined,
+  },
+];
 
 export class OperandTrace {
   readonly #origins = new Map<string, Operand>();
@@ -94,36 +120,20 @@ export class OperandTrace {
       return { root: "receiver", index: -1, segments: [], text };
     }
 
-    for (const op of PROPERTY_OPS) {
-      const args = splitArguments(argumentsOf(text, op));
-      if (args.length < 2) continue;
-      const segment = keySegment(args[1]);
-      const base = this.resolve(args[0] ?? "");
-      if (segment !== undefined && base.root !== "internal") {
-        return withSegment(base, segment);
+    for (const step of PATH_STEPS) {
+      for (const op of step.ops) {
+        const args = splitArguments(argumentsOf(text, op));
+        if (args.length === 0) continue;
+        const segment = step.keyFromArgument
+          ? keySegment(args[1])
+          : step.segment;
+        if (step.keyFromArgument && segment === undefined) continue;
+        const base = this.resolve(args[0] ?? "");
+        if (base.root === "internal") continue;
+        return segment === undefined
+          ? elementsOf(base)
+          : withSegment(base, segment);
       }
-    }
-    for (const op of LENGTH_OPS) {
-      const args = splitArguments(argumentsOf(text, op));
-      if (args.length === 0) continue;
-      const base = this.resolve(args[0] ?? "");
-      if (base.root !== "internal") {
-        return withSegment(base, { kind: "member", name: "length" });
-      }
-    }
-    for (const op of ITERATOR_OPS) {
-      const args = splitArguments(argumentsOf(text, op));
-      if (args.length === 0) continue;
-      const base = this.resolve(args[0] ?? "");
-      if (base.root !== "internal") {
-        return withSegment(base, { kind: "symbol", name: "iterator" });
-      }
-    }
-    for (const op of ELEMENT_OPS) {
-      const args = splitArguments(argumentsOf(text, op));
-      if (args.length === 0) continue;
-      const base = this.resolve(args[0] ?? "");
-      if (base.root !== "internal") return elementsOf(base);
     }
 
     const named = this.#firstKnownName(text);
@@ -166,10 +176,11 @@ export class OperandTrace {
  */
 function elementsOf(base: Operand): Operand {
   const last = base.segments[base.segments.length - 1];
-  const trimmed =
-    last !== undefined && last.kind === "symbol" && last.name.endsWith("terator")
-      ? base.segments.slice(0, -1)
-      : base.segments;
+  const wasIteratorHop =
+    last !== undefined &&
+    last.kind === "symbol" &&
+    (last.name === "iterator" || last.name === "asyncIterator");
+  const trimmed = wasIteratorHop ? base.segments.slice(0, -1) : base.segments;
   return {
     root: base.root,
     index: base.index,

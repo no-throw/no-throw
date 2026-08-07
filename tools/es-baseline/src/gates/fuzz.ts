@@ -1,4 +1,4 @@
-import type { LibMember, LibProgram } from "@nothrow/core/baseline";
+import type { LibMember, LibParam, LibProgram } from "@nothrow/core/baseline";
 import type ts from "typescript";
 
 import { resolveHolder, runtimeKey } from "../accessors.js";
@@ -35,7 +35,6 @@ const MAX_VALUES_PER_PARAMETER = 6;
 
 export class HostileFuzzer {
   readonly #arbitrary: Arbitrary;
-  readonly #receivers = receiverPool();
 
   constructor(lib: LibProgram) {
     this.#arbitrary = new Arbitrary(lib);
@@ -61,7 +60,7 @@ export class HostileFuzzer {
         return skip(
           member.key,
           "call",
-          `parameter ${parameter.name} cannot be modelled conformantly`,
+          `parameter ${parameter.name} cannot be modeled conformantly`,
         );
       }
       if (parameter.rest) restFrom = index;
@@ -143,29 +142,47 @@ export class HostileFuzzer {
     }
   }
 
+  /**
+   * A fresh pool per member. The probes mutate what they are given —
+   * `Array.prototype.push` grows an array, `ArrayBuffer.prototype.transfer`
+   * detaches a buffer — so a shared pool would make one member's result depend
+   * on which members ran before it, and a manufactured counterexample is
+   * exactly what turns the gate into noise.
+   */
   #receiversFor(member: LibMember): readonly unknown[] {
     if (member.isStatic || member.holderPath === "") {
       const holder = resolveHolder(member.holderPath);
       return holder === undefined ? [] : [holder];
     }
-    return this.#receivers.get(member.receiverOwner) ?? [];
+    return receiverPool().get(member.receiverOwner) ?? [];
   }
 
-  #valuesForParameter(
-    parameter: LibMember["params"] extends readonly (infer P)[] | undefined
-      ? P
-      : never,
-  ): readonly unknown[] | undefined {
-    // Every overload's type must be modelled: the entry covers all of them.
+  #valuesForParameter(parameter: LibParam): readonly unknown[] | undefined {
+    // Every overload's type must be modeled: the entry covers all of them. So
+    // the budget is spent round-robin rather than in order — taking the first
+    // overload's values until the budget runs out would put the later
+    // signatures' refuting values out of reach.
     const pools = parameter.types.map((type: ts.Type) =>
       this.#arbitrary.valuesFor(type),
     );
     if (pools.some((pool) => pool === undefined)) return undefined;
-    const values = pools
-      .flatMap((pool) => pool ?? [])
-      .slice(0, MAX_VALUES_PER_PARAMETER);
+    const values = interleave(pools as readonly (readonly unknown[])[]).slice(
+      0,
+      MAX_VALUES_PER_PARAMETER,
+    );
     return parameter.optional ? [...values, undefined] : values;
   }
+}
+
+function interleave(pools: readonly (readonly unknown[])[]): unknown[] {
+  const out: unknown[] = [];
+  const longest = Math.max(0, ...pools.map((pool) => pool.length));
+  for (let index = 0; index < longest; index++) {
+    for (const pool of pools) {
+      if (index < pool.length) out.push(pool[index]);
+    }
+  }
+  return out;
 }
 
 function argumentTuples(
@@ -215,6 +232,11 @@ function counterexample(
     receiver: describe(receiver),
     args: args.map(describe),
   };
+}
+
+/** One line a maintainer can act on: what threw, on what, with what. */
+export function formatCounterexample(found: Counterexample): string {
+  return `${found.key.padEnd(38)} ${found.probe} ${found.error}: ${found.message} [receiver ${found.receiver}, args ${JSON.stringify(found.args)}]`;
 }
 
 function skip(key: string, probe: "call" | "get", reason: string): ProbeResult {

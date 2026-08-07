@@ -1,6 +1,6 @@
 import type { AccessorFact, Color, LibMember, TypeDomains } from "@nothrow/core/baseline";
 
-import { classifyAgainstSpec, specClauseFor } from "./classify.js";
+import { classifyAgainstSpec, specFor } from "./classify.js";
 import type { Dials } from "./dials.js";
 import type { SpecCorpus } from "./spec/extract.js";
 
@@ -28,8 +28,8 @@ export function accessorFactFor(
   // question to answer.
   if (member.kind === "call" || member.kind === "construct") return undefined;
   const descriptor = runtimeDescriptor(member);
-  const getClause = specClauseFor(corpus, `get ${member.specKey}`);
-  const setClause = specClauseFor(corpus, `set ${member.specKey}`);
+  const getClause = specFor(corpus, `get ${member.specKey}`);
+  const setClause = specFor(corpus, `set ${member.specKey}`);
 
   const specSaysAccessor = getClause !== undefined || setClause !== undefined;
   const runtimeSaysAccessor =

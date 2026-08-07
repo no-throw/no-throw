@@ -195,7 +195,7 @@ export function callSites(stepHtml: string): readonly CallSite[] {
   return sites.filter((site) => site.name !== "");
 }
 
-/** The parenthesised argument list of `Op(...)` in a step's plain text. */
+/** The parenthesized argument list of `Op(...)` in a step's plain text. */
 export function argumentsOf(text: string, op: string): string | undefined {
   const at = text.indexOf(`${op}(`);
   if (at < 0) return undefined;

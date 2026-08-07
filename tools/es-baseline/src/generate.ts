@@ -45,6 +45,8 @@ export interface GenerationReport {
     /** Members with no entry at all: no color, no accessor fact. */
     readonly floored: number;
     readonly reviewMembers: number;
+    /** Unbucketed condition shapes, by rule — the residue, largest first. */
+    readonly reviewRules: readonly (readonly [rule: string, count: number])[];
     readonly accessorFacts: number;
     readonly dataNessRecords: number;
     readonly unprobed: number;
@@ -76,6 +78,14 @@ export function generateBaseline(dials: Dials = DIALS): GenerationReport {
     if (proposal.color === "throwing") throwing.add(proposal.member.key);
   }
 
+  // Operand tracing is load-bearing, and an unresolved callee is a silent hole
+  // in it rather than a member that merely floors.
+  if (corpus.stats.unresolvedCallees.length > 0) {
+    throw new Error(
+      `extraction left ${corpus.stats.unresolvedCallees.length} unresolved callee(s): ${corpus.stats.unresolvedCallees.slice(0, 10).join(", ")}`,
+    );
+  }
+
   const gate = runFuzzGate(lib, members, draft, throwing);
 
   // Unprobed is not refuted — and it is not evidence either, so a clean claim
@@ -90,7 +100,7 @@ export function generateBaseline(dials: Dials = DIALS): GenerationReport {
   const byMember = new Map<string, BaselineEntry>();
   for (const proposal of proposals) {
     const key = proposal.member.key;
-    const fact = floorUnprobed(accessors.get(key), unprobedGets.has(key));
+    const fact = gateAccessorFact(accessors.get(key), unprobedGets.has(key));
     const entry = entryFor(
       REFUTED_KEYS.has(key) ? { ...proposal, color: "throwing", conditions: undefined } : proposal,
       fact,
@@ -100,7 +110,7 @@ export function generateBaseline(dials: Dials = DIALS): GenerationReport {
   }
   for (const member of members) {
     if (byMember.has(member.key)) continue;
-    const fact = floorUnprobed(
+    const fact = gateAccessorFact(
       accessors.get(member.key),
       unprobedGets.has(member.key),
     );
@@ -159,18 +169,38 @@ function entryFor(
   };
 }
 
-function floorUnprobed(
+/**
+ * The gate probes a property *read* and nothing else: there is no probe for a
+ * write, because assigning to a shared builtin receiver would corrupt every
+ * later probe. So a clean `set` never ships — an unprobed clean claim floors,
+ * and that rule does not bend just because no ES setter classifies clean today.
+ */
+function gateAccessorFact(
   fact: AccessorFact | undefined,
-  unprobed: boolean,
+  unprobedGet: boolean,
 ): AccessorFact | undefined {
-  if (fact === undefined || fact === false || !unprobed) return fact;
-  return { get: "throwing", set: fact.set };
+  if (fact === undefined || fact === false) return fact;
+  return { get: unprobedGet ? "throwing" : fact.get, set: "throwing" };
 }
 
 function sortKeys<T>(record: Record<string, T>): Record<string, T> {
   return Object.fromEntries(
     Object.entries(record).sort(([left], [right]) => left.localeCompare(right)),
   );
+}
+
+function reviewRulesOf(
+  proposals: readonly Proposal[],
+): readonly (readonly [string, number])[] {
+  const counts = new Map<string, number>();
+  for (const proposal of proposals) {
+    for (const site of proposal.sites) {
+      if (site.verdict !== "review") continue;
+      const rule = site.rule.slice(0, 80);
+      counts.set(rule, (counts.get(rule) ?? 0) + 1);
+    }
+  }
+  return [...counts].sort(([, left], [, right]) => right - left).slice(0, 10);
 }
 
 function summarize(
@@ -196,6 +226,7 @@ function summarize(
     ).length,
     floored: members.length - byMember.size,
     reviewMembers: proposals.filter((proposal) => proposal.reviewSites > 0).length,
+    reviewRules: reviewRulesOf(proposals),
     accessorFacts: [...accessors.values()].filter((fact) => fact !== false).length,
     dataNessRecords: [...accessors.values()].filter((fact) => fact === false).length,
     unprobed: data.unprobed.length,

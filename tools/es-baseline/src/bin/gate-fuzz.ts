@@ -5,6 +5,7 @@ import {
 } from "@nothrow/core/baseline";
 import ts from "typescript";
 
+import { formatCounterexample } from "../gates/fuzz.js";
 import { claimsOf, runFuzzGate, type Claim } from "../gates/run.js";
 
 /**
@@ -53,10 +54,11 @@ if (!selfCheck) {
 if (selfCheck) {
   const refuted = new Set(report.counterexamples.map((found) => found.key));
   const missed = PLANTED.filter((key) => !refuted.has(key));
-  for (const found of report.counterexamples.filter((f) => PLANTED.includes(f.key))) {
-    console.log(
-      `  refuted ${found.key.padEnd(24)} ${found.error}: ${found.message} [receiver ${found.receiver}, args ${JSON.stringify(found.args)}]`,
+  for (const key of PLANTED) {
+    const found = report.counterexamples.find(
+      (candidate) => candidate.key === key,
     );
+    if (found !== undefined) console.log(`  refuted ${formatCounterexample(found)}`);
   }
   if (missed.length > 0) {
     console.error(
@@ -71,9 +73,7 @@ if (selfCheck) {
 if (report.counterexamples.length > 0) {
   console.error("\ncounterexamples to a shipped clean entry:");
   for (const found of report.counterexamples.slice(0, 40)) {
-    console.error(
-      `  ${found.key.padEnd(38)} ${found.probe} ${found.error}: ${found.message} [receiver ${found.receiver}, args ${JSON.stringify(found.args)}]`,
-    );
+    console.error(`  ${formatCounterexample(found)}`);
   }
   process.exit(1);
 }
