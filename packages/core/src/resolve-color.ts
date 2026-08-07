@@ -15,7 +15,7 @@ import {
 } from "./targets.js";
 import {
   hiddenTransfersOf,
-  type Target as NamedTarget,
+  type HiddenCallee,
   type TransferSite,
 } from "./transfers.js";
 
@@ -56,7 +56,7 @@ export type BodyEscape =
       /** The site as written. */
       readonly text: string;
       /** Absent when the type could not name what runs, which always floors. */
-      readonly target: NamedTarget | undefined;
+      readonly target: HiddenCallee | undefined;
       readonly reason: ThrowingReason;
     };
 
@@ -98,7 +98,7 @@ type Conditions = (body: Bodied) => readonly Condition[];
 /** One body a hidden transfer can enter, named the way a message wants it. */
 interface HiddenTarget {
   /** Absent when the type could not name what runs. */
-  readonly named: NamedTarget | undefined;
+  readonly named: HiddenCallee | undefined;
   readonly target: DeclaredTarget;
 }
 

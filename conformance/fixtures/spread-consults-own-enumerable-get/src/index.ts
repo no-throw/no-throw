@@ -6,6 +6,10 @@ class Box {
   }
 }
 
+interface Described {
+  get label(): string;
+}
+
 const literal = {
   data: 1,
   get value(): number {
@@ -13,7 +17,11 @@ const literal = {
   },
 };
 
+const plain = { other: 2 };
+
 declare const box: Box;
+declare const described: Described;
+declare const flag: boolean;
 
 /** @nothrow */
 export function spreadInstance(): object {
@@ -29,4 +37,14 @@ export function restInstance(): object {
 /** @nothrow */
 export function spreadLiteral(): object {
   return { ...literal };
+}
+
+/** @nothrow */
+export function spreadDescribed(): object {
+  return { ...described };
+}
+
+/** @nothrow */
+export function spreadEither(): object {
+  return { ...(flag ? literal : plain) };
 }

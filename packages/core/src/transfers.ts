@@ -16,15 +16,15 @@ export type TransferSite =
   | "coercion"
   | "instance-check";
 
-/** What a site runs, named the way the source spells it. */
-export interface Target {
+/** The body a site enters, named the way the source spells it. */
+export interface HiddenCallee {
   readonly kind: "getter" | "setter" | "method";
   readonly name: string;
 }
 
 export interface TransferTarget {
   /** Absent when the type cannot even name what runs. */
-  readonly target: Target | undefined;
+  readonly target: HiddenCallee | undefined;
   /** The body to read a color off, or absent when there is none. */
   readonly declaration: ts.SignatureDeclaration | undefined;
 }
@@ -82,6 +82,11 @@ export function hiddenTransfersOf(
   }
 }
 
+/** The expression as written, collapsed onto one line for a message. */
+export function textOf(node: ts.Node): string {
+  return node.getText().replace(/\s+/gu, " ");
+}
+
 /** `any` and `unknown` say nothing about what runs, so they cannot be read. */
 const OPAQUE_TYPE = ts.TypeFlags.Any | ts.TypeFlags.Unknown;
 
@@ -97,13 +102,6 @@ const PRIMITIVE_TYPE =
   ts.TypeFlags.Void |
   ts.TypeFlags.Never;
 
-/**
- * `ToPrimitive` tries these in turn, and which of them stops depends on the
- * hint and on what each returns — none of which is static. So all three are
- * consulted and joined.
- */
-const CONVERSION_MEMBERS = ["@@toPrimitive", "valueOf", "toString"] as const;
-
 function accessTransfers(
   node: AccessExpression,
   site: "read" | "write" | "update",
@@ -113,7 +111,8 @@ function accessTransfers(
   const receiver = receiverType(node.expression, checker);
   if (receiver === undefined) return [unnameable(node, site, text)];
 
-  const half: Half = site === "read" ? "get" : site === "write" ? "set" : "both";
+  const half: Half =
+    site === "read" ? "get" : site === "write" ? "set" : "both";
   const targets = ts.isPropertyAccessExpression(node)
     ? namedMemberTargets(node, half, checker)
     : keyedMemberTargets(receiver, node.argumentExpression, half, checker);
@@ -149,8 +148,8 @@ function keyedMemberTargets(
   const names = narrowKey(key, checker);
   const symbols =
     names === undefined
-      ? checker.getPropertiesOfType(receiver)
-      : names.flatMap((name) => checker.getPropertyOfType(receiver, name) ?? []);
+      ? membersOf(receiver, checker)
+      : names.flatMap((name) => memberNamed(receiver, name, checker));
   return symbols.flatMap((symbol) => accessorTargets(symbol, half));
 }
 
@@ -159,10 +158,9 @@ function narrowKey(
   checker: ts.TypeChecker,
 ): readonly string[] | undefined {
   const type = checker.getTypeAtLocation(key);
-  const parts = type.isUnion() ? type.types : [type];
   const names: string[] = [];
 
-  for (const part of parts) {
+  for (const part of constituentsOf(type)) {
     if (!part.isStringLiteral()) return undefined;
     names.push(part.value);
   }
@@ -229,8 +227,9 @@ function bindingTargets(
     return [];
   }
 
-  const symbol = checker.getPropertyOfType(source, name.text);
-  return symbol === undefined ? [] : accessorTargets(symbol, "get");
+  return memberNamed(source, name.text, checker).flatMap((symbol) =>
+    accessorTargets(symbol, "get"),
+  );
 }
 
 /**
@@ -245,7 +244,9 @@ function assignmentTargets(
 ): readonly TransferTarget[] | undefined {
   if (ts.isSpreadAssignment(element)) {
     const source = assignedSource(element.parent, checker);
-    return source === undefined ? undefined : ownEnumerableTargets(source, checker);
+    return source === undefined
+      ? undefined
+      : ownEnumerableTargets(source, checker);
   }
 
   const { name } = element;
@@ -254,7 +255,7 @@ function assignmentTargets(
   return symbol === undefined ? [] : accessorTargets(symbol, "get");
 }
 
-/** The value a destructuring pattern is being assigned, where the syntax says. */
+/** The value a destructuring pattern is assigned, where the syntax says. */
 function assignedSource(
   pattern: ts.ObjectLiteralExpression,
   checker: ts.TypeChecker,
@@ -287,32 +288,29 @@ function ownEnumerableTargets(
   source: ts.Type,
   checker: ts.TypeChecker,
 ): readonly TransferTarget[] {
-  return checker
-    .getPropertiesOfType(source)
-    .flatMap((symbol) =>
-      (symbol.declarations ?? [])
-        .filter(isOwnGetAccessor)
-        .map((declaration) => ({
-          target: { kind: "getter" as const, name: memberName(symbol) },
-          declaration,
-        })),
-    );
+  return membersOf(source, checker).flatMap((symbol) =>
+    (symbol.declarations ?? [])
+      .filter(mayBeOwnGetAccessor)
+      .map((declaration) => ({
+        target: { kind: "getter" as const, name: memberName(symbol) },
+        declaration,
+      })),
+  );
 }
 
 /**
- * A class body declares its accessors on the prototype, so an instance does not
- * own them — which is why spreading a DOM element touches nothing. An object
- * literal's accessor, and a `static` one, are own properties of the very object
- * being spread.
+ * A get accessor written in a class body and not `static` is on the prototype,
+ * so an instance does not own it — which is why spreading a DOM element touches
+ * nothing. That is the one case where own-ness has an answer: an accessor
+ * declared on an interface or a type literal could describe either an object
+ * literal or a class instance, and the sound reading of that is that it is own.
  */
-function isOwnGetAccessor(
+function mayBeOwnGetAccessor(
   declaration: ts.Declaration,
 ): declaration is ts.GetAccessorDeclaration {
   if (!ts.isGetAccessorDeclaration(declaration)) return false;
-  const { parent } = declaration;
-  if (ts.isObjectLiteralExpression(parent)) return true;
   return (
-    ts.isClassLike(parent) &&
+    !ts.isClassLike(declaration.parent) ||
     (ts.getCombinedModifierFlags(declaration) & ts.ModifierFlags.Static) !== 0
   );
 }
@@ -332,10 +330,14 @@ function coercionTransfers(
   const constraint = checker.getBaseConstraintOfType(type);
   if (constraint !== undefined && isPrimitive(constraint)) return [];
 
-  const apparent = checker.getApparentType(type);
-  const targets = CONVERSION_MEMBERS.flatMap((name) =>
-    methodTargets(apparent, name, checker),
-  );
+  // `ToPrimitive` tries all three in turn, and which of them stops depends on
+  // the hint and on what each returns — neither of which is static.
+  const targets = [
+    ...declaredWellKnownTargets(type, "toPrimitive", checker),
+    ...inheritedMethodTargets(type, "valueOf", checker),
+    ...inheritedMethodTargets(type, "toString", checker),
+  ];
+
   // A type with no conversion member at all cannot be coerced without a
   // TypeError, and nothing here can say otherwise.
   return [
@@ -353,14 +355,16 @@ function instanceCheckTransfers(
   checker: ts.TypeChecker,
 ): readonly Transfer[] {
   const text = textOf(node);
-  const constructor = receiverType(node.right, checker);
-  if (constructor === undefined) {
+  const constructor = checker.getTypeAtLocation(node.right);
+  if ((constructor.flags & OPAQUE_TYPE) !== 0) {
     return [unnameable(node, "instance-check", text)];
   }
 
-  // No `Symbol.hasInstance` means the ordinary prototype walk, which reads a
-  // data property and runs nothing.
-  const targets = methodTargets(constructor, "@@hasInstance", checker);
+  // Only a declared `Symbol.hasInstance` is consulted. Inheriting
+  // `Function.prototype`'s runs `OrdinaryHasInstance`, which reads a data
+  // property and walks the prototype chain — it reaches no user code at all,
+  // unlike the `valueOf`/`toString` a coercion inherits.
+  const targets = declaredWellKnownTargets(constructor, "hasInstance", checker);
   return targets.length === 0
     ? []
     : [{ node, site: "instance-check", text, targets }];
@@ -413,19 +417,36 @@ function libCalleeKey(
   return name === undefined ? undefined : memberKey(owner.name.text, name);
 }
 
-function methodTargets(
+/**
+ * A member the type or one of its declared bases carries. `Object.prototype`'s
+ * are deliberately out of reach: a type *declaring* its own conversion member
+ * takes that member's color, while inheriting only the builtin is the
+ * baseline's to answer.
+ */
+function declaredWellKnownTargets(
   type: ts.Type,
   name: string,
   checker: ts.TypeChecker,
 ): readonly TransferTarget[] {
-  const wellKnown = name.startsWith("@@") ? name.slice(2) : undefined;
-  const symbol =
-    wellKnown === undefined
-      ? checker.getPropertyOfType(type, name)
-      : wellKnownProperty(type, wellKnown, checker);
-  if (symbol === undefined) return [];
+  const symbols = membersOf(checker.getApparentType(type), checker).filter(
+    (symbol) => wellKnownName(symbol) === name,
+  );
+  return symbols.flatMap((symbol) => methodTargets(symbol));
+}
 
-  const target: Target = { kind: "method", name: memberName(symbol) };
+/** A member as an ordinary lookup sees it, `Object.prototype`'s included. */
+function inheritedMethodTargets(
+  type: ts.Type,
+  name: string,
+  checker: ts.TypeChecker,
+): readonly TransferTarget[] {
+  return memberNamed(checker.getApparentType(type), name, checker).flatMap(
+    (symbol) => methodTargets(symbol),
+  );
+}
+
+function methodTargets(symbol: ts.Symbol): readonly TransferTarget[] {
+  const target: HiddenCallee = { kind: "method", name: memberName(symbol) };
   const declarations = symbol.declarations ?? [];
   if (declarations.length === 0) return [{ target, declaration: undefined }];
 
@@ -438,19 +459,33 @@ function methodTargets(
 }
 
 /**
- * TypeScript spells a well-known symbol member `__@toPrimitive@<id>`, where the
- * id belongs to that program's `Symbol` declaration — so the name cannot be
- * written down, only matched.
+ * Every member a value may have. `getPropertiesOfType` answers a union with
+ * only what *every* constituent has, which is the wrong direction: a member one
+ * constituent declares still runs when the value is that constituent.
  */
-function wellKnownProperty(
+function membersOf(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): readonly ts.Symbol[] {
+  if (!type.isUnion()) return checker.getPropertiesOfType(type);
+  return type.types.flatMap((part) =>
+    checker.getPropertiesOfType(checker.getApparentType(part)),
+  );
+}
+
+/** One named member, across a union's constituents, inherited ones included. */
+function memberNamed(
   type: ts.Type,
   name: string,
   checker: ts.TypeChecker,
-): ts.Symbol | undefined {
-  const spelling = new RegExp(`^__@${name}@\\d+$`, "u");
-  return checker
-    .getPropertiesOfType(type)
-    .find((symbol) => spelling.test(symbol.getName()));
+): readonly ts.Symbol[] {
+  if (!type.isUnion()) {
+    const symbol = checker.getPropertyOfType(type, name);
+    return symbol === undefined ? [] : [symbol];
+  }
+  return type.types.flatMap((part) =>
+    memberNamed(checker.getApparentType(part), name, checker),
+  );
 }
 
 /** The apparent type of a receiver, or nothing when it cannot be read. */
@@ -462,13 +497,29 @@ function receiverType(
   return (type.flags & OPAQUE_TYPE) === 0 ? type : undefined;
 }
 
+function constituentsOf(type: ts.Type): readonly ts.Type[] {
+  return type.isUnion() ? type.types : [type];
+}
+
 function isPrimitive(type: ts.Type): boolean {
-  const parts = type.isUnion() ? type.types : [type];
-  return parts.every((part) => (part.flags & PRIMITIVE_TYPE) !== 0);
+  return constituentsOf(type).every(
+    (part) => (part.flags & PRIMITIVE_TYPE) !== 0,
+  );
+}
+
+/**
+ * TypeScript spells a well-known symbol member `__@toPrimitive@<id>`, where the
+ * id belongs to that program's `Symbol` declaration — so the name can only be
+ * matched, never written down.
+ */
+const WELL_KNOWN_MEMBER = /^__@(\w+)@\d+$/u;
+
+function wellKnownName(symbol: ts.Symbol): string | undefined {
+  return WELL_KNOWN_MEMBER.exec(symbol.getName())?.[1];
 }
 
 function memberName(symbol: ts.Symbol): string {
-  const wellKnown = /^__@(\w+)@\d+$/u.exec(symbol.getName())?.[1];
+  const wellKnown = wellKnownName(symbol);
   return wellKnown === undefined ? symbol.getName() : `[Symbol.${wellKnown}]`;
 }
 
@@ -478,14 +529,6 @@ const UNNAMEABLE: TransferTarget = {
 };
 
 /** A site that runs *something* the type cannot name, so it floors. */
-function unnameable(
-  node: ts.Node,
-  site: TransferSite,
-  text: string,
-): Transfer {
+function unnameable(node: ts.Node, site: TransferSite, text: string): Transfer {
   return { node, site, text, targets: [UNNAMEABLE] };
-}
-
-function textOf(node: ts.Node): string {
-  return node.getText().replace(/\s+/gu, " ");
 }

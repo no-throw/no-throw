@@ -37,6 +37,7 @@ class ThrowingSet {
 declare const clean: Clean;
 declare const throwingGet: ThrowingGet;
 declare const throwingSet: ThrowingSet;
+declare const either: Clean | ThrowingGet;
 declare const key: string;
 
 /** @nothrow */
@@ -57,4 +58,9 @@ export function joinsThrowingSet(): void {
 /** @nothrow */
 export function readsThrowingSet(): number {
   return throwingSet[key];
+}
+
+/** @nothrow */
+export function joinsEither(): number {
+  return either[key];
 }

@@ -3,7 +3,7 @@ import {
   type EntrySite,
   type Finding,
   type FloorReason,
-  type Target,
+  type HiddenCallee,
   type TransferSite,
   type UndischargedReason,
 } from "@nothrow/core";
@@ -131,7 +131,7 @@ const describeSite: Record<TransferSite, (text: string) => string> = {
   "instance-check": (text) => `Checking \`${text}\``,
 };
 
-function describeTarget(target: Target): string {
+function describeTarget(target: HiddenCallee): string {
   return `the ${target.kind} \`${target.name}\``;
 }
 
@@ -218,7 +218,8 @@ function reportFor(finding: Finding, cwd: string): Report {
             finding.target === undefined
               ? `the checker cannot resolve \`${finding.text}\` to a ` +
                 "declaration, so nothing can say whether a body runs here"
-              : `it runs ${describeTarget(finding.target)}, which ${whyFloored[finding.reason]}`,
+              : `it runs ${describeTarget(finding.target)}, which ` +
+                whyFloored[finding.reason],
         },
       };
     case "inferred-throwing-hidden-transfer":

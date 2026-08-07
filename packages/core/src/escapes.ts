@@ -134,7 +134,7 @@ function escapesAt(node: ts.Node): readonly Escape[] {
   if (isTransfer(node)) {
     found.push({ kind: "call", node });
   } else if (isAccessExpression(node)) {
-    const kind = halfOf(node);
+    const kind = accessKindOf(node);
     if (kind !== undefined) found.push({ kind, node });
   } else if (isDestructuringElement(node)) {
     found.push({ kind: "destructure", node });
@@ -203,11 +203,14 @@ function isInstanceCheck(node: ts.Node): node is ts.BinaryExpression {
 }
 
 /**
- * Which half of an accessor pair the surrounding syntax consults. The table is
- * normative: get and set carry independent colors, so reading a member that is
- * only guarded on write must not require the bridge that writing it does.
+ * How the surrounding syntax uses the member, which is what decides the half of
+ * an accessor pair it consults. The table is normative: get and set carry
+ * independent colors, so reading a member that is only guarded on write must
+ * not require the bridge that writing it does.
  */
-function halfOf(access: AccessExpression): "read" | "write" | "update" | undefined {
+function accessKindOf(
+  access: AccessExpression,
+): "read" | "write" | "update" | undefined {
   // `delete o.x` invokes neither half.
   if (ts.isDeleteExpression(access.parent)) return undefined;
   if (isUpdated(access)) return "update";
@@ -217,7 +220,10 @@ function halfOf(access: AccessExpression): "read" | "write" | "update" | undefin
 /** A read followed by a write of the same member: `+=`, `++`, `??=`. */
 function isUpdated(access: AccessExpression): boolean {
   const { parent } = access;
-  if (ts.isPrefixUnaryExpression(parent) || ts.isPostfixUnaryExpression(parent)) {
+  if (
+    ts.isPrefixUnaryExpression(parent) ||
+    ts.isPostfixUnaryExpression(parent)
+  ) {
     return (
       parent.operator === ts.SyntaxKind.PlusPlusToken ||
       parent.operator === ts.SyntaxKind.MinusMinusToken
@@ -229,25 +235,6 @@ function isUpdated(access: AccessExpression): boolean {
     COMPOUND_ASSIGNMENT.has(parent.operatorToken.kind)
   );
 }
-
-/** Every assignment operator but `=`: each reads the target before writing it. */
-const COMPOUND_ASSIGNMENT: ReadonlySet<ts.SyntaxKind> = new Set([
-  ts.SyntaxKind.PlusEqualsToken,
-  ts.SyntaxKind.MinusEqualsToken,
-  ts.SyntaxKind.AsteriskEqualsToken,
-  ts.SyntaxKind.AsteriskAsteriskEqualsToken,
-  ts.SyntaxKind.SlashEqualsToken,
-  ts.SyntaxKind.PercentEqualsToken,
-  ts.SyntaxKind.AmpersandEqualsToken,
-  ts.SyntaxKind.BarEqualsToken,
-  ts.SyntaxKind.CaretEqualsToken,
-  ts.SyntaxKind.LessThanLessThanEqualsToken,
-  ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
-  ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
-  ts.SyntaxKind.AmpersandAmpersandEqualsToken,
-  ts.SyntaxKind.BarBarEqualsToken,
-  ts.SyntaxKind.QuestionQuestionEqualsToken,
-]);
 
 /**
  * Whether an expression is being assigned *to*, through however many layers of
@@ -322,6 +309,22 @@ const COERCING_UNARY: ReadonlySet<ts.SyntaxKind> = new Set([
   ts.SyntaxKind.MinusMinusToken,
 ]);
 
+/** The compound assignments built from a coercing operator. */
+const COERCING_ASSIGNMENT: readonly ts.SyntaxKind[] = [
+  ts.SyntaxKind.PlusEqualsToken,
+  ts.SyntaxKind.MinusEqualsToken,
+  ts.SyntaxKind.AsteriskEqualsToken,
+  ts.SyntaxKind.AsteriskAsteriskEqualsToken,
+  ts.SyntaxKind.SlashEqualsToken,
+  ts.SyntaxKind.PercentEqualsToken,
+  ts.SyntaxKind.AmpersandEqualsToken,
+  ts.SyntaxKind.BarEqualsToken,
+  ts.SyntaxKind.CaretEqualsToken,
+  ts.SyntaxKind.LessThanLessThanEqualsToken,
+  ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
+  ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
+];
+
 const COERCING_BINARY: ReadonlySet<ts.SyntaxKind> = new Set([
   ts.SyntaxKind.PlusToken,
   ts.SyntaxKind.MinusToken,
@@ -341,28 +344,35 @@ const COERCING_BINARY: ReadonlySet<ts.SyntaxKind> = new Set([
   ts.SyntaxKind.LessThanLessThanToken,
   ts.SyntaxKind.GreaterThanGreaterThanToken,
   ts.SyntaxKind.GreaterThanGreaterThanGreaterThanToken,
-  ts.SyntaxKind.PlusEqualsToken,
-  ts.SyntaxKind.MinusEqualsToken,
-  ts.SyntaxKind.AsteriskEqualsToken,
-  ts.SyntaxKind.AsteriskAsteriskEqualsToken,
-  ts.SyntaxKind.SlashEqualsToken,
-  ts.SyntaxKind.PercentEqualsToken,
-  ts.SyntaxKind.AmpersandEqualsToken,
-  ts.SyntaxKind.BarEqualsToken,
-  ts.SyntaxKind.CaretEqualsToken,
-  ts.SyntaxKind.LessThanLessThanEqualsToken,
-  ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
-  ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
+  ...COERCING_ASSIGNMENT,
+]);
+
+/** Every assignment operator but `=`: each reads the target before writing. */
+const COMPOUND_ASSIGNMENT: ReadonlySet<ts.SyntaxKind> = new Set([
+  ...COERCING_ASSIGNMENT,
+  // The logical assignments write the target without coercing anything.
+  ts.SyntaxKind.AmpersandAmpersandEqualsToken,
+  ts.SyntaxKind.BarBarEqualsToken,
+  ts.SyntaxKind.QuestionQuestionEqualsToken,
 ]);
 
 function isCoerced(node: ts.Expression): boolean {
   const { parent } = node;
 
   if (ts.isTemplateSpan(parent)) {
-    // A tagged template hands its substitutions to the tag as values, uncoerced.
+    // A tagged template hands its substitutions to the tag uncoerced.
     return !ts.isTaggedTemplateExpression(parent.parent.parent);
   }
-  if (ts.isPrefixUnaryExpression(parent) || ts.isPostfixUnaryExpression(parent)) {
+  // A computed key runs ToPropertyKey, which reaches `toString` like any other
+  // conversion — `o[k]` and `{ [k]: v }` alike.
+  if (ts.isElementAccessExpression(parent)) {
+    return parent.argumentExpression === node;
+  }
+  if (ts.isComputedPropertyName(parent)) return true;
+  if (
+    ts.isPrefixUnaryExpression(parent) ||
+    ts.isPostfixUnaryExpression(parent)
+  ) {
     return COERCING_UNARY.has(parent.operator);
   }
   if (!ts.isBinaryExpression(parent)) return false;

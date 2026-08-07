@@ -5,7 +5,7 @@ import { inheritedFrom } from "./declarations.js";
 import { calleeExpression, type Transfer } from "./escapes.js";
 import { findMarks } from "./marks.js";
 import { createColorResolver, type BodyEscape } from "./resolve-color.js";
-import type { Target, TransferSite } from "./transfers.js";
+import { textOf, type HiddenCallee, type TransferSite } from "./transfers.js";
 
 interface UncaughtThrow {
   readonly kind: "uncaught-throw";
@@ -69,7 +69,7 @@ interface HiddenTransfer {
   /** The site as written. */
   readonly text: string;
   /** Absent when the type could not name what runs, which always floors. */
-  readonly target: Target | undefined;
+  readonly target: HiddenCallee | undefined;
 }
 
 interface UnbridgedHiddenTransfer extends HiddenTransfer {
@@ -79,7 +79,7 @@ interface UnbridgedHiddenTransfer extends HiddenTransfer {
 
 interface InferredThrowingHiddenTransfer extends HiddenTransfer {
   readonly kind: "inferred-throwing-hidden-transfer";
-  readonly target: Target;
+  readonly target: HiddenCallee;
 }
 
 /**
@@ -113,8 +113,8 @@ export function analyzeSourceFile(
   // Unmarked functions have nothing to enforce: throwing is the default, and
   // inference reads their bodies without holding them to anything. A mark that
   // binds to nothing enforces nothing either — it is `valid-mark`'s to report.
-  for (const target of findMarks(sourceFile).bound) {
-    for (const escape of colors.escapesIn(target)) {
+  for (const seed of findMarks(sourceFile).bound) {
+    for (const escape of colors.escapesIn(seed)) {
       findings.push(findingFor(escape));
     }
   }
@@ -205,9 +205,9 @@ function entrySiteOf(condition: Condition): EntrySite {
  */
 function calleeText(transfer: Transfer): string {
   const callee = calleeExpression(transfer);
-  const named =
+  return textOf(
     callee.kind === ts.SyntaxKind.SuperKeyword
       ? (inheritedFrom(transfer) ?? callee)
-      : callee;
-  return named.getText().replace(/\s+/gu, " ");
+      : callee,
+  );
 }

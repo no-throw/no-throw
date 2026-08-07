@@ -31,3 +31,10 @@ export function fallBackTo(): number {
   ({ out = box.value } = maybe);
   return out;
 }
+
+/** @nothrow */
+export function shorthand(): number {
+  let value = 0;
+  ({ value } = box);
+  return value;
+}
