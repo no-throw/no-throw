@@ -21,6 +21,12 @@ for (const [rule, count] of topRules) {
   console.log(`  ${String(count).padStart(5)}  ${rule}`);
 }
 
+if (report.unexercisedRefutations.length > 0) {
+  console.warn(
+    `\nrecorded refutations the gate never probed, because the member is no longer proposed clean: ${report.unexercisedRefutations.join(", ")}`,
+  );
+}
+
 if (report.staleRefutations.length > 0) {
   console.warn(
     `\nrecorded refutations the gate no longer reproduces (precision left on the table): ${report.staleRefutations.join(", ")}`,

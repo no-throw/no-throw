@@ -36,8 +36,6 @@ export interface ProseThrow {
   readonly exception: string;
   /** The prose leading up to the throw — what the classifier keys on. */
   readonly condition: string;
-  /** Hyperlinked to WebIDL's `throw` concept, rather than matched as prose. */
-  readonly linked: boolean;
   /**
    * Which half of an attribute the throw belongs to. #29 §1 makes get and set
    * independent colors normative — reading `location.href` must not require
@@ -316,7 +314,6 @@ function readThrows(
       condition:
         /(If|Otherwise, if|Unless|When|For each)\b[^.]{0,220}$/.exec(context)?.[0] ??
         context.slice(-160),
-      linked,
       phase: setterAt === undefined ? "both" : match.index >= setterAt ? "set" : "get",
     });
   }

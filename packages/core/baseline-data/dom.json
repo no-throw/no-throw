@@ -1300,6 +1300,12 @@
       "AbstractWorkerEventMap#error": {
         "accessor": false
       },
+      "addEventListener": {
+        "color": "non-throwing",
+        "conditions": [],
+        "spec": "dom#dom-eventtarget-addeventlistener",
+        "runtime": "addEventListener"
+      },
       "AddEventListenerOptions#once": {
         "accessor": false
       },
@@ -10160,6 +10166,11 @@
       "DeviceOrientationEventInit#gamma": {
         "accessor": false
       },
+      "dispatchEvent": {
+        "color": "throwing",
+        "spec": "dom#dom-eventtarget-dispatchevent",
+        "runtime": "dispatchEvent"
+      },
       "DisplayMediaStreamOptions#audio": {
         "accessor": false
       },
@@ -14208,6 +14219,12 @@
       "GetRootNodeOptions#composed": {
         "accessor": false
       },
+      "GlobalEventHandlers#addEventListener": {
+        "color": "non-throwing",
+        "conditions": [],
+        "spec": "dom#dom-eventtarget-addeventlistener",
+        "runtime": "GlobalEventHandlers.prototype.addEventListener"
+      },
       "GlobalEventHandlers#onabort": {
         "accessor": {
           "get": "non-throwing",
@@ -15971,11 +15988,17 @@
         "spec": "dom#dom-htmlcollection-nameditem",
         "runtime": "HTMLCollection.prototype.namedItem"
       },
+      "HTMLCollectionBase#item": {
+        "color": "throwing",
+        "spec": "dom#dom-htmlcollection-item",
+        "runtime": "HTMLCollectionBase.prototype.item"
+      },
       "HTMLCollectionBase#length": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
+        "spec": "dom#dom-htmlcollection-length",
         "runtime": "HTMLCollectionBase.prototype.length"
       },
       "HTMLCollectionOf#item": {
@@ -17219,23 +17242,26 @@
       },
       "HTMLHyperlinkElementUtils#hash": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-hyperlink-hash",
         "runtime": "HTMLHyperlinkElementUtils.prototype.hash"
       },
       "HTMLHyperlinkElementUtils#host": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-hyperlink-host",
         "runtime": "HTMLHyperlinkElementUtils.prototype.host"
       },
       "HTMLHyperlinkElementUtils#hostname": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-hyperlink-hostname",
         "runtime": "HTMLHyperlinkElementUtils.prototype.hostname"
       },
       "HTMLHyperlinkElementUtils#href": {
@@ -17248,51 +17274,58 @@
       },
       "HTMLHyperlinkElementUtils#origin": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-hyperlink-origin",
         "runtime": "HTMLHyperlinkElementUtils.prototype.origin"
       },
       "HTMLHyperlinkElementUtils#password": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-hyperlink-password",
         "runtime": "HTMLHyperlinkElementUtils.prototype.password"
       },
       "HTMLHyperlinkElementUtils#pathname": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-hyperlink-pathname",
         "runtime": "HTMLHyperlinkElementUtils.prototype.pathname"
       },
       "HTMLHyperlinkElementUtils#port": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-hyperlink-port",
         "runtime": "HTMLHyperlinkElementUtils.prototype.port"
       },
       "HTMLHyperlinkElementUtils#protocol": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-hyperlink-protocol",
         "runtime": "HTMLHyperlinkElementUtils.prototype.protocol"
       },
       "HTMLHyperlinkElementUtils#search": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-hyperlink-search",
         "runtime": "HTMLHyperlinkElementUtils.prototype.search"
       },
       "HTMLHyperlinkElementUtils#username": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-hyperlink-username",
         "runtime": "HTMLHyperlinkElementUtils.prototype.username"
       },
       "HTMLIFrameElement#addEventListener": {
@@ -19328,18 +19361,31 @@
         "spec": "html#dom-htmloptionscollection-selectedindex",
         "runtime": "HTMLOptionsCollection.prototype.selectedIndex"
       },
+      "HTMLOrSVGElement#blur": {
+        "color": "non-throwing",
+        "conditions": [],
+        "spec": "html#dom-blur",
+        "runtime": "HTMLOrSVGElement.prototype.blur"
+      },
       "HTMLOrSVGElement#dataset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-dataset",
         "runtime": "HTMLOrSVGElement.prototype.dataset"
+      },
+      "HTMLOrSVGElement#focus": {
+        "color": "throwing",
+        "spec": "html#dom-focus",
+        "runtime": "HTMLOrSVGElement.prototype.focus"
       },
       "HTMLOrSVGElement#nonce": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-noncedelement-nonce",
         "runtime": "HTMLOrSVGElement.prototype.nonce"
       },
       "HTMLOrSVGElement#tabIndex": {
@@ -19347,6 +19393,7 @@
           "get": "throwing",
           "set": "throwing"
         },
+        "spec": "html#dom-tabindex",
         "runtime": "HTMLOrSVGElement.prototype.tabIndex"
       },
       "HTMLOutputElement#addEventListener": {
@@ -43427,6 +43474,12 @@
         },
         "spec": "html#dom-window",
         "runtime": "Window.prototype.window"
+      },
+      "WindowEventHandlers#addEventListener": {
+        "color": "non-throwing",
+        "conditions": [],
+        "spec": "dom#dom-eventtarget-addeventlistener",
+        "runtime": "WindowEventHandlers.prototype.addEventListener"
       },
       "WindowEventHandlers#onafterprint": {
         "accessor": {

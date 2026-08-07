@@ -3,6 +3,7 @@ import { formatConditionPath } from "@nothrow/core/baseline";
 
 import { Arbitrary } from "./arbitrary.js";
 import { receiverFor, type DomEnvironment } from "./environment.js";
+import { varyOnePosition } from "./tuples.js";
 
 /**
  * The spec's one open item, converted to engineering (#30 §F, #21, #26).
@@ -39,6 +40,13 @@ export interface DeferredVerdict {
   readonly paramIndex: number;
   readonly path: ConditionPath;
   readonly adjudication: Adjudication;
+  /**
+   * The callback was seen running after the call returned. `queued` requires
+   * it, and recording it as a fact rather than leaving it inside the prose of
+   * `evidence` is what lets the gate check the invariant: rewording a sentence
+   * must not be able to switch off the check that guards it.
+   */
+  readonly observedAfterCall: boolean;
   readonly evidence: string;
 }
 
@@ -66,11 +74,16 @@ export class DeferredProbe {
     paramIndex: number,
   ): Promise<DeferredVerdict> {
     const path = formatConditionPath({ paramIndex, segments: [] });
-    const verdict = (adjudication: Adjudication, evidence: string): DeferredVerdict => ({
+    const verdict = (
+      adjudication: Adjudication,
+      evidence: string,
+      observedAfterCall = false,
+    ): DeferredVerdict => ({
       key: member.key,
       paramIndex,
       path,
       adjudication,
+      observedAfterCall,
       evidence,
     });
 
@@ -134,6 +147,7 @@ export class DeferredProbe {
     return verdict(
       "queued",
       "the callback did not run during the call, and was observed running afterwards",
+      true,
     );
   }
 
@@ -201,17 +215,7 @@ export class DeferredProbe {
       pools.push([...usable.flat()].sort(ordinaryFirst).slice(0, MAX_TUPLES));
     }
 
-    const first = pools.map((pool) => pool[0]);
-    const tuples: (readonly unknown[])[] = [first];
-    pools.forEach((pool, index) => {
-      if (index === paramIndex) return;
-      for (const value of pool.slice(1, MAX_TUPLES)) {
-        const tuple = [...first];
-        tuple[index] = value;
-        tuples.push(tuple);
-      }
-    });
-    return tuples.slice(0, MAX_TUPLES);
+    return varyOnePosition(pools, { fixed: paramIndex }).slice(0, MAX_TUPLES);
   }
 }
 

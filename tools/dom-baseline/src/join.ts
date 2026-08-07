@@ -41,13 +41,17 @@ const TS_MAP_OWNER = /(EventMap|TagNameMap)$/;
  */
 const CSSOM_GENERATED_OWNER = /^CSSStyle(Declaration|Properties)$/;
 
+/** Which interface really owns a member at runtime, when this engine has it. */
+export type RuntimeOwner = (member: DomMember) => string | undefined;
+
 export function joinToIdl(
   members: readonly DomMember[],
   corpus: IdlCorpus,
   bases: ReadonlyMap<string, readonly string[]> = new Map(),
+  runtimeOwner: RuntimeOwner = () => undefined,
 ): JoinReport {
   const joined = members.map((member) => {
-    const idl = idlRowFor(member, corpus, bases);
+    const idl = idlRowFor(member, corpus, bases, runtimeOwner);
     return { member, idl, structure: structureOf(member, idl, corpus) };
   });
 
@@ -80,9 +84,10 @@ function idlRowFor(
   member: DomMember,
   corpus: IdlCorpus,
   bases: ReadonlyMap<string, readonly string[]>,
+  runtimeOwner: RuntimeOwner,
 ): IdlRow | undefined {
   const wanted = member.name === "new" ? "constructor" : member.name;
-  for (const owner of candidateOwners(member, corpus, bases)) {
+  for (const owner of candidateOwners(member, corpus, bases, runtimeOwner)) {
     const rows = corpus.byMember.get(`${owner}.${wanted}`);
     if (rows === undefined) continue;
     const fit = rows.filter((row) => fits(member, row));
@@ -111,8 +116,12 @@ export function candidateOwners(
   member: DomMember,
   corpus: IdlCorpus,
   bases: ReadonlyMap<string, readonly string[]>,
+  runtimeOwner: RuntimeOwner = () => undefined,
 ): readonly string[] {
-  if (member.owner === "globalThis") return GLOBALS;
+  const runtime = runtimeOwner(member);
+  if (member.owner === "globalThis") {
+    return runtime === undefined ? GLOBALS : [...GLOBALS, runtime];
+  }
   // `declare var Element: { … }` is the constructor object for `interface
   // Element`, so the IDL owner is the same name on both sides; static-ness is
   // what tells the two apart, and `fits` checks it.
@@ -132,6 +141,10 @@ export function candidateOwners(
   // instance member never falls back this way for the *static* side, which is a
   // separate object with no inheritance of its own.
   if (!member.isStatic) owners.push(...(bases.get(member.owner) ?? []));
+  // Last, because a declared answer beats an observed one where both exist:
+  // `GlobalEventHandlers` restates `addEventListener` and `extends` nothing, so
+  // only the prototype chain leads back to `EventTarget`.
+  if (runtime !== undefined) owners.push(runtime);
   return owners;
 }
 

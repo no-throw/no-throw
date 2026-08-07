@@ -191,3 +191,47 @@ export function receiverFor(
   }
   return undefined;
 }
+
+/**
+ * Which interface really owns a member, read off the live prototype chain.
+ *
+ * `lib.dom.d.ts` restates `addEventListener` on `Window`, on `Element`, and on
+ * mixins like `GlobalEventHandlers` that `extends` nothing at all — so the
+ * declared heritage cannot always walk back to `EventTarget`, where WebIDL
+ * declares it once. The runtime can: `Object.getPrototypeOf` finds the
+ * prototype the property actually lives on, and its constructor names the
+ * interface.
+ *
+ * This is #29's second oracle — `getOwnPropertyDescriptor` on a live receiver —
+ * doing attribution rather than accessor-ness. It answers only for members this
+ * engine implements; everything else falls through to the declared heritage.
+ */
+export function runtimeOwnerOf(
+  environment: DomEnvironment,
+  member: DomMember,
+  implementers: ReadonlyMap<string, readonly string[]>,
+): string | undefined {
+  // The static side of an interface is a constructor object whose prototype
+  // chain is `Function`, which names no interface. A global function is not
+  // that: its receiver is the window, and the window's chain is exactly what
+  // says `addEventListener` comes from `EventTarget`.
+  if (member.isStatic && member.owner !== "globalThis") return undefined;
+  const receiver = receiverFor(environment, member, implementers);
+  if (receiver === null || receiver === undefined) return undefined;
+  try {
+    for (
+      let prototype = Object.getPrototypeOf(receiver) as object | null;
+      prototype !== null;
+      prototype = Object.getPrototypeOf(prototype) as object | null
+    ) {
+      if (Object.getOwnPropertyDescriptor(prototype, member.name) === undefined) {
+        continue;
+      }
+      const name = (prototype as { constructor?: { name?: string } }).constructor?.name;
+      return name === "" ? undefined : name;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}

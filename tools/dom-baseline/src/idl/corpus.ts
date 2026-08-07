@@ -54,13 +54,11 @@ export interface IdlArg {
   readonly types: readonly string[];
   readonly enforceRange: boolean;
   readonly optional: boolean;
-  readonly variadic: boolean;
   /** The declared type resolves to a `callback` or `callback interface`. */
   readonly callback: boolean;
 }
 
 export interface IdlRow {
-  readonly spec: string;
   readonly owner: string;
   readonly name: string;
   readonly kind: IdlKind;
@@ -76,7 +74,6 @@ export interface IdlCorpus {
   readonly byMember: ReadonlyMap<string, readonly IdlRow[]>;
   readonly dictionaries: ReadonlySet<string>;
   readonly callbacks: ReadonlySet<string>;
-  readonly enums: ReadonlySet<string>;
   readonly interfaces: ReadonlySet<string>;
   /** Lowercased interface name → its IDL spelling (`console` vs `Console`). */
   readonly interfacesByLowerName: ReadonlyMap<string, string>;
@@ -101,7 +98,6 @@ export async function loadIdlCorpus(): Promise<IdlCorpus> {
   const parsed = await webref.parseAll();
 
   const callbacks = new Set<string>();
-  const enums = new Set<string>();
   const dictionaries = new Set<string>();
   const interfaces = new Set<string>();
   const typedefs = new Map<string, IdlType>();
@@ -122,9 +118,6 @@ export async function loadIdlCorpus(): Promise<IdlCorpus> {
             callbacks.add(name);
             interfaces.add(name);
           }
-          break;
-        case "enum":
-          if (name !== undefined) enums.add(name);
           break;
         case "dictionary":
           if (name !== undefined) dictionaries.add(name);
@@ -179,12 +172,11 @@ export async function loadIdlCorpus(): Promise<IdlCorpus> {
         (attribute) => attribute.name === "EnforceRange",
       ),
       optional: argument.optional === true,
-      variadic: argument.variadic === true,
       callback: types.some((type) => callbacks.has(type)),
     };
   };
 
-  for (const [spec, tree] of Object.entries(parsed)) {
+  for (const tree of Object.values(parsed)) {
     for (const definition of tree) {
       if (
         definition.name === undefined ||
@@ -201,7 +193,6 @@ export async function loadIdlCorpus(): Promise<IdlCorpus> {
         const name = kind === "constructor" ? "constructor" : member.name;
         if (name === undefined || name === "") continue;
         const row: IdlRow = {
-          spec,
           owner,
           name,
           kind,
@@ -248,7 +239,6 @@ export async function loadIdlCorpus(): Promise<IdlCorpus> {
     byMember,
     dictionaries,
     callbacks,
-    enums,
     interfaces,
     interfacesByLowerName: new Map(
       [...interfaces].map((name) => [name.toLowerCase(), name]),

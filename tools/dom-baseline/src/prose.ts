@@ -1,5 +1,5 @@
 import type { IdlCorpus } from "./idl/corpus.js";
-import type { JoinedMember } from "./join.js";
+import type { JoinedMember, RuntimeOwner } from "./join.js";
 import type { Dfn, DfnGraph } from "./specs/dfns.js";
 import { hazardsOf, memberDfnIndex, type MemberProse } from "./specs/hazards.js";
 
@@ -33,12 +33,13 @@ export function attachProse(
   graph: DfnGraph,
   corpus: IdlCorpus,
   bases: ReadonlyMap<string, readonly string[]> = new Map(),
+  runtimeOwner: RuntimeOwner = () => undefined,
 ): ProseJoinReport {
   const index = memberDfnIndex(graph);
   const visitedCounts: number[] = [];
 
   const evidence = joined.map((entry) => {
-    const dfn = lookup(entry, corpus, index, bases);
+    const dfn = lookup(entry, corpus, index, bases, runtimeOwner);
     if (dfn === undefined) return { joined: entry, prose: undefined };
     const prose = hazardsOf(graph, dfn);
     if (prose !== undefined) visitedCounts.push(prose.visited);
@@ -66,6 +67,7 @@ function lookup(
   corpus: IdlCorpus,
   index: ReadonlyMap<string, Dfn>,
   bases: ReadonlyMap<string, readonly string[]>,
+  runtimeOwner: RuntimeOwner,
 ): string | undefined {
   const { member, idl } = entry;
   // CSSOM declares its ~500 CSS-property attributes once, under a placeholder
@@ -86,6 +88,7 @@ function lookup(
     ...(corpus.mixinsOf.get(member.owner) ?? []),
     // A redeclaration inherits the base's definition; see `candidateOwners`.
     ...(member.isStatic ? [] : (bases.get(member.owner) ?? [])),
+    ...(runtimeOwner(member) === undefined ? [] : [runtimeOwner(member) as string]),
   ];
   for (const owner of owners) {
     const dfn = index.get(`${owner}.${name}`.toLowerCase());

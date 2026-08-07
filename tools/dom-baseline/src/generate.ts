@@ -18,7 +18,7 @@ import { createDomProgram } from "./lib.js";
 import { geckoThrowingKeys } from "./gecko.js";
 import { DeferredProbe, type DeferredVerdict } from "./gates/deferred.js";
 import { currentSymbolSet, recordedSymbolSetPath } from "./gates/drift.js";
-import { createDomEnvironment } from "./gates/environment.js";
+import { createDomEnvironment, runtimeOwnerOf } from "./gates/environment.js";
 import type { Counterexample } from "./gates/fuzz.js";
 import { runFuzzGate, type Claim, type GateReport } from "./gates/run.js";
 import { loadIdlCorpus } from "./idl/corpus.js";
@@ -37,7 +37,14 @@ export interface GenerationReport {
   readonly data: BaselineData;
   /** Counterexamples with no recorded refutation. These fail the build. */
   readonly counterexamples: readonly Counterexample[];
+  /** Recorded refutations the gate probed and could not reproduce. */
   readonly staleRefutations: readonly string[];
+  /**
+   * Recorded refutations the gate never got to probe, because the member is no
+   * longer proposed clean. Not stale — unexercised — but reported, because a
+   * record nothing checks is a record that can rot unnoticed.
+   */
+  readonly unexercisedRefutations: readonly string[];
   readonly gate: GateReport;
   readonly worklist: Worklist;
   readonly summary: {
@@ -68,19 +75,29 @@ export async function generateBaseline(): Promise<GenerationReport> {
   const inventory = collectDomMembers(lib);
   const domains = new TypeDomains(lib);
 
+  // The environment comes first because attribution needs it: a member's real
+  // owner is sometimes only readable off the live prototype chain.
+  const environment = createDomEnvironment();
+  const runtimeOwner = (member: DomMember): string | undefined =>
+    runtimeOwnerOf(environment, member, inventory.implementers);
+
   const corpus = await loadIdlCorpus();
-  const { joined } = joinToIdl(inventory.members, corpus, inventory.bases);
+  const { joined } = joinToIdl(inventory.members, corpus, inventory.bases, runtimeOwner);
   const graph = buildDfnGraph();
-  const { evidence } = attachProse(joined, graph, corpus, inventory.bases);
+  const { evidence } = attachProse(
+    joined,
+    graph,
+    corpus,
+    inventory.bases,
+    runtimeOwner,
+  );
   const gecko = geckoThrowingKeys();
   const proposals = classifyMembers(evidence, domains, gecko);
   const proposalOf = new Map(proposals.map((proposal) => [proposal.member.key, proposal]));
 
-  const environment = createDomEnvironment();
-
   const accessors = new Map<string, AccessorRecord>();
-  for (const [index, entry] of evidence.entries()) {
-    const proposal = proposals[index];
+  for (const entry of evidence) {
+    const proposal = proposalOf.get(entry.joined.member.key);
     if (proposal === undefined) continue;
     const record = accessorFactFor(
       entry.joined,
@@ -179,6 +196,7 @@ export async function generateBaseline(): Promise<GenerationReport> {
     staleRefutations: [...REFUTED_KEYS].filter(
       (key) => probedClean.has(key) && !refuted.has(key),
     ),
+    unexercisedRefutations: [...REFUTED_KEYS].filter((key) => !probedClean.has(key)),
     gate,
     worklist: buildWorklist(verdicts, ts.version, "jsdom"),
     summary: summarize(

@@ -104,9 +104,9 @@ for (const entry of worklist.entries) {
   // observed not happening. Absence is what makes a synchronous member read as
   // deferred, and a relaxation handed out on that basis is the fake bridge this
   // gate exists to prevent.
-  if (entry.adjudication === "queued" && !entry.evidence.includes("afterwards")) {
+  if (entry.adjudication === "queued" && !entry.observedAfterCall) {
     problems.push(
-      `${entry.key} ${entry.param}: queued on an absence — "${entry.evidence}"`,
+      `${entry.key} ${entry.param}: queued without seeing the callback run — "${entry.evidence}"`,
     );
   }
   const bucket = adjudications.get(entry.key) ?? [];

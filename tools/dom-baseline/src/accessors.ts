@@ -31,12 +31,9 @@ import { receiverFor, type DomEnvironment } from "./gates/environment.js";
  * than relying on silence (#29 §4).
  */
 
-export type AccessorSource = "idl" | "runtime" | "structural" | "declaration";
-
 export interface AccessorRecord {
   readonly key: string;
   readonly fact: AccessorFact;
-  readonly sources: readonly AccessorSource[];
   /**
    * The fact describes a non-writable *data* property, not a getter. Reading
    * one runs no code, so there is no algorithm for the gate to refute and the
@@ -61,21 +58,18 @@ export function accessorFactFor(
   }
   if (member.kind === "function") return undefined;
 
-  const sources: AccessorSource[] = [];
   const descriptor = liveDescriptor(member, environment, implementers);
+  const isAccessor =
+    member.declaredAccessor ||
+    idl?.kind === "attribute" ||
+    (descriptor !== undefined &&
+      (descriptor.get !== undefined || descriptor.set !== undefined)) ||
+    structure === "cssom-generated";
 
-  if (member.declaredAccessor) sources.push("declaration");
-  if (idl?.kind === "attribute") sources.push("idl");
-  if (descriptor !== undefined && (descriptor.get !== undefined || descriptor.set !== undefined)) {
-    sources.push("runtime");
-  }
-  if (structure === "cssom-generated") sources.push("structural");
-
-  if (sources.length > 0) {
+  if (isAccessor) {
     return {
       key: member.key,
       fact: { get: getColor(proposal), set: "throwing" },
-      sources,
       dataProperty: false,
     };
   }
@@ -92,13 +86,11 @@ export function accessorFactFor(
   // Scope rules out of the color model, and no control is transferred, so it
   // is not an escape site under §C.
   if (idl?.kind === "const" || descriptor?.writable === false) {
-    const source: AccessorSource = idl?.kind === "const" ? "idl" : "runtime";
     return member.readonlyModifier
-      ? { key: member.key, fact: false, sources: [source], dataProperty: true }
+      ? { key: member.key, fact: false, dataProperty: true }
       : {
           key: member.key,
           fact: { get: "non-throwing", set: "throwing" },
-          sources: [source],
           dataProperty: true,
         };
   }
@@ -107,11 +99,11 @@ export function accessorFactFor(
   // interfaces are type-level fictions with no runtime object at all; in both
   // cases a read is a read, not a call.
   if (structure === "dictionary" || structure === "ts-map") {
-    return { key: member.key, fact: false, sources: ["structural"], dataProperty: true };
+    return { key: member.key, fact: false, dataProperty: true };
   }
 
   if (descriptor !== undefined) {
-    return { key: member.key, fact: false, sources: ["runtime"], dataProperty: true };
+    return { key: member.key, fact: false, dataProperty: true };
   }
 
   return undefined;

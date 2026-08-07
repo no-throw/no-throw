@@ -17,6 +17,7 @@ export interface WorklistEntry {
   readonly key: string;
   readonly param: string;
   readonly adjudication: Adjudication;
+  readonly observedAfterCall: boolean;
   readonly evidence: string;
 }
 
@@ -43,6 +44,7 @@ export function buildWorklist(
       key: verdict.key,
       param: verdict.path,
       adjudication: verdict.adjudication,
+      observedAfterCall: verdict.observedAfterCall,
       evidence: verdict.evidence,
     }))
     .sort(

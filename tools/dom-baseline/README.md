@@ -147,6 +147,12 @@ with nothing in it never enters the callback, so absence would have called it
 deferred. It is a self-check control for exactly that reason, and the gate also
 rejects any `queued` entry whose evidence does not name what it saw happen.
 
+No member currently ships a **non-empty** `conditions` list, and the `sync` row
+of that table is a branch the pipeline can reach but the data does not: the only
+DOM members that synchronously enter a callback parameter are the IDL-*generated*
+`forEach`s, and those are floored for want of prose (see below). The probe
+adjudicates them `sync` all the same, which is what makes the branch testable.
+
 The price is paid where the callback is never invoked *for any* input:
 `removeEventListener` and `createNodeIterator` take a callback they will not
 enter, the probe cannot say so positively, and they floor. That is over-strict

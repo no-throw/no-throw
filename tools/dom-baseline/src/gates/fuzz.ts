@@ -2,6 +2,7 @@ import type { DomMember, LibParam, LibProgram } from "@nothrow/core/baseline";
 
 import { Arbitrary } from "./arbitrary.js";
 import { createDomEnvironment, receiverFor, type DomEnvironment } from "./environment.js";
+import { varyOnePosition } from "./tuples.js";
 
 export interface Counterexample {
   readonly key: string;
@@ -141,7 +142,9 @@ export class HostileFuzzer {
     const counterexamples: Counterexample[] = [];
     let calls = 0;
     let truncated = false;
-    for (const args of argumentTuples(pools, member)) {
+    // Omitting arguments is only conformant when every parameter is optional.
+    const includeEmpty = (member.params ?? []).every((parameter) => parameter.optional);
+    for (const args of varyOnePosition(pools, { includeEmpty })) {
       if (++calls > MAX_CALLS) {
         truncated = true;
         break;
@@ -246,28 +249,6 @@ function interleave(pools: readonly (readonly unknown[])[]): unknown[] {
     }
   }
   return out;
-}
-
-/**
- * One tuple per hostile value, varied a position at a time against a baseline
- * of first choices. The full cross product is unaffordable and buys little:
- * almost every DOM guard is about one argument.
- */
-function argumentTuples(
-  pools: readonly (readonly unknown[])[],
-  member: DomMember,
-): readonly (readonly unknown[])[] {
-  const first = pools.map((pool) => pool[0]);
-  const tuples: (readonly unknown[])[] = [first];
-  pools.forEach((pool, index) => {
-    for (const value of pool.slice(1)) {
-      const tuple = [...first];
-      tuple[index] = value;
-      tuples.push(tuple);
-    }
-  });
-  if ((member.params ?? []).every((parameter) => parameter.optional)) tuples.push([]);
-  return tuples;
 }
 
 function spread(args: readonly unknown[], restFrom: number | undefined): unknown[] {

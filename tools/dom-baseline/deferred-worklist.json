@@ -11,3720 +11,4340 @@
       "key": "AbortSignal#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AbortSignal#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AbstractWorker#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AbstractWorker#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Animation#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Animation#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AnimationFrameProvider#requestAnimationFrame",
       "param": "param0",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "AudioBufferSourceNode#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioBufferSourceNode#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioContext#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioContext#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioDecoder#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioDecoder#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioEncoder#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioEncoder#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioParam#setValueCurveAtTime",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioParamMap#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioScheduledSourceNode#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioScheduledSourceNode#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioWorkletNode#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "AudioWorkletNode#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "BaseAudioContext#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "BaseAudioContext#createIIRFilter",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "BaseAudioContext#createIIRFilter",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "BaseAudioContext#createPeriodicWave",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "BaseAudioContext#createPeriodicWave",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "BaseAudioContext#decodeAudioData",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "BaseAudioContext#decodeAudioData",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "BaseAudioContext#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "BroadcastChannel#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "BroadcastChannel#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Cache#addAll",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CanvasCaptureMediaStreamTrack#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CanvasCaptureMediaStreamTrack#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CanvasPath#roundRect",
       "param": "param4",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CanvasPathDrawingStyles#setLineDash",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ConstantSourceNode#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ConstantSourceNode#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CookieStore#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CookieStore#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CookieStoreManager#subscribe",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CookieStoreManager#unsubscribe",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CSSAnimation#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CSSAnimation#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CSSNumericArray#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CSSTransformValue#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CSSTransition#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CSSTransition#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CSSUnparsedValue#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "CustomStateSet#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "DataTransferItem#getAsString",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Document#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Document#createNodeIterator",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Document#createTreeWalker",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Document#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Document#startViewTransition",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "not implemented by this engine"
     },
     {
       "key": "DOMTokenList#forEach",
       "param": "param0",
       "adjudication": "sync",
+      "observedAfterCall": false,
       "evidence": "the callback ran before the call returned; the throw would escape at the call site"
     },
     {
       "key": "Element#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Element#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "EventCounts#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "EventSource#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "EventSource#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "EventTarget#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "EventTarget#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "FileReader#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "FileReader#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "FileSystemDirectoryEntry#getDirectory",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FileSystemDirectoryEntry#getDirectory",
       "param": "param3",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FileSystemDirectoryEntry#getFile",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FileSystemDirectoryEntry#getFile",
       "param": "param3",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FileSystemDirectoryReader#readEntries",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FileSystemDirectoryReader#readEntries",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FileSystemEntry#getParent",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FileSystemEntry#getParent",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FileSystemFileEntry#file",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FileSystemFileEntry#file",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FontFaceSet#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FontFaceSet#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FontFaceSet#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "FormData#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Geolocation#getCurrentPosition",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Geolocation#getCurrentPosition",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Geolocation#watchPosition",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Geolocation#watchPosition",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "GlobalEventHandlers#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "GlobalEventHandlers#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Headers#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Highlight#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HighlightRegistry#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLAnchorElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLAnchorElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLAreaElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLAreaElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLAudioElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLAudioElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLBaseElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLBaseElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLBodyElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLBodyElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLBRElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLBRElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLButtonElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLButtonElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLCanvasElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLCanvasElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLCanvasElement#toBlob",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDataElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDataElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDataListElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDataListElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDetailsElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDetailsElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDialogElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDialogElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDirectoryElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLDirectoryElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLDivElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDivElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDListElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDListElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDocument#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLDocument#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLEmbedElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLEmbedElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLFieldSetElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLFieldSetElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLFontElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLFontElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLFormElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLFormElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLFrameElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLFrameElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLFrameSetElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLFrameSetElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLHeadElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLHeadElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLHeadingElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLHeadingElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLHRElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLHRElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLHtmlElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLHtmlElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLIFrameElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLIFrameElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLImageElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLImageElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLInputElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLInputElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLLabelElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLLabelElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLLegendElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLLegendElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLLIElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLLIElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLLinkElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLLinkElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLMapElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLMapElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLMarqueeElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLMarqueeElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLMediaElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLMediaElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLMenuElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLMenuElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLMetaElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLMetaElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLMeterElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLMeterElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLModElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLModElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLObjectElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLObjectElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLOListElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLOListElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLOptGroupElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLOptGroupElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLOptionElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLOptionElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLOutputElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLOutputElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLParagraphElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLParagraphElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLParamElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLParamElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLPictureElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLPictureElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLPreElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLPreElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLProgressElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLProgressElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLQuoteElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLQuoteElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLScriptElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLScriptElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLSelectElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLSelectElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLSlotElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLSlotElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLSourceElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLSourceElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLSpanElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLSpanElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLStyleElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLStyleElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableCaptionElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableCaptionElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableCellElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableCellElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableColElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableColElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableDataCellElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLTableDataCellElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLTableElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableHeaderCellElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLTableHeaderCellElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "HTMLTableRowElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableRowElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableSectionElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableSectionElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTemplateElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTemplateElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTextAreaElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTextAreaElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTimeElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTimeElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTitleElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTitleElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTrackElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTrackElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLUListElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLUListElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLUnknownElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLUnknownElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLVideoElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLVideoElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLVideoElement#requestVideoFrameCallback",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "not implemented by this engine"
     },
     {
       "key": "IDBDatabase#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "IDBDatabase#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "IDBDatabase#transaction",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "IDBObjectStore#createIndex",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "IDBOpenDBRequest#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "IDBOpenDBRequest#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "IDBRequest#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "IDBRequest#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "IDBTransaction#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "IDBTransaction#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "IntersectionObserver.new",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "LockManager#request",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "LockManager#request",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MathMLElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MathMLElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaDevices#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaDevices#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaKeySession#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaKeySession#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaKeyStatusMap#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaQueryList#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaQueryList#addListener",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaQueryList#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaQueryList#removeListener",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaRecorder#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaRecorder#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaSession#setActionHandler",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaSource#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaSource#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaStream#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaStream#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaStreamTrack#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MediaStreamTrack#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MessageEvent#initMessageEvent",
       "param": "param7",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "call threw TypeError"
     },
     {
       "key": "MessageEventTarget#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MessageEventTarget#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MessagePort#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MessagePort#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIAccess#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIAccess#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIInput#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIInput#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIInputMap#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIOutput#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIOutput#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIOutput#send",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIOutputMap#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIPort#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MIDIPort#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "MutationObserver.new",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "not implemented by this engine"
     },
     {
       "key": "NavigationHistoryEntry#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "NavigationHistoryEntry#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Navigator#requestMediaKeySystemAccess",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "not implemented by this engine"
     },
     {
       "key": "Navigator#vibrate",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "not implemented by this engine"
     },
     {
       "key": "NodeList#forEach",
       "param": "param0",
       "adjudication": "sync",
+      "observedAfterCall": false,
       "evidence": "the callback ran before the call returned; the throw would escape at the call site"
     },
     {
       "key": "NodeListOf#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Notification.requestPermission",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Notification#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Notification#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "OfflineAudioContext#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "OfflineAudioContext#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "OffscreenCanvas#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "OffscreenCanvas#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "OscillatorNode#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "OscillatorNode#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "PaymentRequest#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "PaymentRequest#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "PaymentRequest#show",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "PaymentRequestUpdateEvent#updateWith",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "PaymentResponse#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "PaymentResponse#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Performance#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Performance#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "PerformanceObserver.new",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "PermissionStatus#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "PermissionStatus#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "PictureInPictureWindow#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "PictureInPictureWindow#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "queueMicrotask",
       "param": "param0",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "RemotePlayback#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RemotePlayback#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RemotePlayback#watchAvailability",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "ReportingObserver.new",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "requestAnimationFrame",
       "param": "param0",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "requestIdleCallback",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "not implemented by this engine"
     },
     {
       "key": "ResizeObserver.new",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCDataChannel#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCDataChannel#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCDtlsTransport#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCDtlsTransport#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCDTMFSender#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCDTMFSender#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCIceTransport#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCIceTransport#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#addIceCandidate",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#addIceCandidate",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#createAnswer",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#createAnswer",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#createOffer",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#createOffer",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#setLocalDescription",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#setLocalDescription",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#setRemoteDescription",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCPeerConnection#setRemoteDescription",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCRtpTransceiver#setCodecPreferences",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCSctpTransport#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCSctpTransport#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "RTCStatsReport#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ScreenOrientation#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ScreenOrientation#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ScriptProcessorNode#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ScriptProcessorNode#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ServiceWorker#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ServiceWorker#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ServiceWorkerContainer#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ServiceWorkerContainer#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ServiceWorkerRegistration#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ServiceWorkerRegistration#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "setInterval",
       "param": "param0",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "setTimeout",
       "param": "param0",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "ShadowRoot#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ShadowRoot#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SharedWorker#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SharedWorker#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SourceBuffer#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SourceBuffer#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SourceBufferList#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SourceBufferList#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SpeechSynthesis#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SpeechSynthesis#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SpeechSynthesisUtterance#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SpeechSynthesisUtterance#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "StylePropertyMapReadOnly#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SubtleCrypto#deriveKey",
       "param": "param4",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SubtleCrypto#generateKey",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SubtleCrypto#importKey",
       "param": "param4",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SubtleCrypto#unwrapKey",
       "param": "param6",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGAElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGAElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGAnimateElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGAnimateElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGAnimateMotionElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGAnimateMotionElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGAnimateTransformElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGAnimateTransformElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGAnimationElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGAnimationElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGCircleElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGCircleElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGClipPathElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGClipPathElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGComponentTransferFunctionElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGComponentTransferFunctionElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGDefsElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "SVGDefsElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "SVGDescElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGDescElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "SVGElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "SVGEllipseElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGEllipseElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEBlendElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEBlendElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEColorMatrixElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEColorMatrixElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEComponentTransferElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEComponentTransferElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFECompositeElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFECompositeElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEConvolveMatrixElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEConvolveMatrixElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEDiffuseLightingElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEDiffuseLightingElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEDisplacementMapElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEDisplacementMapElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEDistantLightElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEDistantLightElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEDropShadowElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEDropShadowElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEFloodElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEFloodElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEFuncAElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEFuncAElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEFuncBElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEFuncBElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEFuncGElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEFuncGElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEFuncRElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEFuncRElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEGaussianBlurElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEGaussianBlurElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEImageElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEImageElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEMergeElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEMergeElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEMergeNodeElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEMergeNodeElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEMorphologyElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEMorphologyElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEOffsetElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEOffsetElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEPointLightElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFEPointLightElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFESpecularLightingElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFESpecularLightingElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFESpotLightElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFESpotLightElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFETileElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFETileElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFETurbulenceElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFETurbulenceElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFilterElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGFilterElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGForeignObjectElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGForeignObjectElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGGElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "SVGGElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "SVGGeometryElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGGeometryElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGGradientElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGGradientElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGGraphicsElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "SVGGraphicsElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "SVGImageElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGImageElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGLinearGradientElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGLinearGradientElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGLineElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGLineElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGMarkerElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGMarkerElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGMaskElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGMaskElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGMetadataElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGMetadataElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGMPathElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGMPathElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGPathElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGPathElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGPatternElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGPatternElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGPolygonElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGPolygonElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGPolylineElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGPolylineElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGRadialGradientElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGRadialGradientElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGRectElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGRectElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGScriptElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGScriptElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGSetElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGSetElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGStopElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGStopElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGStyleElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGStyleElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGSVGElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "SVGSVGElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "SVGSwitchElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGSwitchElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGSymbolElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGSymbolElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTextContentElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTextContentElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTextElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTextElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTextPathElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTextPathElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTextPositioningElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTextPositioningElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTitleElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTitleElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTSpanElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGTSpanElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGUseElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGUseElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGViewElement#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "SVGViewElement#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "TextTrack#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "TextTrack#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "TextTrackCue#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "TextTrackCue#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "TextTrackList#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "TextTrackList#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "URLSearchParams#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "VideoDecoder#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "VideoDecoder#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "VideoEncoder#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "VideoEncoder#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "ViewTransitionTypeSet#forEach",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "VisualViewport#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "VisualViewport#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "VTTCue#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "VTTCue#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WakeLockSentinel#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WakeLockSentinel#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_draw_buffers#drawBuffersWEBGL",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_multi_draw#multiDrawArraysInstancedWEBGL",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_multi_draw#multiDrawArraysInstancedWEBGL",
       "param": "param3",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_multi_draw#multiDrawArraysInstancedWEBGL",
       "param": "param5",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_multi_draw#multiDrawArraysWEBGL",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_multi_draw#multiDrawArraysWEBGL",
       "param": "param3",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_multi_draw#multiDrawElementsInstancedWEBGL",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_multi_draw#multiDrawElementsInstancedWEBGL",
       "param": "param4",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_multi_draw#multiDrawElementsInstancedWEBGL",
       "param": "param6",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_multi_draw#multiDrawElementsWEBGL",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WEBGL_multi_draw#multiDrawElementsWEBGL",
       "param": "param4",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#clearBufferfv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#clearBufferiv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#clearBufferuiv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#drawBuffers",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#getActiveUniforms",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#getUniformIndices",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#invalidateFramebuffer",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#invalidateSubFramebuffer",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#transformFeedbackVaryings",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#uniform1uiv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#uniform2uiv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#uniform3uiv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#uniform4uiv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#uniformMatrix2x3fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#uniformMatrix2x4fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#uniformMatrix3x2fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#uniformMatrix3x4fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#uniformMatrix4x2fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#uniformMatrix4x3fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#vertexAttribI4iv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextBase#vertexAttribI4uiv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniform1fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniform1iv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniform2fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniform2iv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniform3fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniform3iv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniform4fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniform4iv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniformMatrix2fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniformMatrix3fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGL2RenderingContextOverloads#uniformMatrix4fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextBase#vertexAttrib1fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextBase#vertexAttrib2fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextBase#vertexAttrib3fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextBase#vertexAttrib4fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniform1fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniform1iv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniform2fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniform2iv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniform3fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniform3iv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniform4fv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniform4iv",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniformMatrix2fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniformMatrix3fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebGLRenderingContextOverloads#uniformMatrix4fv",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebSocket#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "WebSocket#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Window#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Window#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Window#requestIdleCallback",
       "param": "param0",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "not implemented by this engine"
     },
     {
       "key": "WindowEventHandlers#addEventListener",
       "param": "param1",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "WindowEventHandlers#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "WindowOrWorkerGlobalScope#queueMicrotask",
       "param": "param0",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "WindowOrWorkerGlobalScope#setInterval",
       "param": "param0",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "WindowOrWorkerGlobalScope#setTimeout",
       "param": "param0",
       "adjudication": "queued",
+      "observedAfterCall": true,
       "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Worker#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "Worker#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "XMLDocument#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "XMLDocument#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "XMLHttpRequest#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "XMLHttpRequest#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "XMLHttpRequestEventTarget#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "XMLHttpRequestEventTarget#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "XMLHttpRequestUpload#addEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "XMLHttpRequestUpload#removeEventListener",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "no constructible receiver"
     },
     {
       "key": "XPathEvaluatorBase#createExpression",
       "param": "param1",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "XPathEvaluatorBase#evaluate",
       "param": "param2",
       "adjudication": "unreachable",
+      "observedAfterCall": false,
       "evidence": "call threw Error"
     }
   ]
