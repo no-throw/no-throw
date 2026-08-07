@@ -1,0 +1,14 @@
+{
+  "description": "A mark on an interface member is rejected: no body to verify, and no implementation it can bind.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 2,
+      "column": 7,
+      "endLine": 2,
+      "endColumn": 15,
+      "messageId": "interfaceMember",
+      "message": "`@nothrow` binds to nothing on an interface member: there is no body to verify it against, and an implementation cannot be held to it. Mark the implementing function instead."
+    }
+  ]
+}

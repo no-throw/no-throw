@@ -1,0 +1,13 @@
+{
+  "description": "A mark on a single-declarator `const` with an arrow initializer binds, and the body is enforced.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 27,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}

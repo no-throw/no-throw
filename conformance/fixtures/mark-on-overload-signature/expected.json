@@ -1,0 +1,23 @@
+{
+  "description": "A mark on an overload signature is rejected, once per signature, and points at the implementation.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 1,
+      "column": 5,
+      "endLine": 1,
+      "endColumn": 13,
+      "messageId": "overloadSignature",
+      "message": "`@nothrow` binds to nothing on an overload signature: there is no body to verify it against. Move it to the implementation signature, the one declaration with a body."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 5,
+      "endLine": 3,
+      "endColumn": 13,
+      "messageId": "overloadSignature",
+      "message": "`@nothrow` binds to nothing on an overload signature: there is no body to verify it against. Move it to the implementation signature, the one declaration with a body."
+    }
+  ]
+}

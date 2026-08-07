@@ -1,0 +1,14 @@
+{
+  "description": "A mark on a variable statement with two declarators is an error, not a guess at which one it meant.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 1,
+      "column": 5,
+      "endLine": 1,
+      "endColumn": 13,
+      "messageId": "multiDeclarator",
+      "message": "`@nothrow` binds to nothing on a variable statement declaring more than one variable: which one it marks would be a guess. Give the marked function a declaration of its own."
+    }
+  ]
+}
