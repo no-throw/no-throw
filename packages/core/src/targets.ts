@@ -34,6 +34,13 @@ export type Target =
   | { readonly kind: "floor"; readonly reason: FloorReason };
 
 /**
+ * What a *declaration* names, as opposed to a value in hand. A condition is a
+ * fact about the expression an argument was written as, so nothing reached
+ * through a declaration alone can be one.
+ */
+export type DeclaredTarget = Exclude<Target, { readonly kind: "condition" }>;
+
+/**
  * What an expression resolved to, or why it did not. `mutable` is kept apart
  * from `unknown` because a `let` is a refinement the engine has not made yet,
  * while an unfollowable expression is unknowable from here.
@@ -269,9 +276,21 @@ function transferTarget(transfer: Transfer, checker: ts.TypeChecker): Target {
 export function constructedTarget(
   expression: ts.Expression,
   checker: ts.TypeChecker,
-): Target {
-  const body = constructedBodyAt(expression, checker);
-  return body === undefined ? floor("unresolvable") : declarationTarget(body);
+): DeclaredTarget {
+  return declaredTarget(constructedBodyAt(expression, checker));
+}
+
+/**
+ * The target a declaration names, or the floor for a site nothing named. A
+ * hidden transfer resolves through the static type rather than through an
+ * expression, so this is the whole answer for one.
+ */
+export function declaredTarget(
+  declaration: Bodied | undefined,
+): DeclaredTarget {
+  return declaration === undefined
+    ? floor("unresolvable")
+    : declarationTarget(declaration);
 }
 
 /** The body an escape site transfers control into, where one can be named. */
@@ -332,13 +351,13 @@ function constructSignatureOf(
     : undefined;
 }
 
-function declarationTarget(declaration: Bodied): Target {
+function declarationTarget(declaration: Bodied): DeclaredTarget {
   return hasVisibleBody(declaration)
     ? functionTarget(declaration)
     : floor("bodyless");
 }
 
-function functionTarget(declaration: Bodied): Target {
+function functionTarget(declaration: Bodied): DeclaredTarget {
   return {
     kind: "function",
     declaration,
@@ -346,6 +365,6 @@ function functionTarget(declaration: Bodied): Target {
   };
 }
 
-function floor(reason: FloorReason): Target {
+function floor(reason: FloorReason): DeclaredTarget {
   return { kind: "floor", reason };
 }

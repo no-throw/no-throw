@@ -1,0 +1,4 @@
+{
+  "description": "A primitive runs no user code when it is coerced, so template interpolation, arithmetic, negation and loose equality over primitives all pass — the overwhelmingly common case costs nothing. A type parameter constrained to a primitive counts, since the constraint bounds every value it can hold.",
+  "diagnostics": []
+}

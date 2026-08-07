@@ -1,0 +1,47 @@
+{
+  "description": "A compound assignment, `++`, `--` and the logical assignments read and write, so each consults join(get, set): a throwing getter is reported through the read half and a throwing setter through the write half.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 24,
+      "column": 3,
+      "endLine": 24,
+      "endColumn": 20,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Updating `throwingGet.value` escapes this `@nothrow` function: it runs the getter `value`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the getter `value` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 29,
+      "column": 3,
+      "endLine": 29,
+      "endColumn": 20,
+      "messageId": "inferredThrowingHiddenTransfer"
+    },
+    {
+      "file": "src/index.ts",
+      "line": 34,
+      "column": 5,
+      "endLine": 34,
+      "endColumn": 22,
+      "messageId": "inferredThrowingHiddenTransfer"
+    },
+    {
+      "file": "src/index.ts",
+      "line": 39,
+      "column": 3,
+      "endLine": 39,
+      "endColumn": 20,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Updating `throwingSet.value` escapes this `@nothrow` function: it runs the setter `value`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the setter `value` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 44,
+      "column": 3,
+      "endLine": 44,
+      "endColumn": 20,
+      "messageId": "inferredThrowingHiddenTransfer"
+    }
+  ]
+}
