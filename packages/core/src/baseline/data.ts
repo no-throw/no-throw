@@ -2,21 +2,38 @@ import { readFileSync } from "node:fs";
 
 import type { BaselineData, BaselineEntry } from "./types.js";
 
-const DATA_URL = new URL("../../baseline-data/es.json", import.meta.url);
+/**
+ * The baseline ships as two files, split by which generator produced them —
+ * ECMA-262 prose for one, WebIDL plus Bikeshed prose for the other. Splitting
+ * them also keeps the DOM table, which is an order of magnitude larger, off the
+ * heap of a program that has no `dom` in its `lib`.
+ */
+export type BaselineSource = "es" | "dom";
 
-let cached: BaselineData | undefined;
+const FILES: Record<BaselineSource, URL> = {
+  es: new URL("../../baseline-data/es.json", import.meta.url),
+  dom: new URL("../../baseline-data/dom.json", import.meta.url),
+};
+
+const cached = new Map<BaselineSource, BaselineData>();
 
 /**
- * The shipped ES baseline. Generated data, read once. A missing or unreadable
+ * One shipped baseline file. Generated data, read once. A missing or unreadable
  * file is a packaging defect rather than a user-facing condition: an empty
  * baseline would floor every builtin and look exactly like the tool being
  * broken, so it fails loudly instead.
  */
-export function baselineData(): BaselineData {
-  if (cached === undefined) {
-    cached = JSON.parse(readFileSync(DATA_URL, "utf8")) as BaselineData;
-  }
-  return cached;
+export function baselineData(source: BaselineSource): BaselineData {
+  const hit = cached.get(source);
+  if (hit !== undefined) return hit;
+  const parsed = JSON.parse(readFileSync(FILES[source], "utf8")) as BaselineData;
+  cached.set(source, parsed);
+  return parsed;
+}
+
+/** Which file answers for a lib target. `dom.iterable` is DOM data too. */
+export function sourceOfLibTarget(libTarget: string): BaselineSource {
+  return libTarget === "dom" || libTarget.startsWith("dom.") ? "dom" : "es";
 }
 
 /**
@@ -28,5 +45,5 @@ export function lookupBaselineEntry(
   libTarget: string,
   key: string,
 ): BaselineEntry | undefined {
-  return baselineData().libs[libTarget]?.[key];
+  return baselineData(sourceOfLibTarget(libTarget)).libs[libTarget]?.[key];
 }

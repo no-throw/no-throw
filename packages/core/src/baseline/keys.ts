@@ -13,6 +13,19 @@ export function memberKey(owner: string, member: string): string {
   return `${owner}#${member}`;
 }
 
+/**
+ * The static side, when there is no named interface to carry it. ES libs give
+ * the constructor object its own interface (`ArrayConstructor`), so `#` covers
+ * both sides there; `lib.dom.d.ts` writes it as an anonymous type literal on
+ * `declare var Element`, leaving the variable's name as the only thing a
+ * resolver can read. `.` separates it, which is the same JSDoc namepath
+ * dialect the manifest keys use, and it keeps `Response.json` (static) apart
+ * from `Response#json` (instance) — a collision `lib.dom.d.ts` really contains.
+ */
+export function staticMemberKey(owner: string, member: string): string {
+  return `${owner}.${member}`;
+}
+
 /** `[Symbol.iterator]` → `@@iterator`; a plain name passes through. */
 export function symbolMemberName(text: string): string {
   const match = /^\[\s*Symbol\.([A-Za-z_$][\w$]*)\s*\]$/.exec(text);
