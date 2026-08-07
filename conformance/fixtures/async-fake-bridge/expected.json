@@ -8,7 +8,7 @@
       "endLine": 8,
       "endColumn": 14,
       "messageId": "fakeBridge",
-      "message": "`rejects()` is `async`, so this `try`/`catch` can never fire: an `async` function does not throw, it rejects, and a `catch` with no `await` is not on that path. The promise is discarded here and the body producing it was analyzed and can throw. Write `try { await … } catch` instead, or end the chain with a `.catch(h)` whose handler is non-throwing."
+      "message": "`rejects()` is `async`, so this `try`/`catch` can never fire: an `async` function does not throw, it rejects, and a `catch` with no `await` is not on that path. The promise is discarded here and the call that produced it has a body that was analyzed and can throw. Write `try { await … } catch` instead, or end the chain with a `.catch(h)` whose handler is non-throwing."
     }
   ]
 }

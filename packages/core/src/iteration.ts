@@ -218,7 +218,9 @@ export function isIteratorType(
 }
 
 function hasDone(type: ts.Type | undefined, checker: ts.TypeChecker): boolean {
-  return type !== undefined && checker.getPropertyOfType(type, "done") !== undefined;
+  return (
+    type !== undefined && checker.getPropertyOfType(type, "done") !== undefined
+  );
 }
 
 /**

@@ -7,7 +7,6 @@ import {
   type Bodied,
 } from "./declarations.js";
 import { iterationEscapeAt, type IterationEscape } from "./iteration.js";
-import { discardedExpression } from "./promises.js";
 
 /**
  * A site that transfers control into some other body, with the syntax naming
@@ -201,7 +200,10 @@ function escapesAt(
     found.push({ kind: "spread", node });
   } else if (isInstanceCheck(node)) {
     found.push({ kind: "instance-check", node });
-  } else if (ts.isAwaitExpression(node) && !isConsuming(node.expression, checker)) {
+  } else if (
+    ts.isAwaitExpression(node) &&
+    !isConsuming(node.expression, checker)
+  ) {
     // Awaiting `it.next()` is one site, not two: the iteration seam already
     // owns what the call enters, and the promise it hands back is that same
     // body's answer.
@@ -243,6 +245,17 @@ function isBridged(node: ts.Node, region: ts.Node): boolean {
   }
 
   return false;
+}
+
+/**
+ * What a statement in expression position actually discards. `void` is written
+ * to say the value is deliberately dropped, which is the same discard the bare
+ * form is, so both name the expression underneath.
+ */
+function discardedExpression(expression: ts.Expression): ts.Expression {
+  let current = skipParens(expression);
+  while (ts.isVoidExpression(current)) current = skipParens(current.expression);
+  return current;
 }
 
 /** Whether the iteration seam already claims this expression. */

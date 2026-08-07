@@ -2,7 +2,7 @@ import ts from "typescript";
 import type {
   ConsumptionReason,
   FloorReason,
-  RejectionReason,
+  Rejects,
   UndischargedReason,
 } from "./colors.js";
 import { describePath, type Condition } from "./conditions.js";
@@ -93,14 +93,14 @@ interface RejectedAwait {
   readonly node: ts.Node;
   /** The awaited expression as written. */
   readonly expression: string;
-  readonly reason: RejectionReason;
+  readonly rejects: Rejects;
 }
 
 interface FloatingRejection {
   readonly kind: "floating-rejection";
   readonly node: ts.Node;
   readonly expression: string;
-  readonly reason: RejectionReason;
+  readonly rejects: Rejects;
   /** The discard sits in a `try`/`catch` whose `catch` can never fire. */
   readonly fake: boolean;
 }
@@ -108,7 +108,7 @@ interface FloatingRejection {
 interface RejectedReturn {
   readonly kind: "rejected-return";
   readonly node: ts.Node;
-  readonly reason: RejectionReason;
+  readonly rejects: Rejects;
 }
 
 /**
@@ -228,22 +228,24 @@ function findingFor(escape: BodyEscape): Finding {
       return {
         kind: "rejected-await",
         node: escape.node,
-        expression: textOf(escape.node.expression),
-        reason: escape.reason,
+        // The `await` is the site; what the reader has to see named is what
+        // they wrote after it.
+        expression: textOf((escape.node as ts.AwaitExpression).expression),
+        rejects: escape.rejects,
       };
     case "float":
       return {
         kind: "floating-rejection",
         node: escape.node,
         expression: textOf(escape.node),
-        reason: escape.reason,
+        rejects: escape.rejects,
         fake: escape.fake,
       };
     case "rejected-return":
       return {
         kind: "rejected-return",
         node: escape.node,
-        reason: escape.reason,
+        rejects: escape.rejects,
       };
     case "hidden-transfer": {
       const { node, site, text, target } = escape;

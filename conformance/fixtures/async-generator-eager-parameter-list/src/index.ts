@@ -24,3 +24,8 @@ export function callsAsyncGenerator(): void {
 export function callsAsyncFunction(): void {
   keep(plainAsync());
 }
+
+/** @nothrow */
+export async function awaitsAsyncFunction(): Promise<number> {
+  return await plainAsync();
+}

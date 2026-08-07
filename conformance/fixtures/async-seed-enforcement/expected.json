@@ -17,7 +17,7 @@
       "endLine": 12,
       "endColumn": 19,
       "messageId": "inferredThrowingReturnedPromise",
-      "message": "This `@nothrow` function returns a promise, so the mark covers its rejection too: the body producing it was analyzed and can throw. Your outs: `await` it inside a `try`/`catch` and return a value instead, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+      "message": "This `@nothrow` function returns a promise, so the mark covers its rejection too: the call that produced it has a body that was analyzed and can throw. Your outs: `await` it inside a `try`/`catch` and return a value instead, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     },
     {
       "file": "src/index.ts",
@@ -26,7 +26,7 @@
       "endLine": 17,
       "endColumn": 12,
       "messageId": "inferredThrowingReturnedPromise",
-      "message": "This `@nothrow` function returns a promise, so the mark covers its rejection too: the body producing it was analyzed and can throw. Your outs: `await` it inside a `try`/`catch` and return a value instead, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+      "message": "This `@nothrow` function returns a promise, so the mark covers its rejection too: the call that produced it has a body that was analyzed and can throw. Your outs: `await` it inside a `try`/`catch` and return a value instead, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     }
   ]
 }

@@ -13,7 +13,7 @@ import { constituentsOf } from "./iteration.js";
  * handlers it was given. A missing handler and one written as `undefined` or
  * `null` are the same thing at runtime, so both arrive here as absent.
  */
-export type ChainLink =
+type ChainLink =
   | {
       readonly kind: "then";
       readonly onFulfilled: ts.Expression | undefined;
@@ -47,7 +47,9 @@ export function chainAt(
   if (name !== "then" && name !== "catch" && name !== "finally") return undefined;
 
   const source = callee.expression;
-  if (!isPromiseType(checker.getTypeAtLocation(source), checker)) return undefined;
+  if (!isPromiseType(checker.getTypeAtLocation(source), checker)) {
+    return undefined;
+  }
 
   // The fold table describes `Promise.prototype`. A thenable whose `then` we
   // can read is an ordinary call, colored by the body that actually runs —
@@ -123,15 +125,4 @@ export function isPromiseType(
 export function isVisiblyAsync(declaration: Bodied): boolean {
   if (ts.isClassLike(declaration) || isGenerator(declaration)) return false;
   return hasModifier(declaration, ts.SyntaxKind.AsyncKeyword);
-}
-
-/**
- * What a statement in expression position actually discards. `void` is written
- * to say "the value is deliberately dropped", which is the same discard the
- * bare form is, so both name the expression underneath.
- */
-export function discardedExpression(expression: ts.Expression): ts.Expression {
-  let current = skipParens(expression);
-  while (ts.isVoidExpression(current)) current = skipParens(current.expression);
-  return current;
 }

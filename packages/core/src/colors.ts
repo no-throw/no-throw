@@ -70,6 +70,26 @@ export type RejectionReason =
   | "conditioned-handler";
 
 /**
+ * Whose color a rejection came from. A chain's color is a join over its head
+ * and its handlers, so the reason alone does not say what to fix: telling a
+ * reader to make "that producer" non-throwing when a handler is what throws
+ * points them at something already clean.
+ */
+export type RejectionSubject =
+  /** The promise value itself, where the syntax names no body to blame. */
+  | "promise"
+  /** The call at the head of the chain. */
+  | "producer"
+  /** A `then`, `catch` or `finally` handler. */
+  | "handler";
+
+/** Why a promise can reject, and what the reader has to look at. */
+export interface Rejects {
+  readonly reason: RejectionReason;
+  readonly subject: RejectionSubject;
+}
+
+/**
  * Why consuming an iterator is throwing. Everything a callee can be carries
  * over — the protocol resolves to bodies like anything else, and a `let` is the
  * same deferred refinement here — plus the one shape only a produced value has:
