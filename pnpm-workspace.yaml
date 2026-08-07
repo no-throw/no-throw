@@ -1,0 +1,5 @@
+# Conformance fixtures are deliberately not workspace packages: they are data
+# that must resolve their dependencies the way a real consumer project would.
+packages:
+  - "packages/*"
+  - "conformance"

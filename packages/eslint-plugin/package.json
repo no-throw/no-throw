@@ -1,0 +1,30 @@
+{
+  "name": "@nothrow/eslint-plugin",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The ESLint adapter for no-throw. Contains no analysis.",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@nothrow/core": "workspace:*",
+    "@typescript-eslint/utils": "^8.18.0"
+  },
+  "peerDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "eslint": "^9.0.0",
+    "typescript": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "eslint": "^9.17.0",
+    "typescript": "^5.7.2"
+  }
+}
