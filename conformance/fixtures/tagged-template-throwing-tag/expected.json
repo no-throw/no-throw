@@ -1,0 +1,14 @@
+{
+  "description": "A tagged template takes the tag function's color, and a throwing tag is reported at the template.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 7,
+      "column": 10,
+      "endLine": 7,
+      "endColumn": 27,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `sql` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `sql` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

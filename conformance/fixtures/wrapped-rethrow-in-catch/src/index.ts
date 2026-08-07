@@ -1,7 +1,5 @@
-class WrappedError extends Error {
-  constructor(public readonly reason: unknown) {
-    super("wrapped");
-  }
+class WrappedError {
+  constructor(readonly reason: unknown) {}
 }
 
 /** @nothrow */

@@ -7,7 +7,7 @@
       "line": 3,
       "column": 3,
       "endLine": 3,
-      "endColumn": 27,
+      "endColumn": 16,
       "messageId": "uncaughtThrow",
       "message": "Uncaught `throw` escapes this `@nothrow` function."
     },

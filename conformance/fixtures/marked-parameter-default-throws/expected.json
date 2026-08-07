@@ -1,0 +1,14 @@
+{
+  "description": "A marked function's own parameter defaults are enforced along with its body: the default runs on every call, so a throwing one breaks the mark's promise.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 6,
+      "column": 33,
+      "endLine": 6,
+      "endColumn": 45,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `readFactor` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `readFactor` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

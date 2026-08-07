@@ -107,22 +107,67 @@ recursive walk or parser stays clean. A cycle that reaches a throw anywhere
 colors *every* member of it throwing — no member of a cycle is colored before
 the whole group resolves.
 
+`new C()` is a call to the constructor's *effective* body: the constructor,
+plus the class's field initializers, plus the base-class chain through
+`super()`. So a throw in a base class's field initializer is reported at the
+`new`, and a `try`/`catch` around the `new` bridges it. Parameter defaults run
+on every call and are checked there too — including a generator's, whose
+parameter list is eager though its body is lazy.
+
 A callee with no visible body — a `.d.ts` declaration, or one the checker
 cannot resolve at all — floors to throwing, and the diagnostic says which.
+
+## Higher-order functions
+
+A function that calls one of its own parameters is not throwing — it is
+non-throwing **given** that parameter. The condition is read off the body, not
+declared, so there is no annotation to keep in sync:
+
+```ts
+/** @nothrow */
+export function myEach<T>(xs: readonly T[], cb: (t: T) => void): void {
+  for (const x of xs) cb(x); // clean given `cb`
+}
+
+myEach(users, (u) => remember(u.name));  // fine — `remember` is inferred clean
+myEach(users, (u) => JSON.parse(u.raw)); // reported here, at the call
+```
+
+Only parameters the body actually *enters* are conditioned. One you merely hand
+onward is not, so a registry stays unconditionally clean; one you enter inside a
+`try`/`catch` is neutralized there, which is why a `safely()`-style wrapper —
+enter the callback inside `try`, return the error as a value — verifies with no
+help from the engine.
+
+Conditions are paths, not positions: a body calling `repo.save(item)`
+conditions `repo.save`, so refactoring a callback into an object parameter does
+not make your function unmarkable. And when the argument you pass is itself one
+of *your* parameters, the condition propagates up to you instead of discharging
+— which is how a chain of helpers stays markable all the way down.
+
+A condition is a precondition, exactly like a parameter type: it is discharged
+at every call, so no caller ever holds a promise it cannot cash. Where the
+argument cannot be resolved — a `let`, a function captured by a factory — the
+call floors, and the diagnostic names the parameter, where the body enters it,
+and your outs.
 
 ## Status
 
 This is early, and **nothing is published to npm yet**. What works today: the
-mark and its binding rules, the body walk, the `try`/`catch` bridge, calls as
-escape sites, **hybrid inference** for unmarked functions whose bodies are
-visible, and the `configs.recommended` preset. Everything with no body to read
-floors to throwing with a diagnostic naming your outs. The ES standard-library
-baseline ships as data in `@nothrow/core`, and so does the DOM baseline — but
-nothing consults either yet, so every standard-library and DOM call floors too.
+mark and its binding rules, the body walk, the `try`/`catch` bridge, the
+call-shaped escape sites — a call, `new C()`, `super()`, a tagged template and
+a parameter default — **hybrid inference** for unmarked functions whose bodies
+are visible, **conditional cleanliness** for higher-order functions, and the
+`configs.recommended` preset. Everything with no body to read floors to
+throwing with a diagnostic naming your outs. The ES standard-library baseline
+ships as data in `@nothrow/core`, and so does the DOM baseline, but nothing
+consults either yet, so every standard-library and DOM call floors too — `new
+Error(…)` included, and with it the `map`/`forEach` family, whose conditional
+entries are what the call-site join will discharge.
 
-Constructors, async, generators, hidden transfers, the carrier chain
-(manifests, overlays, overrides) and `nothrow emit` are not built yet. The
-design is locked and lives in
+Async, generators, hidden transfers, the carrier chain (manifests, overlays,
+overrides) and `nothrow emit` are not built yet. The design is locked and lives
+in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages

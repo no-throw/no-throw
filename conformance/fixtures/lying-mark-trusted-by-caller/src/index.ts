@@ -1,6 +1,6 @@
 /** @nothrow */
 export function lies(): void {
-  throw new Error("boom");
+  throw "boom";
 }
 
 /** @nothrow */

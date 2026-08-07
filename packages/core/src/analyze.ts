@@ -1,8 +1,10 @@
 import ts from "typescript";
-import type { FloorReason } from "./colors.js";
-import { unbridgedEscapes } from "./escapes.js";
+import type { FloorReason, UndischargedReason } from "./colors.js";
+import { describePath, type Condition } from "./conditions.js";
+import { inheritedFrom } from "./declarations.js";
+import { calleeExpression, type Transfer } from "./escapes.js";
 import { findMarks } from "./marks.js";
-import { createColorResolver } from "./resolve-color.js";
+import { createColorResolver, type BodyEscape } from "./resolve-color.js";
 
 interface UncaughtThrow {
   readonly kind: "uncaught-throw";
@@ -26,11 +28,45 @@ interface InferredThrowingCall {
 }
 
 /**
+ * Where a body enters a condition path. Naming it is half of what a
+ * discharge-failure diagnostic owes the reader: the parameter alone does not
+ * say which line to look at.
+ */
+export interface EntrySite {
+  readonly fileName: string;
+  /** One-based, so the adapter can print it without knowing about offsets. */
+  readonly line: number;
+}
+
+interface ConditionArgument {
+  readonly node: ts.Node;
+  readonly callee: string;
+  /** The path as the callee's author wrote it: `cb`, `repo.save`. */
+  readonly path: string;
+  readonly entry: EntrySite;
+}
+
+/** The condition resolved to something whose body was read and can throw. */
+interface ThrowingConditionArgument extends ConditionArgument {
+  readonly kind: "throwing-condition-argument";
+}
+
+interface FlooredConditionArgument extends ConditionArgument {
+  readonly kind: "floored-condition-argument";
+  readonly reason: UndischargedReason;
+}
+
+/**
  * The escapes a marked function can be reported for. Every kind is a facet of
  * the one invariant, so adapters surface them inside a single rule rather than
  * as separate, individually disableable ones.
  */
-export type Finding = UncaughtThrow | UnbridgedCall | InferredThrowingCall;
+export type Finding =
+  | UncaughtThrow
+  | UnbridgedCall
+  | InferredThrowingCall
+  | ThrowingConditionArgument
+  | FlooredConditionArgument;
 
 /**
  * Collect every escape in a file. The core never builds a `ts.Program`: hosts
@@ -50,35 +86,75 @@ export function analyzeSourceFile(
   // inference reads their bodies without holding them to anything. A mark that
   // binds to nothing enforces nothing either — it is `valid-mark`'s to report.
   for (const target of findMarks(sourceFile).bound) {
-    for (const escape of unbridgedEscapes(target)) {
-      if (ts.isThrowStatement(escape)) {
-        findings.push({ kind: "uncaught-throw", node: escape });
-        continue;
-      }
-
-      const callee = colors.at(escape);
-      if (callee.color === "non-throwing") continue;
-
-      findings.push(
-        callee.reason === "inferred"
-          ? {
-              kind: "inferred-throwing-call",
-              node: escape,
-              callee: calleeText(escape),
-            }
-          : {
-              kind: "unbridged-call",
-              node: escape,
-              callee: calleeText(escape),
-              reason: callee.reason,
-            },
-      );
+    for (const escape of colors.escapesIn(target)) {
+      findings.push(findingFor(escape));
     }
   }
 
   return findings;
 }
 
-function calleeText(call: ts.CallExpression): string {
-  return call.expression.getText().replace(/\s+/gu, " ");
+function findingFor(escape: BodyEscape): Finding {
+  switch (escape.kind) {
+    case "throw":
+      return { kind: "uncaught-throw", node: escape.node };
+    case "callee":
+      return escape.reason === "inferred"
+        ? {
+            kind: "inferred-throwing-call",
+            node: escape.node,
+            callee: calleeText(escape.node),
+          }
+        : {
+            kind: "unbridged-call",
+            node: escape.node,
+            callee: calleeText(escape.node),
+            reason: escape.reason,
+          };
+    case "argument-throwing":
+      return {
+        kind: "throwing-condition-argument",
+        ...conditionArgument(escape.node, escape.condition),
+      };
+    case "argument-floored":
+      return {
+        kind: "floored-condition-argument",
+        reason: escape.reason,
+        ...conditionArgument(escape.node, escape.condition),
+      };
+  }
+}
+
+function conditionArgument(
+  site: Transfer,
+  condition: Condition,
+): ConditionArgument {
+  return {
+    node: site,
+    callee: calleeText(site),
+    path: describePath(condition.path, condition.owner),
+    entry: entrySiteOf(condition),
+  };
+}
+
+function entrySiteOf(condition: Condition): EntrySite {
+  const sourceFile = condition.entry.getSourceFile();
+  const { line } = sourceFile.getLineAndCharacterOfPosition(
+    condition.entry.getStart(sourceFile),
+  );
+  return { fileName: sourceFile.fileName, line: line + 1 };
+}
+
+/**
+ * What the message calls the callee. `super` is the one transfer whose syntax
+ * names nothing a reader could act on — the mark that would make it clean goes
+ * on the base class — so a super call is quoted by the class it enters.
+ */
+function calleeText(transfer: Transfer): string {
+  const callee = calleeExpression(transfer);
+  const named =
+    callee.kind === ts.SyntaxKind.SuperKeyword
+      ? (inheritedFrom(transfer) ?? callee)
+      : callee;
+  return named.getText().replace(/\s+/gu, " ");
 }
