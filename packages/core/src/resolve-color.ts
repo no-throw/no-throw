@@ -1,7 +1,14 @@
 import ts from "typescript";
 import type { CalleeColor } from "./colors.js";
-import { bodyOf } from "./declarations.js";
-import { unbridgedEscapes } from "./escapes.js";
+import {
+  baseClassExpression,
+  bodyOf,
+  constructedBody,
+  hasVisibleBody,
+  inheritedFrom,
+  type Bodied,
+} from "./declarations.js";
+import { calleeExpression, unbridgedEscapes, type Transfer } from "./escapes.js";
 import { createFixpoint, type BodyEdges } from "./infer.js";
 import { isMarkedFunction } from "./marks.js";
 import { colorPolicy } from "./policy.js";
@@ -17,16 +24,16 @@ import { colorPolicy } from "./policy.js";
  * end of the range rather than a degraded mode.
  */
 export interface ColorResolver {
-  at(call: ts.CallExpression): CalleeColor;
+  at(transfer: Transfer): CalleeColor;
 }
 
 export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   const policy = colorPolicy();
-  const fixpoint = createFixpoint((fn) => edgesOf(fn, checker));
+  const fixpoint = createFixpoint((body) => edgesOf(body, checker));
 
   return {
-    at(call) {
-      const callee = classify(call, checker);
+    at(transfer) {
+      const callee = classify(targetOf(transfer, checker));
       if (callee.kind === "pinned") return callee.color;
       if (policy === "declare") {
         return { color: "throwing", reason: "unmarked" };
@@ -41,10 +48,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
 type CalleeResolution =
   /** Colored without reading a body, and so cutting the graph. */
   | { readonly kind: "pinned"; readonly color: CalleeColor }
-  | {
-      readonly kind: "inferable";
-      readonly declaration: ts.SignatureDeclaration;
-    };
+  | { readonly kind: "inferable"; readonly declaration: Bodied };
 
 /**
  * The chain up to, but not including, inference. A mark is trusted here and
@@ -52,41 +56,103 @@ type CalleeResolution =
  * through a seed is colored against the mark and a lying mark fails loud where
  * it was written rather than quietly poisoning its callers.
  */
-function classify(
-  call: ts.CallExpression,
-  checker: ts.TypeChecker,
-): CalleeResolution {
-  const declaration = checker.getResolvedSignature(call)?.declaration;
-  if (declaration === undefined || !ts.isFunctionLike(declaration)) {
+function classify(target: Bodied | undefined): CalleeResolution {
+  if (target === undefined) {
     return pin({ color: "throwing", reason: "unresolvable" });
   }
-  if (isMarkedFunction(declaration)) return pin({ color: "non-throwing" });
-  if (bodyOf(declaration) === undefined) {
+  if (isMarkedFunction(target)) return pin({ color: "non-throwing" });
+  if (!hasVisibleBody(target)) {
     return pin({ color: "throwing", reason: "bodyless" });
   }
-  return { kind: "inferable", declaration };
+  return { kind: "inferable", declaration: target };
 }
 
 function pin(color: CalleeColor): CalleeResolution {
   return { kind: "pinned", color };
 }
 
-/** One body's contribution to the graph, off the walk enforcement also uses. */
-function edgesOf(
-  fn: ts.SignatureDeclaration,
+/** The body an escape site transfers control into, where one can be named. */
+function targetOf(
+  transfer: Transfer,
   checker: ts.TypeChecker,
-): BodyEdges {
-  let throws = false;
-  const callees: ts.SignatureDeclaration[] = [];
+): Bodied | undefined {
+  if (ts.isNewExpression(transfer)) {
+    return (
+      constructedBodyAt(transfer.expression, checker) ??
+      constructSignatureOf(transfer, checker)
+    );
+  }
+  if (calleeExpression(transfer).kind === ts.SyntaxKind.SuperKeyword) {
+    const base = inheritedFrom(transfer);
+    return base === undefined ? undefined : constructedBodyAt(base, checker);
+  }
 
-  for (const escape of unbridgedEscapes(fn)) {
+  const declaration = checker.getResolvedSignature(transfer)?.declaration;
+  return declaration !== undefined && ts.isFunctionLike(declaration)
+    ? declaration
+    : undefined;
+}
+
+/**
+ * The class a constructor-position expression denotes, and the body `new` on it
+ * enters. The resolved *signature* is no substitute: a derived class that
+ * declares no constructor resolves to its base's, which would skip the derived
+ * class's own field initializers.
+ */
+function constructedBodyAt(
+  expression: ts.Expression,
+  checker: ts.TypeChecker,
+): Bodied | undefined {
+  const declaration =
+    checker.getTypeAtLocation(expression).symbol?.valueDeclaration;
+  return declaration !== undefined && ts.isClassLike(declaration)
+    ? constructedBody(declaration)
+    : undefined;
+}
+
+/**
+ * A construct signature with no class behind it — `new Error()`, an interface's
+ * `new ()` — is a bodyless declaration, and saying that beats saying nothing
+ * resolved. Only a bodyless one is taken: a bodied signature the class lookup
+ * missed means the expression was not one class, and reading a single branch of
+ * it would be a guess.
+ */
+function constructSignatureOf(
+  construction: ts.NewExpression,
+  checker: ts.TypeChecker,
+): ts.SignatureDeclaration | undefined {
+  const declaration = checker.getResolvedSignature(construction)?.declaration;
+  return declaration !== undefined &&
+    ts.isFunctionLike(declaration) &&
+    bodyOf(declaration) === undefined
+    ? declaration
+    : undefined;
+}
+
+/** One body's contribution to the graph, off the walk enforcement also uses. */
+function edgesOf(declaration: Bodied, checker: ts.TypeChecker): BodyEdges {
+  let throws = false;
+  const callees: Bodied[] = [];
+
+  const follow = (callee: CalleeResolution): void => {
+    if (callee.kind === "inferable") callees.push(callee.declaration);
+    else if (callee.color.color === "throwing") throws = true;
+  };
+
+  for (const escape of unbridgedEscapes(declaration)) {
     if (ts.isThrowStatement(escape)) {
       throws = true;
       continue;
     }
-    const callee = classify(escape, checker);
-    if (callee.kind === "inferable") callees.push(callee.declaration);
-    else if (callee.color.color === "throwing") throws = true;
+    follow(classify(targetOf(escape, checker)));
+  }
+
+  // A class stands for a constructor it does not declare, and the implicit
+  // `constructor(...args) { super(...args) }` still runs the base's effective
+  // body. There is no `super()` in the syntax for the walk to have found.
+  if (ts.isClassLike(declaration)) {
+    const base = baseClassExpression(declaration);
+    if (base !== undefined) follow(classify(constructedBodyAt(base, checker)));
   }
 
   return { throws, callees };

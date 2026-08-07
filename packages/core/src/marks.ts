@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { hasModifier, isAmbient } from "./declarations.js";
 
 /** Source text offsets, `[start, end)`, that a diagnostic is anchored to. */
 export interface Span {
@@ -216,26 +217,6 @@ function problemKind(host: ts.Node): MarkProblemKind {
     return "multi-declarator";
   }
   return "ineffective-mark";
-}
-
-/**
- * `declare`, anywhere above the mark, and every declaration in a `.d.ts`. The
- * modifier is read syntactically rather than off `NodeFlags.Ambient`, which
- * TypeScript does not expose.
- */
-function isAmbient(node: ts.Node): boolean {
-  if (node.getSourceFile().isDeclarationFile) return true;
-  for (let n: ts.Node | undefined = node; n !== undefined; n = n.parent) {
-    if (hasModifier(n, ts.SyntaxKind.DeclareKeyword)) return true;
-  }
-  return false;
-}
-
-function hasModifier(node: ts.Node, kind: ts.SyntaxKind): boolean {
-  if (!ts.canHaveModifiers(node)) return false;
-  return (
-    ts.getModifiers(node)?.some((modifier) => modifier.kind === kind) === true
-  );
 }
 
 /** A member of an `interface` or an object type literal: never has a body. */

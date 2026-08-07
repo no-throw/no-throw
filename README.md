@@ -107,22 +107,31 @@ recursive walk or parser stays clean. A cycle that reaches a throw anywhere
 colors *every* member of it throwing — no member of a cycle is colored before
 the whole group resolves.
 
+`new C()` is a call to the constructor's *effective* body: the constructor,
+plus the class's field initializers, plus the base-class chain through
+`super()`. So a throw in a base class's field initializer is reported at the
+`new`, and a `try`/`catch` around the `new` bridges it. Parameter defaults run
+on every call and are checked there too — including a generator's, whose
+parameter list is eager though its body is lazy.
+
 A callee with no visible body — a `.d.ts` declaration, or one the checker
 cannot resolve at all — floors to throwing, and the diagnostic says which.
 
 ## Status
 
 This is early, and **nothing is published to npm yet**. What works today: the
-mark and its binding rules, the body walk, the `try`/`catch` bridge, calls as
-escape sites, **hybrid inference** for unmarked functions whose bodies are
-visible, and the `configs.recommended` preset. Everything with no body to read
-floors to throwing with a diagnostic naming your outs. The ES standard-library
-baseline ships as data in `@nothrow/core`, but nothing consults it yet, so
-every standard-library call floors too.
+mark and its binding rules, the body walk, the `try`/`catch` bridge, the
+call-shaped escape sites — a call, `new C()`, `super()`, a tagged template and
+a parameter default — **hybrid inference** for unmarked functions whose bodies
+are visible, and the `configs.recommended` preset. Everything with no body to
+read floors to throwing with a diagnostic naming your outs. The ES
+standard-library baseline ships as data in `@nothrow/core`, but nothing
+consults it yet, so every standard-library call floors too — `new Error(…)`
+included.
 
-Constructors, async, generators, hidden transfers, the carrier chain
-(manifests, overlays, overrides), the DOM baseline and `nothrow emit` are not
-built yet. The design is locked and lives in
+Async, generators, hidden transfers, the carrier chain (manifests, overlays,
+overrides), the DOM baseline and `nothrow emit` are not built yet. The design
+is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages

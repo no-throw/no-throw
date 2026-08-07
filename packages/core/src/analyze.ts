@@ -1,6 +1,7 @@
 import ts from "typescript";
 import type { FloorReason } from "./colors.js";
-import { unbridgedEscapes } from "./escapes.js";
+import { inheritedFrom } from "./declarations.js";
+import { calleeExpression, unbridgedEscapes, type Transfer } from "./escapes.js";
 import { findMarks } from "./marks.js";
 import { createColorResolver } from "./resolve-color.js";
 
@@ -79,6 +80,16 @@ export function analyzeSourceFile(
   return findings;
 }
 
-function calleeText(call: ts.CallExpression): string {
-  return call.expression.getText().replace(/\s+/gu, " ");
+/**
+ * What the message calls the callee. `super` is the one transfer whose syntax
+ * names nothing a reader could act on — the mark that would make it clean goes
+ * on the base class — so a super call is quoted by the class it enters.
+ */
+function calleeText(transfer: Transfer): string {
+  const callee = calleeExpression(transfer);
+  const named =
+    callee.kind === ts.SyntaxKind.SuperKeyword
+      ? (inheritedFrom(transfer) ?? callee)
+      : callee;
+  return named.getText().replace(/\s+/gu, " ");
 }
