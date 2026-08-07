@@ -11,15 +11,23 @@ export { createLibProgram } from "./program.js";
 export type { LibProgram } from "./program.js";
 export { collectLibMembers } from "./inventory.js";
 export type { LibMember, LibParam, MemberKind } from "./inventory.js";
+export { collectDomMembers } from "./dom-inventory.js";
+export type { DomInventory, DomMember } from "./dom-inventory.js";
 export { TypeDomains } from "./domains.js";
 export {
   libTargetOfFileName,
   memberKey,
+  staticMemberKey,
   symbolMemberName,
 } from "./keys.js";
 export { formatConditionPath, parseConditionPath } from "./paths.js";
 export type { ParsedConditionPath, PathSegment } from "./paths.js";
-export { baselineData, lookupBaselineEntry } from "./data.js";
+export {
+  baselineData,
+  lookupBaselineEntry,
+  sourceOfLibTarget,
+} from "./data.js";
+export type { BaselineSource } from "./data.js";
 export type {
   AccessorColors,
   AccessorFact,

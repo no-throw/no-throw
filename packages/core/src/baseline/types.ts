@@ -42,7 +42,10 @@ export interface BaselineEntry {
    */
   readonly conditions?: readonly ConditionPath[];
   readonly accessor?: AccessorFact;
-  /** The ECMA-262 clause this entry was adjudicated from. Audit trail. */
+  /**
+   * Where this entry was adjudicated from — an ECMA-262 clause name, or a
+   * `spec#anchor` into the prose that defines a DOM member. Audit trail.
+   */
   readonly spec?: string;
   /** Dotted runtime path (`Array.prototype.push`), for the fuzz gate. */
   readonly runtime?: string;
