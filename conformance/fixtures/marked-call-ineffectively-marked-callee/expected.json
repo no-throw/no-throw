@@ -1,5 +1,5 @@
 {
-  "description": "A mark that binds to nothing colors nothing: the callee still floors, so a dead mark cannot launder a call clean.",
+  "description": "A mark that binds to nothing colors nothing: the callee is inferred from its body like any unmarked function, so a dead mark cannot launder a throwing call clean.",
   "diagnostics": [
     {
       "file": "src/index.ts",
@@ -16,8 +16,8 @@
       "column": 3,
       "endLine": 10,
       "endColumn": 17,
-      "messageId": "unbridgedCall",
-      "message": "Call to `service.fail` escapes this `@nothrow` function: it has a visible body but no `@nothrow` mark, so it is throwing by declaration. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `service.fail` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `service.fail` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     }
   ]
 }

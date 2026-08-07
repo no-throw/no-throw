@@ -82,3 +82,23 @@ pnpm run build && pnpm run conformance
 
 A failing fixture prints its name, its description, and what it expected
 against what it got — enough to act on from the CI log alone.
+
+## The suite runs twice
+
+`conformance` runs every fixture under hybrid inference, which is what ships,
+and then runs the whole suite again with inference off — #4's rip-out lever,
+maintainer-internal and reached through the `NOTHROW_COLOR_POLICY` environment
+variable, never through a rule option. The engine reads it whenever it builds a
+resolver, which it does per file, so one process can run the suite both ways.
+
+The second pass is not checked against `expected.json`. Its assertion is a
+**property**: declare-only must report a **superset** of what the hybrid run
+reported. That is "strictly tightening, never unsound" written as something a
+machine can check, and it keeps the lever honest without opening the core's API
+for testing. Places are compared, not text — declare-only floors exactly where
+the hybrid run reads a body, so the reason a diagnostic gives differs there by
+design.
+
+A superset property passes vacuously if the lever never moved, so the run also
+checks that turning inference off floored *something*. If it did not, the pass
+fails rather than reporting a green it did not earn.

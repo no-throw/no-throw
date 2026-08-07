@@ -1,8 +1,8 @@
 import ts from "typescript";
 import type { FloorReason } from "./colors.js";
-import { bodyOf } from "./declarations.js";
+import { unbridgedEscapes } from "./escapes.js";
 import { findMarks } from "./marks.js";
-import { resolveCalleeColor } from "./resolve-color.js";
+import { createColorResolver } from "./resolve-color.js";
 
 interface UncaughtThrow {
   readonly kind: "uncaught-throw";
@@ -18,12 +18,19 @@ interface UnbridgedCall {
   readonly reason: FloorReason;
 }
 
+/** A call whose callee was read rather than floored, and can throw. */
+interface InferredThrowingCall {
+  readonly kind: "inferred-throwing-call";
+  readonly node: ts.Node;
+  readonly callee: string;
+}
+
 /**
  * The escapes a marked function can be reported for. Every kind is a facet of
  * the one invariant, so adapters surface them inside a single rule rather than
  * as separate, individually disableable ones.
  */
-export type Finding = UncaughtThrow | UnbridgedCall;
+export type Finding = UncaughtThrow | UnbridgedCall | InferredThrowingCall;
 
 /**
  * Collect every escape in a file. The core never builds a `ts.Program`: hosts
@@ -35,77 +42,41 @@ export function analyzeSourceFile(
   checker: ts.TypeChecker,
 ): readonly Finding[] {
   const findings: Finding[] = [];
+  // The inference memo lives as long as one file's analysis. Sharing it across
+  // a program is the incrementality question the dogfooding gate prices.
+  const colors = createColorResolver(checker);
 
-  // Unmarked functions have nothing to enforce: throwing is the default. A mark
-  // that binds to nothing enforces nothing either — it is `valid-mark`'s to
-  // report, not an invariant this walk can hold anything to.
+  // Unmarked functions have nothing to enforce: throwing is the default, and
+  // inference reads their bodies without holding them to anything. A mark that
+  // binds to nothing enforces nothing either — it is `valid-mark`'s to report.
   for (const target of findMarks(sourceFile).bound) {
-    collectEscapes(target, checker, findings);
+    for (const escape of unbridgedEscapes(target)) {
+      if (ts.isThrowStatement(escape)) {
+        findings.push({ kind: "uncaught-throw", node: escape });
+        continue;
+      }
+
+      const callee = colors.at(escape);
+      if (callee.color === "non-throwing") continue;
+
+      findings.push(
+        callee.reason === "inferred"
+          ? {
+              kind: "inferred-throwing-call",
+              node: escape,
+              callee: calleeText(escape),
+            }
+          : {
+              kind: "unbridged-call",
+              node: escape,
+              callee: calleeText(escape),
+              reason: callee.reason,
+            },
+      );
+    }
   }
 
   return findings;
-}
-
-function collectEscapes(
-  fn: ts.SignatureDeclaration,
-  checker: ts.TypeChecker,
-  out: Finding[],
-): void {
-  const body = bodyOf(fn);
-  if (body === undefined) return;
-
-  const walk = (node: ts.Node): void => {
-    if (ts.isThrowStatement(node) && !isBridged(node)) {
-      out.push({ kind: "uncaught-throw", node });
-    }
-
-    if (ts.isCallExpression(node) && !isBridged(node)) {
-      const callee = resolveCalleeColor(node, checker);
-      if (callee.color === "throwing") {
-        out.push({
-          kind: "unbridged-call",
-          node,
-          callee: calleeText(node),
-          reason: callee.reason,
-        });
-      }
-    }
-
-    node.forEachChild((child) => {
-      // A nested function is its own body with its own color. A class is not
-      // body code either: its members are bodies of their own, and evaluating
-      // the class — heritage expressions, static blocks, decorators — is ruled
-      // out of the color model.
-      if (ts.isFunctionLike(child) || ts.isClassLike(child)) return;
-      walk(child);
-    });
-  };
-
-  walk(body);
-}
-
-/**
- * A `try` with a `catch` neutralizes escapes originating in its try block only;
- * `catch` and `finally` blocks are ordinary body code. Neutralization stops at
- * a function boundary, which the walk never crosses anyway.
- */
-function isBridged(node: ts.Node): boolean {
-  let child: ts.Node = node;
-  let parent: ts.Node | undefined = node.parent;
-
-  while (parent !== undefined && !ts.isFunctionLike(parent)) {
-    if (
-      ts.isTryStatement(parent) &&
-      parent.catchClause !== undefined &&
-      parent.tryBlock === child
-    ) {
-      return true;
-    }
-    child = parent;
-    parent = parent.parent;
-  }
-
-  return false;
 }
 
 function calleeText(call: ts.CallExpression): string {

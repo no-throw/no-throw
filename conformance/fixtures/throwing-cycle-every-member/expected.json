@@ -1,0 +1,23 @@
+{
+  "description": "#14 §4's required non-conformance case, and the only fixture that discriminates: no member of a cycle is colored before the group resolves, so `b` is throwing though its own body only recurses. A memoized optimistic DFS passes all 47 others, answers `b` clean here, and loses the second diagnostic. Do not delete it as redundant.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 16,
+      "column": 3,
+      "endLine": 16,
+      "endColumn": 6,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `a` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `a` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 17,
+      "column": 3,
+      "endLine": 17,
+      "endColumn": 6,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `b` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `b` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

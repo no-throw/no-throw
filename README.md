@@ -81,19 +81,47 @@ thing that throws. For an ambient declaration, assert the color in
 `nothrow.overrides.json` instead: an in-source `@nothrow` means *verified seed*
 and nothing else.
 
+## What gets inferred
+
+Marking one function does not force you to mark its call tree. An unmarked
+function whose body is visible is *inferred* — clean when nothing in it can
+throw, throwing otherwise — and is never itself held to anything: throwing is
+the default, and only a mark is a promise. So a call to an inferred-throwing
+function is reported at the call, and nothing inside that function is.
+
+```ts
+/** @nothrow */
+export function read(text: string): unknown {
+  return parse(text); // Call to `parse` escapes this `@nothrow` function: its
+}                     // body was analyzed and can throw. …
+
+function parse(text: string): unknown {
+  return JSON.parse(text); // not reported — `parse` never promised anything
+}
+```
+
+Bridge inside `parse` and `read` goes green with no second mark.
+
+Mutual recursion is fine: a cycle contributes paths, not throw sites, so a
+recursive walk or parser stays clean. A cycle that reaches a throw anywhere
+colors *every* member of it throwing — no member of a cycle is colored before
+the whole group resolves.
+
+A callee with no visible body — a `.d.ts` declaration, or one the checker
+cannot resolve at all — floors to throwing, and the diagnostic says which.
+
 ## Status
 
 This is early, and **nothing is published to npm yet**. What works today: the
 mark and its binding rules, the body walk, the `try`/`catch` bridge, calls as
-escape sites resolved against the **pure-declare floor** — a call is clean only
-when its callee carries a mark, and everything else floors to throwing with a
-diagnostic naming your outs — and the `configs.recommended` preset.
+escape sites, **hybrid inference** for unmarked functions whose bodies are
+visible, and the `configs.recommended` preset. Everything with no body to read
+floors to throwing with a diagnostic naming your outs.
 
-The floor is the sound end of the design, not the destination. Inference for
-unmarked bodies, constructors, async, generators, hidden transfers, the carrier
-chain (manifests, overlays, overrides), the standard-library and DOM baseline
-and `nothrow emit` are not built yet — so until the baseline lands, every
-standard-library call floors too. The design is locked and lives in
+Constructors, async, generators, hidden transfers, the carrier chain
+(manifests, overlays, overrides), the standard-library and DOM baseline and
+`nothrow emit` are not built yet — so until the baseline lands, every
+standard-library call floors. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages

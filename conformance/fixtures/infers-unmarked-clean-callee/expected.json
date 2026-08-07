@@ -1,0 +1,4 @@
+{
+  "description": "Marking one function does not force marking its call tree: an unmarked callee with a clean body is inferred clean.",
+  "diagnostics": []
+}

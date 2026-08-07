@@ -14,10 +14,15 @@ export interface Diagnostic {
   readonly message?: string;
 }
 
+/** Where a diagnostic landed, with nothing about what it said. */
+export function placeOf(diagnostic: Diagnostic): string {
+  const { file, line, column, endLine, endColumn } = diagnostic;
+  return `${file}:${line}:${column}-${endLine}:${endColumn}`;
+}
+
 export function formatDiagnostic(diagnostic: Diagnostic): string {
-  const { file, line, column, endLine, endColumn, messageId, message } =
-    diagnostic;
-  const at = `${file}:${line}:${column}-${endLine}:${endColumn}`;
+  const { messageId, message } = diagnostic;
+  const at = placeOf(diagnostic);
   return message === undefined
     ? `${at}  ${messageId}`
     : `${at}  ${messageId}  ${JSON.stringify(message)}`;

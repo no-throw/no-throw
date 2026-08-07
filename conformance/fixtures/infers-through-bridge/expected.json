@@ -1,0 +1,4 @@
+{
+  "description": "The graph inference walks is the unbridged-call graph: an unmarked body that bridges its own throwing call is inferred clean.",
+  "diagnostics": []
+}
