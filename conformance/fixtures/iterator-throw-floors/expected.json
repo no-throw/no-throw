@@ -1,0 +1,14 @@
+{
+  "description": "`.throw()` floors however clean the generator is: it is the consumer choosing to throw, with a detour through the iterator, and a throw cannot be laundered through a generator.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 9,
+      "column": 3,
+      "endLine": 9,
+      "endColumn": 19,
+      "messageId": "iteratorThrow",
+      "message": "`.throw()` escapes this `@nothrow` function: it throws the value into the iterator, and a throw cannot be laundered through a generator. Bridge it with `try`/`catch`."
+    }
+  ]
+}

@@ -23,3 +23,23 @@ export type ThrowingReason = FloorReason | "inferred";
 export type CalleeColor =
   | { readonly color: "non-throwing" }
   | { readonly color: "throwing"; readonly reason: ThrowingReason };
+
+/**
+ * Why consuming an iterator is throwing. The floors a callee can hit are all
+ * reachable here too — the protocol resolves to bodies like anything else — and
+ * two more are the iterator's own, both from the expression→originating-call
+ * rule failing to name the call that produced the value. They are kept apart
+ * because their fixes are: one is a refinement we owe you, the other is a
+ * question the syntax cannot answer.
+ */
+export type ConsumptionReason =
+  | ThrowingReason
+  /** A binding the rule does not follow yet — a `let`, a computed initializer. */
+  | "untraced-binding"
+  /** Nothing in the syntax names the producing call at all. */
+  | "untraced-opaque";
+
+/** The color of consuming an iterator, plus — when it is throwing — why. */
+export type ConsumptionColor =
+  | { readonly color: "non-throwing" }
+  | { readonly color: "throwing"; readonly reason: ConsumptionReason };

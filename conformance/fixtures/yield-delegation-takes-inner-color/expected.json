@@ -1,0 +1,14 @@
+{
+  "description": "`yield*` is a consumption site inside a generator body: it drives the inner producer's iterator to completion, so it takes that producer's color — throwing reported, clean green.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 16,
+      "column": 3,
+      "endLine": 16,
+      "endColumn": 18,
+      "messageId": "inferredThrowingConsumption",
+      "message": "Consuming this iterator escapes this `@nothrow` function: the body producing its values was analyzed and can throw. Your outs: bridge this consumption with `try`/`catch`, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

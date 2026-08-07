@@ -20,6 +20,46 @@ export function bodyOf(
 }
 
 /**
+ * A `function*` or `*method()`: the one declaration kind whose body does not
+ * run at the call. Its parameter list still does, which is why the split is a
+ * split of *regions* and not a second kind of escape site.
+ */
+export function isGenerator(declaration: Bodied): boolean {
+  if (ts.isClassLike(declaration)) return false;
+  return (declaration as ts.FunctionLikeDeclaration).asteriskToken !== undefined;
+}
+
+/**
+ * Every expression a `return` in this body hands back, the implicit return of
+ * an expression-bodied arrow included. Nested functions are skipped: their
+ * returns are their own.
+ */
+export function returnedExpressions(
+  declaration: Bodied,
+): readonly ts.Expression[] {
+  if (ts.isClassLike(declaration)) return [];
+
+  const body = bodyOf(declaration);
+  if (body === undefined) return [];
+  if (!ts.isBlock(body)) return [body];
+
+  const returned: ts.Expression[] = [];
+  const walk = (node: ts.Node): void => {
+    if (ts.isReturnStatement(node)) {
+      if (node.expression !== undefined) returned.push(node.expression);
+      return;
+    }
+    node.forEachChild((child) => {
+      if (ts.isFunctionLike(child) || ts.isClassLike(child)) return;
+      walk(child);
+    });
+  };
+
+  walk(body);
+  return returned;
+}
+
+/**
  * The constructor a class implements, if it implements one. An overload
  * signature is not it: the implementation is what runs.
  */

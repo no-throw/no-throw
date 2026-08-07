@@ -117,21 +117,60 @@ parameter list is eager though its body is lazy.
 A callee with no visible body — a `.d.ts` declaration, or one the checker
 cannot resolve at all — floors to throwing, and the diagnostic says which.
 
+## Generators
+
+A generator's call and its iterator carry one color between them, and `@nothrow`
+covers both: the call is clean **and** consuming what it hands back is clean.
+
+Calling a generator runs no body, so a bare call is not an escape however the
+body ends — the escape is wherever the body actually runs. `for…of`, spread,
+array destructuring, `.next()`, `.return()` and `yield*` are those places, and
+each is reported and bridged there.
+
+```ts
+function* lines(): Generator<string> {
+  throw "boom";
+}
+
+/** @nothrow */
+export function count(): number {
+  const it = lines(); // fine — nothing has run yet
+  let n = 0;
+  for (const line of it) n += line.length; // Consuming this iterator escapes …
+  return n;
+}
+```
+
+Which call produced the iterator is read off the syntax: a direct call, or a
+`const` initialized by one. Anything else — a `let`, a parameter, a property —
+floors, and the message says which of the two problems it is. That is also what
+makes a plain function markable as an iterator producer: `return inner()` is
+provable, `return someIterator` is not.
+
+`yield` is not a throw site — it can throw only because a consumer called
+`.throw()` — and `.throw()` itself always escapes, because a throw cannot be
+laundered through a generator.
+
+Iteration over anything else resolves through `[Symbol.iterator]` and the
+`next` it hands back, so an in-program iterable is colored by its own bodies.
+Builtin iterables are the baseline's to answer and floor until it is wired up.
+
 ## Status
 
 This is early, and **nothing is published to npm yet**. What works today: the
 mark and its binding rules, the body walk, the `try`/`catch` bridge, the
 call-shaped escape sites — a call, `new C()`, `super()`, a tagged template and
-a parameter default — **hybrid inference** for unmarked functions whose bodies
-are visible, and the `configs.recommended` preset. Everything with no body to
-read floors to throwing with a diagnostic naming your outs. The ES
-standard-library baseline ships as data in `@nothrow/core`, but nothing
-consults it yet, so every standard-library call floors too — `new Error(…)`
-included.
+a parameter default — **generators and the sync iteration protocol**, **hybrid
+inference** for unmarked functions whose bodies are visible, and the
+`configs.recommended` preset. Everything with no body to read floors to
+throwing with a diagnostic naming your outs. The ES standard-library baseline
+ships as data in `@nothrow/core`, but nothing consults it yet, so every
+standard-library call floors too — `new Error(…)` included, and iterating an
+array or a `Map` with it.
 
-Async, generators, hidden transfers, the carrier chain (manifests, overlays,
-overrides), the DOM baseline and `nothrow emit` are not built yet. The design
-is locked and lives in
+Async — `await`, promise chains, `for await` — hidden transfers, the carrier
+chain (manifests, overlays, overrides), the DOM baseline and `nothrow emit` are
+not built yet. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages

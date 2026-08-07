@@ -5,6 +5,7 @@ import {
   fieldInitializers,
   type Bodied,
 } from "./declarations.js";
+import { iterationSiteAt, type Consumption } from "./iteration.js";
 
 /**
  * A site that transfers control into some other body, with the syntax naming
@@ -16,10 +17,21 @@ export type Transfer =
   | ts.TaggedTemplateExpression;
 
 /**
- * A site that transfers control out of the body it is written in: a `throw`,
- * or a transfer into another body.
+ * A site that transfers control out of the body it is written in: a `throw`, a
+ * transfer into a named body, or a consumption site running a body some earlier
+ * call only *produced*.
  */
-export type Escape = ts.ThrowStatement | Transfer;
+export type Escape =
+  | { readonly kind: "throw"; readonly node: ts.ThrowStatement }
+  | { readonly kind: "transfer"; readonly node: Transfer }
+  | { readonly kind: "consumption"; readonly site: Consumption };
+
+/**
+ * Which of a call's work is being looked at. For every function kind but one
+ * the answer is "all of it"; a generator's call runs its parameter list and
+ * nothing else, and its body runs at the consumption sites instead.
+ */
+export type Phase = "all" | "eager" | "lazy";
 
 /**
  * The expression naming the callee, wherever the transfer's syntax keeps it.
@@ -38,11 +50,16 @@ export function calleeExpression(transfer: Transfer): ts.Expression {
  * throwing, and inference reads the same sites as the edges of the call graph —
  * so the two can never disagree about what a body does.
  */
-export function unbridgedEscapes(declaration: Bodied): readonly Escape[] {
+export function unbridgedEscapes(
+  declaration: Bodied,
+  checker: ts.TypeChecker,
+  phase: Phase = "all",
+): readonly Escape[] {
   const found: Escape[] = [];
 
   const walk = (node: ts.Node, region: ts.Node): void => {
-    if (isEscape(node) && !isBridged(node, region)) found.push(node);
+    const escape = escapeAt(node, checker);
+    if (escape !== undefined && !isBridged(node, region)) found.push(escape);
 
     node.forEachChild((child) => {
       // A nested function is its own body with its own color.
@@ -60,7 +77,7 @@ export function unbridgedEscapes(declaration: Bodied): readonly Escape[] {
     });
   };
 
-  for (const region of effectiveBody(declaration)) walk(region, region);
+  for (const region of regionsOf(declaration, phase)) walk(region, region);
   return found;
 }
 
@@ -70,31 +87,49 @@ export function unbridgedEscapes(declaration: Bodied): readonly Escape[] {
  * iterator — and a constructor's effective body reaches the class's field
  * initializers, which are constructor body rather than an escape kind of their
  * own. Both are walked alongside the body itself, so this is one rule with no
- * special case per function kind.
+ * special case per function kind: only *which* of the two halves is asked for
+ * ever differs.
  */
-function effectiveBody(declaration: Bodied): readonly ts.Node[] {
-  if (ts.isClassLike(declaration)) return fieldInitializers(declaration);
+function regionsOf(declaration: Bodied, phase: Phase): readonly ts.Node[] {
+  if (ts.isClassLike(declaration)) {
+    return phase === "eager" ? [] : fieldInitializers(declaration);
+  }
 
   const regions: ts.Node[] = [];
 
-  for (const parameter of declaration.parameters) {
-    // A binding pattern carries defaults of its own, and they are eager too.
-    regions.push(parameter.name);
-    if (parameter.initializer !== undefined) regions.push(parameter.initializer);
-  }
-  if (ts.isConstructorDeclaration(declaration)) {
-    regions.push(...fieldInitializers(declaration.parent));
+  if (phase !== "lazy") {
+    for (const parameter of declaration.parameters) {
+      // A binding pattern carries defaults of its own, and they are eager too.
+      regions.push(parameter.name);
+      if (parameter.initializer !== undefined) {
+        regions.push(parameter.initializer);
+      }
+    }
   }
 
-  const body = bodyOf(declaration);
-  if (body !== undefined) regions.push(body);
+  if (phase !== "eager") {
+    if (ts.isConstructorDeclaration(declaration)) {
+      regions.push(...fieldInitializers(declaration.parent));
+    }
+    const body = bodyOf(declaration);
+    if (body !== undefined) regions.push(body);
+  }
 
   return regions;
 }
 
-function isEscape(node: ts.Node): node is Escape {
+function escapeAt(node: ts.Node, checker: ts.TypeChecker): Escape | undefined {
+  if (ts.isThrowStatement(node)) return { kind: "throw", node };
+  // The iteration protocol claims a call before the call rule does: `it.next()`
+  // enters a body the syntax does not name, and its own declaration — the
+  // standard library's `Generator` — is not the one that runs.
+  const site = iterationSiteAt(node, checker);
+  if (site !== undefined) return { kind: "consumption", site };
+  return isTransfer(node) ? { kind: "transfer", node } : undefined;
+}
+
+function isTransfer(node: ts.Node): node is Transfer {
   return (
-    ts.isThrowStatement(node) ||
     ts.isCallExpression(node) ||
     ts.isNewExpression(node) ||
     ts.isTaggedTemplateExpression(node)

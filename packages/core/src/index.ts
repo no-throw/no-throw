@@ -15,6 +15,6 @@ export type {
   Color,
   ConditionPath,
 } from "./baseline/types.js";
-export type { FloorReason } from "./colors.js";
+export type { ConsumptionReason, FloorReason } from "./colors.js";
 export { findMarks } from "./marks.js";
 export type { MarkProblem, MarkProblemKind, Marks, Span } from "./marks.js";

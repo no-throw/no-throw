@@ -1,0 +1,4 @@
+{
+  "description": "One color, full surface: a mark on a generator covers the call and every way of consuming its iterator — `for…of`, spread, destructuring, `.next()` and `.return()` — including through a call-initialized `const`, which is what makes start-now / consume-later work.",
+  "diagnostics": []
+}

@@ -1,0 +1,4 @@
+{
+  "description": "A bare generator call is not an escape: the call builds an iterator and runs no body, so calling a generator whose body throws is green. The eager parameter list is the sole exception, and `parameter-default-throws-in-generator` is the fixture for it.",
+  "diagnostics": []
+}
