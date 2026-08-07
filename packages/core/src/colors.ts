@@ -44,3 +44,20 @@ export type UndischargedReason =
   | "missing-argument"
   /** Propagating it would produce a path deeper than the engine follows. */
   | "beyond-depth";
+
+/**
+ * Why consuming an iterator is throwing. Everything a callee can be carries
+ * over — the protocol resolves to bodies like anything else, and a `let` is the
+ * same deferred refinement here — plus the one shape only a produced value has:
+ * the expression→originating-call rule naming no call at all.
+ */
+export type ConsumptionReason =
+  | ThrowingReason
+  /** Nothing in the syntax names the call that produced it. */
+  | "untraced"
+  /**
+   * The producing call's callee is a parameter. A condition says calling it is
+   * clean and has no form for "and consuming what it hands back is too", so
+   * there is nothing a caller could discharge.
+   */
+  | "conditioned-producer";

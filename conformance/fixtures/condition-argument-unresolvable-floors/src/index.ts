@@ -1,6 +1,6 @@
 /** @nothrow */
 export function myEach<T>(xs: readonly T[], cb: (t: T) => void): void {
-  for (const x of xs) cb(x);
+  for (let i = 0; i < xs.length; i += 1) cb(xs[i]);
 }
 
 /** @nothrow */

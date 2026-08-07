@@ -5,7 +5,7 @@ interface Node {
 
 function visitA(node: Node, cb: (n: Node) => void): void {
   cb(node);
-  for (const child of node.children) visitB(child, cb);
+  for (let i = 0; i < node.children.length; i += 1) visitB(node.children[i], cb);
 }
 
 function visitB(node: Node, cb: (n: Node) => void): void {

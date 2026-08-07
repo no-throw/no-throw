@@ -30,7 +30,10 @@ constructs. They are what a user's project looks like.
 Until the standard-library baseline lands, every call into `lib.*.d.ts` floors,
 `new Error(…)` among them — so a fixture that wants to be green about something
 else keeps clear of `.trim()` and friends and throws a bare value, and one that
-wants a floor reaches for `JSON.parse`.
+wants a floor reaches for `JSON.parse`. Iterating a builtin is the same story:
+`for…of` over an array or a `Map` resolves to `lib.es2015.iterable.d.ts` and
+floors, so a fixture about something else walks an array by index, and one
+about iteration iterates a generator or an in-program iterable.
 
 `expected.json`:
 

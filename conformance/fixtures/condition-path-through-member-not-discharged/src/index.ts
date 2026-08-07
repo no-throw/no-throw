@@ -8,7 +8,7 @@ interface Repo {
 
 /** @nothrow */
 export function saveAllB(items: readonly Item[], repo: Repo): void {
-  for (const item of items) repo.save(item);
+  for (let i = 0; i < items.length; i += 1) repo.save(items[i]);
 }
 
 /** @nothrow */

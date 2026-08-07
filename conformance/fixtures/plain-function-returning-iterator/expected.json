@@ -1,0 +1,4 @@
+{
+  "description": "A plain function is markable as an iterator producer when the iterator it returns traces to a clean generator call — directly or through a call-initialized `const` — and consuming what it hands back is then green too.",
+  "diagnostics": []
+}

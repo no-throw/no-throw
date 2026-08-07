@@ -1,5 +1,9 @@
 import ts from "typescript";
-import type { FloorReason, UndischargedReason } from "./colors.js";
+import type {
+  ConsumptionReason,
+  FloorReason,
+  UndischargedReason,
+} from "./colors.js";
 import { describePath, type Condition } from "./conditions.js";
 import { inheritedFrom } from "./declarations.js";
 import { calleeExpression, type Transfer } from "./escapes.js";
@@ -57,6 +61,26 @@ interface FlooredConditionArgument extends ConditionArgument {
   readonly reason: UndischargedReason;
 }
 
+/** A `for…of`, spread, destructuring, `.next()` or `yield*` that can throw. */
+interface ThrowingConsumption {
+  readonly kind: "throwing-consumption";
+  readonly node: ts.Node;
+  readonly reason: ConsumptionReason;
+}
+
+/** `.throw()`: the consumer throwing, with a detour through the iterator. */
+interface IteratorThrow {
+  readonly kind: "iterator-throw";
+  readonly node: ts.Node;
+}
+
+/** A returned iterator whose consumption the mark cannot be held to. */
+interface ThrowingReturnedIterator {
+  readonly kind: "throwing-returned-iterator";
+  readonly node: ts.Node;
+  readonly reason: ConsumptionReason;
+}
+
 /**
  * A body that runs with no callee in the syntax: an accessor behind a property
  * access, a conversion member behind a coercion. Its own kind because what the
@@ -93,6 +117,9 @@ export type Finding =
   | InferredThrowingCall
   | ThrowingConditionArgument
   | FlooredConditionArgument
+  | ThrowingConsumption
+  | IteratorThrow
+  | ThrowingReturnedIterator
   | UnbridgedHiddenTransfer
   | InferredThrowingHiddenTransfer;
 
@@ -149,6 +176,20 @@ function findingFor(escape: BodyEscape): Finding {
         kind: "floored-condition-argument",
         reason: escape.reason,
         ...conditionArgument(escape.node, escape.condition),
+      };
+    case "consumption":
+      return {
+        kind: "throwing-consumption",
+        node: escape.node,
+        reason: escape.reason,
+      };
+    case "iterator-throw":
+      return { kind: "iterator-throw", node: escape.node };
+    case "returned-iterator":
+      return {
+        kind: "throwing-returned-iterator",
+        node: escape.node,
+        reason: escape.reason,
       };
     case "hidden-transfer": {
       const { node, site, text, target } = escape;

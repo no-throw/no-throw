@@ -1,5 +1,3 @@
-import type { Bodied } from "./declarations.js";
-
 /**
  * One dimension of the color lattice — `throwing`, or the condition set —
  * stated as what the fixpoint needs to resolve it. `bottom` is the optimistic
@@ -8,8 +6,12 @@ import type { Bodied } from "./declarations.js";
  *
  * The lattice is richer than a boolean, and this is where that lands: one
  * machine, asked twice, rather than a second algorithm for conditions.
+ *
+ * `Node` is whatever the dimension colors, which is not always a declaration:
+ * a generator's call and its iterator are two colors over one body, and they
+ * are two nodes here.
  */
-export interface Dimension<T> {
+export interface Dimension<Node, T> {
   readonly bottom: T;
   /**
    * What a node whose group somehow did not close reads as. `bottom` is the
@@ -22,15 +24,15 @@ export interface Dimension<T> {
    * close before something it depends on has, so it is a soundness bug rather
    * than a slow path.
    */
-  dependenciesOf(body: Bodied): readonly Bodied[];
-  recompute(body: Bodied, valueOf: (body: Bodied) => T): T;
+  dependenciesOf(node: Node): readonly Node[];
+  recompute(node: Node, valueOf: (node: Node) => T): T;
   /** Whether two successive values are the same, so the iteration can stop. */
   settled(a: T, b: T): boolean;
 }
 
-export interface Fixpoint<T> {
-  /** `body`'s value, resolving its group first if it has none. */
-  valueOf(body: Bodied): T;
+export interface Fixpoint<Node, T> {
+  /** `node`'s value, resolving its group first if it has none. */
+  valueOf(node: Node): T;
 }
 
 /**
@@ -49,12 +51,14 @@ export interface Fixpoint<T> {
  * The graph is walked lazily from whatever is asked about, so only the
  * reachable unmarked subgraph is ever built.
  */
-export function createFixpoint<T>(dimension: Dimension<T>): Fixpoint<T> {
-  const committed = new Map<Bodied, T>();
-  const provisional = new Map<Bodied, T>();
-  const visits = new Map<Bodied, Visit>();
-  const stack: Bodied[] = [];
-  const onStack = new Set<Bodied>();
+export function createFixpoint<Node, T>(
+  dimension: Dimension<Node, T>,
+): Fixpoint<Node, T> {
+  const committed = new Map<Node, T>();
+  const provisional = new Map<Node, T>();
+  const visits = new Map<Node, Visit>();
+  const stack: Node[] = [];
+  const onStack = new Set<Node>();
   let nextIndex = 0;
 
   /**
@@ -62,10 +66,10 @@ export function createFixpoint<T>(dimension: Dimension<T>): Fixpoint<T> {
    * committed — Tarjan closes groups in reverse topological order — so the only
    * provisional values are the group's own.
    */
-  const current = (body: Bodied): T =>
-    committed.get(body) ?? provisional.get(body) ?? dimension.bottom;
+  const current = (node: Node): T =>
+    committed.get(node) ?? provisional.get(node) ?? dimension.bottom;
 
-  const visit = (body: Bodied): Visit => {
+  const visit = (body: Node): Visit => {
     const state: Visit = { index: nextIndex, lowlink: nextIndex };
     nextIndex += 1;
     visits.set(body, state);
@@ -86,8 +90,8 @@ export function createFixpoint<T>(dimension: Dimension<T>): Fixpoint<T> {
   };
 
   /** The group a root closes: itself and everything pushed after it. */
-  const unstack = (root: Bodied): readonly Bodied[] => {
-    const members: Bodied[] = [];
+  const unstack = (root: Node): readonly Node[] => {
+    const members: Node[] = [];
     for (;;) {
       const member = stack.pop();
       if (member === undefined) break;
@@ -103,7 +107,7 @@ export function createFixpoint<T>(dimension: Dimension<T>): Fixpoint<T> {
    * at once. A group of one settles in a single pass; a cycle takes as many as
    * its members need to agree.
    */
-  const resolve = (members: readonly Bodied[]): void => {
+  const resolve = (members: readonly Node[]): void => {
     for (const member of members) provisional.set(member, dimension.bottom);
 
     for (let moving = true; moving; ) {
@@ -123,14 +127,14 @@ export function createFixpoint<T>(dimension: Dimension<T>): Fixpoint<T> {
   };
 
   return {
-    valueOf(body) {
-      const known = committed.get(body);
+    valueOf(node) {
+      const known = committed.get(node);
       if (known !== undefined) return known;
-      visit(body);
+      visit(node);
       // A completed walk always closes the group it started from. If that ever
       // stops holding, the answer is the sound one rather than the optimistic
       // start the iteration happens to be sitting on.
-      return committed.get(body) ?? dimension.unresolved;
+      return committed.get(node) ?? dimension.unresolved;
     },
   };
 }

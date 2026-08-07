@@ -151,6 +151,48 @@ argument cannot be resolved — a `let`, a function captured by a factory — th
 call floors, and the diagnostic names the parameter, where the body enters it,
 and your outs.
 
+## Generators
+
+A generator's call and its iterator carry one color between them, and `@nothrow`
+covers both: the call is clean **and** consuming what it hands back is clean.
+
+Calling a generator runs no body, so a bare call is not an escape however the
+body ends — the escape is wherever the body actually runs. `for…of`, spread,
+array destructuring, `.next()`, `.return()` and `yield*` are those places, and
+each is reported and bridged there.
+
+```ts
+function* lines(): Generator<string> {
+  throw "boom";
+}
+
+/** @nothrow */
+export function count(): number {
+  const it = lines(); // fine — nothing has run yet
+  let n = 0;
+  for (const line of it) n += line.length; // Consuming this iterator escapes …
+  return n;
+}
+```
+
+Which call produced the iterator is read off the syntax: a direct call, or a
+`const` initialized by one — the same rule `await` will use. Anything else — a
+`let`, a parameter, a property — floors, and the message says which problem it
+is. That is also what makes a plain function markable as an iterator producer:
+`return inner()` is provable, `return someIterator` is not.
+
+A condition does not stretch to cover it: `@nothrow` given `make` says calling
+`make` is clean, and consuming what it hands back is a second promise the
+condition has no form for, so that floors too.
+
+`yield` is not a throw site — it can throw only because a consumer called
+`.throw()` — and `.throw()` itself always escapes, whatever the iterator makes
+of it: a throw cannot be laundered through one.
+
+Iteration over anything else resolves through `[Symbol.iterator]` and the
+`next` it hands back, so an in-program iterable is colored by its own bodies.
+Builtin iterables are the baseline's to answer and floor until it is wired up.
+
 ## Calls you did not write
 
 Some expressions run a body with no callee anywhere in the syntax. They are
@@ -196,20 +238,21 @@ This is early, and **nothing is published to npm yet**. What works today: the
 mark and its binding rules, the body walk, the `try`/`catch` bridge, the
 call-shaped escape sites — a call, `new C()`, `super()`, a tagged template and
 a parameter default — **hidden transfers** — accessors, dynamic keys, spread
-and coercion — **hybrid inference** for unmarked functions whose bodies are
-visible, **conditional cleanliness** for higher-order functions, and the
-`configs.recommended` preset. Everything with no body to read floors to
-throwing with a diagnostic naming your outs. The ES standard-library baseline
-ships as data in `@nothrow/core`, and so does the DOM baseline, but nothing
-consults either yet, so every standard-library and DOM call floors too — `new
-Error(…)` included, and with it the `map`/`forEach` family, whose conditional
-entries are what the call-site join will discharge — and so does every coercion
-of an object that inherits its `toString` and `valueOf` rather than declaring
-them.
+and coercion — **generators and the sync iteration protocol**, **hybrid
+inference** for unmarked functions whose bodies are visible, **conditional
+cleanliness** for higher-order functions, and the `configs.recommended` preset.
+Everything with no body to read floors to throwing with a diagnostic naming
+your outs. The ES standard-library baseline ships as data in `@nothrow/core`,
+and so does the DOM baseline, but nothing consults either yet, so every
+standard-library and DOM call floors too — `new Error(…)` included, iterating
+an array or a `Map` with it, and with them the `map`/`forEach` family, whose
+conditional entries are what the call-site join will discharge — and so does
+every coercion of an object that inherits its `toString` and `valueOf` rather
+than declaring them.
 
-Async, generators, iteration, the carrier chain (manifests, overlays,
-overrides) and `nothrow emit` are not built yet. The design is locked and lives
-in
+Async — `await`, promise chains, `for await` — the carrier chain (manifests,
+overlays, overrides) and `nothrow emit` are not built yet. The design is locked
+and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages

@@ -1,0 +1,4 @@
+{
+  "description": "The other half of `iterable-class-throwing-next`: the same shape with a `next` that cannot throw is green through inference, with nothing marked but the consumers.",
+  "diagnostics": []
+}

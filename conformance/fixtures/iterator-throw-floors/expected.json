@@ -1,0 +1,23 @@
+{
+  "description": "`.throw()` escapes however clean the iterator is, and whatever the member it lands on does — a hand-written one that swallows included. It is the consumer choosing to throw, with a detour, and a throw cannot be laundered through an iterator.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 23,
+      "column": 3,
+      "endLine": 23,
+      "endColumn": 19,
+      "messageId": "iteratorThrow",
+      "message": "`.throw()` escapes this `@nothrow` function: it throws the value into the iterator, whatever the iterator makes of it — a throw cannot be laundered through one. Bridge it with `try`/`catch`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 29,
+      "column": 3,
+      "endLine": 29,
+      "endColumn": 17,
+      "messageId": "iteratorThrow",
+      "message": "`.throw()` escapes this `@nothrow` function: it throws the value into the iterator, whatever the iterator makes of it — a throw cannot be laundered through one. Bridge it with `try`/`catch`."
+    }
+  ]
+}

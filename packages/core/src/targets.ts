@@ -351,7 +351,11 @@ function constructSignatureOf(
     : undefined;
 }
 
-function declarationTarget(declaration: Bodied): DeclaredTarget {
+/**
+ * A declaration named by something other than a transfer — a protocol member
+ * reached through the static type — as a target.
+ */
+export function declarationTarget(declaration: Bodied): DeclaredTarget {
   return hasVisibleBody(declaration)
     ? functionTarget(declaration)
     : floor("bodyless");

@@ -1,5 +1,6 @@
 import {
   analyzeSourceFile,
+  type ConsumptionReason,
   type EntrySite,
   type Finding,
   type FloorReason,
@@ -20,9 +21,22 @@ const createRule = ESLintUtils.RuleCreator(
  * text and never behind a docs URL: the CI log is the channel that survives
  * into code review, and acting on a floor from it alone is the whole contract.
  */
-const OUTS =
-  "Your outs, in precedence order: bridge this call with `try`/`catch`; " +
+const outs = (what: string): string =>
+  `Your outs, in precedence order: bridge this ${what} with \`try\`/\`catch\`; ` +
   "assert the color in `nothrow.overrides.json`; install or write an " +
+  "`@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
+  "`nothrow emit`.";
+
+const OUTS = outs("call");
+
+/**
+ * A returned iterator is consumed by the caller, so the bridge is not on this
+ * side of the boundary. What is: naming the call that produced it.
+ */
+const RETURN_OUTS =
+  "Your outs, in precedence order: return the iterator from a call this rule " +
+  "can trace — a direct call, or a `const` initialized by one; assert the " +
+  "producer\'s color in `nothrow.overrides.json`; install or write an " +
   "`@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
   "`nothrow emit`.";
 
@@ -50,6 +64,30 @@ const messages = {
     "Call to `{{callee}}` escapes this `@nothrow` function: it is non-throwing " +
     "given `{{path}}`, and {{reason}}. `{{callee}}` enters `{{path}}` at " +
     "{{entry}}. " + OUTS,
+  unbridgedConsumption:
+    "Consuming this iterator escapes this `@nothrow` function: {{reason}}. " +
+    outs("consumption"),
+  inferredThrowingConsumption:
+    "Consuming this iterator escapes this `@nothrow` function: the body " +
+    "producing its values was analyzed and can throw. Your outs: bridge this " +
+    "consumption with `try`/`catch`, or make that producer non-throwing — " +
+    "mark it `@nothrow` and the escapes inside it are reported too.",
+  // No carrier can color this away, and no body can either: the value being
+  // thrown is written right here.
+  iteratorThrow:
+    "`.throw()` escapes this `@nothrow` function: it throws the value into " +
+    "the iterator, whatever the iterator makes of it — a throw cannot be " +
+    "laundered through one. Bridge it with `try`/`catch`.",
+  unprovableReturnedIterator:
+    "This `@nothrow` function returns an iterator, so the mark covers " +
+    "consuming it too: {{reason}}. " +
+    RETURN_OUTS,
+  inferredThrowingReturnedIterator:
+    "This `@nothrow` function returns an iterator, so the mark covers " +
+    "consuming it too: the body producing its values was analyzed and can " +
+    "throw. Your outs: return an iterator from a non-throwing producer, or " +
+    "make that producer non-throwing — mark it `@nothrow` and the escapes " +
+    "inside it are reported too.",
   // Its own pair, because the first thing the reader needs told is that this
   // *is* a call: they did not write one, and the message has to say what runs.
   unbridgedHiddenTransfer:
@@ -120,6 +158,44 @@ const whyUndischarged: Record<UndischargedReason, string> = {
     "follows",
 };
 
+/**
+ * The why half of the floor contract for a consumption site. The subject is
+ * the iterator rather than a named callee: what runs when you consume one is
+ * the protocol, and the author wrote none of it.
+ */
+const whyConsumptionFloored: Record<
+  Exclude<ConsumptionReason, "inferred">,
+  string
+> = {
+  bodyless:
+    "what consuming it runs is declared without a body — an ambient or " +
+    "`.d.ts` declaration, the standard library\'s iteration protocol among " +
+    "them — and no mark, manifest, overlay or override colors it, so it is " +
+    "assumed to throw",
+  unmarked:
+    "what consuming it runs has a visible body but no `@nothrow` mark, so it " +
+    "is throwing by declaration",
+  unresolvable:
+    "the checker cannot resolve what consuming it runs, so nothing can say " +
+    "whether it throws",
+  captured:
+    "it is produced by a function captured from an enclosing scope, so no " +
+    "argument at any call site could color what consuming it runs",
+  "mutable-binding":
+    "it reaches here through a `let`, whose value the engine does not yet " +
+    "track across assignments, so which call produced it is not settled",
+  untraced:
+    "nothing in the syntax names the call that produced it, so nothing can " +
+    "say whether consuming it throws",
+  "conditioned-producer":
+    "it is produced by a call to one of this function\'s own parameters, and " +
+    "a condition can say that calling a parameter is clean but not that " +
+    "consuming what it hands back is",
+  conditioned:
+    "what consuming it runs is non-throwing only given conditions of its own, " +
+    "and consuming an iterator hands nothing over that could discharge them",
+};
+
 /** The site, as the reader wrote it. */
 const describeSite: Record<TransferSite, (text: string) => string> = {
   read: (text) => `Reading \`${text}\``,
@@ -136,7 +212,7 @@ function describeTarget(target: HiddenCallee): string {
 }
 
 type Report =
-  | { readonly messageId: "uncaughtThrow" }
+  | { readonly messageId: "uncaughtThrow" | "iteratorThrow" }
   | {
       readonly messageId: "unbridgedCall";
       readonly data: { readonly callee: string; readonly reason: string };
@@ -161,6 +237,15 @@ type Report =
         readonly entry: string;
         readonly reason: string;
       };
+    }
+  | {
+      readonly messageId: "unbridgedConsumption" | "unprovableReturnedIterator";
+      readonly data: { readonly reason: string };
+    }
+  | {
+      readonly messageId:
+        | "inferredThrowingConsumption"
+        | "inferredThrowingReturnedIterator";
     }
   | {
       readonly messageId: "unbridgedHiddenTransfer";
@@ -209,6 +294,22 @@ function reportFor(finding: Finding, cwd: string): Report {
           reason: whyUndischarged[finding.reason],
         },
       };
+    case "throwing-consumption":
+      return finding.reason === "inferred"
+        ? { messageId: "inferredThrowingConsumption" }
+        : {
+            messageId: "unbridgedConsumption",
+            data: { reason: whyConsumptionFloored[finding.reason] },
+          };
+    case "iterator-throw":
+      return { messageId: "iteratorThrow" };
+    case "throwing-returned-iterator":
+      return finding.reason === "inferred"
+        ? { messageId: "inferredThrowingReturnedIterator" }
+        : {
+            messageId: "unprovableReturnedIterator",
+            data: { reason: whyConsumptionFloored[finding.reason] },
+          };
     case "unbridged-hidden-transfer":
       return {
         messageId: "unbridgedHiddenTransfer",

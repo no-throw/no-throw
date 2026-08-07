@@ -79,6 +79,12 @@ export function hiddenTransfersOf(
       return coercionTransfers(escape.node, checker);
     case "instance-check":
       return instanceCheckTransfers(escape.node, checker);
+    case "consumption":
+    case "iterator-throw":
+      // The protocol members a consumption runs are resolved by the iteration
+      // seam, which knows which call produced the iterator. There is nothing
+      // left here for the static type alone to name.
+      return [];
   }
 }
 

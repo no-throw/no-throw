@@ -1,8 +1,8 @@
 /** @nothrow */
 export function forEachSafely<T>(xs: readonly T[], cb: (t: T) => void): void {
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i += 1) {
     try {
-      cb(x);
+      cb(xs[i]);
     } catch {
       failures += 1;
     }

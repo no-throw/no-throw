@@ -8,7 +8,7 @@ export function runAll(
   fs: readonly (() => void)[],
   cb: (f: () => void) => void,
 ): void {
-  for (const f of fs) cb(f);
+  for (let i = 0; i < fs.length; i += 1) cb(fs[i]);
 }
 
 /** @nothrow */
