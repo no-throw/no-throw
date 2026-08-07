@@ -74,6 +74,8 @@ export async function runFixture(
       }
       // Wrapping a call in a bridge changes behavior, so the edit is always the
       // reader's to accept: an autofix is a spec violation, not a fixture one.
+      // This guard stays whole-config on purpose — `--fix` applies every rule
+      // the preset turns on, so a third party's fixer would edit under our name.
       if (message.fix !== undefined) {
         throw new Error(
           `${file}:${message.line}:${message.column}: \`${message.ruleId}\` offered an autofix; no rule may`,

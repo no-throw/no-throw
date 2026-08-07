@@ -18,7 +18,7 @@
       "endLine": 6,
       "endColumn": 13,
       "messageId": "ineffectiveMarkNoSite",
-      "message": "`@nothrow` binds to nothing here, and there is no function nearby to move it to. A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method, constructor or accessor, or an object-literal method or function-valued property."
+      "message": "`@nothrow` binds to nothing here, and there is no valid site near it to move it to. A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method or constructor, an accessor, or an object-literal method or function-valued property."
     },
     {
       "file": "src/index.ts",

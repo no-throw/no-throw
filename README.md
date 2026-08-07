@@ -54,19 +54,19 @@ export default [
 | `nothrow/valid-mark` | every `@nothrow` you write binds to a function |
 | `@typescript-eslint/no-floating-promises` | a promise is awaited or handled |
 
-The preset needs `@typescript-eslint/eslint-plugin` installed; it is a peer
-dependency, and typed linting already requires it. Neither `nothrow` rule takes
-options — there is no configuration in which the guarantee means something
-different.
+`@typescript-eslint/eslint-plugin` is a peer dependency of the plugin itself,
+not only of the preset — typed linting already requires it. Neither `nothrow`
+rule takes options; there is no configuration in which the guarantee means
+something different.
 
 ## Where a mark binds
 
 `@nothrow` binds on a `function` declaration including `export default`; a
 single-declarator variable statement with a function or arrow initializer; a
-class method, constructor or accessor; and an object-literal method or
-function-valued property. Anywhere else is an error naming the nearest valid
-site, so a mark that binds to nothing is never a silent no-op you trust for
-years.
+class method or constructor; an accessor, in a class or an object literal; and
+an object-literal method or function-valued property. Anywhere else is an error
+naming the nearest valid site, so a mark that binds to nothing is never a silent
+no-op you trust for years.
 
 Positions with no body reject the mark outright — `declare`/ambient
 declarations, interface members, abstract methods and overload signatures. On an

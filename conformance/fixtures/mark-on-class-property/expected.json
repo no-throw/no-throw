@@ -1,12 +1,12 @@
 {
-  "description": "A mark on a type alias binds to nothing, and there is no function anywhere near it to name.",
+  "description": "A class property is not a valid site, even initialized with an arrow: the whitelist covers methods, constructors and accessors.",
   "diagnostics": [
     {
       "file": "src/index.ts",
-      "line": 1,
-      "column": 5,
-      "endLine": 1,
-      "endColumn": 13,
+      "line": 2,
+      "column": 7,
+      "endLine": 2,
+      "endColumn": 15,
       "messageId": "ineffectiveMarkNoSite",
       "message": "`@nothrow` binds to nothing here, and there is no valid site near it to move it to. A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method or constructor, an accessor, or an object-literal method or function-valued property."
     }

@@ -49,12 +49,19 @@ export interface Marks {
 export function findMarks(sourceFile: ts.SourceFile): Marks {
   const bound: BoundMark[] = [];
   const problems: MarkProblem[] = [];
+  // A function has one color however many times it is claimed, so a repeated
+  // tag must not enforce — or emit — the same body twice.
+  const marked = new Set<ts.FunctionLikeDeclaration>();
 
   for (const { tag, host } of nothrowTags(sourceFile)) {
     const span = spanOfTag(tag, sourceFile);
     const target = bindingTarget(host);
-    if (target !== undefined) bound.push({ span, target });
-    else problems.push(problemFor(host, span, sourceFile));
+    if (target === undefined) {
+      problems.push(problemFor(host, span, sourceFile));
+    } else if (!marked.has(target)) {
+      marked.add(target);
+      bound.push({ span, target });
+    }
   }
 
   return { bound, problems };
@@ -105,10 +112,7 @@ function spanOfTag(tag: ts.JSDocTag, sourceFile: ts.SourceFile): Span {
   return { start: tag.getStart(sourceFile), end: tag.tagName.end };
 }
 
-/**
- * The syntactic positions a mark may occupy — the normative whitelist of
- * #14 §2, in our own terms rather than TypeScript's JSDoc-climb.
- */
+/** The syntactic positions a mark may occupy. */
 type ValidSite =
   | ts.FunctionDeclaration
   | ts.VariableStatement
@@ -119,24 +123,12 @@ type ValidSite =
   | ts.PropertyAssignment;
 
 /**
- * `function` declarations including `export default`; single-declarator
- * variable statements with a function or arrow initializer; class method
- * declarations, constructors and accessors; object-literal methods and
- * function-valued property assignments.
- *
- * A body is required throughout — a mark is a claim about one, and the
- * bodyless family is rejected rather than trusted in your own source.
+ * The construct a mark binds to, or nothing. A body is required throughout: a
+ * mark is a claim about one, so the bodyless family is rejected rather than
+ * trusted in your own source.
  */
 function bindingTarget(host: ts.Node): ts.FunctionLikeDeclaration | undefined {
-  if (
-    ts.isFunctionDeclaration(host) ||
-    ts.isMethodDeclaration(host) ||
-    ts.isConstructorDeclaration(host) ||
-    ts.isGetAccessorDeclaration(host) ||
-    ts.isSetAccessorDeclaration(host)
-  ) {
-    return host.body === undefined ? undefined : host;
-  }
+  if (canCarryBody(host)) return host.body === undefined ? undefined : host;
 
   if (ts.isVariableStatement(host)) {
     const declarations = host.declarationList.declarations;
@@ -236,13 +228,24 @@ function isTypeMember(node: ts.Node): boolean {
  * shape: an overload signature.
  */
 function isBodylessImplementable(node: ts.Node): boolean {
+  return canCarryBody(node) && node.body === undefined;
+}
+
+type BodyBearing =
+  | ts.FunctionDeclaration
+  | ts.MethodDeclaration
+  | ts.ConstructorDeclaration
+  | ts.GetAccessorDeclaration
+  | ts.SetAccessorDeclaration;
+
+/** The declarations TypeScript writes a body onto, present or not. */
+function canCarryBody(node: ts.Node): node is BodyBearing {
   return (
-    (ts.isFunctionDeclaration(node) ||
-      ts.isMethodDeclaration(node) ||
-      ts.isConstructorDeclaration(node) ||
-      ts.isGetAccessorDeclaration(node) ||
-      ts.isSetAccessorDeclaration(node)) &&
-    node.body === undefined
+    ts.isFunctionDeclaration(node) ||
+    ts.isMethodDeclaration(node) ||
+    ts.isConstructorDeclaration(node) ||
+    ts.isGetAccessorDeclaration(node) ||
+    ts.isSetAccessorDeclaration(node)
   );
 }
 

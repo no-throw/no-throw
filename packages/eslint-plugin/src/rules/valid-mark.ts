@@ -8,11 +8,11 @@ const createRule = ESLintUtils.RuleCreator(
 );
 
 const WHITELIST =
-  "A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method, constructor or accessor, or an object-literal method or function-valued property.";
+  "A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method or constructor, an accessor, or an object-literal method or function-valued property.";
 
 const messages = {
   ineffectiveMark: `\`@nothrow\` binds to nothing here. The nearest valid site is {{site}} on line {{line}}. ${WHITELIST}`,
-  ineffectiveMarkNoSite: `\`@nothrow\` binds to nothing here, and there is no function nearby to move it to. ${WHITELIST}`,
+  ineffectiveMarkNoSite: `\`@nothrow\` binds to nothing here, and there is no valid site near it to move it to. ${WHITELIST}`,
   multiDeclarator:
     "`@nothrow` binds to nothing on a variable statement declaring more than one variable: which one it marks would be a guess. Give the marked function a declaration of its own.",
   ambientDeclaration:
