@@ -1,6 +1,7 @@
 import ts from "typescript";
 import type { CalleeColor } from "./colors.js";
-import { bodyOf, isMarked } from "./declarations.js";
+import { bodyOf } from "./declarations.js";
+import { isMarkedFunction } from "./marks.js";
 
 /**
  * The color-resolution seam. Every "what color is this callee?" question goes
@@ -20,7 +21,7 @@ export function resolveCalleeColor(
   if (declaration === undefined || !ts.isFunctionLike(declaration)) {
     return { color: "throwing", reason: "unresolvable" };
   }
-  if (isMarked(declaration)) return { color: "non-throwing" };
+  if (isMarkedFunction(declaration)) return { color: "non-throwing" };
 
   return {
     color: "throwing",

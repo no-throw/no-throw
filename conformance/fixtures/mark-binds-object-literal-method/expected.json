@@ -1,0 +1,13 @@
+{
+  "description": "A mark on an object-literal method binds, and the body is enforced.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 4,
+      "column": 5,
+      "endLine": 4,
+      "endColumn": 29,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}

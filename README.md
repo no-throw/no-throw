@@ -32,7 +32,8 @@ export function parse(text: string): unknown {
 
 ## Wiring it up
 
-The rule is type-aware, so it needs typescript-eslint's parser and a project:
+The rules are type-aware, so they need typescript-eslint's parser and a
+project:
 
 ```js
 // eslint.config.js
@@ -46,29 +47,54 @@ export default [
       parser: tseslint.parser,
       parserOptions: { projectService: true },
     },
-    plugins: { nothrow },
-    rules: { "nothrow/no-escaping-throw": "error" },
   },
+  nothrow.configs.recommended,
 ];
 ```
 
-`nothrow/no-escaping-throw` carries the whole invariant and takes no options.
-There is no configuration in which the guarantee means something different.
+`configs.recommended` is the whole contract, all at `error`:
+
+| rule | what it holds you to |
+| --- | --- |
+| `nothrow/no-escaping-throw` | the entire invariant — no throw escapes a marked function |
+| `nothrow/valid-mark` | every `@nothrow` you write binds to a function |
+| `@typescript-eslint/no-floating-promises` | a promise is awaited or handled |
+
+`@typescript-eslint/eslint-plugin` is a peer dependency of the plugin itself,
+not only of the preset — typed linting already requires it. Neither `nothrow`
+rule takes options; there is no configuration in which the guarantee means
+something different.
+
+## Where a mark binds
+
+`@nothrow` binds on a `function` declaration including `export default`; a
+single-declarator variable statement with a function or arrow initializer; a
+class method or constructor; an accessor, in a class or an object literal; and
+an object-literal method or function-valued property. Anywhere else is an error
+naming the nearest valid site, so a mark that binds to nothing is never a silent
+no-op you trust for years.
+
+Positions with no body reject the mark outright — `declare`/ambient
+declarations, interface members, abstract methods and overload signatures. On an
+overloaded function the mark goes on the implementation signature, which is the
+thing that throws. For an ambient declaration, assert the color in
+`nothrow.overrides.json` instead: an in-source `@nothrow` means *verified seed*
+and nothing else.
 
 ## Status
 
 This is early, and **nothing is published to npm yet**. What works today: the
-mark, the body walk, the `try`/`catch` bridge, and calls as escape sites
-resolved against the **pure-declare floor** — a call is clean only when its
-callee carries a mark, and everything else floors to throwing with a diagnostic
-naming your outs.
+mark and its binding rules, the body walk, the `try`/`catch` bridge, calls as
+escape sites resolved against the **pure-declare floor** — a call is clean only
+when its callee carries a mark, and everything else floors to throwing with a
+diagnostic naming your outs — and the `configs.recommended` preset.
 
 The floor is the sound end of the design, not the destination. Inference for
 unmarked bodies, constructors, async, generators, hidden transfers, the carrier
-chain (manifests, overlays, overrides), the standard-library and DOM baseline,
-the `configs.recommended` preset and `nothrow emit` are not built yet — so until
-the baseline lands, every standard-library call floors too. The design is locked
-and lives in [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
+chain (manifests, overlays, overrides), the standard-library and DOM baseline
+and `nothrow emit` are not built yet — so until the baseline lands, every
+standard-library call floors too. The design is locked and lives in
+[the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages
 

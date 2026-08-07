@@ -1,6 +1,7 @@
 import ts from "typescript";
 import type { FloorReason } from "./colors.js";
-import { bodyOf, isMarked } from "./declarations.js";
+import { bodyOf } from "./declarations.js";
+import { findMarks } from "./marks.js";
 import { resolveCalleeColor } from "./resolve-color.js";
 
 interface UncaughtThrow {
@@ -35,15 +36,13 @@ export function analyzeSourceFile(
 ): readonly Finding[] {
   const findings: Finding[] = [];
 
-  const visit = (node: ts.Node): void => {
-    // Unmarked functions have nothing to enforce: throwing is the default.
-    if (ts.isFunctionLike(node) && isMarked(node)) {
-      collectEscapes(node, checker, findings);
-    }
-    node.forEachChild(visit);
-  };
+  // Unmarked functions have nothing to enforce: throwing is the default. A mark
+  // that binds to nothing enforces nothing either — it is `valid-mark`'s to
+  // report, not an invariant this walk can hold anything to.
+  for (const target of findMarks(sourceFile).bound) {
+    collectEscapes(target, checker, findings);
+  }
 
-  visit(sourceFile);
   return findings;
 }
 
