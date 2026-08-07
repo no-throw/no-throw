@@ -1,0 +1,23 @@
+{
+  "name": "no-throw",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Statically enforce that no throw escapes a function marked @nothrow.",
+  "license": "MIT",
+  "packageManager": "pnpm@9.12.3",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "check:lockstep": "node scripts/check-lockstep.mjs",
+    "conformance": "node conformance/dist/run.js",
+    "test": "pnpm run build && pnpm run check:lockstep && pnpm run conformance"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

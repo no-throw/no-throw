@@ -1,0 +1,4 @@
+{
+  "description": "A throw inside a try block with a catch is bridged: the catch turns it into a returned value.",
+  "diagnostics": []
+}

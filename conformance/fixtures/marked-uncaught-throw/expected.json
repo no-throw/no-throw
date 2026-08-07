@@ -1,0 +1,14 @@
+{
+  "description": "A marked function with an uncaught throw reports one diagnostic at the throw.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 27,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    }
+  ]
+}

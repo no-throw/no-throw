@@ -1,0 +1,4 @@
+{
+  "description": "A throw in a nested function belongs to that function, not to the marked one that merely builds it.",
+  "diagnostics": []
+}
