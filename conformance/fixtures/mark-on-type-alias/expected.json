@@ -1,0 +1,14 @@
+{
+  "description": "A mark on a type alias binds to nothing, and there is no function anywhere near it to name.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 1,
+      "column": 5,
+      "endLine": 1,
+      "endColumn": 13,
+      "messageId": "ineffectiveMarkNoSite",
+      "message": "`@nothrow` binds to nothing here, and there is no function nearby to move it to. A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method, constructor or accessor, or an object-literal method or function-valued property."
+    }
+  ]
+}

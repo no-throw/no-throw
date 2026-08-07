@@ -1,0 +1,14 @@
+{
+  "description": "A mark on an abstract method is rejected: the bodies that would have to honor it are in the subclasses.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 2,
+      "column": 7,
+      "endLine": 2,
+      "endColumn": 15,
+      "messageId": "abstractMethod",
+      "message": "`@nothrow` binds to nothing on an abstract method: there is no body to verify it against. Mark the implementing method in each subclass instead."
+    }
+  ]
+}

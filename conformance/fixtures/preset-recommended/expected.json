@@ -1,0 +1,32 @@
+{
+  "description": "Installing `configs.recommended` turns on the invariant, mark hygiene and the float rule, with no rules named by hand.",
+  "config": "recommended",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 27,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 6,
+      "column": 5,
+      "endLine": 6,
+      "endColumn": 13,
+      "messageId": "ineffectiveMarkNoSite",
+      "message": "`@nothrow` binds to nothing here, and there is no function nearby to move it to. A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method, constructor or accessor, or an object-literal method or function-valued property."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 12,
+      "column": 3,
+      "endLine": 12,
+      "endColumn": 11,
+      "messageId": "floatingVoid"
+    }
+  ]
+}

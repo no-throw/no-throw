@@ -1,6 +1,7 @@
 import { analyzeSourceFile, type FindingKind } from "@nothrow/core";
 import { ESLintUtils, type TSESTree } from "@typescript-eslint/utils";
 import type ts from "typescript";
+import { locOf } from "../loc.js";
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/MidnightDesign/no-throw#${name}`,
@@ -43,9 +44,8 @@ export const noEscapingThrow = createRule<[], MessageId>({
         ) as ts.SourceFile;
 
         for (const finding of analyzeSourceFile(sourceFile)) {
-          const reportAt = services.tsNodeToESTreeNodeMap.get(finding.node);
           context.report({
-            node: reportAt ?? node,
+            loc: locOf(sourceFile, finding.span),
             messageId: messageIdByKind[finding.kind],
           });
         }

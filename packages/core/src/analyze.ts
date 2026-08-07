@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { findMarks, type Span } from "./marks.js";
 
 /**
  * The kinds of escape a marked function can be reported for. Every kind is a
@@ -9,8 +10,7 @@ export type FindingKind = "uncaught-throw";
 
 export interface Finding {
   readonly kind: FindingKind;
-  /** The node the diagnostic is anchored to. */
-  readonly node: ts.Node;
+  readonly span: Span;
 }
 
 /**
@@ -23,35 +23,30 @@ export function analyzeSourceFile(
 ): readonly Finding[] {
   const findings: Finding[] = [];
 
-  const visit = (node: ts.Node): void => {
-    // Unmarked functions have nothing to enforce: throwing is the default.
-    if (ts.isFunctionLike(node) && isMarked(node)) {
-      collectEscapes(node, findings);
-    }
-    node.forEachChild(visit);
-  };
+  // Unmarked functions have nothing to enforce: throwing is the default. A
+  // mark that does not bind enforces nothing either — it is `valid-mark`'s to
+  // report, not an invariant this walk can hold anything to.
+  for (const { target } of findMarks(sourceFile).bound) {
+    collectEscapes(target, sourceFile, findings);
+  }
 
-  visit(sourceFile);
   return findings;
 }
 
-/**
- * Provisional mark detection: a `@nothrow` JSDoc tag as TypeScript attributes
- * it. The normative binding whitelist replaces this.
- */
-function isMarked(node: ts.Node): boolean {
-  return ts
-    .getJSDocTags(node)
-    .some((tag) => tag.tagName.escapedText === "nothrow");
-}
-
-function collectEscapes(fn: ts.SignatureDeclaration, out: Finding[]): void {
-  const body = (fn as ts.FunctionLikeDeclaration).body;
+function collectEscapes(
+  fn: ts.FunctionLikeDeclaration,
+  sourceFile: ts.SourceFile,
+  out: Finding[],
+): void {
+  const { body } = fn;
   if (body === undefined) return;
 
   const walk = (node: ts.Node): void => {
     if (ts.isThrowStatement(node) && !isBridged(node)) {
-      out.push({ kind: "uncaught-throw", node });
+      out.push({
+        kind: "uncaught-throw",
+        span: { start: node.getStart(sourceFile), end: node.getEnd() },
+      });
     }
 
     node.forEachChild((child) => {

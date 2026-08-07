@@ -1,0 +1,14 @@
+{
+  "description": "A mark on a non-function declaration binds to nothing, and the message names the enclosing function.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 2,
+      "column": 7,
+      "endLine": 2,
+      "endColumn": 15,
+      "messageId": "ineffectiveMark",
+      "message": "`@nothrow` binds to nothing here. The nearest valid site is the function `attempt` on line 1. A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method, constructor or accessor, or an object-literal method or function-valued property."
+    }
+  ]
+}

@@ -1,0 +1,300 @@
+import ts from "typescript";
+
+/** Source text offsets, `[start, end)`, that a diagnostic is anchored to. */
+export interface Span {
+  readonly start: number;
+  readonly end: number;
+}
+
+/**
+ * A `@nothrow` tag that binds. The target is what the enforcement walk checks
+ * and what the manifest emitter scans: one whitelist, both consumers.
+ */
+export interface BoundMark {
+  readonly span: Span;
+  readonly target: ts.FunctionLikeDeclaration;
+}
+
+/**
+ * The ways a `@nothrow` tag fails to bind. The bodyless family is called out
+ * member by member because each has a different out: an ambient declaration
+ * belongs in the overrides file, an overload belongs on its implementation.
+ */
+export type MarkProblemKind =
+  | "ineffective-mark"
+  | "ineffective-mark-no-site"
+  | "multi-declarator"
+  | "ambient-declaration"
+  | "interface-member"
+  | "abstract-method"
+  | "overload-signature";
+
+export interface MarkProblem {
+  readonly kind: MarkProblemKind;
+  readonly span: Span;
+  /** Message parameters; `ineffective-mark` carries `site` and `line`. */
+  readonly data: Readonly<Record<string, string>>;
+}
+
+export interface Marks {
+  readonly bound: readonly BoundMark[];
+  readonly problems: readonly MarkProblem[];
+}
+
+/**
+ * Bind every `@nothrow` in a file, or say why it does not bind. A mark that
+ * neither binds nor is reported would be a silent no-op, which is the one
+ * outcome the design rules out.
+ */
+export function findMarks(sourceFile: ts.SourceFile): Marks {
+  const bound: BoundMark[] = [];
+  const problems: MarkProblem[] = [];
+
+  for (const { tag, host } of nothrowTags(sourceFile)) {
+    const span = spanOfTag(tag, sourceFile);
+    const target = bindingTarget(host);
+    if (target !== undefined) bound.push({ span, target });
+    else problems.push(problemFor(host, span, sourceFile));
+  }
+
+  return { bound, problems };
+}
+
+/**
+ * Every `@nothrow` in the file, paired with the construct it directly precedes.
+ *
+ * Attribution is the parser's lexical one — the node whose leading trivia the
+ * comment sits in. `getJSDocTags`' climb to enclosing nodes is discarded, so
+ * what a mark binds to is decided by `bindingTarget` below and nowhere else.
+ */
+function nothrowTags(
+  sourceFile: ts.SourceFile,
+): { tag: ts.JSDocTag; host: ts.Node }[] {
+  const found: { tag: ts.JSDocTag; host: ts.Node }[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (carriesJSDoc(node, sourceFile)) {
+      for (const tag of ts.getJSDocTags(node)) {
+        if (tag.tagName.escapedText !== "nothrow") continue;
+        if (tag.parent.parent !== node) continue;
+        found.push({ tag, host: node });
+      }
+    }
+    node.forEachChild(visit);
+  };
+
+  visit(sourceFile);
+  return found;
+}
+
+/**
+ * A node whose own leading trivia holds a JSDoc comment starts earlier when
+ * asked to include it. That is the cheap public test for "worth asking about
+ * tags at all"; `getJSDocTags` itself climbs, and climbing every node is the
+ * cost this avoids.
+ */
+function carriesJSDoc(node: ts.Node, sourceFile: ts.SourceFile): boolean {
+  return (
+    node.getStart(sourceFile, /* includeJsDocComment */ true) !==
+    node.getStart(sourceFile)
+  );
+}
+
+/** The `@nothrow` text itself: where you wrote it is where it is reported. */
+function spanOfTag(tag: ts.JSDocTag, sourceFile: ts.SourceFile): Span {
+  return { start: tag.getStart(sourceFile), end: tag.tagName.end };
+}
+
+/**
+ * The syntactic positions a mark may occupy — the normative whitelist of
+ * #14 §2, in our own terms rather than TypeScript's JSDoc-climb.
+ */
+type ValidSite =
+  | ts.FunctionDeclaration
+  | ts.VariableStatement
+  | ts.MethodDeclaration
+  | ts.ConstructorDeclaration
+  | ts.GetAccessorDeclaration
+  | ts.SetAccessorDeclaration
+  | ts.PropertyAssignment;
+
+/**
+ * `function` declarations including `export default`; single-declarator
+ * variable statements with a function or arrow initializer; class method
+ * declarations, constructors and accessors; object-literal methods and
+ * function-valued property assignments.
+ *
+ * A body is required throughout — a mark is a claim about one, and the
+ * bodyless family is rejected rather than trusted in your own source.
+ */
+function bindingTarget(host: ts.Node): ts.FunctionLikeDeclaration | undefined {
+  if (
+    ts.isFunctionDeclaration(host) ||
+    ts.isMethodDeclaration(host) ||
+    ts.isConstructorDeclaration(host) ||
+    ts.isGetAccessorDeclaration(host) ||
+    ts.isSetAccessorDeclaration(host)
+  ) {
+    return host.body === undefined ? undefined : host;
+  }
+
+  if (ts.isVariableStatement(host)) {
+    const declarations = host.declarationList.declarations;
+    if (declarations.length !== 1) return undefined;
+    return asFunction(declarations[0]?.initializer);
+  }
+
+  if (ts.isPropertyAssignment(host)) return asFunction(host.initializer);
+
+  return undefined;
+}
+
+function isValidSite(node: ts.Node): node is ValidSite {
+  return bindingTarget(node) !== undefined;
+}
+
+function asFunction(
+  initializer: ts.Expression | undefined,
+): ts.FunctionLikeDeclaration | undefined {
+  if (initializer === undefined) return undefined;
+  return ts.isFunctionExpression(initializer) || ts.isArrowFunction(initializer)
+    ? initializer
+    : undefined;
+}
+
+function problemFor(
+  host: ts.Node,
+  span: Span,
+  sourceFile: ts.SourceFile,
+): MarkProblem {
+  const kind = problemKind(host);
+  if (kind !== "ineffective-mark") return { kind, span, data: {} };
+
+  const site = nearestValidSite(host);
+  if (site === undefined) {
+    return { kind: "ineffective-mark-no-site", span, data: {} };
+  }
+
+  const { line } = sourceFile.getLineAndCharacterOfPosition(
+    site.getStart(sourceFile),
+  );
+  return {
+    kind,
+    span,
+    data: { site: describeSite(site, sourceFile), line: String(line + 1) },
+  };
+}
+
+function problemKind(host: ts.Node): MarkProblemKind {
+  if (isAmbient(host)) return "ambient-declaration";
+  if (isTypeMember(host)) return "interface-member";
+  if (hasModifier(host, ts.SyntaxKind.AbstractKeyword)) return "abstract-method";
+  if (isBodylessImplementable(host)) return "overload-signature";
+  if (
+    ts.isVariableStatement(host) &&
+    host.declarationList.declarations.length > 1
+  ) {
+    return "multi-declarator";
+  }
+  return "ineffective-mark";
+}
+
+/**
+ * `declare`, anywhere above the mark, and every declaration in a `.d.ts`. The
+ * modifier is read syntactically rather than off `NodeFlags.Ambient`, which
+ * TypeScript does not expose.
+ */
+function isAmbient(node: ts.Node): boolean {
+  if (node.getSourceFile().isDeclarationFile) return true;
+  for (let n: ts.Node | undefined = node; n !== undefined; n = n.parent) {
+    if (hasModifier(n, ts.SyntaxKind.DeclareKeyword)) return true;
+  }
+  return false;
+}
+
+function hasModifier(node: ts.Node, kind: ts.SyntaxKind): boolean {
+  if (!ts.canHaveModifiers(node)) return false;
+  return (
+    ts.getModifiers(node)?.some((modifier) => modifier.kind === kind) === true
+  );
+}
+
+/** A member of an `interface` or an object type literal: never has a body. */
+function isTypeMember(node: ts.Node): boolean {
+  return (
+    ts.isMethodSignature(node) ||
+    ts.isPropertySignature(node) ||
+    ts.isCallSignatureDeclaration(node) ||
+    ts.isConstructSignatureDeclaration(node) ||
+    ts.isIndexSignatureDeclaration(node)
+  );
+}
+
+/**
+ * A declaration that could have carried a body and does not. In a
+ * non-ambient, non-abstract position TypeScript admits exactly one such
+ * shape: an overload signature.
+ */
+function isBodylessImplementable(node: ts.Node): boolean {
+  return (
+    (ts.isFunctionDeclaration(node) ||
+      ts.isMethodDeclaration(node) ||
+      ts.isConstructorDeclaration(node) ||
+      ts.isGetAccessorDeclaration(node) ||
+      ts.isSetAccessorDeclaration(node)) &&
+    node.body === undefined
+  );
+}
+
+/**
+ * Where the author probably meant to put the mark: the first valid site the
+ * marked construct contains, else the nearest one enclosing it.
+ */
+function nearestValidSite(host: ts.Node): ValidSite | undefined {
+  const contained = firstContainedSite(host);
+  if (contained !== undefined) return contained;
+
+  for (let n = host.parent; n !== undefined; n = n.parent) {
+    if (isValidSite(n)) return n;
+  }
+  return undefined;
+}
+
+function firstContainedSite(node: ts.Node): ValidSite | undefined {
+  let found: ValidSite | undefined;
+
+  const visit = (child: ts.Node): void => {
+    if (found !== undefined) return;
+    if (isValidSite(child)) {
+      found = child;
+      return;
+    }
+    child.forEachChild(visit);
+  };
+
+  node.forEachChild(visit);
+  return found;
+}
+
+function describeSite(site: ValidSite, sourceFile: ts.SourceFile): string {
+  if (ts.isConstructorDeclaration(site)) return "the constructor";
+
+  const declaration = ts.isVariableStatement(site)
+    ? site.declarationList.declarations[0]
+    : site;
+  const name =
+    declaration === undefined
+      ? undefined
+      : ts.getNameOfDeclaration(declaration)?.getText(sourceFile);
+
+  const noun = siteNoun(site);
+  return name === undefined ? `the ${noun}` : `the ${noun} \`${name}\``;
+}
+
+function siteNoun(site: ValidSite): string {
+  if (ts.isGetAccessorDeclaration(site)) return "getter";
+  if (ts.isSetAccessorDeclaration(site)) return "setter";
+  if (ts.isMethodDeclaration(site)) return "method";
+  if (ts.isPropertyAssignment(site)) return "property";
+  return "function";
+}

@@ -3,6 +3,7 @@ import { ESLint, type Linter } from "eslint";
 import { relative, sep } from "node:path";
 import tseslint from "typescript-eslint";
 import type { Diagnostic } from "./diagnostics.js";
+import type { FixtureConfig } from "./fixtures.js";
 
 /**
  * The v1 driver: run a fixture project through the real plugin, over the real
@@ -11,23 +12,41 @@ import type { Diagnostic } from "./diagnostics.js";
  */
 export async function runFixture(
   directory: string,
+  fixtureConfig: FixtureConfig,
 ): Promise<readonly Diagnostic[]> {
-  const config: Linter.Config[] = [
-    {
-      files: ["**/*.ts"],
-      languageOptions: {
-        parser: tseslint.parser as Linter.Parser,
-        parserOptions: {
-          project: "./tsconfig.json",
-          tsconfigRootDir: directory,
-        },
+  const language: Linter.Config = {
+    files: ["**/*.ts"],
+    languageOptions: {
+      parser: tseslint.parser as Linter.Parser,
+      parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: directory,
       },
-      // typescript-eslint's `RuleModule` and ESLint's core `RuleDefinition`
-      // describe the same object through incompatible context types, and
-      // neither package widens for the other.
-      plugins: { nothrow: nothrow as unknown as ESLint.Plugin },
-      rules: { "nothrow/no-escaping-throw": "error" },
     },
+  };
+
+  // typescript-eslint's `RuleModule` and ESLint's core `RuleDefinition`
+  // describe the same object through incompatible context types, and neither
+  // package widens for the other.
+  const rules: Linter.Config = {
+    files: ["**/*.ts"],
+    plugins: { nothrow: nothrow as unknown as ESLint.Plugin },
+    rules: {
+      "nothrow/no-escaping-throw": "error",
+      "nothrow/valid-mark": "error",
+    },
+  };
+
+  // The preset is what a user installs, so it is asserted as shipped: the
+  // fixture adds a file filter and nothing else.
+  const preset: Linter.Config = {
+    files: ["**/*.ts"],
+    ...(nothrow.configs.recommended as unknown as Linter.Config),
+  };
+
+  const config: Linter.Config[] = [
+    language,
+    fixtureConfig === "recommended" ? preset : rules,
   ];
 
   const eslint = new ESLint({
@@ -60,9 +79,12 @@ export async function runFixture(
           `${file}:${message.line}:${message.column}: \`${message.ruleId}\` offered an autofix; no rule may`,
         );
       }
-      // Suggestions are legal, but nothing in `expected.json` can express one
-      // yet. Fail loudly rather than drop them from the seam silently.
-      if (message.suggestions !== undefined) {
+      // Our rules will offer suggestions once there is a bridge edit to
+      // suggest, and nothing in `expected.json` can express one yet: fail
+      // loudly rather than drop them from the seam silently. Rules the preset
+      // merely turns on are somebody else's surface, and pinning a
+      // dependency's suggestion text here would assert nothing about us.
+      if (message.suggestions !== undefined && isOurs(message.ruleId)) {
         throw new Error(
           `${file}:${message.line}:${message.column}: \`${message.ruleId}\` offered suggestions, which the expectation format cannot yet assert`,
         );
@@ -81,6 +103,10 @@ export async function runFixture(
   }
 
   return diagnostics;
+}
+
+function isOurs(ruleId: string): boolean {
+  return ruleId.startsWith("nothrow/");
 }
 
 function toFixturePath(directory: string, filePath: string): string {

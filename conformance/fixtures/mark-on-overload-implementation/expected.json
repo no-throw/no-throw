@@ -1,0 +1,13 @@
+{
+  "description": "A mark on the implementation signature of an overloaded function binds, and the body is enforced.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 5,
+      "column": 3,
+      "endLine": 5,
+      "endColumn": 34,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}

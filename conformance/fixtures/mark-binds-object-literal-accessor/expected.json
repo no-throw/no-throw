@@ -1,0 +1,13 @@
+{
+  "description": "An accessor declaration is a valid site wherever it is written, object literal included, and the body is enforced.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 4,
+      "column": 5,
+      "endLine": 4,
+      "endColumn": 29,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}
