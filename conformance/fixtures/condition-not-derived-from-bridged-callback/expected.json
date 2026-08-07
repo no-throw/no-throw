@@ -1,0 +1,4 @@
+{
+  "description": "A callback the body enters inside a bridge is neutralized there, so `forEachSafely` is unconditionally clean and a throwing callback is not its caller's problem.",
+  "diagnostics": []
+}

@@ -1,0 +1,4 @@
+{
+  "description": "Handing a callback to a call is not entering it: `store` conditions nothing, so `register` is unconditionally clean and takes a throwing handler without complaint.",
+  "diagnostics": []
+}

@@ -1,0 +1,14 @@
+{
+  "description": "An argument with no visible body floors like any other bodyless callee: it is entered by the callee, so it is held to the same standard as one written at the call.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 8,
+      "column": 3,
+      "endLine": 8,
+      "endColumn": 37,
+      "messageId": "conditionArgumentFloored",
+      "message": "Call to `myEach` escapes this `@nothrow` function: it is non-throwing given `cb`, and the argument passed for it is declared without a body — an ambient declaration, a `.d.ts`, or an interface member — and no mark, manifest, overlay or override colors it. `myEach` enters `cb` at src/index.ts:3. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

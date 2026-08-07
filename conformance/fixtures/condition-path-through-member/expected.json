@@ -1,0 +1,4 @@
+{
+  "description": "Conditions are paths, not positions: a body calling `repo.save(item)` conditions `repo.save`, and a repo whose `save` cannot throw discharges it.",
+  "diagnostics": []
+}

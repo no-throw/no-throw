@@ -1,0 +1,4 @@
+{
+  "description": "An argument reachable from the caller's own parameters propagates the condition upward instead of discharging it: `myMapKeys` is clean given `key`, and its caller discharges that.",
+  "diagnostics": []
+}
