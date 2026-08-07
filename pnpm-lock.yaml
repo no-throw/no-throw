@@ -20,6 +20,9 @@ importers:
       '@nothrow/eslint-plugin':
         specifier: workspace:*
         version: link:../packages/eslint-plugin
+      '@typescript-eslint/typescript-estree':
+        specifier: ^8.18.0
+        version: 8.66.0(typescript@5.9.3)
       eslint:
         specifier: ^9.17.0
         version: 9.39.5

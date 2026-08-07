@@ -1,4 +1,5 @@
 import nothrow from "@nothrow/eslint-plugin";
+import { clearCaches } from "@typescript-eslint/typescript-estree";
 import { ESLint, type Linter } from "eslint";
 import { relative, sep } from "node:path";
 import tseslint from "typescript-eslint";
@@ -55,7 +56,17 @@ export async function runFixture(
     overrideConfig: config,
   });
 
-  const results = await eslint.lintFiles(["src/**/*.ts"]);
+  let results: ESLint.LintResult[];
+  try {
+    results = await eslint.lintFiles(["src/**/*.ts"]);
+  } finally {
+    // The parser caches a watch program per `tsconfig.json` at module scope,
+    // and every fixture is its own project the suite never visits twice. Left
+    // alone, that pins a whole TypeScript program per fixture for the rest of
+    // the run, and the run exhausts the heap partway through.
+    clearCaches();
+  }
+
   const diagnostics: Diagnostic[] = [];
 
   for (const result of results) {
