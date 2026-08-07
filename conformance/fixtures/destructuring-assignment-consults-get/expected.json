@@ -1,0 +1,32 @@
+{
+  "description": "A destructuring assignment reads its source the same way a binding pattern does, so `({ value: out } = box)` consults the get half and the data property beside it stays clean. A shorthand's default is a read of `box.value`, not a write to it — mistaking the two would consult the clean setter and lose the diagnostic.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 17,
+      "column": 6,
+      "endLine": 17,
+      "endColumn": 16,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Destructuring `value: out` escapes this `@nothrow` function: it runs the getter `value`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the getter `value` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 31,
+      "column": 12,
+      "endLine": 31,
+      "endColumn": 21,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Reading `box.value` escapes this `@nothrow` function: it runs the getter `value`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the getter `value` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 38,
+      "column": 6,
+      "endLine": 38,
+      "endColumn": 11,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Destructuring `value` escapes this `@nothrow` function: it runs the getter `value`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the getter `value` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

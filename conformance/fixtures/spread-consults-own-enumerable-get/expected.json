@@ -1,0 +1,32 @@
+{
+  "description": "Spread and rest consult get over the source's *own enumerable* members only. A class declares its accessors on the prototype, so spreading an instance — the whole DOM case — touches nothing; an object literal's accessor is own, so spreading it runs the getter. An accessor declared on an interface could be either, and the sound reading of that is own, so it floors. A union source contributes every constituent's members, not only the ones they share.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 39,
+      "column": 12,
+      "endLine": 39,
+      "endColumn": 22,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Spreading `literal` escapes this `@nothrow` function: it runs the getter `value`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the getter `value` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 44,
+      "column": 12,
+      "endLine": 44,
+      "endColumn": 24,
+      "messageId": "unbridgedHiddenTransfer",
+      "message": "Spreading `described` escapes this `@nothrow` function: it runs the getter `label`, which is declared without a body — an ambient declaration, a `.d.ts`, or a value known only by its function type — and no mark, manifest, overlay or override colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 49,
+      "column": 12,
+      "endLine": 49,
+      "endColumn": 39,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Spreading `(flag ? literal : plain)` escapes this `@nothrow` function: it runs the getter `value`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the getter `value` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

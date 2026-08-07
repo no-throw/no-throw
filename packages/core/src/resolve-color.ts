@@ -3,10 +3,21 @@ import type { ThrowingReason, UndischargedReason } from "./colors.js";
 import { pathKey, type Condition } from "./conditions.js";
 import { dischargeAt, type Outcome } from "./discharge.js";
 import { baseClassExpression, type Bodied } from "./declarations.js";
-import { unbridgedEscapes, type Transfer } from "./escapes.js";
+import { unbridgedEscapes, type Escape, type Transfer } from "./escapes.js";
 import { createFixpoint } from "./infer.js";
 import { colorPolicy } from "./policy.js";
-import { calleeTargets, constructedTarget, type Target } from "./targets.js";
+import {
+  calleeTargets,
+  constructedTarget,
+  declaredTarget,
+  type DeclaredTarget,
+  type Target,
+} from "./targets.js";
+import {
+  hiddenTransfersOf,
+  type HiddenCallee,
+  type TransferSite,
+} from "./transfers.js";
 
 /**
  * One reason a body escapes. A transfer can produce several — a lost callee
@@ -31,13 +42,30 @@ export type BodyEscape =
       readonly node: Transfer;
       readonly condition: Condition;
       readonly reason: UndischargedReason;
+    }
+  /**
+   * A body that runs with no callee in the syntax: an accessor behind a
+   * property access, a conversion member behind a coercion. Its own kind
+   * because what the reader has to be told is different — not "this call
+   * throws" but "this is a call".
+   */
+  | {
+      readonly kind: "hidden-transfer";
+      readonly node: ts.Node;
+      readonly site: TransferSite;
+      /** The site as written. */
+      readonly text: string;
+      /** Absent when the type could not name what runs, which always floors. */
+      readonly target: HiddenCallee | undefined;
+      readonly reason: ThrowingReason;
     };
 
 /**
  * The color-resolution seam. Every "what color is this callee?" question goes
  * through here, so inference and the resolver chain — overrides, overlays,
  * shipped manifests, the baseline — land behind this one object instead of
- * being threaded through the walk.
+ * being threaded through the walk. Hidden transfers ask it the same question
+ * about a body the syntax never named.
  *
  * Inference is the last rung and a removable one: with the `declare` policy the
  * chain stops at the pins and everything unmarked floors, which is the sound
@@ -67,10 +95,47 @@ interface Discharged {
 /** What a body's conditions are read against while its group is unresolved. */
 type Conditions = (body: Bodied) => readonly Condition[];
 
+/** One body a hidden transfer can enter, named the way a message wants it. */
+interface HiddenTarget {
+  /** Absent when the type could not name what runs. */
+  readonly named: HiddenCallee | undefined;
+  readonly target: DeclaredTarget;
+}
+
+/** One hidden call site, with every body it can enter resolved. */
+interface HiddenSite {
+  readonly node: ts.Node;
+  readonly site: TransferSite;
+  readonly text: string;
+  readonly targets: readonly HiddenTarget[];
+}
+
 export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   const policy = colorPolicy();
 
   const escapesOf = memoize((body: Bodied) => unbridgedEscapes(body));
+
+  /**
+   * The hidden transfers at one escape site. Keyed by the site rather than the
+   * body because the walk hands back the same `Escape` objects every time, and
+   * resolving one is checker work the fixpoint would otherwise repeat.
+   */
+  const hiddenAt = memoize(
+    (escape: Escape): readonly HiddenSite[] =>
+      hiddenTransfersOf(escape, checker).map((transfer) => ({
+        node: transfer.node,
+        site: transfer.site,
+        text: transfer.text,
+        targets: transfer.targets.map((entry) => ({
+          named: entry.target,
+          target: declaredTarget(entry.declaration),
+        })),
+      })),
+  );
+
+  function hiddenIn(body: Bodied): readonly HiddenSite[] {
+    return escapesOf(body).flatMap((escape) => hiddenAt(escape));
+  }
 
   const targetsAt = new Map<Transfer, readonly Target[]>();
   const outcomesAt = new Map<Transfer, Map<string, readonly Outcome[]>>();
@@ -89,9 +154,14 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
    * condition set and the escape list cannot disagree about what it does.
    */
   function targetsIn(body: Bodied): readonly SiteTarget[] {
-    return escapesOf(body)
-      .filter((escape) => !ts.isThrowStatement(escape))
-      .flatMap((site) => targetsOf(site, body).map((target) => ({ site, target })));
+    return escapesOf(body).flatMap((escape) =>
+      escape.kind === "call"
+        ? targetsOf(escape.node, body).map((target) => ({
+            site: escape.node,
+            target,
+          }))
+        : [],
+    );
   }
 
   /**
@@ -127,9 +197,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   function implicitSuper(body: Bodied): Target | undefined {
     if (!ts.isClassLike(body)) return undefined;
     const base = baseClassExpression(body);
-    return base === undefined
-      ? undefined
-      : constructedTarget(base, checker);
+    return base === undefined ? undefined : constructedTarget(base, checker);
   }
 
   /**
@@ -141,7 +209,8 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   const conditions = createFixpoint<readonly Condition[]>({
     bottom: [],
     unresolved: [],
-    dependenciesOf: (body) => bodiedTargetsIn(body).map(({ target }) => target.declaration),
+    dependenciesOf: (body) =>
+      bodiedTargetsIn(body).map(({ target }) => target.declaration),
     recompute: (body, conditionsOf) => {
       const derived = new Map<string, Condition>();
       const add = (path: Condition["path"], entry: Transfer): void => {
@@ -155,7 +224,12 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
           continue;
         }
         if (target.kind !== "function") continue;
-        for (const { outcome } of dischargesAt(site, target, body, conditionsOf)) {
+        for (const { outcome } of dischargesAt(
+          site,
+          target,
+          body,
+          conditionsOf,
+        )) {
           if (outcome.kind === "propagate") add(outcome.path, site);
         }
       }
@@ -194,6 +268,16 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
         )) {
           if (outcome.kind === "function" && !outcome.marked) {
             dependencies.push(outcome.declaration);
+          }
+        }
+      }
+
+      // An accessor's body is read like any other callee's; only the syntax
+      // reaching it is different.
+      for (const { targets } of hiddenIn(body)) {
+        for (const { target } of targets) {
+          if (target.kind === "function" && !target.marked) {
+            dependencies.push(target.declaration);
           }
         }
       }
@@ -244,12 +328,19 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
     const found: BodyEscape[] = [];
 
     for (const escape of escapesOf(body)) {
-      if (ts.isThrowStatement(escape)) {
-        found.push({ kind: "throw", node: escape });
+      if (escape.kind === "throw") {
+        found.push({ kind: "throw", node: escape.node });
         continue;
       }
-      for (const target of targetsOf(escape, body)) {
-        collect(found, escape, target, body, throwingOf);
+      if (escape.kind === "call") {
+        for (const target of targetsOf(escape.node, body)) {
+          collect(found, escape.node, target, body, throwingOf);
+        }
+      }
+      // A call can hide transfers of its own: the tag of a tagged template, a
+      // coercion in an argument. They are read off the same site.
+      for (const hidden of hiddenAt(escape)) {
+        collectHidden(found, hidden, throwingOf);
       }
     }
 
@@ -287,6 +378,47 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
       const escape = undischarged(site, condition, outcome, throwingOf);
       if (escape !== undefined) found.push(escape);
     }
+  }
+
+  /**
+   * A hidden site's targets are joined: it is throwing if any of them is, and
+   * the first that is answers for it — one site, one diagnostic, however many
+   * members a dynamic key or a spread turned out to touch.
+   */
+  function collectHidden(
+    found: BodyEscape[],
+    hidden: HiddenSite,
+    throwingOf: (callee: Bodied) => boolean,
+  ): void {
+    for (const { named, target } of hidden.targets) {
+      const reason = hiddenReason(target, throwingOf);
+      if (reason === undefined) continue;
+      found.push({
+        kind: "hidden-transfer",
+        node: hidden.node,
+        site: hidden.site,
+        text: hidden.text,
+        target: named,
+        reason,
+      });
+      return;
+    }
+  }
+
+  function hiddenReason(
+    target: DeclaredTarget,
+    throwingOf: (callee: Bodied) => boolean,
+  ): ThrowingReason | undefined {
+    if (target.kind === "floor") return target.reason;
+
+    const floored = flooredCallee(target, throwingOf);
+    if (floored !== undefined) return floored;
+
+    // The site reaches this body through a type rather than handing it over,
+    // so a condition on it has no argument here that could discharge one.
+    return conditions.valueOf(target.declaration).length > 0
+      ? "conditioned"
+      : undefined;
   }
 
   function flooredCallee(

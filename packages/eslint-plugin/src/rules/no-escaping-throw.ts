@@ -3,6 +3,8 @@ import {
   type EntrySite,
   type Finding,
   type FloorReason,
+  type HiddenCallee,
+  type TransferSite,
   type UndischargedReason,
 } from "@nothrow/core";
 import { ESLintUtils, type TSESTree } from "@typescript-eslint/utils";
@@ -27,7 +29,7 @@ const OUTS =
 const messages = {
   uncaughtThrow: "Uncaught `throw` escapes this `@nothrow` function.",
   unbridgedCall:
-    "Call to `{{callee}}` escapes this `@nothrow` function: {{reason}}. " +
+    "Call to `{{callee}}` escapes this `@nothrow` function: it {{reason}}. " +
     OUTS,
   // Not a floor, so not the floor's outs: the body was read and it can throw,
   // and every carrier on that list would be silencing a true positive.
@@ -48,29 +50,46 @@ const messages = {
     "Call to `{{callee}}` escapes this `@nothrow` function: it is non-throwing " +
     "given `{{path}}`, and {{reason}}. `{{callee}}` enters `{{path}}` at " +
     "{{entry}}. " + OUTS,
+  // Its own pair, because the first thing the reader needs told is that this
+  // *is* a call: they did not write one, and the message has to say what runs.
+  unbridgedHiddenTransfer:
+    "{{site}} escapes this `@nothrow` function: {{reason}}. " + OUTS,
+  inferredThrowingHiddenTransfer:
+    "{{site}} escapes this `@nothrow` function: it runs {{target}}, whose " +
+    "body was analyzed and can throw. Your outs: bridge it with " +
+    "`try`/`catch`, or make {{target}} non-throwing — mark it `@nothrow` and " +
+    "the escapes inside it are reported too.",
 } as const;
 
 type MessageId = keyof typeof messages;
 
-/** The why half of the two-clause floor contract. */
+/**
+ * The why half of the two-clause floor contract, as a predicate: the call
+ * messages make the callee its subject, the hidden-transfer ones the member
+ * that runs. One record, so the normative text cannot drift between them.
+ */
 const whyFloored: Record<FloorReason, string> = {
   bodyless:
-    "it is declared without a body — an ambient declaration, a `.d.ts`, or a " +
+    "is declared without a body — an ambient declaration, a `.d.ts`, or a " +
     "value known only by its function type — and no mark, manifest, overlay " +
     "or override colors it, so it is assumed to throw",
   unmarked:
-    "it has a visible body but no `@nothrow` mark, so it is throwing by " +
+    "has a visible body but no `@nothrow` mark, so it is throwing by " +
     "declaration",
   unresolvable:
-    "the checker cannot resolve it to a declaration, so nothing can say " +
+    "cannot be resolved to a declaration by the checker, so nothing can say " +
     "whether it throws",
   captured:
-    "it is captured from an enclosing scope rather than reached through a " +
+    "is captured from an enclosing scope rather than reached through a " +
     "parameter of this function, so no argument at any call site could " +
     "discharge a condition on it",
   "mutable-binding":
-    "it is reached through a `let`, whose value the engine does not yet track " +
+    "is reached through a `let`, whose value the engine does not yet track " +
     "across assignments, so which function runs here is not settled",
+  conditioned:
+    "is non-throwing only given conditions of its own, and this site reaches " +
+    "it through a type rather than handing it anything, so there is no " +
+    "argument here that could discharge them",
 };
 
 /** The same contract for the argument that was supposed to discharge a path. */
@@ -101,6 +120,21 @@ const whyUndischarged: Record<UndischargedReason, string> = {
     "follows",
 };
 
+/** The site, as the reader wrote it. */
+const describeSite: Record<TransferSite, (text: string) => string> = {
+  read: (text) => `Reading \`${text}\``,
+  write: (text) => `Writing \`${text}\``,
+  update: (text) => `Updating \`${text}\``,
+  destructure: (text) => `Destructuring \`${text}\``,
+  spread: (text) => `Spreading \`${text}\``,
+  coercion: (text) => `Coercing \`${text}\` to a primitive`,
+  "instance-check": (text) => `Checking \`${text}\``,
+};
+
+function describeTarget(target: HiddenCallee): string {
+  return `the ${target.kind} \`${target.name}\``;
+}
+
 type Report =
   | { readonly messageId: "uncaughtThrow" }
   | {
@@ -127,6 +161,14 @@ type Report =
         readonly entry: string;
         readonly reason: string;
       };
+    }
+  | {
+      readonly messageId: "unbridgedHiddenTransfer";
+      readonly data: { readonly site: string; readonly reason: string };
+    }
+  | {
+      readonly messageId: "inferredThrowingHiddenTransfer";
+      readonly data: { readonly site: string; readonly target: string };
     };
 
 /**
@@ -165,6 +207,27 @@ function reportFor(finding: Finding, cwd: string): Report {
           path: finding.path,
           entry: entryText(finding.entry, cwd),
           reason: whyUndischarged[finding.reason],
+        },
+      };
+    case "unbridged-hidden-transfer":
+      return {
+        messageId: "unbridgedHiddenTransfer",
+        data: {
+          site: describeSite[finding.site](finding.text),
+          reason:
+            finding.target === undefined
+              ? `the checker cannot resolve \`${finding.text}\` to a ` +
+                "declaration, so nothing can say whether a body runs here"
+              : `it runs ${describeTarget(finding.target)}, which ` +
+                whyFloored[finding.reason],
+        },
+      };
+    case "inferred-throwing-hidden-transfer":
+      return {
+        messageId: "inferredThrowingHiddenTransfer",
+        data: {
+          site: describeSite[finding.site](finding.text),
+          target: describeTarget(finding.target),
         },
       };
   }
