@@ -1,0 +1,14 @@
+{
+  "description": "Error handling is held to the same standard as the happy path: a throwing call inside a catch needs its own bridge.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 6,
+      "column": 12,
+      "endLine": 6,
+      "endColumn": 30,
+      "messageId": "unbridgedCall",
+      "message": "Call to `JSON.parse` escapes this `@nothrow` function: it is declared without a body — an ambient or `.d.ts` declaration — and no mark, manifest, overlay or override colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

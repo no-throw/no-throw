@@ -1,0 +1,4 @@
+{
+  "description": "A call to a marked callee takes its non-throwing color, across files: the core loop closes over calls.",
+  "diagnostics": []
+}
