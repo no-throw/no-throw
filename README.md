@@ -116,12 +116,13 @@ This is early, and **nothing is published to npm yet**. What works today: the
 mark and its binding rules, the body walk, the `try`/`catch` bridge, calls as
 escape sites, **hybrid inference** for unmarked functions whose bodies are
 visible, and the `configs.recommended` preset. Everything with no body to read
-floors to throwing with a diagnostic naming your outs.
+floors to throwing with a diagnostic naming your outs. The ES standard-library
+baseline ships as data in `@nothrow/core`, but nothing consults it yet, so
+every standard-library call floors too.
 
 Constructors, async, generators, hidden transfers, the carrier chain
-(manifests, overlays, overrides), the standard-library and DOM baseline and
-`nothrow emit` are not built yet — so until the baseline lands, every
-standard-library call floors. The design is locked and lives in
+(manifests, overlays, overrides), the DOM baseline and `nothrow emit` are not
+built yet. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages
@@ -143,3 +144,16 @@ pnpm install && pnpm test
 `pnpm test` builds, checks that the packages are in lockstep, and runs the
 [conformance suite](conformance) — fixture projects on disk paired with the
 diagnostics they must produce. Every behavior lands there.
+
+The shipped standard-library baseline is generated data, so its correctness is
+CI over that data rather than a conformance fixture. Two gates guard it, both
+run in CI and neither needing the ECMA-262 spec:
+
+```bash
+pnpm run gate:fuzz     # attack every shipped clean entry with hostile, type-conformant values
+pnpm run gate:drift    # symbol-set diff of lib.*.d.ts; newcomers have no entry and floor
+```
+
+Regenerating the data is a maintainer task — see
+[`tools/es-baseline`](tools/es-baseline) and the one-off
+[dial sign-off](docs/baseline-dials.md).

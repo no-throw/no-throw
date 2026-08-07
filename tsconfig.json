@@ -4,6 +4,7 @@
     { "path": "packages/core" },
     { "path": "packages/eslint-plugin" },
     { "path": "packages/cli" },
-    { "path": "conformance" }
+    { "path": "conformance" },
+    { "path": "tools/es-baseline" }
   ]
 }

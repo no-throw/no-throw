@@ -8,10 +8,15 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./baseline": {
+      "types": "./dist/baseline/index.d.ts",
+      "default": "./dist/baseline/index.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "baseline-data"
   ],
   "peerDependencies": {
     "typescript": ">=5.0.0"
