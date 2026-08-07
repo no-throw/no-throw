@@ -8,7 +8,7 @@
       "endLine": 10,
       "endColumn": 12,
       "messageId": "inferredThrowingCall",
-      "message": "Call to `super` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `super` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+      "message": "Call to `Base` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `Base` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     }
   ]
 }

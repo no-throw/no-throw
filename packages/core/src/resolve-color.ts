@@ -4,10 +4,11 @@ import {
   baseClassExpression,
   bodyOf,
   constructedBody,
-  isAmbient,
+  hasVisibleBody,
+  inheritedFrom,
   type Bodied,
 } from "./declarations.js";
-import { unbridgedEscapes, type Transfer } from "./escapes.js";
+import { calleeExpression, unbridgedEscapes, type Transfer } from "./escapes.js";
 import { createFixpoint, type BodyEdges } from "./infer.js";
 import { isMarkedFunction } from "./marks.js";
 import { colorPolicy } from "./policy.js";
@@ -60,20 +61,10 @@ function classify(target: Bodied | undefined): CalleeResolution {
     return pin({ color: "throwing", reason: "unresolvable" });
   }
   if (isMarkedFunction(target)) return pin({ color: "non-throwing" });
-  if (!isReadable(target)) return pin({ color: "throwing", reason: "bodyless" });
+  if (!hasVisibleBody(target)) {
+    return pin({ color: "throwing", reason: "bodyless" });
+  }
   return { kind: "inferable", declaration: target };
-}
-
-/**
- * Whether there is source behind the declaration to read a color off. An
- * ambient class is the class-shaped bodyless declaration: its field
- * initializers and its implicit `super()` are exactly what a `.d.ts` does not
- * carry, so believing the empty walk would be believing silence.
- */
-function isReadable(target: Bodied): boolean {
-  return ts.isClassLike(target)
-    ? !isAmbient(target)
-    : bodyOf(target) !== undefined;
 }
 
 function pin(color: CalleeColor): CalleeResolution {
@@ -91,19 +82,15 @@ function targetOf(
       constructSignatureOf(transfer, checker)
     );
   }
-  if (isSuperCall(transfer)) return inheritedBodyAt(transfer, checker);
+  if (calleeExpression(transfer).kind === ts.SyntaxKind.SuperKeyword) {
+    const base = inheritedFrom(transfer);
+    return base === undefined ? undefined : constructedBodyAt(base, checker);
+  }
 
   const declaration = checker.getResolvedSignature(transfer)?.declaration;
   return declaration !== undefined && ts.isFunctionLike(declaration)
     ? declaration
     : undefined;
-}
-
-function isSuperCall(transfer: Transfer): transfer is ts.CallExpression {
-  return (
-    ts.isCallExpression(transfer) &&
-    transfer.expression.kind === ts.SyntaxKind.SuperKeyword
-  );
 }
 
 /**
@@ -142,29 +129,6 @@ function constructSignatureOf(
     : undefined;
 }
 
-/** The base-class body a `super()` enters. */
-function inheritedBodyAt(
-  superCall: ts.CallExpression,
-  checker: ts.TypeChecker,
-): Bodied | undefined {
-  for (
-    let node: ts.Node | undefined = superCall.parent;
-    node !== undefined;
-    node = node.parent
-  ) {
-    if (ts.isClassLike(node)) return inheritedBody(node, checker);
-  }
-  return undefined;
-}
-
-function inheritedBody(
-  classLike: ts.ClassLikeDeclaration,
-  checker: ts.TypeChecker,
-): Bodied | undefined {
-  const base = baseClassExpression(classLike);
-  return base === undefined ? undefined : constructedBodyAt(base, checker);
-}
-
 /** One body's contribution to the graph, off the walk enforcement also uses. */
 function edgesOf(declaration: Bodied, checker: ts.TypeChecker): BodyEdges {
   let throws = false;
@@ -186,11 +150,9 @@ function edgesOf(declaration: Bodied, checker: ts.TypeChecker): BodyEdges {
   // A class stands for a constructor it does not declare, and the implicit
   // `constructor(...args) { super(...args) }` still runs the base's effective
   // body. There is no `super()` in the syntax for the walk to have found.
-  if (
-    ts.isClassLike(declaration) &&
-    baseClassExpression(declaration) !== undefined
-  ) {
-    follow(classify(inheritedBody(declaration, checker)));
+  if (ts.isClassLike(declaration)) {
+    const base = baseClassExpression(declaration);
+    if (base !== undefined) follow(classify(constructedBodyAt(base, checker)));
   }
 
   return { throws, callees };

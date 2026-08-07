@@ -1,4 +1,4 @@
 {
-  "description": "Module evaluation is outside the color model: a top-level throw, an imported module's side effect, a static field initializer and a `static {}` block all run before any function does, so a function's color says nothing about them.",
+  "description": "Module evaluation is outside the color model: a top-level throw, an imported module's side effect, and a module-level class's static field initializer and `static {}` block all run before any function does, so a function's color says nothing about them. `class-evaluated-in-a-body` is the other half — the same class written inside a body is that body's code.",
   "diagnostics": []
 }
