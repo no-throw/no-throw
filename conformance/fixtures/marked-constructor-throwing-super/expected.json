@@ -1,0 +1,14 @@
+{
+  "description": "`super()` is an escape site taking the base constructor's effective-body color, so inside a marked derived constructor it is reported at the `super()` itself.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 10,
+      "column": 5,
+      "endLine": 10,
+      "endColumn": 12,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `super` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `super` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

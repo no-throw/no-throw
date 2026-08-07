@@ -1,0 +1,4 @@
+{
+  "description": "A tagged template with a clean tag is green through inference, with nothing marked but the caller.",
+  "diagnostics": []
+}

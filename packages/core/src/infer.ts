@@ -1,7 +1,4 @@
-import type ts from "typescript";
-
-/** A node of the call graph: an unpinned function, so always one with a body. */
-type Fn = ts.SignatureDeclaration;
+import type { Bodied } from "./declarations.js";
 
 /**
  * What the fixpoint needs to know about one body, with the graph already cut at
@@ -11,8 +8,8 @@ type Fn = ts.SignatureDeclaration;
 export interface BodyEdges {
   /** An unbridged `throw`, or an unbridged call to something pinned throwing. */
   readonly throws: boolean;
-  /** Unbridged calls to functions whose color has to be inferred. */
-  readonly callees: readonly Fn[];
+  /** Unbridged transfers into bodies whose color has to be inferred. */
+  readonly callees: readonly Bodied[];
 }
 
 /**
@@ -22,7 +19,7 @@ export interface BodyEdges {
  * can split or merge groups.
  */
 interface Group {
-  readonly members: ReadonlySet<Fn>;
+  readonly members: ReadonlySet<Bodied>;
   readonly throwing: boolean;
 }
 
@@ -33,8 +30,8 @@ interface Visit {
 }
 
 export interface Fixpoint {
-  /** Whether `fn` is throwing, resolving its group first if it has no color. */
-  isThrowing(fn: Fn): boolean;
+  /** Whether `body` is throwing, resolving its group first if it has no color. */
+  isThrowing(body: Bodied): boolean;
 }
 
 /**
@@ -52,30 +49,30 @@ export interface Fixpoint {
  * The graph is walked lazily from whatever is asked about, so only the
  * reachable unmarked subgraph is ever built.
  */
-export function createFixpoint(edgesOf: (fn: Fn) => BodyEdges): Fixpoint {
-  const edges = new Map<Fn, BodyEdges>();
-  const groups = new Map<Fn, Group>();
-  const visits = new Map<Fn, Visit>();
-  const stack: Fn[] = [];
-  const onStack = new Set<Fn>();
+export function createFixpoint(edgesOf: (body: Bodied) => BodyEdges): Fixpoint {
+  const edges = new Map<Bodied, BodyEdges>();
+  const groups = new Map<Bodied, Group>();
+  const visits = new Map<Bodied, Visit>();
+  const stack: Bodied[] = [];
+  const onStack = new Set<Bodied>();
   let nextIndex = 0;
 
-  const edgesFor = (fn: Fn): BodyEdges => {
-    const known = edges.get(fn);
+  const edgesFor = (body: Bodied): BodyEdges => {
+    const known = edges.get(body);
     if (known !== undefined) return known;
-    const read = edgesOf(fn);
-    edges.set(fn, read);
+    const read = edgesOf(body);
+    edges.set(body, read);
     return read;
   };
 
-  const visit = (fn: Fn): Visit => {
+  const visit = (body: Bodied): Visit => {
     const state: Visit = { index: nextIndex, lowlink: nextIndex };
     nextIndex += 1;
-    visits.set(fn, state);
-    stack.push(fn);
-    onStack.add(fn);
+    visits.set(body, state);
+    stack.push(body);
+    onStack.add(body);
 
-    for (const callee of edgesFor(fn).callees) {
+    for (const callee of edgesFor(body).callees) {
       const seen = visits.get(callee);
       if (seen === undefined) {
         state.lowlink = Math.min(state.lowlink, visit(callee).lowlink);
@@ -84,13 +81,13 @@ export function createFixpoint(edgesOf: (fn: Fn) => BodyEdges): Fixpoint {
       }
     }
 
-    if (state.lowlink === state.index) commit(unstack(fn));
+    if (state.lowlink === state.index) commit(unstack(body));
     return state;
   };
 
   /** The group a root closes: itself and everything pushed after it. */
-  const unstack = (root: Fn): ReadonlySet<Fn> => {
-    const members = new Set<Fn>();
+  const unstack = (root: Bodied): ReadonlySet<Bodied> => {
+    const members = new Set<Bodied>();
     for (;;) {
       const member = stack.pop();
       if (member === undefined) break;
@@ -101,7 +98,7 @@ export function createFixpoint(edgesOf: (fn: Fn) => BodyEdges): Fixpoint {
     return members;
   };
 
-  const commit = (members: ReadonlySet<Fn>): void => {
+  const commit = (members: ReadonlySet<Bodied>): void => {
     // Calls that stay inside the group are ignored: they are the paths a cycle
     // contributes. Anything outside it has already committed — Tarjan closes
     // groups in reverse topological order — and anything that somehow has not
@@ -122,13 +119,13 @@ export function createFixpoint(edgesOf: (fn: Fn) => BodyEdges): Fixpoint {
   };
 
   return {
-    isThrowing(fn) {
-      const known = groups.get(fn);
+    isThrowing(body) {
+      const known = groups.get(body);
       if (known !== undefined) return known.throwing;
-      visit(fn);
+      visit(body);
       // A completed walk always closes the group it started from. If that ever
-      // stops holding, an uncolored function is a throwing one.
-      return groups.get(fn)?.throwing ?? true;
+      // stops holding, an uncolored body is a throwing one.
+      return groups.get(body)?.throwing ?? true;
     },
   };
 }

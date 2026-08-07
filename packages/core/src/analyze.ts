@@ -1,6 +1,6 @@
 import ts from "typescript";
 import type { FloorReason } from "./colors.js";
-import { unbridgedEscapes } from "./escapes.js";
+import { unbridgedEscapes, type Transfer } from "./escapes.js";
 import { findMarks } from "./marks.js";
 import { createColorResolver } from "./resolve-color.js";
 
@@ -79,6 +79,9 @@ export function analyzeSourceFile(
   return findings;
 }
 
-function calleeText(call: ts.CallExpression): string {
-  return call.expression.getText().replace(/\s+/gu, " ");
+function calleeText(transfer: Transfer): string {
+  const callee = ts.isTaggedTemplateExpression(transfer)
+    ? transfer.tag
+    : transfer.expression;
+  return callee.getText().replace(/\s+/gu, " ");
 }

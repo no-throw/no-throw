@@ -1,0 +1,23 @@
+{
+  "description": "A construction with no body to read floors, whether the class is ambient or the checker only has a construct signature for it, and says so in the message.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 7,
+      "column": 10,
+      "endLine": 7,
+      "endColumn": 22,
+      "messageId": "unbridgedCall",
+      "message": "Call to `Native` escapes this `@nothrow` function: it is declared without a body — an ambient or `.d.ts` declaration — and no mark, manifest, overlay or override colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 12,
+      "column": 10,
+      "endLine": 12,
+      "endColumn": 27,
+      "messageId": "unbridgedCall",
+      "message": "Call to `Error` escapes this `@nothrow` function: it is declared without a body — an ambient or `.d.ts` declaration — and no mark, manifest, overlay or override colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}
