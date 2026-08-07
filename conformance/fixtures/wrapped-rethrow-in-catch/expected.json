@@ -1,0 +1,14 @@
+{
+  "description": "Wrapping the caught error changes nothing: the catch block is ordinary body code, so the rethrow still escapes.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 12,
+      "column": 5,
+      "endLine": 12,
+      "endColumn": 35,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    }
+  ]
+}

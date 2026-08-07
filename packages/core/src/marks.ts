@@ -7,15 +7,6 @@ export interface Span {
 }
 
 /**
- * A `@nothrow` tag that binds. The target is what the enforcement walk checks
- * and what the manifest emitter scans: one whitelist, both consumers.
- */
-export interface BoundMark {
-  readonly span: Span;
-  readonly target: ts.FunctionLikeDeclaration;
-}
-
-/**
  * The ways a `@nothrow` tag fails to bind. The bodyless family is called out
  * member by member because each has a different out: an ambient declaration
  * belongs in the overrides file, an overload belongs on its implementation.
@@ -37,7 +28,11 @@ export interface MarkProblem {
 }
 
 export interface Marks {
-  readonly bound: readonly BoundMark[];
+  /**
+   * The seeds, in source order. This is what the enforcement walk checks and
+   * what the manifest emitter will scan: one whitelist, both consumers.
+   */
+  readonly bound: readonly ts.FunctionLikeDeclaration[];
   readonly problems: readonly MarkProblem[];
 }
 
@@ -47,32 +42,54 @@ export interface Marks {
  * outcome the design rules out.
  */
 export function findMarks(sourceFile: ts.SourceFile): Marks {
-  const bound: BoundMark[] = [];
   const problems: MarkProblem[] = [];
   // A function has one color however many times it is claimed, so a repeated
   // tag must not enforce — or emit — the same body twice.
-  const marked = new Set<ts.FunctionLikeDeclaration>();
+  const bound = new Set<ts.FunctionLikeDeclaration>();
 
   for (const { tag, host } of nothrowTags(sourceFile)) {
-    const span = spanOfTag(tag, sourceFile);
     const target = bindingTarget(host);
     if (target === undefined) {
-      problems.push(problemFor(host, span, sourceFile));
-    } else if (!marked.has(target)) {
-      marked.add(target);
-      bound.push({ span, target });
+      problems.push(problemFor(host, spanOfTag(tag, sourceFile), sourceFile));
+    } else {
+      bound.add(target);
     }
   }
 
-  return { bound, problems };
+  return { bound: [...bound], problems };
+}
+
+/**
+ * Whether a declaration is a bound seed: the same whitelist as `findMarks`,
+ * asked one declaration at a time, which is what resolving a callee's color
+ * needs. Both routes go through `bindingTarget`, so they cannot disagree.
+ */
+export function isMarkedFunction(declaration: ts.Node): boolean {
+  const host = markHostOf(declaration);
+  if (host === undefined) return false;
+  return bindingTarget(host) === declaration && nothrowTagsOn(host).length > 0;
+}
+
+/** The construct a mark for this declaration would have to be written on. */
+function markHostOf(declaration: ts.Node): ts.Node | undefined {
+  if (canCarryBody(declaration)) return declaration;
+  if (
+    !ts.isFunctionExpression(declaration) &&
+    !ts.isArrowFunction(declaration)
+  ) {
+    return undefined;
+  }
+
+  const { parent } = declaration;
+  if (ts.isPropertyAssignment(parent)) return parent;
+  if (!ts.isVariableDeclaration(parent)) return undefined;
+
+  const statement = parent.parent.parent;
+  return ts.isVariableStatement(statement) ? statement : undefined;
 }
 
 /**
  * Every `@nothrow` in the file, paired with the construct it directly precedes.
- *
- * Attribution is the parser's lexical one — the node whose leading trivia the
- * comment sits in. `getJSDocTags`' climb to enclosing nodes is discarded, so
- * what a mark binds to is decided by `bindingTarget` below and nowhere else.
  */
 function nothrowTags(
   sourceFile: ts.SourceFile,
@@ -81,17 +98,27 @@ function nothrowTags(
 
   const visit = (node: ts.Node): void => {
     if (carriesJSDoc(node, sourceFile)) {
-      for (const tag of ts.getJSDocTags(node)) {
-        if (tag.tagName.escapedText !== "nothrow") continue;
-        if (tag.parent.parent !== node) continue;
-        found.push({ tag, host: node });
-      }
+      for (const tag of nothrowTagsOn(node)) found.push({ tag, host: node });
     }
     node.forEachChild(visit);
   };
 
   visit(sourceFile);
   return found;
+}
+
+/**
+ * Attribution is the parser's lexical one — the node whose leading trivia the
+ * comment sits in. `getJSDocTags`' climb to enclosing nodes is discarded, so
+ * what a mark binds to is decided by `bindingTarget` and nowhere else.
+ */
+function nothrowTagsOn(host: ts.Node): ts.JSDocTag[] {
+  return ts
+    .getJSDocTags(host)
+    .filter(
+      (tag) =>
+        tag.tagName.escapedText === "nothrow" && tag.parent.parent === host,
+    );
 }
 
 /**

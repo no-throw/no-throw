@@ -20,6 +20,12 @@ export function attempt(): void {
     return; // bridged — the throw became a returned value
   }
 }
+
+/** @nothrow */
+export function parse(text: string): unknown {
+  return JSON.parse(text); // Call to `JSON.parse` escapes this `@nothrow`
+                           // function: … Your outs, in precedence order: …
+}
 ```
 
 **CI is where the guarantee lives; the editor is feedback.**
@@ -77,11 +83,17 @@ and nothing else.
 
 ## Status
 
-This is the walking skeleton, and **nothing is published to npm yet**. What
-works today is the mark and its binding rules, the body walk, the `try`/`catch`
-bridge for an uncaught `throw`, and the `configs.recommended` preset. Unbridged
-calls, async, the carrier chain, the standard-library baseline and
-`nothrow emit` are not built yet. The design is locked and lives in
+This is early, and **nothing is published to npm yet**. What works today: the
+mark and its binding rules, the body walk, the `try`/`catch` bridge, calls as
+escape sites resolved against the **pure-declare floor** — a call is clean only
+when its callee carries a mark, and everything else floors to throwing with a
+diagnostic naming your outs — and the `configs.recommended` preset.
+
+The floor is the sound end of the design, not the destination. Inference for
+unmarked bodies, constructors, async, generators, hidden transfers, the carrier
+chain (manifests, overlays, overrides), the standard-library and DOM baseline
+and `nothrow emit` are not built yet — so until the baseline lands, every
+standard-library call floors too. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages

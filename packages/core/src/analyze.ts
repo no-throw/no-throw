@@ -1,58 +1,81 @@
 import ts from "typescript";
-import { findMarks, type Span } from "./marks.js";
+import type { FloorReason } from "./colors.js";
+import { bodyOf } from "./declarations.js";
+import { findMarks } from "./marks.js";
+import { resolveCalleeColor } from "./resolve-color.js";
 
-/**
- * The kinds of escape a marked function can be reported for. Every kind is a
- * facet of the one invariant, so adapters surface them inside a single rule
- * rather than as separate, individually disableable ones.
- */
-export type FindingKind = "uncaught-throw";
+interface UncaughtThrow {
+  readonly kind: "uncaught-throw";
+  /** The node the diagnostic is anchored to. */
+  readonly node: ts.Node;
+}
 
-export interface Finding {
-  readonly kind: FindingKind;
-  readonly span: Span;
+interface UnbridgedCall {
+  readonly kind: "unbridged-call";
+  readonly node: ts.Node;
+  /** The callee as written, so the message can name what to bridge. */
+  readonly callee: string;
+  readonly reason: FloorReason;
 }
 
 /**
+ * The escapes a marked function can be reported for. Every kind is a facet of
+ * the one invariant, so adapters surface them inside a single rule rather than
+ * as separate, individually disableable ones.
+ */
+export type Finding = UncaughtThrow | UnbridgedCall;
+
+/**
  * Collect every escape in a file. The core never builds a `ts.Program`: hosts
- * hand it source files off the program they already own, which is how the
- * ESLint adapter reuses the one typescript-eslint built.
+ * hand it source files and the checker off the program they already own, which
+ * is how the ESLint adapter reuses the one typescript-eslint built.
  */
 export function analyzeSourceFile(
   sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker,
 ): readonly Finding[] {
   const findings: Finding[] = [];
 
-  // Unmarked functions have nothing to enforce: throwing is the default. A
-  // mark that does not bind enforces nothing either — it is `valid-mark`'s to
+  // Unmarked functions have nothing to enforce: throwing is the default. A mark
+  // that binds to nothing enforces nothing either — it is `valid-mark`'s to
   // report, not an invariant this walk can hold anything to.
-  for (const { target } of findMarks(sourceFile).bound) {
-    collectEscapes(target, sourceFile, findings);
+  for (const target of findMarks(sourceFile).bound) {
+    collectEscapes(target, checker, findings);
   }
 
   return findings;
 }
 
 function collectEscapes(
-  fn: ts.FunctionLikeDeclaration,
-  sourceFile: ts.SourceFile,
+  fn: ts.SignatureDeclaration,
+  checker: ts.TypeChecker,
   out: Finding[],
 ): void {
-  const { body } = fn;
+  const body = bodyOf(fn);
   if (body === undefined) return;
 
   const walk = (node: ts.Node): void => {
     if (ts.isThrowStatement(node) && !isBridged(node)) {
-      out.push({
-        kind: "uncaught-throw",
-        span: { start: node.getStart(sourceFile), end: node.getEnd() },
-      });
+      out.push({ kind: "uncaught-throw", node });
+    }
+
+    if (ts.isCallExpression(node) && !isBridged(node)) {
+      const callee = resolveCalleeColor(node, checker);
+      if (callee.color === "throwing") {
+        out.push({
+          kind: "unbridged-call",
+          node,
+          callee: calleeText(node),
+          reason: callee.reason,
+        });
+      }
     }
 
     node.forEachChild((child) => {
-      // A nested function is its own body with its own color, and module
-      // evaluation — where `static {}` and `extends` expressions run — is
-      // outside the color model entirely.
+      // A nested function is its own body with its own color. A class is not
+      // body code either: its members are bodies of their own, and evaluating
+      // the class — heritage expressions, static blocks, decorators — is ruled
+      // out of the color model.
       if (ts.isFunctionLike(child) || ts.isClassLike(child)) return;
       walk(child);
     });
@@ -83,4 +106,8 @@ function isBridged(node: ts.Node): boolean {
   }
 
   return false;
+}
+
+function calleeText(call: ts.CallExpression): string {
+  return call.expression.getText().replace(/\s+/gu, " ");
 }

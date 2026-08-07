@@ -27,6 +27,10 @@ in particular decides which standard-library baseline applies.
 Fixtures import nothing from `@nothrow/*` and contain no test-framework
 constructs. They are what a user's project looks like.
 
+Until the standard-library baseline lands, every call into `lib.*.d.ts` floors —
+so a fixture that wants to be green about something else keeps clear of `.trim()`
+and friends, and one that wants a floor reaches for `JSON.parse`.
+
 `expected.json`:
 
 ```json
