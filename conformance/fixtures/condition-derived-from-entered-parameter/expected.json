@@ -1,0 +1,4 @@
+{
+  "description": "The condition comes off the body walk: `myEach` enters `cb`, so its mark is clean given `cb`, and a callback that plainly cannot throw discharges it at the call.",
+  "diagnostics": []
+}

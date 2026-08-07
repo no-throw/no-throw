@@ -1,0 +1,14 @@
+{
+  "description": "Losing the callee to a branch conditions every parameter the branch can reach — over-strict, never a lie — so the throwing argument is reported and the clean one discharges.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 9,
+      "column": 3,
+      "endLine": 9,
+      "endColumn": 31,
+      "messageId": "conditionArgumentThrowing",
+      "message": "Call to `dispatch` escapes this `@nothrow` function: it is non-throwing given `a`, and the argument passed for `a` is throwing — its body was analyzed and can throw. `dispatch` enters `a` at src/index.ts:4. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `a`."
+    }
+  ]
+}
