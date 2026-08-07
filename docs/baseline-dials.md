@@ -1,0 +1,79 @@
+# The trust-base dials — one-off sign-off
+
+The baseline's content is not a fact about JavaScript. ECMA-262 says essentially
+every builtin can throw; what makes an entry clean is a judgment relating each
+spec throw site to what the TypeScript signature admits. "Given the declared
+types hold" is precisely the **trust base**, and a handful of questions about
+where that base ends account for the great majority of the judgment.
+
+Each question below is decided **once, as doctrine**, and then applied by rule
+to 50–100 members. Human sign-off on this page is the residual human surface of
+the ES baseline. **It is one-off, not per release.** Per release the cost is the
+symbol diff and the fuzz gate, both CI.
+
+## The dials
+
+`hazard` — it throws. Sound, less precise.
+`trust-base` — held against the type system's model of the program, the same
+class as `Proxy` and `as`; the guarantee is relative to that model anyway.
+`path` — neither: the hazard is expressible as a condition over a parameter and
+is discharged at the call site by the argument in hand.
+
+| dial | question | value |
+| --- | --- | --- |
+| `detachedBuffer` | is a detached or resize-shrunk buffer under a live view a hazard? | **hazard** |
+| `nullPrototype` | is `Object.create(null)` as a receiver typed `object` a hazard? | **hazard** |
+| `subclassHooks` | is `constructor[Symbol.species]`, or `this` as a constructor, a hazard? | **hazard** |
+| `memberCallable` | is a *method of* a declared object parameter a hazard? | **path** |
+| `proxyTraps` | is a trap refusing or throwing a hazard? | **trust-base** |
+
+Values live in [`tools/es-baseline/src/dials.ts`](../tools/es-baseline/src/dials.ts).
+
+## Why each value is what it is
+
+**The three at `hazard` are forced by the soundness doctrine**, and the argument
+is the same in each case: the hazard is reachable by code that does *not* lie to
+the type system.
+
+- `ArrayBuffer.prototype.transfer` is declared API, and nothing in
+  `Int32Array<ArrayBufferLike>` says "still attached".
+- `Object.create(null)` is typed `any` and assignable to `object`.
+- A subclass with a hostile `Symbol.species` is assignable to `Array<T>`, and
+  `ArraySpeciesCreate` throws *before* any return-type violation could be called
+  a lie.
+
+`memberCallable` is the one that moved. It was originally at `hazard` because
+the fact was **inexpressible**, not because soundness demanded it: there was no
+way to say "clean, given the method you pass me is clean". Access paths removed
+the inexpressibility, so `new Set(someArray)` now discharges against
+`Array.prototype[Symbol.iterator]` and a set operation against `param0.has`.
+Where no path can be formed the hazard falls back to `hazard`, unchanged.
+
+`proxyTraps` was not a dial to decide: a `Proxy` is type-identical to its
+target, so "might this be a Proxy?" has no static answer for *any* object, and
+flooring on it would colour nothing. It is trust base, already ruled.
+
+Two consequences of that ruling are load-bearing in the generator and worth
+stating plainly:
+
+- Internal methods (`[[Get]]`, `[[GetOwnProperty]]`, …) are dynamically
+  dispatched, so the extraction cannot separate the ordinary variant from the
+  Proxy one. Every hazard reached *through* an internal method is therefore read
+  as trap behaviour. The abstract operations that merely call them — `GetV`,
+  `RegExpExec`, `OrdinaryHasInstance` — are **not** in that set: they have
+  throws of their own that have nothing to do with a trap.
+- An array carrying a throwing index accessor is not in the hostile pool.
+  Installing one takes `Object.defineProperty`, which the same ruling names in
+  the trust base.
+
+## What the doctrine costs
+
+Measured against a ceiling where all four dials sit at `trust-base`: roughly a
+third of the members that could be called clean are not. That is the price of
+the doctrine, and it is paid deliberately.
+
+## Sign-off
+
+Signed off once, against the resolutions cited above, at the time the ES
+baseline generator landed. Re-open only if a *new* trust-base question appears —
+not per TypeScript release, and not per regeneration.

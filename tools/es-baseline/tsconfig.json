@@ -5,9 +5,17 @@
     "outDir": "dist",
     "types": [
       "node"
+    ],
+    "lib": [
+      "ESNext"
     ]
   },
   "include": [
     "src/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "../../packages/core"
+    }
   ]
 }

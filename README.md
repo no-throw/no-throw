@@ -53,9 +53,10 @@ There is no configuration in which the guarantee means something different.
 
 This is the walking skeleton, and **nothing is published to npm yet**. What
 works today is the mark, the body walk and the `try`/`catch` bridge for an
-uncaught `throw`. Unbridged calls, async, the carrier chain, the
-standard-library baseline, the `configs.recommended` preset and `nothrow emit`
-are not built yet. The design is locked and lives in
+uncaught `throw`. The ES standard-library baseline ships as data in
+`@nothrow/core` but nothing consults it yet. Unbridged calls, async, the
+carrier chain, the `configs.recommended` preset and `nothrow emit` are not
+built yet. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages
@@ -77,3 +78,16 @@ pnpm install && pnpm test
 `pnpm test` builds, checks that the packages are in lockstep, and runs the
 [conformance suite](conformance) — fixture projects on disk paired with the
 diagnostics they must produce. Every behavior lands there.
+
+The shipped standard-library baseline is generated data, so its correctness is
+CI over that data rather than a conformance fixture. Two gates guard it, both
+run in CI and neither needing the ECMA-262 spec:
+
+```bash
+pnpm run gate:fuzz     # attack every shipped clean entry with hostile, type-conformant values
+pnpm run gate:drift    # symbol-set diff of lib.*.d.ts; newcomers have no entry and floor
+```
+
+Regenerating the data is a maintainer task — see
+[`tools/es-baseline`](tools/es-baseline) and the one-off
+[dial sign-off](docs/baseline-dials.md).
