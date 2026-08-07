@@ -2,6 +2,7 @@ import ts from "typescript";
 import type {
   ConsumptionReason,
   FloorReason,
+  RejectionReason,
   UndischargedReason,
 } from "./colors.js";
 import { describePath, type Condition } from "./conditions.js";
@@ -82,6 +83,35 @@ interface ThrowingReturnedIterator {
 }
 
 /**
+ * A rejection reaching a marked body. The three kinds are the three places a
+ * promise's own channel is consumed, and each is told something different: an
+ * `await` turns a rejection into a throw here, a discard lets it reach nobody
+ * at all, and a `return` hands it to the caller under this function's mark.
+ */
+interface RejectedAwait {
+  readonly kind: "rejected-await";
+  readonly node: ts.Node;
+  /** The awaited expression as written. */
+  readonly expression: string;
+  readonly reason: RejectionReason;
+}
+
+interface FloatingRejection {
+  readonly kind: "floating-rejection";
+  readonly node: ts.Node;
+  readonly expression: string;
+  readonly reason: RejectionReason;
+  /** The discard sits in a `try`/`catch` whose `catch` can never fire. */
+  readonly fake: boolean;
+}
+
+interface RejectedReturn {
+  readonly kind: "rejected-return";
+  readonly node: ts.Node;
+  readonly reason: RejectionReason;
+}
+
+/**
  * A body that runs with no callee in the syntax: an accessor behind a property
  * access, a conversion member behind a coercion. Its own kind because what the
  * reader has to be told is different — not "this call throws" but "this is a
@@ -120,6 +150,9 @@ export type Finding =
   | ThrowingConsumption
   | IteratorThrow
   | ThrowingReturnedIterator
+  | RejectedAwait
+  | FloatingRejection
+  | RejectedReturn
   | UnbridgedHiddenTransfer
   | InferredThrowingHiddenTransfer;
 
@@ -188,6 +221,27 @@ function findingFor(escape: BodyEscape): Finding {
     case "returned-iterator":
       return {
         kind: "throwing-returned-iterator",
+        node: escape.node,
+        reason: escape.reason,
+      };
+    case "rejected-await":
+      return {
+        kind: "rejected-await",
+        node: escape.node,
+        expression: textOf(escape.node.expression),
+        reason: escape.reason,
+      };
+    case "float":
+      return {
+        kind: "floating-rejection",
+        node: escape.node,
+        expression: textOf(escape.node),
+        reason: escape.reason,
+        fake: escape.fake,
+      };
+    case "rejected-return":
+      return {
+        kind: "rejected-return",
         node: escape.node,
         reason: escape.reason,
       };

@@ -1,0 +1,14 @@
+{
+  "description": "`await f()` takes f's color: the promise's rejection rides the same color the sync channel does, so one mark covers the whole surface.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 12,
+      "column": 10,
+      "endLine": 12,
+      "endColumn": 25,
+      "messageId": "inferredThrowingAwait",
+      "message": "Awaiting `rejects()` escapes this `@nothrow` function: the body producing it was analyzed and can throw. Your outs: bridge it with `try { await … } catch`, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

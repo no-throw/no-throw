@@ -46,6 +46,30 @@ export type UndischargedReason =
   | "beyond-depth";
 
 /**
+ * Why a promise can reject. Reject-ness rides our color and nothing else — a
+ * rejecting and a non-rejecting `async` function have the identical type — so
+ * everything a callee can be carries over, plus the shapes only a promise in
+ * hand has.
+ */
+export type RejectionReason =
+  | ThrowingReason
+  /**
+   * Nothing in the syntax names the call that produced it: a parameter, a
+   * property, a non-call initializer, a stored partial chain.
+   */
+  | "untraced"
+  /**
+   * The producing call's callee is a parameter. A condition says calling it is
+   * clean and has no form for "and the promise it hands back never rejects".
+   */
+  | "conditioned-producer"
+  /**
+   * A handler in the chain is reached through a parameter. Conditioning a chain
+   * handler is a mechanism the engine does not have.
+   */
+  | "conditioned-handler";
+
+/**
  * Why consuming an iterator is throwing. Everything a callee can be carries
  * over — the protocol resolves to bodies like anything else, and a `let` is the
  * same deferred refinement here — plus the one shape only a produced value has:

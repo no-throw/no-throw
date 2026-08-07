@@ -1,0 +1,32 @@
+{
+  "description": "Seed enforcement is the existing body walk with the promise rules plugged in: an uncaught `throw` in an `async` body is a rejection of its own promise, and `return <expr>` folds what that expression would reject with into it — implicit arrow bodies included.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 7,
+      "column": 3,
+      "endLine": 7,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 12,
+      "column": 10,
+      "endLine": 12,
+      "endColumn": 19,
+      "messageId": "inferredThrowingReturnedPromise",
+      "message": "This `@nothrow` function returns a promise, so the mark covers its rejection too: the body producing it was analyzed and can throw. Your outs: `await` it inside a `try`/`catch` and return a value instead, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 17,
+      "column": 3,
+      "endLine": 17,
+      "endColumn": 12,
+      "messageId": "inferredThrowingReturnedPromise",
+      "message": "This `@nothrow` function returns a promise, so the mark covers its rejection too: the body producing it was analyzed and can throw. Your outs: `await` it inside a `try`/`catch` and return a value instead, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

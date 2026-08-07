@@ -18,6 +18,7 @@ export type {
 export type {
   ConsumptionReason,
   FloorReason,
+  RejectionReason,
   UndischargedReason,
 } from "./colors.js";
 export { findMarks } from "./marks.js";

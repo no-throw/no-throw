@@ -1,10 +1,11 @@
 import ts from "typescript";
 import type {
   ConsumptionReason,
+  RejectionReason,
   ThrowingReason,
   UndischargedReason,
 } from "./colors.js";
-import { pathKey, type Condition } from "./conditions.js";
+import { pathKey, skipParens, type Condition } from "./conditions.js";
 import { dischargeAt, type Outcome } from "./discharge.js";
 import {
   baseClassExpression,
@@ -30,10 +31,17 @@ import {
 import { originatingCall } from "./originating-call.js";
 import { colorPolicy } from "./policy.js";
 import {
+  chainAt,
+  isPromiseType,
+  isVisiblyAsync,
+  type Chain,
+} from "./promises.js";
+import {
   calleeTargets,
   constructedTarget,
   declarationTarget,
   declaredTarget,
+  resolveValue,
   type DeclaredTarget,
   type Target,
 } from "./targets.js";
@@ -80,6 +88,29 @@ export type BodyEscape =
       readonly kind: "returned-iterator";
       readonly node: ts.Expression;
       readonly reason: ConsumptionReason;
+    }
+  /** `await`: where a rejection becomes a throw in the awaiting body. */
+  | {
+      readonly kind: "rejected-await";
+      readonly node: ts.AwaitExpression;
+      readonly reason: RejectionReason;
+    }
+  /**
+   * A promise dropped in statement position. `fake` says the author wrapped it
+   * in a `try`/`catch` that can never fire, which is a different thing to be
+   * told than that the promise floats.
+   */
+  | {
+      readonly kind: "float";
+      readonly node: ts.Expression;
+      readonly reason: RejectionReason;
+      readonly fake: boolean;
+    }
+  /** A promise handed out, whose rejection the mark covers. */
+  | {
+      readonly kind: "rejected-return";
+      readonly node: ts.Expression;
+      readonly reason: RejectionReason;
     }
   /**
    * A body that runs with no callee in the syntax: an accessor behind a
@@ -159,6 +190,25 @@ type Consumed =
 
 const CONSUMED_CLEAN: Consumed = { kind: "clean" };
 
+/**
+ * What rejecting the promise an expression denotes would take. A tree rather
+ * than a joined list because one row of the fold table is not a join:
+ * `X.catch(b)` runs `b` only if `X` rejects, so whether `b`'s color counts is a
+ * question about `X` that only the fixpoint can answer.
+ */
+type Rejection =
+  | { readonly kind: "clean" }
+  | { readonly kind: "color"; readonly node: ColorNode }
+  | { readonly kind: "floor"; readonly reason: RejectionReason }
+  | { readonly kind: "join"; readonly parts: readonly Rejection[] }
+  | {
+      readonly kind: "discharged";
+      readonly source: Rejection;
+      readonly handler: Rejection;
+    };
+
+const REJECTION_CLEAN: Rejection = { kind: "clean" };
+
 /** One body a hidden transfer can enter, named the way a message wants it. */
 interface HiddenTarget {
   /** Absent when the type could not name what runs. */
@@ -205,6 +255,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   const targetsAt = new Map<Transfer, readonly Target[]>();
   const outcomesAt = new Map<Transfer, Map<string, readonly Outcome[]>>();
   const consumedAt = new Map<ts.Node, readonly Consumed[]>();
+  const rejectionAt = new Map<ts.Expression, Rejection>();
   const interned = new Map<Bodied, Map<Facet, ColorNode>>();
 
   /**
@@ -404,6 +455,12 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
       dependencies.push(...colorNodesIn(consumedBy(escape.site, declaration)));
     }
 
+    // Awaiting, discarding and returning a promise each read a color the same
+    // way a call does; only the channel the throw arrives on is different.
+    for (const rejection of rejectionsIn(declaration, phase)) {
+      dependencies.push(...rejectionNodes(rejection));
+    }
+
     // An accessor's body is read like any other callee's; only the syntax
     // reaching it is different.
     for (const { targets } of hiddenIn(declaration, phase)) {
@@ -472,6 +529,31 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
         }
         continue;
       }
+      if (escape.kind === "await") {
+        const reason = rejectionReason(
+          rejectionOf(escape.node.expression, body),
+          throwingOf,
+        );
+        if (reason !== undefined) {
+          found.push({ kind: "rejected-await", node: escape.node, reason });
+        }
+        continue;
+      }
+      if (escape.kind === "float") {
+        const reason = rejectionReason(
+          rejectionOf(escape.node, body),
+          throwingOf,
+        );
+        if (reason !== undefined) {
+          found.push({
+            kind: "float",
+            node: escape.node,
+            reason,
+            fake: escape.bridged && cannotFire(escape.node, body),
+          });
+        }
+        continue;
+      }
       if (escape.kind === "call") {
         for (const target of targetsOf(escape.node, body)) {
           collect(found, escape.node, target, body, throwingOf);
@@ -483,6 +565,8 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
         collectHidden(found, hidden, throwingOf);
       }
     }
+
+    if (phase !== "eager") found.push(...rejectedReturns(body, throwingOf));
 
     return found;
   }
@@ -498,14 +582,28 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
     // by whoever calls it — never an escape here.
     if (target.kind === "condition") return;
 
+    // `then`, `catch` and `finally` are the fold table's, not the call rule's.
+    // Reading them as ordinary calls would floor every chain on the standard
+    // library's bodyless declaration and never reach the handlers, which are
+    // where a chain's color actually comes from.
+    if (chainAt(site, checker) !== undefined) return;
+
     if (target.kind === "floor") {
-      found.push({ kind: "callee", node: site, reason: target.reason });
+      if (!awaitedDirectly(site)) {
+        found.push({ kind: "callee", node: site, reason: target.reason });
+      }
       return;
     }
 
     const floored = flooredCallee(target, throwingOf);
     if (floored !== undefined) {
-      found.push({ kind: "callee", node: site, reason: floored });
+      // The sync channel, and only it. A visibly-`async` callee cannot
+      // sync-throw, so what it can do is read at the `await`, the chain or the
+      // discard instead; and where the call *is* the awaited expression, the
+      // `await` is already the one site for both channels.
+      if (!isVisiblyAsync(target.declaration) && !awaitedDirectly(site)) {
+        found.push({ kind: "callee", node: site, reason: floored });
+      }
       return;
     }
 
@@ -644,7 +742,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
       );
     }
 
-    const resolved = protocolConsumed(type, site.protocol);
+    const resolved = protocolConsumed(type, site.protocol, site.async);
     // An iterator's own protocol members are the standard library's, so
     // "declared without a body" would name a `.d.ts` the author never wrote.
     // What they can act on is the call that produced the value.
@@ -660,34 +758,39 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   function protocolConsumed(
     type: ts.Type,
     protocol: Protocol,
+    async: boolean,
   ): readonly Consumed[] {
     if (protocol.kind === "member") {
-      return [memberConsumed(type, protocol.name, "call")];
+      return [memberConsumed(type, protocol.name, "call", async)];
     }
-    if (protocol.kind === "iterable") return iterableConsumed(type);
+    if (protocol.kind === "iterable") return iterableConsumed(type, async);
 
     // A returned iterator is consumed by code we cannot see, so every part of
-    // its surface is in scope.
+    // its surface is in scope — and whichever spelling of the protocol it
+    // carries, since the consumer picks and we do not see them pick.
     const parts: Consumed[] = [];
     for (const name of ["next", "return"] as const) {
-      if (protocolMember(type, name, checker) !== undefined) {
-        parts.push(memberConsumed(type, name, "call"));
+      if (protocolMember(type, name, checker, true) !== undefined) {
+        parts.push(memberConsumed(type, name, "call", true));
       }
     }
-    if (protocolMember(type, "iterator", checker) !== undefined) {
-      parts.push(...iterableConsumed(type));
+    if (protocolMember(type, "iterator", checker, true) !== undefined) {
+      parts.push(...iterableConsumed(type, true));
     }
     return parts.length === 0 ? [floorConsumed("unresolvable")] : parts;
   }
 
   /** `[Symbol.iterator]()` runs, and what it hands back is driven to done. */
-  function iterableConsumed(type: ts.Type): readonly Consumed[] {
-    if (protocolMember(type, "iterator", checker) === undefined) {
+  function iterableConsumed(
+    type: ts.Type,
+    async: boolean,
+  ): readonly Consumed[] {
+    if (protocolMember(type, "iterator", checker, async) === undefined) {
       return [floorConsumed("unresolvable")];
     }
     return [
-      memberConsumed(type, "iterator", "call"),
-      memberConsumed(type, "iterator", "iteration"),
+      memberConsumed(type, "iterator", "call", async),
+      memberConsumed(type, "iterator", "iteration", async),
     ];
   }
 
@@ -695,8 +798,9 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
     type: ts.Type,
     name: ProtocolMemberName,
     facet: Facet,
+    async: boolean,
   ): Consumed {
-    const member = protocolMember(type, name, checker);
+    const member = protocolMember(type, name, checker, async);
     return member === undefined
       ? floorConsumed("unresolvable")
       : consumedFrom(declarationTarget(member), facet);
@@ -730,6 +834,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
         protocol: { kind: "iterator" },
         source: expression,
         typeAt: expression,
+        async: true,
       },
       body,
     );
@@ -767,6 +872,253 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
     )
       ? "inferred"
       : undefined;
+  }
+
+  /**
+   * What the promise an expression denotes would reject with. Reject-ness is
+   * not something TypeScript computes, so it rides the same color the sync
+   * channel does — which is what makes `@nothrow` one mark over the whole
+   * consumption surface rather than two.
+   */
+  function rejectionOf(expression: ts.Expression, body: Bodied): Rejection {
+    const known = rejectionAt.get(expression);
+    if (known !== undefined) return known;
+    const rejection = resolveRejection(expression, body);
+    rejectionAt.set(expression, rejection);
+    return rejection;
+  }
+
+  function resolveRejection(expr: ts.Expression, body: Bodied): Rejection {
+    const expression = skipParens(expr);
+    // Nothing that is not a promise can reject, and saying so here is what
+    // keeps every site that asks free of the question.
+    if (!isPromiseType(checker.getTypeAtLocation(expression), checker)) {
+      return REJECTION_CLEAN;
+    }
+
+    const chain = chainAt(expression, checker);
+    if (chain !== undefined) return foldChain(chain, body);
+
+    const origin = originatingCall(expression, checker);
+    if (origin === undefined) return floorRejection(untracedRejection(expression));
+    // The fold is syntactic. A chain reached through a binding is a stored
+    // partial chain, and folding it would be claiming the handlers written
+    // somewhere else are the ones this value carries.
+    if (origin !== expression && chainAt(origin, checker) !== undefined) {
+      return floorRejection("untraced");
+    }
+
+    return joinRejections(
+      targetsOf(origin, body).map((target) =>
+        rejectedFrom(target, "conditioned-producer"),
+      ),
+    );
+  }
+
+  /**
+   * One row of the normative fold table. `then` with a second handler is the
+   * one link that drops its source: `b` is on the rejection path, so whatever
+   * the source did is answered for.
+   */
+  function foldChain(chain: Chain, body: Bodied): Rejection {
+    const { link } = chain;
+    const source = (): Rejection => rejectionOf(chain.source, body);
+    const handler = (argument: ts.Expression | undefined): Rejection =>
+      handlerRejection(argument, body);
+
+    if (link.kind === "finally") {
+      return joinRejections([source(), handler(link.onFinally)]);
+    }
+    if (link.kind === "catch") {
+      return {
+        kind: "discharged",
+        source: source(),
+        handler: handler(link.onRejected),
+      };
+    }
+    return link.onRejected === undefined
+      ? joinRejections([source(), handler(link.onFulfilled)])
+      : joinRejections([handler(link.onFulfilled), handler(link.onRejected)]);
+  }
+
+  /**
+   * A chain handler is an ordinary function: an inline arrow is inferred, a
+   * reference is resolved, and an opaque one floors the link.
+   */
+  function handlerRejection(
+    argument: ts.Expression | undefined,
+    body: Bodied,
+  ): Rejection {
+    if (argument === undefined) return REJECTION_CLEAN;
+
+    const resolved = resolveValue(argument, body, checker);
+    if (resolved.kind === "mutable") return floorRejection("mutable-binding");
+    if (resolved.kind === "unknown") return floorRejection("unresolvable");
+    return joinRejections(
+      resolved.targets.map((target) =>
+        rejectedFrom(target, "conditioned-handler"),
+      ),
+    );
+  }
+
+  /**
+   * A target as something whose promise can reject. `whenConditioned` is what
+   * a parameter means here, which differs by position: reaching the *producer*
+   * through one leaves the promise uncolorable, while reaching a *handler*
+   * through one is a mechanism the engine does not have.
+   */
+  function rejectedFrom(
+    target: Target,
+    whenConditioned: RejectionReason,
+  ): Rejection {
+    if (target.kind === "condition") return floorRejection(whenConditioned);
+    if (target.kind === "floor") return floorRejection(target.reason);
+    if (target.marked) return REJECTION_CLEAN;
+    if (policy === "declare") return floorRejection("unmarked");
+    return { kind: "color", node: nodeFor(target.declaration, "call") };
+  }
+
+  /**
+   * Which half of "no originating call" this is — the distinction #12 §7 makes
+   * the message carry: a `let` is a refinement not yet made, and everything
+   * else is unknowable from here and has to be bridged.
+   */
+  function untracedRejection(expression: ts.Expression): RejectionReason {
+    if (!ts.isIdentifier(expression)) return "untraced";
+    const declaration =
+      checker.getSymbolAtLocation(expression)?.valueDeclaration;
+    return declaration !== undefined &&
+      ts.isVariableDeclaration(declaration) &&
+      (ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const) === 0
+      ? "mutable-binding"
+      : "untraced";
+  }
+
+  /** Why this promise can reject, or nothing where no part of it can. */
+  function rejectionReason(
+    rejection: Rejection,
+    throwingOf: (callee: ColorNode) => boolean,
+  ): RejectionReason | undefined {
+    switch (rejection.kind) {
+      case "clean":
+        return undefined;
+      case "floor":
+        return rejection.reason;
+      case "color":
+        return throwingOf(rejection.node) ? "inferred" : undefined;
+      case "join": {
+        // A floor outranks a read body: it is the one the reader can act on
+        // with something other than a bridge.
+        const reasons = rejection.parts.flatMap((part) => {
+          const reason = rejectionReason(part, throwingOf);
+          return reason === undefined ? [] : [reason];
+        });
+        return reasons.find((reason) => reason !== "inferred") ?? reasons[0];
+      }
+      case "discharged":
+        return rejectionReason(rejection.source, throwingOf) === undefined
+          ? undefined
+          : rejectionReason(rejection.handler, throwingOf);
+    }
+  }
+
+  /**
+   * The promises a body hands out, whose rejection a mark on it covers: an
+   * uncaught `throw` in an `async` body is a rejection of its own promise, and
+   * `return <expr>` folds whatever `expr` would reject with into it.
+   */
+  function rejectedReturns(
+    body: Bodied,
+    throwingOf: (callee: ColorNode) => boolean,
+  ): readonly BodyEscape[] {
+    if (isGenerator(body)) return [];
+
+    const found: BodyEscape[] = [];
+    for (const expression of returnedExpressions(body)) {
+      const reason = rejectionReason(
+        rejectionOf(expression, body),
+        throwingOf,
+      );
+      if (reason !== undefined) {
+        found.push({ kind: "rejected-return", node: expression, reason });
+      }
+    }
+    return found;
+  }
+
+  /** Every color a rejection can turn on, so the fixpoint can order them. */
+  function rejectionNodes(rejection: Rejection): readonly ColorNode[] {
+    switch (rejection.kind) {
+      case "clean":
+      case "floor":
+        return [];
+      case "color":
+        return [rejection.node];
+      case "join":
+        return rejection.parts.flatMap(rejectionNodes);
+      case "discharged":
+        return [
+          ...rejectionNodes(rejection.source),
+          ...rejectionNodes(rejection.handler),
+        ];
+    }
+  }
+
+  /** The rejections one escape site turns on, whichever kind of site it is. */
+  function rejectionsIn(
+    body: Bodied,
+    phase: Phase,
+  ): readonly Rejection[] {
+    const found: Rejection[] = [];
+
+    for (const escape of escapesOf(body, phase)) {
+      if (escape.kind === "await") {
+        found.push(rejectionOf(escape.node.expression, body));
+      } else if (escape.kind === "float") {
+        found.push(rejectionOf(escape.node, body));
+      }
+    }
+
+    if (phase !== "eager" && !isGenerator(body)) {
+      for (const expression of returnedExpressions(body)) {
+        found.push(rejectionOf(expression, body));
+      }
+    }
+
+    return found;
+  }
+
+  /**
+   * Whether the `await` written on this call is the site that answers for it.
+   * The two channels are neutralized by exactly the same `try` there, so one
+   * diagnostic covers both — and `try { await f() } catch` is the bridge that
+   * works whether or not the callee is `async`.
+   */
+  function awaitedDirectly(site: Transfer): boolean {
+    let node: ts.Node = site;
+    while (ts.isParenthesizedExpression(node.parent)) node = node.parent;
+    return (
+      ts.isAwaitExpression(node.parent) &&
+      isPromiseType(checker.getTypeAtLocation(site), checker)
+    );
+  }
+
+  /**
+   * Whether a `try`/`catch` around this discard can catch anything at all. A
+   * visibly-`async` callee never throws — it rejects — so a `catch` with no
+   * `await` is not on the path, and telling the reader that is a different
+   * thing from telling them the promise floats.
+   */
+  function cannotFire(expression: ts.Expression, body: Bodied): boolean {
+    if (!ts.isCallExpression(expression)) return false;
+    const targets = targetsOf(expression, body);
+    return (
+      targets.length > 0 &&
+      targets.every(
+        (target) =>
+          target.kind === "function" && isVisiblyAsync(target.declaration),
+      )
+    );
   }
 
   return {
@@ -811,6 +1163,16 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
 
 function floorConsumed(reason: ConsumptionReason): Consumed {
   return { kind: "floor", reason };
+}
+
+function floorRejection(reason: RejectionReason): Rejection {
+  return { kind: "floor", reason };
+}
+
+/** A join of one is that one: a tree with no branch reads better in a message. */
+function joinRejections(parts: readonly Rejection[]): Rejection {
+  if (parts.length === 1) return parts[0] as Rejection;
+  return { kind: "join", parts };
 }
 
 function colorNodesIn(consumed: readonly Consumed[]): readonly ColorNode[] {

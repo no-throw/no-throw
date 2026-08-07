@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { skipParens } from "./conditions.js";
 import {
   bodyOf,
   classEvaluation,
@@ -6,6 +7,7 @@ import {
   type Bodied,
 } from "./declarations.js";
 import { iterationEscapeAt, type IterationEscape } from "./iteration.js";
+import { discardedExpression } from "./promises.js";
 
 /**
  * A site that transfers control into some other body, with the syntax naming
@@ -54,6 +56,20 @@ export type Escape =
   | { readonly kind: "spread"; readonly node: ts.SpreadAssignment }
   | { readonly kind: "coercion"; readonly node: ts.Expression }
   | { readonly kind: "instance-check"; readonly node: ts.BinaryExpression }
+  /** Where a promise's rejection is consumed, and so where it can escape. */
+  | { readonly kind: "await"; readonly node: ts.AwaitExpression }
+  /**
+   * A promise dropped in statement position. It is the one escape a `try`
+   * neutralizes nothing about — a rejection is not on the path a `catch`
+   * without an `await` sits on — so the walk carries the bridge it was written
+   * inside rather than filtering it out, and the fake bridge is what that
+   * combination is called.
+   */
+  | {
+      readonly kind: "float";
+      readonly node: ts.Expression;
+      readonly bridged: boolean;
+    }
   | IterationEscape;
 
 /**
@@ -88,7 +104,16 @@ export function unbridgedEscapes(
   const found: Escape[] = [];
 
   const walk = (node: ts.Node, region: ts.Node): void => {
-    if (!isBridged(node, region)) found.push(...escapesAt(node, checker));
+    const bridged = isBridged(node, region);
+    if (ts.isExpressionStatement(node)) {
+      found.push({
+        kind: "float",
+        node: discardedExpression(node.expression),
+        bridged,
+      });
+    } else if (!bridged) {
+      found.push(...escapesAt(node, checker));
+    }
 
     node.forEachChild((child) => {
       // A nested function is its own body with its own color.
@@ -176,6 +201,11 @@ function escapesAt(
     found.push({ kind: "spread", node });
   } else if (isInstanceCheck(node)) {
     found.push({ kind: "instance-check", node });
+  } else if (ts.isAwaitExpression(node) && !isConsuming(node.expression, checker)) {
+    // Awaiting `it.next()` is one site, not two: the iteration seam already
+    // owns what the call enters, and the promise it hands back is that same
+    // body's answer.
+    found.push({ kind: "await", node });
   }
 
   if (ts.isExpression(node) && isCoerced(node)) {
@@ -213,6 +243,14 @@ function isBridged(node: ts.Node, region: ts.Node): boolean {
   }
 
   return false;
+}
+
+/** Whether the iteration seam already claims this expression. */
+function isConsuming(
+  expression: ts.Expression,
+  checker: ts.TypeChecker,
+): boolean {
+  return iterationEscapeAt(skipParens(expression), checker) !== undefined;
 }
 
 function isTransfer(node: ts.Node): node is Transfer {

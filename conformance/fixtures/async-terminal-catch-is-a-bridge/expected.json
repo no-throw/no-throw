@@ -1,0 +1,14 @@
+{
+  "description": "A terminal `.catch(h)` with a non-throwing handler is the async bridge — the sanctioned fire-and-forget — and a rethrowing handler is simply a throwing `h`, so it is no bridge with no dedicated detector.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 19,
+      "column": 3,
+      "endLine": 19,
+      "endColumn": 33,
+      "messageId": "inferredThrowingFloat",
+      "message": "`sendTelemetry().catch(rethrow)` is discarded, so nothing handles a rejection and Node escalates one to an uncaught exception: the body producing it was analyzed and can throw. Your outs: `await` it inside a `try`/`catch`, end the chain with a `.catch(h)` whose handler is non-throwing, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

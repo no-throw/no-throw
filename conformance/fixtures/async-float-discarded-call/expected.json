@@ -1,0 +1,23 @@
+{
+  "description": "Tier-1 floats are owned: a statement-position discard of a throwing async call escapes, `void` included, because Node escalates the unhandled rejection while the caller sees a clean return. Discarding a non-throwing one is green.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 10,
+      "column": 3,
+      "endLine": 10,
+      "endColumn": 12,
+      "messageId": "inferredThrowingFloat",
+      "message": "`rejects()` is discarded, so nothing handles a rejection and Node escalates one to an uncaught exception: the body producing it was analyzed and can throw. Your outs: `await` it inside a `try`/`catch`, end the chain with a `.catch(h)` whose handler is non-throwing, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 15,
+      "column": 8,
+      "endLine": 15,
+      "endColumn": 17,
+      "messageId": "inferredThrowingFloat",
+      "message": "`rejects()` is discarded, so nothing handles a rejection and Node escalates one to an uncaught exception: the body producing it was analyzed and can throw. Your outs: `await` it inside a `try`/`catch`, end the chain with a `.catch(h)` whose handler is non-throwing, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}
