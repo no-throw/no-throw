@@ -89,8 +89,8 @@ function specFor(corpus: SpecCorpus, specKey: string): SpecBuiltin | undefined {
     corpus.builtins.get(specKey.replace(NATIVE_ERROR, "NativeError"))
   );
   // Deliberately no `get X` fallback here: reading a property is not a call, so
-  // an accessor's colour belongs in the accessor fact and nowhere else. Giving
-  // the member a colour from its getter's clause would ship a call claim about
+  // an accessor's color belongs in the accessor fact and nowhere else. Giving
+  // the member a color from its getter's clause would ship a call claim about
   // something that cannot be called.
 }
 

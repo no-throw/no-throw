@@ -51,7 +51,7 @@ Where no path can be formed the hazard falls back to `hazard`, unchanged.
 
 `proxyTraps` was not a dial to decide: a `Proxy` is type-identical to its
 target, so "might this be a Proxy?" has no static answer for *any* object, and
-flooring on it would colour nothing. It is trust base, already ruled.
+flooring on it would color nothing. It is trust base, already ruled.
 
 Two consequences of that ruling are load-bearing in the generator and worth
 stating plainly:
@@ -59,7 +59,7 @@ stating plainly:
 - Internal methods (`[[Get]]`, `[[GetOwnProperty]]`, …) are dynamically
   dispatched, so the extraction cannot separate the ordinary variant from the
   Proxy one. Every hazard reached *through* an internal method is therefore read
-  as trap behaviour. The abstract operations that merely call them — `GetV`,
+  as trap behavior. The abstract operations that merely call them — `GetV`,
   `RegExpExec`, `OrdinaryHasInstance` — are **not** in that set: they have
   throws of their own that have nothing to do with a trap.
 - An array carrying a throwing index accessor is not in the hostile pool.

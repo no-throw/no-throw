@@ -37,6 +37,6 @@ export const DIALS: Dials = {
   // and access paths removed the inexpressibility.
   memberCallable: "path",
   // Already ruled into the trust base by #14: a Proxy is type-identical to its
-  // target, so flooring on it would colour nothing.
+  // target, so flooring on it would color nothing.
   proxyTraps: "trust-base",
 };

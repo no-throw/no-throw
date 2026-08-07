@@ -81,7 +81,7 @@ export class HostileFuzzer {
         }
         try {
           const result = Reflect.apply(target, receiver, spread(args, restFrom));
-          // A rejected promise is the member's own colour, not a sync throw.
+          // A rejected promise is the member's own color, not a sync throw.
           if (isThenable(result)) result.then(noop, noop);
         } catch (error) {
           counterexamples.push(
@@ -102,7 +102,7 @@ export class HostileFuzzer {
     };
   }
 
-  /** Read a member as a property: the accessor fact's `get` colour. */
+  /** Read a member as a property: the accessor fact's `get` color. */
   probeGet(member: LibMember): ProbeResult {
     const key = runtimeKey(member.name);
     const receivers = this.#receiversFor(member);

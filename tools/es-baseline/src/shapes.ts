@@ -158,12 +158,12 @@ export interface Shape {
 /**
  * A property access dispatches through an object's internal methods, and a
  * `Proxy` overrides every one of them. Everything a trap can reach is
- * therefore the trap's behaviour, whichever operation the throw is finally
+ * therefore the trap's behavior, whichever operation the throw is finally
  * written in — so the *chain* decides this shape, not the deepest operation.
  *
  * #14 already ruled traps into the trust base: a Proxy is type-identical to
  * its target, so "might this be a Proxy?" has no static answer for any object
- * and flooring on it would colour nothing.
+ * and flooring on it would color nothing.
  *
  * Only the internal methods themselves qualify. The abstract operations that
  * *call* them — `GetV` coerces first, `RegExpExec` checks a user-supplied

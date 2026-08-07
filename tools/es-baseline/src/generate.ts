@@ -42,7 +42,7 @@ export interface GenerationReport {
     readonly throwing: number;
     /** Accessor facts whose `get` is clean — a property read that is not a call. */
     readonly cleanReads: number;
-    /** Members with no entry at all: no colour, no accessor fact. */
+    /** Members with no entry at all: no color, no accessor fact. */
     readonly floored: number;
     readonly reviewMembers: number;
     readonly accessorFacts: number;
@@ -144,7 +144,7 @@ function entryFor(
   const clean = proposal.color === "non-throwing" && !unprobed;
   const color = proposal.color === undefined ? undefined : clean ? "non-throwing" : "throwing";
   // An unprobed clean has no verdict at all — a `throwing` entry would claim
-  // knowledge the gate never gave us — so its colour is simply absent, and
+  // knowledge the gate never gave us — so its color is simply absent, and
   // absence floors.
   const shipped = proposal.color === "non-throwing" && unprobed ? undefined : color;
   if (shipped === undefined && accessor === undefined) return undefined;
