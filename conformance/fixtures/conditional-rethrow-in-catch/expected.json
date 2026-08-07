@@ -1,0 +1,14 @@
+{
+  "description": "A rethrow that only sometimes runs is still a rethrow: it is reported at the throw, on the path that reaches it.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 7,
+      "column": 5,
+      "endLine": 7,
+      "endColumn": 17,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    }
+  ]
+}

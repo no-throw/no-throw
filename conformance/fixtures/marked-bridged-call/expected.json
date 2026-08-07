@@ -1,0 +1,4 @@
+{
+  "description": "An inline try/catch satisfies the checker with no wrapper import: the catch turns the throw into a returned value.",
+  "diagnostics": []
+}
