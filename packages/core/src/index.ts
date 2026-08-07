@@ -18,3 +18,4 @@ export type {
 export type { FloorReason, UndischargedReason } from "./colors.js";
 export { findMarks } from "./marks.js";
 export type { MarkProblem, MarkProblemKind, Marks, Span } from "./marks.js";
+export type { Target, TransferSite } from "./transfers.js";

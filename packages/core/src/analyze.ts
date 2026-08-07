@@ -5,6 +5,7 @@ import { inheritedFrom } from "./declarations.js";
 import { calleeExpression, type Transfer } from "./escapes.js";
 import { findMarks } from "./marks.js";
 import { createColorResolver, type BodyEscape } from "./resolve-color.js";
+import type { Target, TransferSite } from "./transfers.js";
 
 interface UncaughtThrow {
   readonly kind: "uncaught-throw";
@@ -57,6 +58,31 @@ interface FlooredConditionArgument extends ConditionArgument {
 }
 
 /**
+ * A body that runs with no callee in the syntax: an accessor behind a property
+ * access, a conversion member behind a coercion. Its own kind because what the
+ * reader has to be told is different — not "this call throws" but "this is a
+ * call".
+ */
+interface HiddenTransfer {
+  readonly node: ts.Node;
+  readonly site: TransferSite;
+  /** The site as written. */
+  readonly text: string;
+  /** Absent when the type could not name what runs, which always floors. */
+  readonly target: Target | undefined;
+}
+
+interface UnbridgedHiddenTransfer extends HiddenTransfer {
+  readonly kind: "unbridged-hidden-transfer";
+  readonly reason: FloorReason;
+}
+
+interface InferredThrowingHiddenTransfer extends HiddenTransfer {
+  readonly kind: "inferred-throwing-hidden-transfer";
+  readonly target: Target;
+}
+
+/**
  * The escapes a marked function can be reported for. Every kind is a facet of
  * the one invariant, so adapters surface them inside a single rule rather than
  * as separate, individually disableable ones.
@@ -66,7 +92,9 @@ export type Finding =
   | UnbridgedCall
   | InferredThrowingCall
   | ThrowingConditionArgument
-  | FlooredConditionArgument;
+  | FlooredConditionArgument
+  | UnbridgedHiddenTransfer
+  | InferredThrowingHiddenTransfer;
 
 /**
  * Collect every escape in a file. The core never builds a `ts.Program`: hosts
@@ -122,6 +150,31 @@ function findingFor(escape: BodyEscape): Finding {
         reason: escape.reason,
         ...conditionArgument(escape.node, escape.condition),
       };
+    case "hidden-transfer": {
+      const { node, site, text, target } = escape;
+      // A transfer the type could not name has no body anything could have
+      // read, so it is a floor however it got here.
+      if (target === undefined) {
+        return {
+          kind: "unbridged-hidden-transfer",
+          node,
+          site,
+          text,
+          target,
+          reason: "unresolvable",
+        };
+      }
+      return escape.reason === "inferred"
+        ? { kind: "inferred-throwing-hidden-transfer", node, site, text, target }
+        : {
+            kind: "unbridged-hidden-transfer",
+            node,
+            site,
+            text,
+            target,
+            reason: escape.reason,
+          };
+    }
   }
 }
 

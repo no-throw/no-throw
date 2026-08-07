@@ -1,0 +1,32 @@
+{
+  "description": "Coercing an object takes the color of the conversion members its type declares. Each class declares all three, so nothing is inherited from the builtin and the answer is the in-program bodies alone: the all-clean one passes, and a throwing `toString`, `valueOf` or `Symbol.toPrimitive` is reported at the interpolation, the unary `+` and the `==`.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 69,
+      "column": 13,
+      "endLine": 69,
+      "endColumn": 21,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Coercing `stringly` to a primitive escapes this `@nothrow` function: it runs the method `toString`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the method `toString` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 74,
+      "column": 11,
+      "endLine": 74,
+      "endColumn": 22,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Coercing `numerically` to a primitive escapes this `@nothrow` function: it runs the method `valueOf`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the method `valueOf` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 79,
+      "column": 10,
+      "endLine": 79,
+      "endColumn": 21,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Coercing `primitively` to a primitive escapes this `@nothrow` function: it runs the method `[Symbol.toPrimitive]`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the method `[Symbol.toPrimitive]` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}
