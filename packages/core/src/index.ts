@@ -1,5 +1,5 @@
 export { analyzeSourceFile } from "./analyze.js";
-export type { Finding, FindingKind } from "./analyze.js";
+export type { Finding } from "./analyze.js";
 export { lookupBaselineEntry } from "./baseline/data.js";
 export {
   libTargetOfFileName,
@@ -15,3 +15,6 @@ export type {
   Color,
   ConditionPath,
 } from "./baseline/types.js";
+export type { FloorReason } from "./colors.js";
+export { findMarks } from "./marks.js";
+export type { MarkProblem, MarkProblemKind, Marks, Span } from "./marks.js";

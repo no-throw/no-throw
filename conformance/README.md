@@ -27,11 +27,16 @@ in particular decides which standard-library baseline applies.
 Fixtures import nothing from `@nothrow/*` and contain no test-framework
 constructs. They are what a user's project looks like.
 
+Until the standard-library baseline lands, every call into `lib.*.d.ts` floors —
+so a fixture that wants to be green about something else keeps clear of `.trim()`
+and friends, and one that wants a floor reaches for `JSON.parse`.
+
 `expected.json`:
 
 ```json
 {
   "description": "one line, printed next to the verdict",
+  "config": "rules",
   "diagnostics": [
     {
       "file": "src/index.ts",
@@ -51,10 +56,17 @@ ESLint. `message` is optional, and asserting it is mandatory wherever the spec
 makes the text normative — a floor diagnostic must name why it floored and what
 your outs are, and that contract lives in the text.
 
+`config` says how the fixture is wired up, and defaults to `"rules"`: the driver
+turns each `nothrow` rule on by name. `"recommended"` installs the shipped
+preset instead, so a fixture can assert what a user gets from the config they
+actually install, third-party rules in it included.
+
 Two things the format cannot express yet, both of which the driver turns into a
 loud failure rather than a silent drop: an autofix, which no rule may ever offer
-because wrapping a call in a bridge changes behavior, and a suggestion, which
-rules will offer once there is a bridge edit to suggest.
+because wrapping a call in a bridge changes behavior, and a suggestion from a
+`nothrow` rule, which they will offer once there is a bridge edit to suggest.
+Suggestions from rules the preset merely turns on are ignored — pinning a
+dependency's suggestion text here would assert nothing about us.
 
 ## The driver is thin, and swappable
 

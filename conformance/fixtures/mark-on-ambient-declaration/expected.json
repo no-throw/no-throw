@@ -1,0 +1,14 @@
+{
+  "description": "A mark on an ambient declaration is rejected, and the message points at the overrides file.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 1,
+      "column": 5,
+      "endLine": 1,
+      "endColumn": 13,
+      "messageId": "ambientDeclaration",
+      "message": "`@nothrow` binds to nothing on an ambient declaration: there is no body to verify it against, and an in-source mark is always verified. Assert the color in `nothrow.overrides.json` instead."
+    }
+  ]
+}

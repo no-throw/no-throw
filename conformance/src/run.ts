@@ -35,7 +35,7 @@ if (failures.length === 0) {
 async function check(fixture: Fixture): Promise<string[]> {
   let actual: readonly Diagnostic[];
   try {
-    actual = await runFixture(fixture.directory);
+    actual = await runFixture(fixture.directory, fixture.config);
   } catch (error) {
     return [
       "the driver could not run this fixture:",
