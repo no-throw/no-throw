@@ -1,0 +1,237 @@
+import type { DomMember } from "@nothrow/core/baseline";
+import { JSDOM, VirtualConsole } from "jsdom";
+
+/**
+ * The gate needs a DOM, and #26 established that it needs a *real* one: benign
+ * type-conformant arguments refuted 0 of 7 hand-signed controls, where the
+ * hostile pool refuted 7 of 7. What it does not need is a browser download in
+ * CI, so this is jsdom — a WebIDL-generated binding layer over the same
+ * algorithms, which is exactly the property the probe depends on.
+ *
+ * The consequence is recorded rather than hidden: jsdom reaches fewer
+ * interfaces than a browser, and every clean claim it cannot reach is
+ * **unprobed**, which ships floored. Unprobed is not refuted, and it is not
+ * evidence either.
+ */
+
+/**
+ * Deliberately not empty. A collection with nothing in it never enters the
+ * callback a `forEach` was given, and a probe that read a verdict off that
+ * silence would call a synchronous member deferred.
+ */
+const MARKUP = `<!doctype html><html><head><title>probe</title></head><body class="probe-body">
+<div id="probe" class="alpha beta" data-x="1"><p id="para">text</p><span>x</span></div>
+<form id="form"><input id="input" name="i" value="v"><select id="select"><option>o</option></select><textarea id="area"></textarea></form>
+<table id="table"><tbody><tr><td>c</td></tr></tbody></table>
+</body></html>`;
+
+const HTML_TAGS =
+  "a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p param picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var video wbr".split(
+    " ",
+  );
+
+const SVG_TAGS = ["svg", "g", "rect", "circle", "path", "text", "defs", "use"];
+
+/**
+ * Constructing these navigates, opens a socket, or blocks on a dialog, and a
+ * probe that tears down its own harness measures nothing.
+ */
+const UNSAFE_CONSTRUCTORS =
+  /^(WebSocket|EventSource|Worker|SharedWorker|RTCPeerConnection|XMLHttpRequest|Notification|BroadcastChannel|SpeechSynthesisUtterance)$/;
+
+export interface DomEnvironment {
+  readonly window: Window & typeof globalThis;
+  readonly document: Document;
+  /** Constructor name → one live instance. */
+  readonly pool: ReadonlyMap<string, unknown>;
+  readonly close: () => void;
+}
+
+export function createDomEnvironment(): DomEnvironment {
+  // jsdom reports an unimplemented member by writing to its virtual console,
+  // not by throwing. That is exactly the "silence proves nothing" case, and
+  // relaying thousands of them would bury the counterexamples that do count.
+  const dom = new JSDOM(MARKUP, {
+    url: "https://example.org/probe",
+    pretendToBeVisual: true,
+    virtualConsole: new VirtualConsole(),
+  });
+  const window = dom.window as unknown as Window & typeof globalThis;
+  const document = window.document;
+  const pool = new Map<string, unknown>();
+
+  const remember = (value: unknown): void => {
+    if (value === null || value === undefined) return;
+    let prototype: object | null;
+    try {
+      prototype = Object.getPrototypeOf(value) as object | null;
+    } catch {
+      return;
+    }
+    // Every interface the value implements, not only its most derived one: a
+    // `div` is the pool's `HTMLDivElement`, `HTMLElement`, `Element` and `Node`
+    // all at once, which is what gives the mixins a receiver at all.
+    while (prototype !== null && prototype !== Object.prototype) {
+      const name = (prototype as { constructor?: { name?: string } }).constructor?.name;
+      if (name !== undefined && name !== "" && !pool.has(name)) pool.set(name, value);
+      prototype = Object.getPrototypeOf(prototype) as object | null;
+    }
+  };
+
+  const globals = window as unknown as Record<string, unknown>;
+  for (const value of [
+    window,
+    document,
+    globals["navigator"],
+    globals["location"],
+    globals["history"],
+    globals["performance"],
+    globals["screen"],
+    globals["localStorage"],
+    globals["sessionStorage"],
+    globals["customElements"],
+    globals["crypto"],
+    document.documentElement,
+    document.head,
+    document.body,
+    document.implementation,
+    document.doctype,
+    document.createTextNode("x"),
+    document.createComment("c"),
+    document.createDocumentFragment(),
+    document.createRange(),
+    document.createAttribute("data-x"),
+    document.body.classList,
+    document.body.style,
+    document.body.attributes,
+    document.querySelectorAll("*"),
+    document.body.childNodes,
+    document.body.children,
+    document.getElementById("probe"),
+    document.getElementById("form"),
+    document.getElementById("input"),
+    document.createTreeWalker(document.body),
+    document.createNodeIterator(document.body),
+    document.createEvent("Event"),
+  ]) {
+    try {
+      remember(value);
+    } catch {
+      /* an interface this engine does not implement is simply unprobed */
+    }
+  }
+
+  for (const tag of HTML_TAGS) {
+    try {
+      remember(document.createElement(tag));
+    } catch {
+      /* likewise */
+    }
+  }
+  for (const tag of SVG_TAGS) {
+    try {
+      remember(document.createElementNS("http://www.w3.org/2000/svg", tag));
+    } catch {
+      /* likewise */
+    }
+  }
+
+  // A zero-argument construction that succeeds is conformant by definition.
+  for (const name of Object.getOwnPropertyNames(window)) {
+    if (!/^[A-Z]/.test(name) || UNSAFE_CONSTRUCTORS.test(name) || pool.has(name)) {
+      continue;
+    }
+    let constructor: unknown;
+    try {
+      constructor = globals[name];
+    } catch {
+      continue;
+    }
+    if (typeof constructor !== "function") continue;
+    for (const args of [[], ["x"], ["x", {}], ["x", "y"]]) {
+      if (pool.has(name)) break;
+      try {
+        remember(Reflect.construct(constructor, args));
+      } catch {
+        /* not constructible this way */
+      }
+    }
+  }
+
+  return { window, document, pool, close: () => dom.window.close() };
+}
+
+/**
+ * The object a member is reached from: the window for a global, the constructor
+ * object for the static side, and an instance otherwise — preferring the
+ * declaring interface itself and falling back to anything that implements it.
+ * `ARIAMixin` and `GlobalEventHandlers` have no constructor of their own, so
+ * without that fallback the whole mixin surface — a large part of
+ * `lib.dom.d.ts` — would be unprobed.
+ */
+export function receiverFor(
+  environment: DomEnvironment,
+  member: DomMember,
+  implementers: ReadonlyMap<string, readonly string[]>,
+): unknown {
+  const globals = environment.window as unknown as Record<string, unknown>;
+  if (member.owner === "globalThis") return environment.window;
+  if (member.isStatic) {
+    try {
+      return globals[member.owner];
+    } catch {
+      return undefined;
+    }
+  }
+  const direct = environment.pool.get(member.owner);
+  if (direct !== undefined) return direct;
+  for (const candidate of implementers.get(member.owner) ?? []) {
+    const instance = environment.pool.get(candidate);
+    if (instance !== undefined) return instance;
+  }
+  return undefined;
+}
+
+/**
+ * Which interface really owns a member, read off the live prototype chain.
+ *
+ * `lib.dom.d.ts` restates `addEventListener` on `Window`, on `Element`, and on
+ * mixins like `GlobalEventHandlers` that `extends` nothing at all — so the
+ * declared heritage cannot always walk back to `EventTarget`, where WebIDL
+ * declares it once. The runtime can: `Object.getPrototypeOf` finds the
+ * prototype the property actually lives on, and its constructor names the
+ * interface.
+ *
+ * This is #29's second oracle — `getOwnPropertyDescriptor` on a live receiver —
+ * doing attribution rather than accessor-ness. It answers only for members this
+ * engine implements; everything else falls through to the declared heritage.
+ */
+export function runtimeOwnerOf(
+  environment: DomEnvironment,
+  member: DomMember,
+  implementers: ReadonlyMap<string, readonly string[]>,
+): string | undefined {
+  // The static side of an interface is a constructor object whose prototype
+  // chain is `Function`, which names no interface. A global function is not
+  // that: its receiver is the window, and the window's chain is exactly what
+  // says `addEventListener` comes from `EventTarget`.
+  if (member.isStatic && member.owner !== "globalThis") return undefined;
+  const receiver = receiverFor(environment, member, implementers);
+  if (receiver === null || receiver === undefined) return undefined;
+  try {
+    for (
+      let prototype = Object.getPrototypeOf(receiver) as object | null;
+      prototype !== null;
+      prototype = Object.getPrototypeOf(prototype) as object | null
+    ) {
+      if (Object.getOwnPropertyDescriptor(prototype, member.name) === undefined) {
+        continue;
+      }
+      const name = (prototype as { constructor?: { name?: string } }).constructor?.name;
+      return name === "" ? undefined : name;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}

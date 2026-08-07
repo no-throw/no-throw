@@ -21,7 +21,7 @@ const ENTRY_TEXT = "export {};";
 
 export function createLibProgram(
   tsApi: typeof ts,
-  libFile = "lib.esnext.d.ts",
+  libFiles: string | readonly string[] = "lib.esnext.d.ts",
 ): LibProgram {
   const host = tsApi.createCompilerHost({});
   const getSourceFile = host.getSourceFile.bind(host);
@@ -37,7 +37,7 @@ export function createLibProgram(
     [ENTRY],
     {
       target: tsApi.ScriptTarget.ESNext,
-      lib: [libFile],
+      lib: typeof libFiles === "string" ? [libFiles] : [...libFiles],
       strict: true,
       noLib: false,
     },

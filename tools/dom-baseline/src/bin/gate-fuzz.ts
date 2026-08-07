@@ -1,31 +1,32 @@
-import {
-  baselineData,
-  collectLibMembers,
-  createLibProgram,
-} from "@nothrow/core/baseline";
+import { baselineData, collectDomMembers } from "@nothrow/core/baseline";
 import ts from "typescript";
 
+import { createDomEnvironment } from "../gates/environment.js";
 import { formatCounterexample } from "../gates/fuzz.js";
 import { claimsOf, runFuzzGate, type Claim } from "../gates/run.js";
+import { createDomProgram } from "../lib.js";
 
 /**
  * Known-throwing members planted as clean, to prove the gate can fail. Each is
- * refuted by an argument or receiver the declared type plainly admits, so a
- * green run here would mean the gate had stopped being evidence.
+ * refuted by an argument the declared type plainly admits, so a green run here
+ * would mean the gate had stopped being evidence.
  */
-const PLANTED = ["JSON#parse", "Array#pop", "decodeURIComponent"];
+const PLANTED = [
+  "Document#createElement",
+  "Element#setAttribute",
+  "ParentNode#querySelector",
+  "Node#appendChild",
+];
 
 const selfCheck = process.argv.includes("--self-check");
 
-const data = baselineData("es");
-const lib = createLibProgram(ts);
-const members = collectLibMembers(lib);
+const data = baselineData("dom");
+const lib = createDomProgram(ts);
+const inventory = collectDomMembers(lib);
 
 const claims = new Map<string, Claim>(claimsOf(data));
 if (selfCheck) {
-  for (const key of PLANTED) {
-    claims.set(key, { cleanCall: true, cleanGet: false });
-  }
+  for (const key of PLANTED) claims.set(key, { cleanCall: true, cleanGet: false });
 }
 
 const throwing = new Set<string>();
@@ -35,7 +36,16 @@ for (const entries of Object.values(data.libs)) {
   }
 }
 
-const report = runFuzzGate(lib, members, claims, selfCheck ? new Set() : throwing);
+const environment = createDomEnvironment();
+const report = await runFuzzGate(
+  lib,
+  inventory.members,
+  inventory.implementers,
+  claims,
+  selfCheck ? new Set() : throwing,
+  environment,
+);
+environment.close();
 
 console.log(`clean claims probed:   ${report.probed.length}`);
 console.log(`unprobed:              ${report.unprobed.length}`);
@@ -53,20 +63,18 @@ if (!selfCheck) {
 
 if (selfCheck) {
   const refuted = new Set(report.counterexamples.map((found) => found.key));
-  const missed = PLANTED.filter((key) => !refuted.has(key));
   for (const key of PLANTED) {
-    const found = report.counterexamples.find(
-      (candidate) => candidate.key === key,
-    );
+    const found = report.counterexamples.find((candidate) => candidate.key === key);
     if (found !== undefined) console.log(`  refuted ${formatCounterexample(found)}`);
   }
+  const missed = PLANTED.filter((key) => !refuted.has(key));
   if (missed.length > 0) {
     console.error(
       `\nself-check FAILED: the gate did not refute ${missed.join(", ")}. A gate that cannot fail is not a gate.`,
     );
     process.exit(1);
   }
-  console.log(`\nself-check OK: every planted false-clean was refuted.`);
+  console.log("\nself-check OK: every planted false-clean was refuted.");
   process.exit(0);
 }
 
@@ -83,7 +91,7 @@ if (report.unprobed.length > 0) {
     `\n${report.unprobed.length} shipped clean claim(s) the gate cannot reach. Unprobed entries must ship floored — regenerate the baseline:`,
   );
   for (const result of report.unprobed.slice(0, 20)) {
-    console.error(`  ${result.key.padEnd(38)} ${result.skipped}`);
+    console.error(`  ${result.key.padEnd(40)} ${result.skipped}`);
   }
   process.exit(1);
 }

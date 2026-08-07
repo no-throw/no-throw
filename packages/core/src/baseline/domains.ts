@@ -26,6 +26,42 @@ export class TypeDomains {
     return this.#all(types, (type) => type.getCallSignatures().length > 0);
   }
 
+  /**
+   * Existential where `isCallable` is universal. Discharging a hazard asks
+   * "is this *certainly* a function?"; deciding whether a parameter needs a
+   * condition asks "could control reach into it at all?", and
+   * `EventListenerOrEventListenerObject | null` must answer yes to the second
+   * while answering no to the first.
+   *
+   * It stays narrow on purpose. "Any object with a method" would be the widest
+   * safe answer and also a useless one — `Element` has methods, so every DOM
+   * member taking an element would need a condition and floor without one.
+   */
+  mayBeCallable(types: readonly ts.Type[]): boolean {
+    for (const declared of types) {
+      for (const constituent of this.#constituents(declared)) {
+        if (constituent.getCallSignatures().length > 0) return true;
+        if (constituent.getSymbol()?.getName() === "Function") return true;
+        // A single-method object type is how a WebIDL *callback interface*
+        // reaches TypeScript (`interface EventListenerObject { handleEvent(…) }`),
+        // and entering it is the same transfer of control. The object test is
+        // load-bearing: `boolean`'s apparent type is `interface Boolean {
+        // valueOf(): boolean }`, a single-method type that transfers control
+        // nowhere, and without it every optional flag reads as a callback.
+        if ((constituent.flags & this.#ts.TypeFlags.Object) === 0) continue;
+        const properties = constituent.getProperties();
+        if (
+          properties.length === 1 &&
+          properties[0] !== undefined &&
+          this.#checker.getTypeOfSymbol(properties[0]).getCallSignatures().length > 0
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   isConstructor(types: readonly ts.Type[]): boolean {
     return this.#all(
       types,
@@ -83,6 +119,33 @@ export class TypeDomains {
     const { TypeFlags } = this.#ts;
     const nullish = TypeFlags.Undefined | TypeFlags.Null | TypeFlags.Void;
     return this.#all(types, (type) => (type.flags & nullish) === 0);
+  }
+
+  /**
+   * Every constituent is a string *literal* — a closed set of names, which is
+   * what discharges an enumerated-value check. A bare `string` is not one: it
+   * promises nothing about its contents.
+   */
+  isStringLiteralUnion(types: readonly ts.Type[]): boolean {
+    return this.#all(types, (type) => type.isStringLiteral());
+  }
+
+  /**
+   * Every constituent is the named interface or inherits from it. This is the
+   * brand test: WebIDL's wrong-type guards name an interface, and TypeScript's
+   * declaration of the same position is what says whether a call can reach one.
+   */
+  isSubtypeOf(types: readonly ts.Type[], name: string): boolean {
+    return this.#all(types, (type) => this.#inheritsFrom(type, name, 0));
+  }
+
+  #inheritsFrom(type: ts.Type, name: string, depth: number): boolean {
+    if (depth > 8) return false;
+    if (type.getSymbol()?.getName() === name) return true;
+    for (const base of type.isClassOrInterface() ? this.#checker.getBaseTypes(type) : []) {
+      if (this.#inheritsFrom(base, name, depth + 1)) return true;
+    }
+    return false;
   }
 
   isString(types: readonly ts.Type[]): boolean {

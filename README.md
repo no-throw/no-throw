@@ -243,15 +243,16 @@ inference** for unmarked functions whose bodies are visible, **conditional
 cleanliness** for higher-order functions, and the `configs.recommended` preset.
 Everything with no body to read floors to throwing with a diagnostic naming
 your outs. The ES standard-library baseline ships as data in `@nothrow/core`,
-but nothing consults it yet, so every standard-library call floors too — `new
-Error(…)` included, iterating an array or a `Map` with it, and with them the
-`map`/`forEach` family, whose conditional entries are what the call-site join
-will discharge, and every coercion of an object that inherits its `toString`
-and `valueOf` rather than declaring them.
+and so does the DOM baseline, but nothing consults either yet, so every
+standard-library and DOM call floors too — `new Error(…)` included, iterating
+an array or a `Map` with it, and with them the `map`/`forEach` family, whose
+conditional entries are what the call-site join will discharge — and so does
+every coercion of an object that inherits its `toString` and `valueOf` rather
+than declaring them.
 
 Async — `await`, promise chains, `for await` — the carrier chain (manifests,
-overlays, overrides), the DOM baseline and `nothrow emit` are not built yet.
-The design is locked and lives in
+overlays, overrides) and `nothrow emit` are not built yet. The design is locked
+and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages
@@ -274,15 +275,22 @@ pnpm install && pnpm test
 [conformance suite](conformance) — fixture projects on disk paired with the
 diagnostics they must produce. Every behavior lands there.
 
-The shipped standard-library baseline is generated data, so its correctness is
-CI over that data rather than a conformance fixture. Two gates guard it, both
-run in CI and neither needing the ECMA-262 spec:
+The shipped baselines are generated data, so their correctness is CI over that
+data rather than a conformance fixture. Gates guard them, all run in CI and none
+needing the specs they were generated from:
 
 ```bash
-pnpm run gate:fuzz     # attack every shipped clean entry with hostile, type-conformant values
-pnpm run gate:drift    # symbol-set diff of lib.*.d.ts; newcomers have no entry and floor
+pnpm run gate:fuzz          # attack every shipped clean ES entry with hostile, type-conformant values
+pnpm run gate:drift         # symbol-set diff of lib.*.d.ts; newcomers have no entry and floor
+pnpm run dom:gate:fuzz      # the same, over the DOM data, in a real DOM
+pnpm run dom:gate:deferred  # every callback-taking DOM member is adjudicated sync, queued or floored
+pnpm run dom:gate:drift     # symbol-set diff of lib.dom*.d.ts
 ```
 
+Each takes `-- --self-check`, which plants a failure and requires the gate to
+catch it: a gate that cannot fail is not a gate.
+
 Regenerating the data is a maintainer task — see
-[`tools/es-baseline`](tools/es-baseline) and the one-off
+[`tools/es-baseline`](tools/es-baseline),
+[`tools/dom-baseline`](tools/dom-baseline) and the one-off
 [dial sign-off](docs/baseline-dials.md).
