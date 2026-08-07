@@ -1,10 +1,13 @@
 import {
   analyzeSourceFile,
   type ConsumptionReason,
+  type EntrySite,
   type Finding,
   type FloorReason,
+  type UndischargedReason,
 } from "@nothrow/core";
 import { ESLintUtils, type TSESTree } from "@typescript-eslint/utils";
+import { relative, sep } from "node:path";
 import type ts from "typescript";
 
 const createRule = ESLintUtils.RuleCreator(
@@ -22,6 +25,8 @@ const outs = (what: string): string =>
   "`@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
   "`nothrow emit`.";
 
+const OUTS = outs("call");
+
 /**
  * A returned iterator is consumed by the caller, so the bridge is not on this
  * side of the boundary. What is: naming the call that produced it.
@@ -29,7 +34,7 @@ const outs = (what: string): string =>
 const RETURN_OUTS =
   "Your outs, in precedence order: return the iterator from a call this rule " +
   "can trace — a direct call, or a `const` initialized by one; assert the " +
-  "producer's color in `nothrow.overrides.json`; install or write an " +
+  "producer\'s color in `nothrow.overrides.json`; install or write an " +
   "`@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
   "`nothrow emit`.";
 
@@ -37,7 +42,7 @@ const messages = {
   uncaughtThrow: "Uncaught `throw` escapes this `@nothrow` function.",
   unbridgedCall:
     "Call to `{{callee}}` escapes this `@nothrow` function: {{reason}}. " +
-    outs("call"),
+    OUTS,
   // Not a floor, so not the floor's outs: the body was read and it can throw,
   // and every carrier on that list would be silencing a true positive.
   inferredThrowingCall:
@@ -45,6 +50,18 @@ const messages = {
     "analyzed and can throw. Your outs: bridge this call with `try`/`catch`, " +
     "or make `{{callee}}` non-throwing — mark it `@nothrow` and the escapes " +
     "inside it are reported too.",
+  // A conditioned callee is clean given a path over its own parameters, so a
+  // failure names the path, where the callee's body enters it, and the outs.
+  conditionArgumentThrowing:
+    "Call to `{{callee}}` escapes this `@nothrow` function: it is non-throwing " +
+    "given `{{path}}`, and the argument passed for `{{path}}` is throwing — " +
+    "its body was analyzed and can throw. `{{callee}}` enters `{{path}}` at " +
+    "{{entry}}. Your outs: bridge this call with `try`/`catch`, or pass " +
+    "something non-throwing for `{{path}}`.",
+  conditionArgumentFloored:
+    "Call to `{{callee}}` escapes this `@nothrow` function: it is non-throwing " +
+    "given `{{path}}`, and {{reason}}. `{{callee}}` enters `{{path}}` at " +
+    "{{entry}}. " + OUTS,
   unbridgedConsumption:
     "Consuming this iterator escapes this `@nothrow` function: {{reason}}. " +
     outs("consumption"),
@@ -76,15 +93,50 @@ type MessageId = keyof typeof messages;
 /** The why half of the two-clause floor contract. */
 const whyFloored: Record<FloorReason, string> = {
   bodyless:
-    "it is declared without a body — an ambient or `.d.ts` declaration — " +
-    "and no mark, manifest, overlay or override colors it, so it is " +
-    "assumed to throw",
+    "it is declared without a body — an ambient declaration, a `.d.ts`, or a " +
+    "value known only by its function type — and no mark, manifest, overlay " +
+    "or override colors it, so it is assumed to throw",
   unmarked:
     "it has a visible body but no `@nothrow` mark, so it is throwing by " +
     "declaration",
   unresolvable:
     "the checker cannot resolve it to a declaration, so nothing can say " +
     "whether it throws",
+  captured:
+    "it is captured from an enclosing scope rather than reached through a " +
+    "parameter of this function, so no argument at any call site could " +
+    "discharge a condition on it",
+  "mutable-binding":
+    "it is reached through a `let`, whose value the engine does not yet track " +
+    "across assignments, so which function runs here is not settled",
+};
+
+/** The same contract for the argument that was supposed to discharge a path. */
+const whyUndischarged: Record<UndischargedReason, string> = {
+  bodyless:
+    "the argument passed for it is declared without a body — an ambient " +
+    "declaration, a `.d.ts`, or an interface member — and no mark, manifest, " +
+    "overlay or override colors it",
+  unmarked:
+    "the argument passed for it has a visible body but no `@nothrow` mark, so " +
+    "it is throwing by declaration",
+  unresolvable:
+    "the argument passed for it does not resolve to a function this engine " +
+    "can color, so nothing can say whether it throws",
+  captured:
+    "the argument passed for it comes from an enclosing function's parameter, " +
+    "which is unknowable from here",
+  "mutable-binding":
+    "the argument passed for it is a `let`, whose value the engine does not " +
+    "yet track across assignments",
+  conditioned:
+    "the argument passed for it is itself non-throwing only given conditions " +
+    "of its own, which no argument at this call site can discharge",
+  "missing-argument":
+    "no argument is passed for it, so there is nothing here to discharge it",
+  "beyond-depth":
+    "carrying it up to this function would make a path deeper than the engine " +
+    "follows",
 };
 
 /**
@@ -98,7 +150,7 @@ const whyConsumptionFloored: Record<
 > = {
   bodyless:
     "what consuming it runs is declared without a body — an ambient or " +
-    "`.d.ts` declaration, the standard library's iteration protocol among " +
+    "`.d.ts` declaration, the standard library\'s iteration protocol among " +
     "them — and no mark, manifest, overlay or override colors it, so it is " +
     "assumed to throw",
   unmarked:
@@ -107,13 +159,19 @@ const whyConsumptionFloored: Record<
   unresolvable:
     "the checker cannot resolve what consuming it runs, so nothing can say " +
     "whether it throws",
-  "untraced-binding":
-    "it reaches here through a binding this rule does not follow yet — only " +
-    "a direct call, or a `const` initialized by one, traces to the call that " +
-    "produced it — so it is assumed to throw",
-  "untraced-opaque":
+  captured:
+    "it is produced by a function captured from an enclosing scope, so no " +
+    "argument at any call site could color what consuming it runs",
+  "mutable-binding":
+    "it reaches here through a `let`, whose value the engine does not yet " +
+    "track across assignments, so which call produced it is not settled",
+  untraced:
     "nothing in the syntax names the call that produced it, so nothing can " +
     "say whether consuming it throws",
+  "conditioned-producer":
+    "it is produced by a call to one of this function\'s own parameters, and " +
+    "a condition can say that calling a parameter is clean but not that " +
+    "consuming what it hands back is",
 };
 
 type Report =
@@ -127,9 +185,24 @@ type Report =
       readonly data: { readonly callee: string };
     }
   | {
-      readonly messageId:
-        | "unbridgedConsumption"
-        | "unprovableReturnedIterator";
+      readonly messageId: "conditionArgumentThrowing";
+      readonly data: {
+        readonly callee: string;
+        readonly path: string;
+        readonly entry: string;
+      };
+    }
+  | {
+      readonly messageId: "conditionArgumentFloored";
+      readonly data: {
+        readonly callee: string;
+        readonly path: string;
+        readonly entry: string;
+        readonly reason: string;
+      };
+    }
+  | {
+      readonly messageId: "unbridgedConsumption" | "unprovableReturnedIterator";
       readonly data: { readonly reason: string };
     }
   | {
@@ -143,7 +216,7 @@ type Report =
  * on a message inside it. A finding kind with no `case` here stops returning a
  * `Report` on every path, which is a compile error.
  */
-function reportFor(finding: Finding): Report {
+function reportFor(finding: Finding, cwd: string): Report {
   switch (finding.kind) {
     case "uncaught-throw":
       return { messageId: "uncaughtThrow" };
@@ -157,8 +230,25 @@ function reportFor(finding: Finding): Report {
         messageId: "inferredThrowingCall",
         data: { callee: finding.callee },
       };
-    case "iterator-throw":
-      return { messageId: "iteratorThrow" };
+    case "throwing-condition-argument":
+      return {
+        messageId: "conditionArgumentThrowing",
+        data: {
+          callee: finding.callee,
+          path: finding.path,
+          entry: entryText(finding.entry, cwd),
+        },
+      };
+    case "floored-condition-argument":
+      return {
+        messageId: "conditionArgumentFloored",
+        data: {
+          callee: finding.callee,
+          path: finding.path,
+          entry: entryText(finding.entry, cwd),
+          reason: whyUndischarged[finding.reason],
+        },
+      };
     case "throwing-consumption":
       return finding.reason === "inferred"
         ? { messageId: "inferredThrowingConsumption" }
@@ -166,6 +256,8 @@ function reportFor(finding: Finding): Report {
             messageId: "unbridgedConsumption",
             data: { reason: whyConsumptionFloored[finding.reason] },
           };
+    case "iterator-throw":
+      return { messageId: "iteratorThrow" };
     case "throwing-returned-iterator":
       return finding.reason === "inferred"
         ? { messageId: "inferredThrowingReturnedIterator" }
@@ -174,6 +266,16 @@ function reportFor(finding: Finding): Report {
             data: { reason: whyConsumptionFloored[finding.reason] },
           };
   }
+}
+
+/**
+ * Where the callee's body enters the path, as a place a reader can open. The
+ * core reports an absolute file name because it has no notion of a project
+ * root; the adapter has one, and printing paths is not analysis.
+ */
+function entryText(entry: EntrySite, cwd: string): string {
+  const path = relative(cwd, entry.fileName).split(sep).join("/");
+  return `${path}:${entry.line}`;
 }
 
 export const noEscapingThrow = createRule<[], MessageId>({
@@ -201,7 +303,10 @@ export const noEscapingThrow = createRule<[], MessageId>({
 
         for (const finding of analyzeSourceFile(sourceFile, checker)) {
           const reportAt = services.tsNodeToESTreeNodeMap.get(finding.node);
-          context.report({ node: reportAt ?? node, ...reportFor(finding) });
+          context.report({
+            node: reportAt ?? node,
+            ...reportFor(finding, context.cwd),
+          });
         }
       },
     };

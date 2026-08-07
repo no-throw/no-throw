@@ -10,7 +10,15 @@ export type FloorReason =
   /** A visible body, but no mark — throwing by declaration, under `declare`. */
   | "unmarked"
   /** No declaration at all, so nothing could have colored it. */
-  | "unresolvable";
+  | "unresolvable"
+  /**
+   * Reached through a function captured from an enclosing scope. A condition
+   * is a path over the function's *own* parameters, so a factory's inner
+   * function has nothing a call site could discharge.
+   */
+  | "captured"
+  /** A `let` or `var`: a real future refinement, not an unknowable. */
+  | "mutable-binding";
 
 /**
  * Why a callee is throwing. `inferred` is the one answer that is not a floor:
@@ -19,28 +27,33 @@ export type FloorReason =
  */
 export type ThrowingReason = FloorReason | "inferred";
 
-/** A color, plus — when it is throwing — why, in whatever vocabulary fits. */
-export type Colored<Reason extends string> =
-  | { readonly color: "non-throwing" }
-  | { readonly color: "throwing"; readonly reason: Reason };
-
-/** A callee's color at a call site. */
-export type CalleeColor = Colored<ThrowingReason>;
+/**
+ * Why an argument failed to discharge the condition it was passed for. The
+ * floor reasons carry over unchanged — the argument is a callee once the call
+ * runs — and the rest are shapes only an argument has.
+ */
+export type UndischargedReason =
+  | FloorReason
+  /** Non-throwing only given conditions of its own, which nothing here can discharge. */
+  | "conditioned"
+  /** The conditioned parameter got no argument, so there is none to read. */
+  | "missing-argument"
+  /** Propagating it would produce a path deeper than the engine follows. */
+  | "beyond-depth";
 
 /**
- * Why consuming an iterator is throwing. The floors a callee can hit are all
- * reachable here too — the protocol resolves to bodies like anything else — and
- * two more are the iterator's own, both from the expression→originating-call
- * rule failing to name the call that produced the value. They are kept apart
- * because their fixes are: one is a refinement we owe you, the other is a
- * question the syntax cannot answer.
+ * Why consuming an iterator is throwing. Everything a callee can be carries
+ * over — the protocol resolves to bodies like anything else, and a `let` is the
+ * same deferred refinement here — plus the one shape only a produced value has:
+ * the expression→originating-call rule naming no call at all.
  */
 export type ConsumptionReason =
   | ThrowingReason
-  /** A binding the rule does not follow yet — a `let`, a computed initializer. */
-  | "untraced-binding"
-  /** Nothing in the syntax names the producing call at all. */
-  | "untraced-opaque";
-
-/** The color of consuming an iterator. */
-export type ConsumptionColor = Colored<ConsumptionReason>;
+  /** Nothing in the syntax names the call that produced it. */
+  | "untraced"
+  /**
+   * The producing call's callee is a parameter. A condition says calling it is
+   * clean and has no form for "and consuming what it hands back is too", so
+   * there is nothing a caller could discharge.
+   */
+  | "conditioned-producer";

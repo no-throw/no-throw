@@ -1,0 +1,14 @@
+{
+  "description": "A factory or curried function floors: the condition would have to live on a captured free variable, and no call site of the returned function has an argument that could discharge it.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 4,
+      "column": 44,
+      "endLine": 4,
+      "endColumn": 53,
+      "messageId": "unbridgedCall",
+      "message": "Call to `cb` escapes this `@nothrow` function: it is captured from an enclosing scope rather than reached through a parameter of this function, so no argument at any call site could discharge a condition on it. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

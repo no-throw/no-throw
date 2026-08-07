@@ -1,0 +1,14 @@
+{
+  "description": "Propagation appends the callee's segments to the caller's, so a cycle handing members onward would grow a path forever. The lattice has a finite height, and the path that would exceed it floors instead — over-strict, never a lie.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 9,
+      "column": 3,
+      "endLine": 9,
+      "endColumn": 9,
+      "messageId": "conditionArgumentFloored",
+      "message": "Call to `g` escapes this `@nothrow` function: it is non-throwing given `y.c.a.b.run`, and carrying it up to this function would make a path deeper than the engine follows. `g` enters `y.c.a.b.run` at src/index.ts:14. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "description": "Discharge has the expression precision the core already uses: a `const` is single-assignment, so the argument resolves through it to the function it names.",
+  "diagnostics": []
+}

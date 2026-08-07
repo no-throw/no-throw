@@ -17,7 +17,7 @@
       "endLine": 14,
       "endColumn": 12,
       "messageId": "unprovableReturnedIterator",
-      "message": "This `@nothrow` function returns an iterator, so the mark covers consuming it too: it reaches here through a binding this rule does not follow yet — only a direct call, or a `const` initialized by one, traces to the call that produced it — so it is assumed to throw. Your outs, in precedence order: return the iterator from a call this rule can trace — a direct call, or a `const` initialized by one; assert the producer's color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "This `@nothrow` function returns an iterator, so the mark covers consuming it too: it reaches here through a `let`, whose value the engine does not yet track across assignments, so which call produced it is not settled. Your outs, in precedence order: return the iterator from a call this rule can trace — a direct call, or a `const` initialized by one; assert the producer's color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

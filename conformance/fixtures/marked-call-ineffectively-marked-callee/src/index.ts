@@ -5,7 +5,9 @@ export class Service {
   }
 }
 
+const service = new Service();
+
 /** @nothrow */
-export function run(service: Service): void {
+export function run(): void {
   service.fail();
 }

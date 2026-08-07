@@ -1,14 +1,14 @@
 import ts from "typescript";
-import type { ConsumptionReason, FloorReason } from "./colors.js";
-import {
-  inheritedFrom,
-  isGenerator,
-  returnedExpressions,
-} from "./declarations.js";
-import { calleeExpression, unbridgedEscapes, type Transfer } from "./escapes.js";
-import { isIteratorType } from "./iteration.js";
+import type {
+  ConsumptionReason,
+  FloorReason,
+  UndischargedReason,
+} from "./colors.js";
+import { describePath, type Condition } from "./conditions.js";
+import { inheritedFrom } from "./declarations.js";
+import { calleeExpression, type Transfer } from "./escapes.js";
 import { findMarks } from "./marks.js";
-import { createColorResolver } from "./resolve-color.js";
+import { createColorResolver, type BodyEscape } from "./resolve-color.js";
 
 interface UncaughtThrow {
   readonly kind: "uncaught-throw";
@@ -29,6 +29,35 @@ interface InferredThrowingCall {
   readonly kind: "inferred-throwing-call";
   readonly node: ts.Node;
   readonly callee: string;
+}
+
+/**
+ * Where a body enters a condition path. Naming it is half of what a
+ * discharge-failure diagnostic owes the reader: the parameter alone does not
+ * say which line to look at.
+ */
+export interface EntrySite {
+  readonly fileName: string;
+  /** One-based, so the adapter can print it without knowing about offsets. */
+  readonly line: number;
+}
+
+interface ConditionArgument {
+  readonly node: ts.Node;
+  readonly callee: string;
+  /** The path as the callee's author wrote it: `cb`, `repo.save`. */
+  readonly path: string;
+  readonly entry: EntrySite;
+}
+
+/** The condition resolved to something whose body was read and can throw. */
+interface ThrowingConditionArgument extends ConditionArgument {
+  readonly kind: "throwing-condition-argument";
+}
+
+interface FlooredConditionArgument extends ConditionArgument {
+  readonly kind: "floored-condition-argument";
+  readonly reason: UndischargedReason;
 }
 
 /** A `for…of`, spread, destructuring, `.next()` or `yield*` that can throw. */
@@ -60,6 +89,8 @@ export type Finding =
   | UncaughtThrow
   | UnbridgedCall
   | InferredThrowingCall
+  | ThrowingConditionArgument
+  | FlooredConditionArgument
   | ThrowingConsumption
   | IteratorThrow
   | ThrowingReturnedIterator;
@@ -82,77 +113,77 @@ export function analyzeSourceFile(
   // inference reads their bodies without holding them to anything. A mark that
   // binds to nothing enforces nothing either — it is `valid-mark`'s to report.
   for (const target of findMarks(sourceFile).bound) {
-    for (const escape of unbridgedEscapes(target, checker)) {
-      if (escape.kind === "throw") {
-        findings.push({ kind: "uncaught-throw", node: escape.node });
-        continue;
-      }
-
-      if (escape.kind === "transfer") {
-        const callee = colors.at(escape.node);
-        if (callee.color === "non-throwing") continue;
-
-        findings.push(
-          callee.reason === "inferred"
-            ? {
-                kind: "inferred-throwing-call",
-                node: escape.node,
-                callee: calleeText(escape.node),
-              }
-            : {
-                kind: "unbridged-call",
-                node: escape.node,
-                callee: calleeText(escape.node),
-                reason: callee.reason,
-              },
-        );
-        continue;
-      }
-
-      if (escape.kind === "iterator-throw") {
-        findings.push({ kind: "iterator-throw", node: escape.node });
-        continue;
-      }
-
-      const consumed = colors.consuming(escape.site);
-      if (consumed.color === "throwing") {
-        findings.push({
-          kind: "throwing-consumption",
-          node: escape.site.node,
-          reason: consumed.reason,
-        });
-      }
-    }
-
-    for (const returned of returnedIterators(target, checker)) {
-      const produced = colors.producing(returned);
-      if (produced.color === "throwing") {
-        findings.push({
-          kind: "throwing-returned-iterator",
-          node: returned,
-          reason: produced.reason,
-        });
-      }
+    for (const escape of colors.escapesIn(target)) {
+      findings.push(findingFor(escape));
     }
   }
 
   return findings;
 }
 
-/**
- * The iterators a marked function hands out, which its mark covers consuming —
- * so a mark on a plain function that returns one it cannot trace to a clean
- * producer is refused, per the doctrine that unprovable is not clean. A
- * generator needs no such check: its iterator *is* the body already walked.
- */
-function returnedIterators(
-  declaration: ts.SignatureDeclaration,
-  checker: ts.TypeChecker,
-): readonly ts.Expression[] {
-  if (isGenerator(declaration)) return [];
-  return returnedExpressions(declaration).filter((expression) =>
-    isIteratorType(checker.getTypeAtLocation(expression), checker),
+function findingFor(escape: BodyEscape): Finding {
+  switch (escape.kind) {
+    case "throw":
+      return { kind: "uncaught-throw", node: escape.node };
+    case "callee":
+      return escape.reason === "inferred"
+        ? {
+            kind: "inferred-throwing-call",
+            node: escape.node,
+            callee: calleeText(escape.node),
+          }
+        : {
+            kind: "unbridged-call",
+            node: escape.node,
+            callee: calleeText(escape.node),
+            reason: escape.reason,
+          };
+    case "argument-throwing":
+      return {
+        kind: "throwing-condition-argument",
+        ...conditionArgument(escape.node, escape.condition),
+      };
+    case "argument-floored":
+      return {
+        kind: "floored-condition-argument",
+        reason: escape.reason,
+        ...conditionArgument(escape.node, escape.condition),
+      };
+    case "consumption":
+      return {
+        kind: "throwing-consumption",
+        node: escape.node,
+        reason: escape.reason,
+      };
+    case "iterator-throw":
+      return { kind: "iterator-throw", node: escape.node };
+    case "returned-iterator":
+      return {
+        kind: "throwing-returned-iterator",
+        node: escape.node,
+        reason: escape.reason,
+      };
+  }
+}
+
+function conditionArgument(
+  site: Transfer,
+  condition: Condition,
+): ConditionArgument {
+  return {
+    node: site,
+    callee: calleeText(site),
+    path: describePath(condition.path, condition.owner),
+    entry: entrySiteOf(condition),
+  };
+}
+
+function entrySiteOf(condition: Condition): EntrySite {
+  const sourceFile = condition.entry.getSourceFile();
+  const { line } = sourceFile.getLineAndCharacterOfPosition(
+    condition.entry.getStart(sourceFile),
   );
+  return { fileName: sourceFile.fileName, line: line + 1 };
 }
 
 /**
