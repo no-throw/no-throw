@@ -1,0 +1,4 @@
+{
+  "description": "A function that calls itself is a cycle of one: the self-edge stays inside the group and contributes nothing.",
+  "diagnostics": []
+}

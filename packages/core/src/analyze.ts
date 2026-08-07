@@ -1,7 +1,15 @@
 import ts from "typescript";
-import type { FloorReason } from "./colors.js";
-import { bodyOf, isMarked } from "./declarations.js";
-import { resolveCalleeColor } from "./resolve-color.js";
+import type {
+  ConsumptionReason,
+  FloorReason,
+  UndischargedReason,
+} from "./colors.js";
+import { describePath, type Condition } from "./conditions.js";
+import { inheritedFrom } from "./declarations.js";
+import { calleeExpression, type Transfer } from "./escapes.js";
+import { findMarks } from "./marks.js";
+import { createColorResolver, type BodyEscape } from "./resolve-color.js";
+import { textOf, type HiddenCallee, type TransferSite } from "./transfers.js";
 
 interface UncaughtThrow {
   readonly kind: "uncaught-throw";
@@ -17,12 +25,103 @@ interface UnbridgedCall {
   readonly reason: FloorReason;
 }
 
+/** A call whose callee was read rather than floored, and can throw. */
+interface InferredThrowingCall {
+  readonly kind: "inferred-throwing-call";
+  readonly node: ts.Node;
+  readonly callee: string;
+}
+
+/**
+ * Where a body enters a condition path. Naming it is half of what a
+ * discharge-failure diagnostic owes the reader: the parameter alone does not
+ * say which line to look at.
+ */
+export interface EntrySite {
+  readonly fileName: string;
+  /** One-based, so the adapter can print it without knowing about offsets. */
+  readonly line: number;
+}
+
+interface ConditionArgument {
+  readonly node: ts.Node;
+  readonly callee: string;
+  /** The path as the callee's author wrote it: `cb`, `repo.save`. */
+  readonly path: string;
+  readonly entry: EntrySite;
+}
+
+/** The condition resolved to something whose body was read and can throw. */
+interface ThrowingConditionArgument extends ConditionArgument {
+  readonly kind: "throwing-condition-argument";
+}
+
+interface FlooredConditionArgument extends ConditionArgument {
+  readonly kind: "floored-condition-argument";
+  readonly reason: UndischargedReason;
+}
+
+/** A `for…of`, spread, destructuring, `.next()` or `yield*` that can throw. */
+interface ThrowingConsumption {
+  readonly kind: "throwing-consumption";
+  readonly node: ts.Node;
+  readonly reason: ConsumptionReason;
+}
+
+/** `.throw()`: the consumer throwing, with a detour through the iterator. */
+interface IteratorThrow {
+  readonly kind: "iterator-throw";
+  readonly node: ts.Node;
+}
+
+/** A returned iterator whose consumption the mark cannot be held to. */
+interface ThrowingReturnedIterator {
+  readonly kind: "throwing-returned-iterator";
+  readonly node: ts.Node;
+  readonly reason: ConsumptionReason;
+}
+
+/**
+ * A body that runs with no callee in the syntax: an accessor behind a property
+ * access, a conversion member behind a coercion. Its own kind because what the
+ * reader has to be told is different — not "this call throws" but "this is a
+ * call".
+ */
+interface HiddenTransfer {
+  readonly node: ts.Node;
+  readonly site: TransferSite;
+  /** The site as written. */
+  readonly text: string;
+  /** Absent when the type could not name what runs, which always floors. */
+  readonly target: HiddenCallee | undefined;
+}
+
+interface UnbridgedHiddenTransfer extends HiddenTransfer {
+  readonly kind: "unbridged-hidden-transfer";
+  readonly reason: FloorReason;
+}
+
+interface InferredThrowingHiddenTransfer extends HiddenTransfer {
+  readonly kind: "inferred-throwing-hidden-transfer";
+  readonly target: HiddenCallee;
+}
+
 /**
  * The escapes a marked function can be reported for. Every kind is a facet of
  * the one invariant, so adapters surface them inside a single rule rather than
  * as separate, individually disableable ones.
  */
-export type Finding = UncaughtThrow | UnbridgedCall;
+export type Finding =
+  | UncaughtThrow
+  | UnbridgedCall
+  | InferredThrowingCall
+  | ThrowingConditionArgument
+  | FlooredConditionArgument
+  | ThrowingConsumption
+  | IteratorThrow
+  | ThrowingReturnedIterator
+  | UnbridgedHiddenTransfer
+  | InferredThrowingHiddenTransfer;
 
 /**
  * Collect every escape in a file. The core never builds a `ts.Program`: hosts
@@ -34,81 +133,122 @@ export function analyzeSourceFile(
   checker: ts.TypeChecker,
 ): readonly Finding[] {
   const findings: Finding[] = [];
+  // The inference memo lives as long as one file's analysis. Sharing it across
+  // a program is the incrementality question the dogfooding gate prices.
+  const colors = createColorResolver(checker);
 
-  const visit = (node: ts.Node): void => {
-    // Unmarked functions have nothing to enforce: throwing is the default.
-    if (ts.isFunctionLike(node) && isMarked(node)) {
-      collectEscapes(node, checker, findings);
+  // Unmarked functions have nothing to enforce: throwing is the default, and
+  // inference reads their bodies without holding them to anything. A mark that
+  // binds to nothing enforces nothing either — it is `valid-mark`'s to report.
+  for (const seed of findMarks(sourceFile).bound) {
+    for (const escape of colors.escapesIn(seed)) {
+      findings.push(findingFor(escape));
     }
-    node.forEachChild(visit);
-  };
+  }
 
-  visit(sourceFile);
   return findings;
 }
 
-function collectEscapes(
-  fn: ts.SignatureDeclaration,
-  checker: ts.TypeChecker,
-  out: Finding[],
-): void {
-  const body = bodyOf(fn);
-  if (body === undefined) return;
-
-  const walk = (node: ts.Node): void => {
-    if (ts.isThrowStatement(node) && !isBridged(node)) {
-      out.push({ kind: "uncaught-throw", node });
-    }
-
-    if (ts.isCallExpression(node) && !isBridged(node)) {
-      const callee = resolveCalleeColor(node, checker);
-      if (callee.color === "throwing") {
-        out.push({
-          kind: "unbridged-call",
+function findingFor(escape: BodyEscape): Finding {
+  switch (escape.kind) {
+    case "throw":
+      return { kind: "uncaught-throw", node: escape.node };
+    case "callee":
+      return escape.reason === "inferred"
+        ? {
+            kind: "inferred-throwing-call",
+            node: escape.node,
+            callee: calleeText(escape.node),
+          }
+        : {
+            kind: "unbridged-call",
+            node: escape.node,
+            callee: calleeText(escape.node),
+            reason: escape.reason,
+          };
+    case "argument-throwing":
+      return {
+        kind: "throwing-condition-argument",
+        ...conditionArgument(escape.node, escape.condition),
+      };
+    case "argument-floored":
+      return {
+        kind: "floored-condition-argument",
+        reason: escape.reason,
+        ...conditionArgument(escape.node, escape.condition),
+      };
+    case "consumption":
+      return {
+        kind: "throwing-consumption",
+        node: escape.node,
+        reason: escape.reason,
+      };
+    case "iterator-throw":
+      return { kind: "iterator-throw", node: escape.node };
+    case "returned-iterator":
+      return {
+        kind: "throwing-returned-iterator",
+        node: escape.node,
+        reason: escape.reason,
+      };
+    case "hidden-transfer": {
+      const { node, site, text, target } = escape;
+      // A transfer the type could not name has no body anything could have
+      // read, so it is a floor however it got here.
+      if (target === undefined) {
+        return {
+          kind: "unbridged-hidden-transfer",
           node,
-          callee: calleeText(node),
-          reason: callee.reason,
-        });
+          site,
+          text,
+          target,
+          reason: "unresolvable",
+        };
       }
+      return escape.reason === "inferred"
+        ? { kind: "inferred-throwing-hidden-transfer", node, site, text, target }
+        : {
+            kind: "unbridged-hidden-transfer",
+            node,
+            site,
+            text,
+            target,
+            reason: escape.reason,
+          };
     }
+  }
+}
 
-    node.forEachChild((child) => {
-      // A nested function is its own body with its own color. A class is not
-      // body code either: its members are bodies of their own, and evaluating
-      // the class — heritage expressions, static blocks, decorators — is ruled
-      // out of the color model.
-      if (ts.isFunctionLike(child) || ts.isClassLike(child)) return;
-      walk(child);
-    });
+function conditionArgument(
+  site: Transfer,
+  condition: Condition,
+): ConditionArgument {
+  return {
+    node: site,
+    callee: calleeText(site),
+    path: describePath(condition.path, condition.owner),
+    entry: entrySiteOf(condition),
   };
+}
 
-  walk(body);
+function entrySiteOf(condition: Condition): EntrySite {
+  const sourceFile = condition.entry.getSourceFile();
+  const { line } = sourceFile.getLineAndCharacterOfPosition(
+    condition.entry.getStart(sourceFile),
+  );
+  return { fileName: sourceFile.fileName, line: line + 1 };
 }
 
 /**
- * A `try` with a `catch` neutralizes escapes originating in its try block only;
- * `catch` and `finally` blocks are ordinary body code. Neutralization stops at
- * a function boundary, which the walk never crosses anyway.
+ * What the message calls the callee. `super` is the one transfer whose syntax
+ * names nothing a reader could act on — the mark that would make it clean goes
+ * on the base class — so a super call is quoted by the class it enters.
  */
-function isBridged(node: ts.Node): boolean {
-  let child: ts.Node = node;
-  let parent: ts.Node | undefined = node.parent;
-
-  while (parent !== undefined && !ts.isFunctionLike(parent)) {
-    if (
-      ts.isTryStatement(parent) &&
-      parent.catchClause !== undefined &&
-      parent.tryBlock === child
-    ) {
-      return true;
-    }
-    child = parent;
-    parent = parent.parent;
-  }
-
-  return false;
-}
-
-function calleeText(call: ts.CallExpression): string {
-  return call.expression.getText().replace(/\s+/gu, " ");
+function calleeText(transfer: Transfer): string {
+  const callee = calleeExpression(transfer);
+  return textOf(
+    callee.kind === ts.SyntaxKind.SuperKeyword
+      ? (inheritedFrom(transfer) ?? callee)
+      : callee,
+  );
 }

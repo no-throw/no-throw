@@ -1,0 +1,14 @@
+{
+  "description": "A constructor is a body like any other, so it carries conditions like any other: `new Runner(cb)` discharges the condition its constructor derived, at the construction rather than at a call.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 15,
+      "column": 10,
+      "endLine": 15,
+      "endColumn": 27,
+      "messageId": "conditionArgumentThrowing",
+      "message": "Call to `Runner` escapes this `@nothrow` function: it is non-throwing given `cb`, and the argument passed for `cb` is throwing — its body was analyzed and can throw. `Runner` enters `cb` at src/index.ts:4. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `cb`."
+    }
+  ]
+}

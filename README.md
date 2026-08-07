@@ -32,7 +32,8 @@ export function parse(text: string): unknown {
 
 ## Wiring it up
 
-The rule is type-aware, so it needs typescript-eslint's parser and a project:
+The rules are type-aware, so they need typescript-eslint's parser and a
+project:
 
 ```js
 // eslint.config.js
@@ -46,29 +47,213 @@ export default [
       parser: tseslint.parser,
       parserOptions: { projectService: true },
     },
-    plugins: { nothrow },
-    rules: { "nothrow/no-escaping-throw": "error" },
   },
+  nothrow.configs.recommended,
 ];
 ```
 
-`nothrow/no-escaping-throw` carries the whole invariant and takes no options.
-There is no configuration in which the guarantee means something different.
+`configs.recommended` is the whole contract, all at `error`:
+
+| rule | what it holds you to |
+| --- | --- |
+| `nothrow/no-escaping-throw` | the entire invariant — no throw escapes a marked function |
+| `nothrow/valid-mark` | every `@nothrow` you write binds to a function |
+| `@typescript-eslint/no-floating-promises` | a promise is awaited or handled |
+
+`@typescript-eslint/eslint-plugin` is a peer dependency of the plugin itself,
+not only of the preset — typed linting already requires it. Neither `nothrow`
+rule takes options; there is no configuration in which the guarantee means
+something different.
+
+## Where a mark binds
+
+`@nothrow` binds on a `function` declaration including `export default`; a
+single-declarator variable statement with a function or arrow initializer; a
+class method or constructor; an accessor, in a class or an object literal; and
+an object-literal method or function-valued property. Anywhere else is an error
+naming the nearest valid site, so a mark that binds to nothing is never a silent
+no-op you trust for years.
+
+Positions with no body reject the mark outright — `declare`/ambient
+declarations, interface members, abstract methods and overload signatures. On an
+overloaded function the mark goes on the implementation signature, which is the
+thing that throws. For an ambient declaration, assert the color in
+`nothrow.overrides.json` instead: an in-source `@nothrow` means *verified seed*
+and nothing else.
+
+## What gets inferred
+
+Marking one function does not force you to mark its call tree. An unmarked
+function whose body is visible is *inferred* — clean when nothing in it can
+throw, throwing otherwise — and is never itself held to anything: throwing is
+the default, and only a mark is a promise. So a call to an inferred-throwing
+function is reported at the call, and nothing inside that function is.
+
+```ts
+/** @nothrow */
+export function read(text: string): unknown {
+  return parse(text); // Call to `parse` escapes this `@nothrow` function: its
+}                     // body was analyzed and can throw. …
+
+function parse(text: string): unknown {
+  return JSON.parse(text); // not reported — `parse` never promised anything
+}
+```
+
+Bridge inside `parse` and `read` goes green with no second mark.
+
+Mutual recursion is fine: a cycle contributes paths, not throw sites, so a
+recursive walk or parser stays clean. A cycle that reaches a throw anywhere
+colors *every* member of it throwing — no member of a cycle is colored before
+the whole group resolves.
+
+`new C()` is a call to the constructor's *effective* body: the constructor,
+plus the class's field initializers, plus the base-class chain through
+`super()`. So a throw in a base class's field initializer is reported at the
+`new`, and a `try`/`catch` around the `new` bridges it. Parameter defaults run
+on every call and are checked there too — including a generator's, whose
+parameter list is eager though its body is lazy.
+
+A callee with no visible body — a `.d.ts` declaration, or one the checker
+cannot resolve at all — floors to throwing, and the diagnostic says which.
+
+## Higher-order functions
+
+A function that calls one of its own parameters is not throwing — it is
+non-throwing **given** that parameter. The condition is read off the body, not
+declared, so there is no annotation to keep in sync:
+
+```ts
+/** @nothrow */
+export function myEach<T>(xs: readonly T[], cb: (t: T) => void): void {
+  for (const x of xs) cb(x); // clean given `cb`
+}
+
+myEach(users, (u) => remember(u.name));  // fine — `remember` is inferred clean
+myEach(users, (u) => JSON.parse(u.raw)); // reported here, at the call
+```
+
+Only parameters the body actually *enters* are conditioned. One you merely hand
+onward is not, so a registry stays unconditionally clean; one you enter inside a
+`try`/`catch` is neutralized there, which is why a `safely()`-style wrapper —
+enter the callback inside `try`, return the error as a value — verifies with no
+help from the engine.
+
+Conditions are paths, not positions: a body calling `repo.save(item)`
+conditions `repo.save`, so refactoring a callback into an object parameter does
+not make your function unmarkable. And when the argument you pass is itself one
+of *your* parameters, the condition propagates up to you instead of discharging
+— which is how a chain of helpers stays markable all the way down.
+
+A condition is a precondition, exactly like a parameter type: it is discharged
+at every call, so no caller ever holds a promise it cannot cash. Where the
+argument cannot be resolved — a `let`, a function captured by a factory — the
+call floors, and the diagnostic names the parameter, where the body enters it,
+and your outs.
+
+## Generators
+
+A generator's call and its iterator carry one color between them, and `@nothrow`
+covers both: the call is clean **and** consuming what it hands back is clean.
+
+Calling a generator runs no body, so a bare call is not an escape however the
+body ends — the escape is wherever the body actually runs. `for…of`, spread,
+array destructuring, `.next()`, `.return()` and `yield*` are those places, and
+each is reported and bridged there.
+
+```ts
+function* lines(): Generator<string> {
+  throw "boom";
+}
+
+/** @nothrow */
+export function count(): number {
+  const it = lines(); // fine — nothing has run yet
+  let n = 0;
+  for (const line of it) n += line.length; // Consuming this iterator escapes …
+  return n;
+}
+```
+
+Which call produced the iterator is read off the syntax: a direct call, or a
+`const` initialized by one — the same rule `await` will use. Anything else — a
+`let`, a parameter, a property — floors, and the message says which problem it
+is. That is also what makes a plain function markable as an iterator producer:
+`return inner()` is provable, `return someIterator` is not.
+
+A condition does not stretch to cover it: `@nothrow` given `make` says calling
+`make` is clean, and consuming what it hands back is a second promise the
+condition has no form for, so that floors too.
+
+`yield` is not a throw site — it can throw only because a consumer called
+`.throw()` — and `.throw()` itself always escapes, whatever the iterator makes
+of it: a throw cannot be laundered through one.
+
+Iteration over anything else resolves through `[Symbol.iterator]` and the
+`next` it hands back, so an in-program iterable is colored by its own bodies.
+Builtin iterables are the baseline's to answer and floor until it is wired up.
+
+## Calls you did not write
+
+Some expressions run a body with no callee anywhere in the syntax. They are
+call sites all the same, and the static type is what finds them.
+
+```ts
+class Config {
+  get port(): number {
+    return Number(process.env["PORT"] ?? throwUnset());
+  }
+}
+
+/** @nothrow */
+export function show(config: Config): string {
+  return `${config.port}`; // Reading `config.port` escapes this `@nothrow`
+}                          // function: it runs the getter `port`, whose body …
+```
+
+**Accessors.** `o.x` and `o.x = v` are calls when the member is really a
+getter or setter, and the two carry **independent** colors — so reading a
+member that only throws on write costs you nothing. Which half a form consults
+is fixed: reads, object destructuring and template interpolation consult
+**get**; assignment consults **set**; `+=`, `++`, `--` and the logical
+assignments consult **both**; `delete o.x` consults neither. Spread and rest
+consult **get over own enumerable members only**, so spreading an object whose
+accessors live on its prototype — a class instance, a DOM element — touches
+nothing.
+
+**Dynamic keys** narrow, then join. If the checker knows the key's literal
+type, exactly those members are touched; otherwise every accessor the type has
+is joined. A type whose accessors are all clean stays clean, so a dynamic key
+is not a blanket floor.
+
+**Coercion** — `` `${o}` ``, `+o`, `==`, `String(o)`, `instanceof` — resolves
+through the static type too. A primitive runs no user code and is clean, which
+is the overwhelmingly common case. A type declaring its own `toString`,
+`valueOf` or `Symbol.toPrimitive` takes that member's color, and `any` or
+`unknown` floors.
 
 ## Status
 
 This is early, and **nothing is published to npm yet**. What works today: the
-mark, the body walk, the `try`/`catch` bridge, and calls as escape sites
-resolved against the **pure-declare floor** — a call is clean only when its
-callee carries a mark, and everything else floors to throwing with a diagnostic
-naming your outs.
+mark and its binding rules, the body walk, the `try`/`catch` bridge, the
+call-shaped escape sites — a call, `new C()`, `super()`, a tagged template and
+a parameter default — **hidden transfers** — accessors, dynamic keys, spread
+and coercion — **generators and the sync iteration protocol**, **hybrid
+inference** for unmarked functions whose bodies are visible, **conditional
+cleanliness** for higher-order functions, and the `configs.recommended` preset.
+Everything with no body to read floors to throwing with a diagnostic naming
+your outs. The ES standard-library baseline ships as data in `@nothrow/core`,
+and so does the DOM baseline, but nothing consults either yet, so every
+standard-library and DOM call floors too — `new Error(…)` included, iterating
+an array or a `Map` with it, and with them the `map`/`forEach` family, whose
+conditional entries are what the call-site join will discharge — and so does
+every coercion of an object that inherits its `toString` and `valueOf` rather
+than declaring them.
 
-The floor is the sound end of the design, not the destination. Inference for
-unmarked bodies, constructors, async, generators, hidden transfers, the carrier
-chain (manifests, overlays, overrides), the standard-library and DOM baseline,
-the `configs.recommended` preset and `nothrow emit` are not built yet — so until
-the baseline lands, every standard-library call floors too. The design is locked
-and lives in [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
+Async — `await`, promise chains, `for await` — the carrier chain (manifests,
+overlays, overrides) and `nothrow emit` are not built yet. The design is locked
+and lives in
+[the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages
 
@@ -89,3 +274,23 @@ pnpm install && pnpm test
 `pnpm test` builds, checks that the packages are in lockstep, and runs the
 [conformance suite](conformance) — fixture projects on disk paired with the
 diagnostics they must produce. Every behavior lands there.
+
+The shipped baselines are generated data, so their correctness is CI over that
+data rather than a conformance fixture. Gates guard them, all run in CI and none
+needing the specs they were generated from:
+
+```bash
+pnpm run gate:fuzz          # attack every shipped clean ES entry with hostile, type-conformant values
+pnpm run gate:drift         # symbol-set diff of lib.*.d.ts; newcomers have no entry and floor
+pnpm run dom:gate:fuzz      # the same, over the DOM data, in a real DOM
+pnpm run dom:gate:deferred  # every callback-taking DOM member is adjudicated sync, queued or floored
+pnpm run dom:gate:drift     # symbol-set diff of lib.dom*.d.ts
+```
+
+Each takes `-- --self-check`, which plants a failure and requires the gate to
+catch it: a gate that cannot fail is not a gate.
+
+Regenerating the data is a maintainer task — see
+[`tools/es-baseline`](tools/es-baseline),
+[`tools/dom-baseline`](tools/dom-baseline) and the one-off
+[dial sign-off](docs/baseline-dials.md).

@@ -1,0 +1,32 @@
+{
+  "description": "Iteration over an in-program iterable resolves through `[Symbol.iterator]` and the `next` it hands back, so a throwing `next` is reported at each consumption site — `for…of`, spread and array destructuring alike.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 18,
+      "column": 23,
+      "endLine": 18,
+      "endColumn": 38,
+      "messageId": "inferredThrowingConsumption",
+      "message": "Consuming this iterator escapes this `@nothrow` function: the body producing its values was analyzed and can throw. Your outs: bridge this consumption with `try`/`catch`, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 24,
+      "column": 11,
+      "endLine": 24,
+      "endColumn": 29,
+      "messageId": "inferredThrowingConsumption",
+      "message": "Consuming this iterator escapes this `@nothrow` function: the body producing its values was analyzed and can throw. Your outs: bridge this consumption with `try`/`catch`, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 29,
+      "column": 9,
+      "endLine": 29,
+      "endColumn": 15,
+      "messageId": "inferredThrowingConsumption",
+      "message": "Consuming this iterator escapes this `@nothrow` function: the body producing its values was analyzed and can throw. Your outs: bridge this consumption with `try`/`catch`, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

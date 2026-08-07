@@ -3,9 +3,9 @@
   "diagnostics": [
     {
       "file": "src/index.ts",
-      "line": 12,
+      "line": 10,
       "column": 5,
-      "endLine": 12,
+      "endLine": 10,
       "endColumn": 35,
       "messageId": "uncaughtThrow",
       "message": "Uncaught `throw` escapes this `@nothrow` function."

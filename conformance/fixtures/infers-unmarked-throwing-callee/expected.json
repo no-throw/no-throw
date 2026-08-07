@@ -1,0 +1,14 @@
+{
+  "description": "An unmarked callee inferred throwing is reported at the marked caller's call to it, and nowhere inside it: unmarked functions are allowed to throw.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 10,
+      "endLine": 3,
+      "endColumn": 21,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `parse` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `parse` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

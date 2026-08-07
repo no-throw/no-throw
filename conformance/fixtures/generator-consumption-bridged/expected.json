@@ -1,0 +1,4 @@
+{
+  "description": "A consumption site is an ordinary escape site, so a `try`/`catch` around it bridges it like any other — which is what the floor's outs promise. `.throw()` is bridgeable too: it is a throw, not something no bridge can reach.",
+  "diagnostics": []
+}

@@ -1,0 +1,14 @@
+{
+  "description": "The boundary between a condition and the iterator surface: entering `make` is a condition its caller discharges, but a condition says only that calling a parameter is clean — there is no form for consuming what it hands back — so the consumption floors rather than passing up a question no caller could answer.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 9,
+      "endLine": 3,
+      "endColumn": 15,
+      "messageId": "unbridgedConsumption",
+      "message": "Consuming this iterator escapes this `@nothrow` function: it is produced by a call to one of this function's own parameters, and a condition can say that calling a parameter is clean but not that consuming what it hands back is. Your outs, in precedence order: bridge this consumption with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

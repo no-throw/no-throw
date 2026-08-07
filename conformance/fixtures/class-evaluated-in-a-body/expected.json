@@ -1,0 +1,50 @@
+{
+  "description": "Evaluating a class is body code of the body the class is written in: a decorator, the heritage expression, a static field initializer, a `static {}` block and a computed member key all run when control passes the declaration. Only a class written at module level is module evaluation — and a `try` around the declaration bridges exactly what the declaration runs.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 19,
+      "column": 4,
+      "endLine": 19,
+      "endColumn": 10,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `seal` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `seal` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 20,
+      "column": 23,
+      "endLine": 20,
+      "endColumn": 29,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `base` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `base` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 21,
+      "column": 31,
+      "endLine": 21,
+      "endColumn": 37,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `boom` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `boom` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 24,
+      "column": 7,
+      "endLine": 24,
+      "endColumn": 13,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `boom` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `boom` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 27,
+      "column": 6,
+      "endLine": 27,
+      "endColumn": 11,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `key` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `key` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

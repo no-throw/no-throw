@@ -1,0 +1,13 @@
+{
+  "description": "A mark on an `export default` function binds, and the body is enforced.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}

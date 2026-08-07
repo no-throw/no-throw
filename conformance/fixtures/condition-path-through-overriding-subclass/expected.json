@@ -1,0 +1,14 @@
+{
+  "description": "A path is discharged against the value in hand, not the type the binding was annotated with: a subclass overriding the member the path names is the `save` that runs, and it is the one judged.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 25,
+      "column": 3,
+      "endLine": 25,
+      "endColumn": 24,
+      "messageId": "conditionArgumentThrowing",
+      "message": "Call to `saveAllB` escapes this `@nothrow` function: it is non-throwing given `repo.save`, and the argument passed for `repo.save` is throwing — its body was analyzed and can throw. `saveAllB` enters `repo.save` at src/index.ts:19. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `repo.save`."
+    }
+  ]
+}

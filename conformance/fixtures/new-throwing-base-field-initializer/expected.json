@@ -1,0 +1,14 @@
+{
+  "description": "The effective body reaches through the whole base-class chain, so a throwing field initializer on a base with no constructor is still reported at the `new`.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 13,
+      "column": 10,
+      "endLine": 13,
+      "endColumn": 23,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `Derived` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `Derived` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

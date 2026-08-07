@@ -1,0 +1,4 @@
+{
+  "description": "The documented `safely()` recipe verifies with no special-casing in the engine: it enters its callback inside a bridge, so it is unconditionally clean and a throwing callback is fine. A regression guard against wrapper detection.",
+  "diagnostics": []
+}

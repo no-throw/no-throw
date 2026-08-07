@@ -1,0 +1,14 @@
+{
+  "description": "A propagated condition is the caller's own: it is reported at the call to `myMapKeys`, and named where `myMapKeys` hands the parameter on rather than where `myMap` enters it.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 18,
+      "column": 10,
+      "endLine": 18,
+      "endColumn": 63,
+      "messageId": "conditionArgumentThrowing",
+      "message": "Call to `myMapKeys` escapes this `@nothrow` function: it is non-throwing given `key`, and the argument passed for `key` is throwing — its body was analyzed and can throw. `myMapKeys` enters `key` at src/index.ts:7. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `key`."
+    }
+  ]
+}

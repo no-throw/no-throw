@@ -1,0 +1,14 @@
+{
+  "description": "An optional conditioned parameter left unpassed floors: there is no argument to read, and the engine does not reason about the optional call that would skip it.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 8,
+      "column": 3,
+      "endLine": 8,
+      "endColumn": 17,
+      "messageId": "conditionArgumentFloored",
+      "message": "Call to `myEach` escapes this `@nothrow` function: it is non-throwing given `cb`, and no argument is passed for it, so there is nothing here to discharge it. `myEach` enters `cb` at src/index.ts:3. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

@@ -26,3 +26,79 @@ jobs:
       - run: pnpm run check:lockstep
 
       - run: pnpm run conformance
+
+  baseline:
+    name: Baseline gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run build
+
+      # The baseline is generated data, so its correctness is CI over that data
+      # rather than a test at the conformance seam. Both gates run over what is
+      # committed; neither needs the ECMA-262 spec.
+      - name: Hostile fuzz gate
+        run: pnpm run gate:fuzz
+
+      # A gate that cannot fail is not a gate: plant known-throwing members as
+      # clean and require every one of them to be refuted.
+      - name: Hostile fuzz gate can fail
+        run: pnpm run gate:fuzz -- --self-check
+
+      - name: Drift gate
+        run: pnpm run gate:drift
+
+      - name: Drift gate reports an injected diff
+        run: pnpm run gate:drift -- --self-check
+
+  dom-baseline:
+    name: DOM baseline gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run build
+
+      # Same semantics as the ES gates, over the DOM data. Neither the WebIDL
+      # corpus nor the ~420 MB of spec prose is needed here: both are inputs to
+      # generation, and the gates run over what is committed.
+      - name: Hostile fuzz gate
+        run: pnpm run dom:gate:fuzz
+
+      - name: Hostile fuzz gate can fail
+        run: pnpm run dom:gate:fuzz -- --self-check
+
+      # The spec's terminal open item: every callback-taking member is
+      # adjudicated, and no relaxation ships without a verdict behind it.
+      - name: Deferred-invocation gate
+        run: pnpm run dom:gate:deferred
+
+      # A probe that answered "queued" for everything would hand out relaxations
+      # to members that invoke their callback synchronously.
+      - name: Deferred-invocation probe can tell the two apart
+        run: pnpm run dom:gate:deferred -- --self-check
+
+      - name: Drift gate
+        run: pnpm run dom:gate:drift
+
+      - name: Drift gate reports an injected diff
+        run: pnpm run dom:gate:drift -- --self-check

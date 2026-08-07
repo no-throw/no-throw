@@ -1,0 +1,14 @@
+{
+  "description": "A union runs whichever protocol the value turns out to carry, so its constituents are joined rather than sampled: one throwing member colors the whole site, whichever order the union is written in.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 24,
+      "column": 23,
+      "endLine": 24,
+      "endColumn": 29,
+      "messageId": "inferredThrowingConsumption",
+      "message": "Consuming this iterator escapes this `@nothrow` function: the body producing its values was analyzed and can throw. Your outs: bridge this consumption with `try`/`catch`, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

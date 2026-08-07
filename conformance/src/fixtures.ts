@@ -2,10 +2,18 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Diagnostic } from "./diagnostics.js";
 
+/**
+ * How the fixture is wired up: `rules` turns the rules on one by one, which is
+ * what most fixtures want; `recommended` installs the shipped preset, so a
+ * fixture can assert what a user gets from the config they actually install.
+ */
+export type FixtureConfig = "rules" | "recommended";
+
 export interface Fixture {
   readonly name: string;
   readonly directory: string;
   readonly description: string;
+  readonly config: FixtureConfig;
   readonly expected: readonly Diagnostic[];
 }
 
@@ -32,10 +40,23 @@ function loadFixture(fixturesRoot: string, name: string): Fixture {
     name,
     directory,
     description: readString(root, "description", path),
+    config: readConfig(root, path),
     expected: diagnostics.map((entry, index) =>
       readDiagnostic(entry, `${path}: diagnostics[${index}]`),
     ),
   };
+}
+
+function readConfig(
+  root: Record<string, unknown>,
+  path: string,
+): FixtureConfig {
+  const value = root["config"];
+  if (value === undefined) return "rules";
+  if (value !== "rules" && value !== "recommended") {
+    throw new Error(`${path}: \`config\` must be "rules" or "recommended"`);
+  }
+  return value;
 }
 
 const POSITION_KEYS = ["line", "column", "endLine", "endColumn"] as const;

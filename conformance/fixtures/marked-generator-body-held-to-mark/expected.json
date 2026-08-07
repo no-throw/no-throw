@@ -1,0 +1,14 @@
+{
+  "description": "A generator's body is held to its mark like any other: an uncaught `throw` in it is reported, while a generator that only yields is green — `yield` is not a body-side throw site, since it can throw only because a consumer called `.throw()`.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 10,
+      "column": 3,
+      "endLine": 10,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "description": "A function has one color however many times it is marked: a repeated tag enforces the body once.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 6,
+      "column": 3,
+      "endLine": 6,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}

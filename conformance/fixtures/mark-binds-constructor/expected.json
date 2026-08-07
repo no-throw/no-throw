@@ -1,0 +1,13 @@
+{
+  "description": "A mark on a constructor binds, and the body is enforced.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 4,
+      "column": 5,
+      "endLine": 4,
+      "endColumn": 18,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}
