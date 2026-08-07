@@ -1,4 +1,5 @@
 import nothrow from "@nothrow/eslint-plugin";
+import { createProgram } from "@typescript-eslint/typescript-estree";
 import { ESLint, type Linter } from "eslint";
 import { relative, sep } from "node:path";
 import tseslint from "typescript-eslint";
@@ -14,12 +15,18 @@ export async function runFixture(
   directory: string,
   fixtureConfig: FixtureConfig,
 ): Promise<readonly Diagnostic[]> {
+  // Handing the parser a program the driver built, rather than naming a
+  // project for it to find, is what keeps the suite's memory flat: `project`
+  // parks a watch program per `tsconfig.json` in module state for the life of
+  // the process, and every fixture is its own project the suite never visits
+  // twice, so the run pins one whole TypeScript program per fixture and
+  // exhausts the heap partway through. This program dies with the call.
   const language: Linter.Config = {
     files: ["**/*.ts"],
     languageOptions: {
       parser: tseslint.parser as Linter.Parser,
       parserOptions: {
-        project: "./tsconfig.json",
+        programs: [createProgram("./tsconfig.json", directory)],
         tsconfigRootDir: directory,
       },
     },

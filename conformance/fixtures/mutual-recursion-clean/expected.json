@@ -1,0 +1,4 @@
+{
+  "description": "Mutually recursive clean functions stay clean: a cycle contributes paths, not throw sites, so a recursive tree walk does not poison its caller.",
+  "diagnostics": []
+}

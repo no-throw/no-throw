@@ -26,6 +26,13 @@ const messages = {
   unbridgedCall:
     "Call to `{{callee}}` escapes this `@nothrow` function: {{reason}}. " +
     OUTS,
+  // Not a floor, so not the floor's outs: the body was read and it can throw,
+  // and every carrier on that list would be silencing a true positive.
+  inferredThrowingCall:
+    "Call to `{{callee}}` escapes this `@nothrow` function: its body was " +
+    "analyzed and can throw. Your outs: bridge this call with `try`/`catch`, " +
+    "or make `{{callee}}` non-throwing — mark it `@nothrow` and the escapes " +
+    "inside it are reported too.",
 } as const;
 
 type MessageId = keyof typeof messages;
@@ -49,6 +56,10 @@ type Report =
   | {
       readonly messageId: "unbridgedCall";
       readonly data: { readonly callee: string; readonly reason: string };
+    }
+  | {
+      readonly messageId: "inferredThrowingCall";
+      readonly data: { readonly callee: string };
     };
 
 /**
@@ -64,6 +75,11 @@ function reportFor(finding: Finding): Report {
       return {
         messageId: "unbridgedCall",
         data: { callee: finding.callee, reason: whyFloored[finding.reason] },
+      };
+    case "inferred-throwing-call":
+      return {
+        messageId: "inferredThrowingCall",
+        data: { callee: finding.callee },
       };
   }
 }

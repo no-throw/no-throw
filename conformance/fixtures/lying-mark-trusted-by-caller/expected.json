@@ -1,0 +1,14 @@
+{
+  "description": "Assume-then-verify: a mark is trusted while its callers are checked and verified against its own body, so a lying mark fails loud where it was written and nowhere else.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 27,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    }
+  ]
+}

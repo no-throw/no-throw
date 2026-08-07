@@ -1,0 +1,4 @@
+{
+  "description": "A marked seed is pinned and cuts the graph: the cycle running through it is never a cycle inference has to resolve.",
+  "diagnostics": []
+}
