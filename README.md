@@ -193,12 +193,52 @@ Iteration over anything else resolves through `[Symbol.iterator]` and the
 `next` it hands back, so an in-program iterable is colored by its own bodies.
 Builtin iterables are the baseline's to answer and floor until it is wired up.
 
+## Calls you did not write
+
+Some expressions run a body with no callee anywhere in the syntax. They are
+call sites all the same, and the static type is what finds them.
+
+```ts
+class Config {
+  get port(): number {
+    return Number(process.env["PORT"] ?? throwUnset());
+  }
+}
+
+/** @nothrow */
+export function show(config: Config): string {
+  return `${config.port}`; // Reading `config.port` escapes this `@nothrow`
+}                          // function: it runs the getter `port`, whose body …
+```
+
+**Accessors.** `o.x` and `o.x = v` are calls when the member is really a
+getter or setter, and the two carry **independent** colors — so reading a
+member that only throws on write costs you nothing. Which half a form consults
+is fixed: reads, object destructuring and template interpolation consult
+**get**; assignment consults **set**; `+=`, `++`, `--` and the logical
+assignments consult **both**; `delete o.x` consults neither. Spread and rest
+consult **get over own enumerable members only**, so spreading an object whose
+accessors live on its prototype — a class instance, a DOM element — touches
+nothing.
+
+**Dynamic keys** narrow, then join. If the checker knows the key's literal
+type, exactly those members are touched; otherwise every accessor the type has
+is joined. A type whose accessors are all clean stays clean, so a dynamic key
+is not a blanket floor.
+
+**Coercion** — `` `${o}` ``, `+o`, `==`, `String(o)`, `instanceof` — resolves
+through the static type too. A primitive runs no user code and is clean, which
+is the overwhelmingly common case. A type declaring its own `toString`,
+`valueOf` or `Symbol.toPrimitive` takes that member's color, and `any` or
+`unknown` floors.
+
 ## Status
 
 This is early, and **nothing is published to npm yet**. What works today: the
 mark and its binding rules, the body walk, the `try`/`catch` bridge, the
 call-shaped escape sites — a call, `new C()`, `super()`, a tagged template and
-a parameter default — **generators and the sync iteration protocol**, **hybrid
+a parameter default — **hidden transfers** — accessors, dynamic keys, spread
+and coercion — **generators and the sync iteration protocol**, **hybrid
 inference** for unmarked functions whose bodies are visible, **conditional
 cleanliness** for higher-order functions, and the `configs.recommended` preset.
 Everything with no body to read floors to throwing with a diagnostic naming
@@ -206,11 +246,12 @@ your outs. The ES standard-library baseline ships as data in `@nothrow/core`,
 but nothing consults it yet, so every standard-library call floors too — `new
 Error(…)` included, iterating an array or a `Map` with it, and with them the
 `map`/`forEach` family, whose conditional entries are what the call-site join
-will discharge.
+will discharge, and every coercion of an object that inherits its `toString`
+and `valueOf` rather than declaring them.
 
-Async — `await`, promise chains, `for await` — hidden transfers, the carrier
-chain (manifests, overlays, overrides), the DOM baseline and `nothrow emit` are
-not built yet. The design is locked and lives in
+Async — `await`, promise chains, `for await` — the carrier chain (manifests,
+overlays, overrides), the DOM baseline and `nothrow emit` are not built yet.
+The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages

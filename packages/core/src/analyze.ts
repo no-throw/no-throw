@@ -9,6 +9,7 @@ import { inheritedFrom } from "./declarations.js";
 import { calleeExpression, type Transfer } from "./escapes.js";
 import { findMarks } from "./marks.js";
 import { createColorResolver, type BodyEscape } from "./resolve-color.js";
+import { textOf, type HiddenCallee, type TransferSite } from "./transfers.js";
 
 interface UncaughtThrow {
   readonly kind: "uncaught-throw";
@@ -81,6 +82,31 @@ interface ThrowingReturnedIterator {
 }
 
 /**
+ * A body that runs with no callee in the syntax: an accessor behind a property
+ * access, a conversion member behind a coercion. Its own kind because what the
+ * reader has to be told is different — not "this call throws" but "this is a
+ * call".
+ */
+interface HiddenTransfer {
+  readonly node: ts.Node;
+  readonly site: TransferSite;
+  /** The site as written. */
+  readonly text: string;
+  /** Absent when the type could not name what runs, which always floors. */
+  readonly target: HiddenCallee | undefined;
+}
+
+interface UnbridgedHiddenTransfer extends HiddenTransfer {
+  readonly kind: "unbridged-hidden-transfer";
+  readonly reason: FloorReason;
+}
+
+interface InferredThrowingHiddenTransfer extends HiddenTransfer {
+  readonly kind: "inferred-throwing-hidden-transfer";
+  readonly target: HiddenCallee;
+}
+
+/**
  * The escapes a marked function can be reported for. Every kind is a facet of
  * the one invariant, so adapters surface them inside a single rule rather than
  * as separate, individually disableable ones.
@@ -93,7 +119,9 @@ export type Finding =
   | FlooredConditionArgument
   | ThrowingConsumption
   | IteratorThrow
-  | ThrowingReturnedIterator;
+  | ThrowingReturnedIterator
+  | UnbridgedHiddenTransfer
+  | InferredThrowingHiddenTransfer;
 
 /**
  * Collect every escape in a file. The core never builds a `ts.Program`: hosts
@@ -112,8 +140,8 @@ export function analyzeSourceFile(
   // Unmarked functions have nothing to enforce: throwing is the default, and
   // inference reads their bodies without holding them to anything. A mark that
   // binds to nothing enforces nothing either — it is `valid-mark`'s to report.
-  for (const target of findMarks(sourceFile).bound) {
-    for (const escape of colors.escapesIn(target)) {
+  for (const seed of findMarks(sourceFile).bound) {
+    for (const escape of colors.escapesIn(seed)) {
       findings.push(findingFor(escape));
     }
   }
@@ -163,6 +191,31 @@ function findingFor(escape: BodyEscape): Finding {
         node: escape.node,
         reason: escape.reason,
       };
+    case "hidden-transfer": {
+      const { node, site, text, target } = escape;
+      // A transfer the type could not name has no body anything could have
+      // read, so it is a floor however it got here.
+      if (target === undefined) {
+        return {
+          kind: "unbridged-hidden-transfer",
+          node,
+          site,
+          text,
+          target,
+          reason: "unresolvable",
+        };
+      }
+      return escape.reason === "inferred"
+        ? { kind: "inferred-throwing-hidden-transfer", node, site, text, target }
+        : {
+            kind: "unbridged-hidden-transfer",
+            node,
+            site,
+            text,
+            target,
+            reason: escape.reason,
+          };
+    }
   }
 }
 
@@ -193,9 +246,9 @@ function entrySiteOf(condition: Condition): EntrySite {
  */
 function calleeText(transfer: Transfer): string {
   const callee = calleeExpression(transfer);
-  const named =
+  return textOf(
     callee.kind === ts.SyntaxKind.SuperKeyword
       ? (inheritedFrom(transfer) ?? callee)
-      : callee;
-  return named.getText().replace(/\s+/gu, " ");
+      : callee,
+  );
 }

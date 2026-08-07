@@ -1,0 +1,4 @@
+{
+  "description": "A plain data property on a type that also declares accessors stays clean to read, write and update: accessor-ness is a fact about the member, not about the type it lives on.",
+  "diagnostics": []
+}

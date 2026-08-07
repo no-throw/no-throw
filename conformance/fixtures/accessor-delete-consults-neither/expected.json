@@ -1,0 +1,13 @@
+{
+  "description": "`delete o.x` invokes no accessor, so it consults neither half and passes against a member whose getter and setter both throw. The read on the next function is the control: the same member, reported.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 20,
+      "column": 10,
+      "endLine": 20,
+      "endColumn": 24,
+      "messageId": "inferredThrowingHiddenTransfer"
+    }
+  ]
+}

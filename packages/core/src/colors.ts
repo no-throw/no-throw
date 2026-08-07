@@ -18,7 +18,13 @@ export type FloorReason =
    */
   | "captured"
   /** A `let` or `var`: a real future refinement, not an unknowable. */
-  | "mutable-binding";
+  | "mutable-binding"
+  /**
+   * Non-throwing only given conditions of its own. A hidden transfer reaches
+   * its target through a type rather than being handed one, so no argument is
+   * written at the site that could discharge them.
+   */
+  | "conditioned";
 
 /**
  * Why a callee is throwing. `inferred` is the one answer that is not a floor:
@@ -34,8 +40,6 @@ export type ThrowingReason = FloorReason | "inferred";
  */
 export type UndischargedReason =
   | FloorReason
-  /** Non-throwing only given conditions of its own, which nothing here can discharge. */
-  | "conditioned"
   /** The conditioned parameter got no argument, so there is none to read. */
   | "missing-argument"
   /** Propagating it would produce a path deeper than the engine follows. */

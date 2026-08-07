@@ -22,3 +22,4 @@ export type {
 } from "./colors.js";
 export { findMarks } from "./marks.js";
 export type { MarkProblem, MarkProblemKind, Marks, Span } from "./marks.js";
+export type { HiddenCallee, TransferSite } from "./transfers.js";

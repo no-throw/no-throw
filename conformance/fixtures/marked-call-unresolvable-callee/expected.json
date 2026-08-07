@@ -1,6 +1,15 @@
 {
-  "description": "A callee the checker cannot resolve to a declaration floors, and the message says so rather than naming carriers that could not have helped.",
+  "description": "A callee the checker cannot resolve to a declaration floors, and the message says so rather than naming carriers that could not have helped. Reading `onDone` off an `any` floors for the same reason and on its own line of reasoning: the type cannot rule out a getter there either.",
   "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 15,
+      "messageId": "unbridgedHiddenTransfer",
+      "message": "Reading `hooks.onDone` escapes this `@nothrow` function: the checker cannot resolve `hooks.onDone` to a declaration, so nothing can say whether a body runs here. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    },
     {
       "file": "src/index.ts",
       "line": 3,
@@ -8,7 +17,7 @@
       "endLine": 3,
       "endColumn": 17,
       "messageId": "unbridgedCall",
-      "message": "Call to `hooks.onDone` escapes this `@nothrow` function: the checker cannot resolve it to a declaration, so nothing can say whether it throws. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Call to `hooks.onDone` escapes this `@nothrow` function: it cannot be resolved to a declaration by the checker, so nothing can say whether it throws. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

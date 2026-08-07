@@ -1,0 +1,32 @@
+{
+  "description": "Every read form consults the get half: a plain read, an object binding pattern and template interpolation all report against a throwing getter, while assigning to the same member consults the clean setter and passes.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 13,
+      "column": 10,
+      "endLine": 13,
+      "endColumn": 19,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Reading `box.value` escapes this `@nothrow` function: it runs the getter `value`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the getter `value` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 18,
+      "column": 11,
+      "endLine": 18,
+      "endColumn": 16,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Destructuring `value` escapes this `@nothrow` function: it runs the getter `value`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the getter `value` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 24,
+      "column": 13,
+      "endLine": 24,
+      "endColumn": 22,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Reading `box.value` escapes this `@nothrow` function: it runs the getter `value`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the getter `value` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}
