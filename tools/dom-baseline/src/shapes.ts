@@ -5,7 +5,7 @@ import type { ProseHazard } from "./specs/hazards.js";
  * name of the definition it is written in. #25 made that a soundness
  * requirement rather than a style: a name-keyed enum fails *silently in the
  * unsafe direction* the moment a name is misfiled, which is what produced #22's
- * six unsound `Atomics.*` entries. A shape it cannot recognise is `unknown`,
+ * six unsound `Atomics.*` entries. A shape it cannot recognize is `unknown`,
  * and `unknown` is throwing.
  */
 export type ShapeId =

@@ -20,7 +20,7 @@ export const REFUTATIONS: readonly Refutation[] = [
   {
     key: "XPathEvaluatorBase#createExpression",
     observed: `throws on document.createExpression("") and on "!", " " and "<x>" — every one a conformant DOMString`,
-    why: "The DOM standard restates the XPath IDL and defines no algorithm for it: `createExpression` appears fifteen times in the spec and not once with method steps, because the behaviour lives in the legacy DOM Level 3 XPath specification, which is not a Bikeshed document and carries no `data-dfn-for` attribution. Extraction is structurally blind to it, exactly as ECMA-262 extraction was blind to ECMA-402. An invalid expression really does throw, so the entry ships throwing.",
+    why: "The DOM standard restates the XPath IDL and defines no algorithm for it: `createExpression` appears fifteen times in the spec and not once with method steps, because the behavior lives in the legacy DOM Level 3 XPath specification, which is not a Bikeshed document and carries no `data-dfn-for` attribution. Extraction is structurally blind to it, exactly as ECMA-262 extraction was blind to ECMA-402. An invalid expression really does throw, so the entry ships throwing.",
   },
 ];
 

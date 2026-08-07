@@ -86,7 +86,7 @@ type make this condition unreachable?
 Two DOM-specific decisions look like dials and are not:
 
 - **Gecko's `[Throws]` is a one-way oracle.** Presence is a sound throwing
-  signal; absence is one implementation's behaviour. Reading absence as clean is
+  signal; absence is one implementation's behavior. Reading absence as clean is
   the unsafe direction, so it is never read — which is a doctrine ruling (#26),
   not a value anyone gets to set.
 - **The gate's environment is jsdom.** That bounds the gate's *reach*, not the

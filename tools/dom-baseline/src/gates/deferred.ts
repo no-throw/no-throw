@@ -10,7 +10,7 @@ import { receiverFor, type DomEnvironment } from "./environment.js";
  * A member that *queues* a callback rather than invoking it is the one place
  * where forgetting an entry is unsound rather than merely over-strict: the
  * floor's only remedy is `try { el.addEventListener('x', risky) } catch {}`,
- * which the engine accepts as a bridge while it neutralises nothing. WebIDL
+ * which the engine accepts as a bridge while it neutralizes nothing. WebIDL
  * does not say whether `NodeFilter.acceptNode` is synchronous or
  * `addEventListener` queued — but a callback that records whether it ran before
  * the call returned answers *"was I invoked synchronously?"* directly, and that
@@ -21,12 +21,16 @@ import { receiverFor, type DomEnvironment } from "./environment.js";
  *
  * - **`sync`** — the callback ran during the call. An ordinary conditional
  *   entry: `conditions: ["param<i>"]`, discharged against the argument in hand.
- * - **`queued`** — the member was called and the callback did **not** run
- *   during it. That is a positive observation, not a silence, so the relaxation
- *   entry `conditions: []` is earned. Where the callback was also seen running
- *   later, that is recorded as corroboration.
- * - **`unreachable`** — the probe could not call the member at all. **No
- *   relaxation, and the member floors.**
+ * - **`queued`** — the callback did not run during the call **and was seen
+ *   running afterwards**. Both halves are required, and the second is what makes
+ *   the verdict a positive observation rather than a silence: the probe drives
+ *   `DOMTokenList.forEach` on an empty token list, and a callback that simply
+ *   never runs would otherwise read as deferred when the member is plainly
+ *   synchronous. Reading a relaxation off an absence is the unsafe direction —
+ *   the same mistake as reading Gecko's silence as clean. Earns
+ *   `conditions: []`.
+ * - **`unreachable`** — the probe could not call the member, or called it and
+ *   never saw the callback at all. **No relaxation, and the member floors.**
  */
 export type Adjudication = "sync" | "queued" | "unreachable";
 
@@ -70,7 +74,7 @@ export class DeferredProbe {
       evidence,
     });
 
-    const receiver = this.#receiverFor(member);
+    const receiver = receiverFor(this.#environment, member, this.#implementers);
     if (receiver === undefined) return verdict("unreachable", "no constructible receiver");
 
     let target: unknown;
@@ -121,20 +125,23 @@ export class DeferredProbe {
     }
 
     if (!called) return verdict("unreachable", lastError);
+    if (!firedLater) {
+      return verdict(
+        "unreachable",
+        "the callback never ran, so nothing was observed either way",
+      );
+    }
     return verdict(
       "queued",
-      firedLater
-        ? "the callback did not run during the call, and was observed running later"
-        : "the callback did not run during the call",
+      "the callback did not run during the call, and was observed running afterwards",
     );
   }
 
   /**
-   * Give the environment every chance to run the callback *after* the call. It
-   * changes no verdict on its own — `queued` is already established by the
-   * callback not running during the call — but seeing it fire later is the
-   * difference between "deferred" and "never invoked in this engine", and a
-   * maintainer reading the worklist wants to know which.
+   * Give the environment every chance to run the callback *after* the call:
+   * dispatch what the member was registered for, drain microtasks, let timers
+   * fire. Seeing it run here is the whole of the `queued` verdict — without it
+   * the probe has observed nothing, and observing nothing is not evidence.
    */
   async #drive(receiver: unknown, args: readonly unknown[]): Promise<void> {
     const window = this.#environment.window as unknown as {
@@ -161,19 +168,6 @@ export class DeferredProbe {
       }
     }
     await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
-  }
-
-  #receiverFor(member: DomMember): unknown {
-    if (member.owner === "globalThis") return this.#environment.window;
-    if (member.isStatic) {
-      const globals = this.#environment.window as unknown as Record<string, unknown>;
-      try {
-        return globals[member.owner];
-      } catch {
-        return undefined;
-      }
-    }
-    return receiverFor(this.#environment, member.owner, this.#implementers);
   }
 
   /**

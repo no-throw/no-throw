@@ -1225,11 +1225,6 @@
         "spec": "dom#dom-abortsignal-aborted",
         "runtime": "AbortSignal.prototype.aborted"
       },
-      "AbortSignal#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "AbortSignal.prototype.addEventListener"
-      },
       "AbortSignal#onabort": {
         "accessor": {
           "get": "throwing",
@@ -1245,11 +1240,6 @@
         },
         "spec": "dom#dom-abortsignal-reason",
         "runtime": "AbortSignal.prototype.reason"
-      },
-      "AbortSignal#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "AbortSignal.prototype.removeEventListener"
       },
       "AbortSignal#throwIfAborted": {
         "color": "throwing",
@@ -1460,11 +1450,6 @@
         "spec": "web-animations-1#dom-animation-animation",
         "runtime": "new Animation"
       },
-      "Animation#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "Animation.prototype.addEventListener"
-      },
       "Animation#cancel": {
         "color": "throwing",
         "spec": "web-animations-1#dom-animation-cancel",
@@ -1577,11 +1562,6 @@
         },
         "spec": "web-animations-1#dom-animation-ready",
         "runtime": "Animation.prototype.ready"
-      },
-      "Animation#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "Animation.prototype.removeEventListener"
       },
       "Animation#replaceState": {
         "accessor": {
@@ -2261,11 +2241,6 @@
       "AudioBufferOptions#sampleRate": {
         "accessor": false
       },
-      "AudioBufferSourceNode#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "AudioBufferSourceNode.prototype.addEventListener"
-      },
       "AudioBufferSourceNode#buffer": {
         "accessor": {
           "get": "throwing",
@@ -2314,11 +2289,6 @@
         "spec": "webaudio-1.0#dom-audiobuffersourcenode-playbackrate",
         "runtime": "AudioBufferSourceNode.prototype.playbackRate"
       },
-      "AudioBufferSourceNode#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "AudioBufferSourceNode.prototype.removeEventListener"
-      },
       "AudioBufferSourceNode#start": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-audiobuffersourcenode-start",
@@ -2362,11 +2332,6 @@
         "spec": "webaudio-1.0#dom-audiocontext-audiocontext",
         "runtime": "new AudioContext"
       },
-      "AudioContext#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "AudioContext.prototype.addEventListener"
-      },
       "AudioContext#baseLatency": {
         "accessor": {
           "get": "throwing",
@@ -2402,11 +2367,6 @@
         },
         "spec": "webaudio-1.0#dom-audiocontext-outputlatency",
         "runtime": "AudioContext.prototype.outputLatency"
-      },
-      "AudioContext#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "AudioContext.prototype.removeEventListener"
       },
       "AudioContext#resume": {
         "color": "throwing",
@@ -2535,11 +2495,6 @@
         "spec": "webcodecs#dom-audiodecoder-audiodecoder",
         "runtime": "new AudioDecoder"
       },
-      "AudioDecoder#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "AudioDecoder.prototype.addEventListener"
-      },
       "AudioDecoder#close": {
         "color": "throwing",
         "spec": "webcodecs#dom-audiodecoder-close",
@@ -2575,11 +2530,6 @@
         },
         "spec": "webcodecs#dom-audiodecoder-ondequeue",
         "runtime": "AudioDecoder.prototype.ondequeue"
-      },
-      "AudioDecoder#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "AudioDecoder.prototype.removeEventListener"
       },
       "AudioDecoder#reset": {
         "color": "throwing",
@@ -2639,11 +2589,6 @@
         "spec": "webcodecs#dom-audioencoder-audioencoder",
         "runtime": "new AudioEncoder"
       },
-      "AudioEncoder#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "AudioEncoder.prototype.addEventListener"
-      },
       "AudioEncoder#close": {
         "color": "throwing",
         "spec": "webcodecs#dom-audioencoder-close",
@@ -2679,11 +2624,6 @@
         },
         "spec": "webcodecs#dom-audioencoder-ondequeue",
         "runtime": "AudioEncoder.prototype.ondequeue"
-      },
-      "AudioEncoder#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "AudioEncoder.prototype.removeEventListener"
       },
       "AudioEncoder#reset": {
         "color": "throwing",
@@ -2983,11 +2923,6 @@
       "AudioProcessingEventInit#playbackTime": {
         "accessor": false
       },
-      "AudioScheduledSourceNode#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "AudioScheduledSourceNode.prototype.addEventListener"
-      },
       "AudioScheduledSourceNode#onended": {
         "accessor": {
           "get": "throwing",
@@ -2995,11 +2930,6 @@
         },
         "spec": "webaudio-1.0#dom-audioscheduledsourcenode-onended",
         "runtime": "AudioScheduledSourceNode.prototype.onended"
-      },
-      "AudioScheduledSourceNode#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "AudioScheduledSourceNode.prototype.removeEventListener"
       },
       "AudioScheduledSourceNode#start": {
         "color": "throwing",
@@ -3025,11 +2955,6 @@
         "spec": "webaudio-1.0#dom-audioworkletnode-audioworkletnode",
         "runtime": "new AudioWorkletNode"
       },
-      "AudioWorkletNode#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "AudioWorkletNode.prototype.addEventListener"
-      },
       "AudioWorkletNode#onprocessorerror": {
         "accessor": {
           "get": "throwing",
@@ -3053,11 +2978,6 @@
         },
         "spec": "webaudio-1.0#dom-audioworkletnode-port",
         "runtime": "AudioWorkletNode.prototype.port"
-      },
-      "AudioWorkletNode#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "AudioWorkletNode.prototype.removeEventListener"
       },
       "AudioWorkletNodeEventMap#processorerror": {
         "accessor": false
@@ -3268,11 +3188,6 @@
         "spec": "html#dom-barprop-visible",
         "runtime": "BarProp.prototype.visible"
       },
-      "BaseAudioContext#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "BaseAudioContext.prototype.addEventListener"
-      },
       "BaseAudioContext#audioWorklet": {
         "accessor": {
           "get": "throwing",
@@ -3397,11 +3312,6 @@
         },
         "spec": "webaudio-1.0#dom-baseaudiocontext-onstatechange",
         "runtime": "BaseAudioContext.prototype.onstatechange"
-      },
-      "BaseAudioContext#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "BaseAudioContext.prototype.removeEventListener"
       },
       "BaseAudioContext#sampleRate": {
         "accessor": {
@@ -3621,11 +3531,6 @@
         "spec": "fetch#dom-body-text",
         "runtime": "Body.prototype.text"
       },
-      "BroadcastChannel#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "BroadcastChannel.prototype.addEventListener"
-      },
       "BroadcastChannel#close": {
         "color": "throwing",
         "spec": "html#dom-broadcastchannel-close",
@@ -3659,11 +3564,6 @@
         "color": "throwing",
         "spec": "html#dom-broadcastchannel-postmessage",
         "runtime": "BroadcastChannel.prototype.postMessage"
-      },
-      "BroadcastChannel#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "BroadcastChannel.prototype.removeEventListener"
       },
       "BroadcastChannelEventMap#message": {
         "accessor": false
@@ -3755,22 +3655,12 @@
         "spec": "html#animationframeprovider-cancelanimationframe",
         "runtime": "cancelAnimationFrame"
       },
-      "CanvasCaptureMediaStreamTrack#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "CanvasCaptureMediaStreamTrack.prototype.addEventListener"
-      },
       "CanvasCaptureMediaStreamTrack#canvas": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "CanvasCaptureMediaStreamTrack.prototype.canvas"
-      },
-      "CanvasCaptureMediaStreamTrack#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "CanvasCaptureMediaStreamTrack.prototype.removeEventListener"
       },
       "CanvasCompositing#globalAlpha": {
         "accessor": {
@@ -4418,11 +4308,6 @@
       "ComputedEffectTiming#startTime": {
         "accessor": false
       },
-      "ConstantSourceNode#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "ConstantSourceNode.prototype.addEventListener"
-      },
       "ConstantSourceNode#offset": {
         "accessor": {
           "get": "throwing",
@@ -4430,11 +4315,6 @@
         },
         "spec": "webaudio-1.0#dom-constantsourcenode-offset",
         "runtime": "ConstantSourceNode.prototype.offset"
-      },
-      "ConstantSourceNode#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "ConstantSourceNode.prototype.removeEventListener"
       },
       "ConstantSourceOptions#offset": {
         "accessor": false
@@ -4548,11 +4428,6 @@
       "CookieListItem#value": {
         "accessor": false
       },
-      "CookieStore#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "CookieStore.prototype.addEventListener"
-      },
       "CookieStore#delete": {
         "color": "throwing",
         "spec": "cookiestore#dom-cookiestore-delete",
@@ -4575,11 +4450,6 @@
         },
         "spec": "cookiestore#dom-cookiestore-onchange",
         "runtime": "CookieStore.prototype.onchange"
-      },
-      "CookieStore#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "CookieStore.prototype.removeEventListener"
       },
       "CookieStore#set": {
         "color": "throwing",
@@ -4786,11 +4656,6 @@
       "CSPViolationReportBody#statusCode": {
         "accessor": false
       },
-      "CSSAnimation#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "CSSAnimation.prototype.addEventListener"
-      },
       "CSSAnimation#animationName": {
         "accessor": {
           "get": "throwing",
@@ -4798,11 +4663,6 @@
         },
         "spec": "css-animations-2#dom-cssanimation-animationname",
         "runtime": "CSSAnimation.prototype.animationName"
-      },
-      "CSSAnimation#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "CSSAnimation.prototype.removeEventListener"
       },
       "CSSConditionRule#conditionText": {
         "accessor": {
@@ -9858,16 +9718,6 @@
         "spec": "css-typed-om-1#dom-csstransformvalue-length",
         "runtime": "CSSTransformValue.prototype.length"
       },
-      "CSSTransition#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "CSSTransition.prototype.addEventListener"
-      },
-      "CSSTransition#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "CSSTransition.prototype.removeEventListener"
-      },
       "CSSTransition#transitionProperty": {
         "accessor": {
           "get": "throwing",
@@ -10837,12 +10687,6 @@
         "conditions": [],
         "spec": "html#dom-document-releaseevents",
         "runtime": "Document.prototype.releaseEvents"
-      },
-      "Document#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "Document.prototype.removeEventListener"
       },
       "Document#requestStorageAccess": {
         "color": "throwing",
@@ -12567,12 +12411,6 @@
         "spec": "dom#dom-element-removeattributens",
         "runtime": "Element.prototype.removeAttributeNS"
       },
-      "Element#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "Element.prototype.removeEventListener"
-      },
       "Element#requestFullscreen": {
         "color": "throwing",
         "spec": "fullscreen#dom-element-requestfullscreen",
@@ -13234,11 +13072,6 @@
         "accessor": false,
         "runtime": "EventSource.OPEN"
       },
-      "EventSource#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "EventSource.prototype.addEventListener"
-      },
       "EventSource#close": {
         "color": "throwing",
         "spec": "html#dom-eventsource-close",
@@ -13288,11 +13121,6 @@
         "spec": "html#dom-eventsource-readystate",
         "runtime": "EventSource.prototype.readyState"
       },
-      "EventSource#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "EventSource.prototype.removeEventListener"
-      },
       "EventSource#url": {
         "accessor": {
           "get": "throwing",
@@ -13336,12 +13164,6 @@
         "color": "throwing",
         "spec": "dom#dom-eventtarget-dispatchevent",
         "runtime": "EventTarget.prototype.dispatchEvent"
-      },
-      "EventTarget#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "EventTarget.prototype.removeEventListener"
       },
       "EXT_blend_minmax#MAX_EXT": {
         "accessor": false,
@@ -13618,12 +13440,6 @@
         },
         "spec": "FileAPI#dom-filereader-readystate",
         "runtime": "FileReader.prototype.readyState"
-      },
-      "FileReader#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "FileReader.prototype.removeEventListener"
       },
       "FileReader#result": {
         "accessor": {
@@ -13985,11 +13801,6 @@
       "FontFaceDescriptors#weight": {
         "accessor": false
       },
-      "FontFaceSet#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "FontFaceSet.prototype.addEventListener"
-      },
       "FontFaceSet#check": {
         "color": "throwing",
         "spec": "css-font-loading-3#dom-fontfaceset-check",
@@ -14026,11 +13837,6 @@
         },
         "spec": "css-font-loading-3#dom-fontfaceset-ready",
         "runtime": "FontFaceSet.prototype.ready"
-      },
-      "FontFaceSet#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "FontFaceSet.prototype.removeEventListener"
       },
       "FontFaceSet#status": {
         "accessor": {
@@ -15759,12 +15565,6 @@
         "spec": "html#dom-a-rellist",
         "runtime": "HTMLAnchorElement.prototype.relList"
       },
-      "HTMLAnchorElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLAnchorElement.prototype.removeEventListener"
-      },
       "HTMLAnchorElement#rev": {
         "accessor": {
           "get": "non-throwing",
@@ -15875,12 +15675,6 @@
         "spec": "html#dom-area-rellist",
         "runtime": "HTMLAreaElement.prototype.relList"
       },
-      "HTMLAreaElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLAreaElement.prototype.removeEventListener"
-      },
       "HTMLAreaElement#shape": {
         "accessor": {
           "get": "non-throwing",
@@ -15903,12 +15697,6 @@
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "HTMLAudioElement.prototype.addEventListener"
       },
-      "HTMLAudioElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLAudioElement.prototype.removeEventListener"
-      },
       "HTMLBaseElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -15922,12 +15710,6 @@
         },
         "spec": "html#dom-base-href",
         "runtime": "HTMLBaseElement.prototype.href"
-      },
-      "HTMLBaseElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLBaseElement.prototype.removeEventListener"
       },
       "HTMLBaseElement#target": {
         "accessor": {
@@ -15975,12 +15757,6 @@
         "spec": "html#dom-body-link",
         "runtime": "HTMLBodyElement.prototype.link"
       },
-      "HTMLBodyElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLBodyElement.prototype.removeEventListener"
-      },
       "HTMLBodyElement#text": {
         "accessor": {
           "get": "non-throwing",
@@ -16010,12 +15786,6 @@
         },
         "spec": "html#dom-br-clear",
         "runtime": "HTMLBRElement.prototype.clear"
-      },
-      "HTMLBRElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLBRElement.prototype.removeEventListener"
       },
       "HTMLButtonElement#addEventListener": {
         "color": "non-throwing",
@@ -16101,12 +15871,6 @@
         "spec": "html#dom-button-name",
         "runtime": "HTMLButtonElement.prototype.name"
       },
-      "HTMLButtonElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLButtonElement.prototype.removeEventListener"
-      },
       "HTMLButtonElement#reportValidity": {
         "color": "non-throwing",
         "conditions": [],
@@ -16178,12 +15942,6 @@
         "spec": "html#dom-canvas-height",
         "runtime": "HTMLCanvasElement.prototype.height"
       },
-      "HTMLCanvasElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLCanvasElement.prototype.removeEventListener"
-      },
       "HTMLCanvasElement#toBlob": {
         "color": "throwing",
         "spec": "html#dom-canvas-toblob",
@@ -16231,12 +15989,6 @@
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "HTMLDataElement.prototype.addEventListener"
       },
-      "HTMLDataElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLDataElement.prototype.removeEventListener"
-      },
       "HTMLDataElement#value": {
         "accessor": {
           "get": "non-throwing",
@@ -16258,12 +16010,6 @@
         },
         "spec": "html#dom-datalist-options",
         "runtime": "HTMLDataListElement.prototype.options"
-      },
-      "HTMLDataListElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLDataListElement.prototype.removeEventListener"
       },
       "HTMLDetailsElement#addEventListener": {
         "color": "non-throwing",
@@ -16287,12 +16033,6 @@
         "spec": "html#dom-details-open",
         "runtime": "HTMLDetailsElement.prototype.open"
       },
-      "HTMLDetailsElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLDetailsElement.prototype.removeEventListener"
-      },
       "HTMLDialogElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -16311,12 +16051,6 @@
         },
         "spec": "html#dom-dialog-open",
         "runtime": "HTMLDialogElement.prototype.open"
-      },
-      "HTMLDialogElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLDialogElement.prototype.removeEventListener"
       },
       "HTMLDialogElement#requestClose": {
         "color": "throwing",
@@ -16341,11 +16075,6 @@
         "spec": "html#dom-dialog-showmodal",
         "runtime": "HTMLDialogElement.prototype.showModal"
       },
-      "HTMLDirectoryElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "HTMLDirectoryElement.prototype.addEventListener"
-      },
       "HTMLDirectoryElement#compact": {
         "accessor": {
           "get": "throwing",
@@ -16353,11 +16082,6 @@
         },
         "spec": "html#dom-dir-compact",
         "runtime": "HTMLDirectoryElement.prototype.compact"
-      },
-      "HTMLDirectoryElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLDirectoryElement.prototype.removeEventListener"
       },
       "HTMLDivElement#addEventListener": {
         "color": "non-throwing",
@@ -16373,12 +16097,6 @@
         "spec": "html#dom-div-align",
         "runtime": "HTMLDivElement.prototype.align"
       },
-      "HTMLDivElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLDivElement.prototype.removeEventListener"
-      },
       "HTMLDListElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -16392,22 +16110,6 @@
         },
         "spec": "html#dom-dl-compact",
         "runtime": "HTMLDListElement.prototype.compact"
-      },
-      "HTMLDListElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLDListElement.prototype.removeEventListener"
-      },
-      "HTMLDocument#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "HTMLDocument.prototype.addEventListener"
-      },
-      "HTMLDocument#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLDocument.prototype.removeEventListener"
       },
       "HTMLElement#accessKey": {
         "accessor": {
@@ -16565,12 +16267,6 @@
         },
         "spec": "html#dom-popover",
         "runtime": "HTMLElement.prototype.popover"
-      },
-      "HTMLElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLElement.prototype.removeEventListener"
       },
       "HTMLElement#showPopover": {
         "color": "throwing",
@@ -17072,12 +16768,6 @@
         "spec": "html#dom-embed-name",
         "runtime": "HTMLEmbedElement.prototype.name"
       },
-      "HTMLEmbedElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLEmbedElement.prototype.removeEventListener"
-      },
       "HTMLEmbedElement#src": {
         "accessor": {
           "get": "non-throwing",
@@ -17146,12 +16836,6 @@
         "spec": "html#dom-fieldset-name",
         "runtime": "HTMLFieldSetElement.prototype.name"
       },
-      "HTMLFieldSetElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLFieldSetElement.prototype.removeEventListener"
-      },
       "HTMLFieldSetElement#reportValidity": {
         "color": "non-throwing",
         "conditions": [],
@@ -17196,11 +16880,6 @@
         "spec": "html#dom-cva-willvalidate",
         "runtime": "HTMLFieldSetElement.prototype.willValidate"
       },
-      "HTMLFontElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "HTMLFontElement.prototype.addEventListener"
-      },
       "HTMLFontElement#color": {
         "accessor": {
           "get": "throwing",
@@ -17216,11 +16895,6 @@
         },
         "spec": "html#dom-font-face",
         "runtime": "HTMLFontElement.prototype.face"
-      },
-      "HTMLFontElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLFontElement.prototype.removeEventListener"
       },
       "HTMLFontElement#size": {
         "accessor": {
@@ -17338,12 +17012,6 @@
         "spec": "html#dom-form-rellist",
         "runtime": "HTMLFormElement.prototype.relList"
       },
-      "HTMLFormElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLFormElement.prototype.removeEventListener"
-      },
       "HTMLFormElement#reportValidity": {
         "color": "throwing",
         "spec": "html#dom-form-reportvalidity",
@@ -17372,11 +17040,6 @@
         },
         "spec": "html#dom-fs-target",
         "runtime": "HTMLFormElement.prototype.target"
-      },
-      "HTMLFrameElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "HTMLFrameElement.prototype.addEventListener"
       },
       "HTMLFrameElement#contentDocument": {
         "accessor": {
@@ -17442,11 +17105,6 @@
         "spec": "html#dom-frame-noresize",
         "runtime": "HTMLFrameElement.prototype.noResize"
       },
-      "HTMLFrameElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLFrameElement.prototype.removeEventListener"
-      },
       "HTMLFrameElement#scrolling": {
         "accessor": {
           "get": "throwing",
@@ -17463,11 +17121,6 @@
         "spec": "html#dom-frame-src",
         "runtime": "HTMLFrameElement.prototype.src"
       },
-      "HTMLFrameSetElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "HTMLFrameSetElement.prototype.addEventListener"
-      },
       "HTMLFrameSetElement#cols": {
         "accessor": {
           "get": "throwing",
@@ -17475,11 +17128,6 @@
         },
         "spec": "html#dom-frameset-cols",
         "runtime": "HTMLFrameSetElement.prototype.cols"
-      },
-      "HTMLFrameSetElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLFrameSetElement.prototype.removeEventListener"
       },
       "HTMLFrameSetElement#rows": {
         "accessor": {
@@ -17495,12 +17143,6 @@
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "HTMLHeadElement.prototype.addEventListener"
       },
-      "HTMLHeadElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLHeadElement.prototype.removeEventListener"
-      },
       "HTMLHeadingElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -17514,12 +17156,6 @@
         },
         "spec": "html#dom-hx-align",
         "runtime": "HTMLHeadingElement.prototype.align"
-      },
-      "HTMLHeadingElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLHeadingElement.prototype.removeEventListener"
       },
       "HTMLHRElement#addEventListener": {
         "color": "non-throwing",
@@ -17551,12 +17187,6 @@
         "spec": "html#dom-hr-noshade",
         "runtime": "HTMLHRElement.prototype.noShade"
       },
-      "HTMLHRElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLHRElement.prototype.removeEventListener"
-      },
       "HTMLHRElement#size": {
         "accessor": {
           "get": "non-throwing",
@@ -17578,12 +17208,6 @@
         "conditions": [],
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "HTMLHtmlElement.prototype.addEventListener"
-      },
-      "HTMLHtmlElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLHtmlElement.prototype.removeEventListener"
       },
       "HTMLHtmlElement#version": {
         "accessor": {
@@ -17786,12 +17410,6 @@
         "spec": "html#dom-iframe-referrerpolicy",
         "runtime": "HTMLIFrameElement.prototype.referrerPolicy"
       },
-      "HTMLIFrameElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLIFrameElement.prototype.removeEventListener"
-      },
       "HTMLIFrameElement#sandbox": {
         "accessor": {
           "get": "non-throwing",
@@ -17986,12 +17604,6 @@
         },
         "spec": "html#dom-img-referrerpolicy",
         "runtime": "HTMLImageElement.prototype.referrerPolicy"
-      },
-      "HTMLImageElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLImageElement.prototype.removeEventListener"
       },
       "HTMLImageElement#sizes": {
         "accessor": {
@@ -18308,12 +17920,6 @@
         "spec": "html#dom-input-readonly",
         "runtime": "HTMLInputElement.prototype.readOnly"
       },
-      "HTMLInputElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLInputElement.prototype.removeEventListener"
-      },
       "HTMLInputElement#reportValidity": {
         "color": "non-throwing",
         "conditions": [],
@@ -18529,12 +18135,6 @@
         "spec": "html#dom-label-htmlfor",
         "runtime": "HTMLLabelElement.prototype.htmlFor"
       },
-      "HTMLLabelElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLLabelElement.prototype.removeEventListener"
-      },
       "HTMLLegendElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -18557,23 +18157,11 @@
         "spec": "html#dom-legend-form",
         "runtime": "HTMLLegendElement.prototype.form"
       },
-      "HTMLLegendElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLLegendElement.prototype.removeEventListener"
-      },
       "HTMLLIElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "HTMLLIElement.prototype.addEventListener"
-      },
-      "HTMLLIElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLLIElement.prototype.removeEventListener"
       },
       "HTMLLIElement#type": {
         "accessor": {
@@ -18717,12 +18305,6 @@
         "spec": "html#dom-link-rellist",
         "runtime": "HTMLLinkElement.prototype.relList"
       },
-      "HTMLLinkElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLLinkElement.prototype.removeEventListener"
-      },
       "HTMLLinkElement#rev": {
         "accessor": {
           "get": "non-throwing",
@@ -18777,17 +18359,6 @@
         "spec": "html#dom-map-name",
         "runtime": "HTMLMapElement.prototype.name"
       },
-      "HTMLMapElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLMapElement.prototype.removeEventListener"
-      },
-      "HTMLMarqueeElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "HTMLMarqueeElement.prototype.addEventListener"
-      },
       "HTMLMarqueeElement#behavior": {
         "accessor": {
           "get": "throwing",
@@ -18835,11 +18406,6 @@
         },
         "spec": "html#dom-marquee-loop",
         "runtime": "HTMLMarqueeElement.prototype.loop"
-      },
-      "HTMLMarqueeElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLMarqueeElement.prototype.removeEventListener"
       },
       "HTMLMarqueeElement#scrollAmount": {
         "accessor": {
@@ -19191,12 +18757,6 @@
         "spec": "remote-playback#dom-htmlmediaelement-remote",
         "runtime": "HTMLMediaElement.prototype.remote"
       },
-      "HTMLMediaElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLMediaElement.prototype.removeEventListener"
-      },
       "HTMLMediaElement#seekable": {
         "accessor": {
           "get": "throwing",
@@ -19277,12 +18837,6 @@
         "spec": "html#dom-menu-compact",
         "runtime": "HTMLMenuElement.prototype.compact"
       },
-      "HTMLMenuElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLMenuElement.prototype.removeEventListener"
-      },
       "HTMLMetaElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -19320,12 +18874,6 @@
         },
         "spec": "html#dom-meta-name",
         "runtime": "HTMLMetaElement.prototype.name"
-      },
-      "HTMLMetaElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLMetaElement.prototype.removeEventListener"
       },
       "HTMLMetaElement#scheme": {
         "accessor": {
@@ -19389,12 +18937,6 @@
         "spec": "html#dom-meter-optimum",
         "runtime": "HTMLMeterElement.prototype.optimum"
       },
-      "HTMLMeterElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLMeterElement.prototype.removeEventListener"
-      },
       "HTMLMeterElement#value": {
         "accessor": {
           "get": "non-throwing",
@@ -19424,12 +18966,6 @@
         },
         "spec": "html#dom-mod-datetime",
         "runtime": "HTMLModElement.prototype.dateTime"
-      },
-      "HTMLModElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLModElement.prototype.removeEventListener"
       },
       "HTMLObjectElement#addEventListener": {
         "color": "non-throwing",
@@ -19560,12 +19096,6 @@
         "spec": "html#dom-object-name",
         "runtime": "HTMLObjectElement.prototype.name"
       },
-      "HTMLObjectElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLObjectElement.prototype.removeEventListener"
-      },
       "HTMLObjectElement#reportValidity": {
         "color": "non-throwing",
         "conditions": [],
@@ -19656,12 +19186,6 @@
         "spec": "html#dom-ol-compact",
         "runtime": "HTMLOListElement.prototype.compact"
       },
-      "HTMLOListElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLOListElement.prototype.removeEventListener"
-      },
       "HTMLOListElement#reversed": {
         "accessor": {
           "get": "non-throwing",
@@ -19707,12 +19231,6 @@
         },
         "spec": "html#dom-optgroup-label",
         "runtime": "HTMLOptGroupElement.prototype.label"
-      },
-      "HTMLOptGroupElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLOptGroupElement.prototype.removeEventListener"
       },
       "HTMLOptionElement.new": {
         "color": "throwing",
@@ -19764,12 +19282,6 @@
         },
         "spec": "html#dom-option-label",
         "runtime": "HTMLOptionElement.prototype.label"
-      },
-      "HTMLOptionElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLOptionElement.prototype.removeEventListener"
       },
       "HTMLOptionElement#selected": {
         "accessor": {
@@ -19889,12 +19401,6 @@
         "spec": "html#dom-output-name",
         "runtime": "HTMLOutputElement.prototype.name"
       },
-      "HTMLOutputElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLOutputElement.prototype.removeEventListener"
-      },
       "HTMLOutputElement#reportValidity": {
         "color": "non-throwing",
         "conditions": [],
@@ -19961,12 +19467,6 @@
         "spec": "html#dom-p-align",
         "runtime": "HTMLParagraphElement.prototype.align"
       },
-      "HTMLParagraphElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLParagraphElement.prototype.removeEventListener"
-      },
       "HTMLParamElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -19980,12 +19480,6 @@
         },
         "spec": "html#dom-param-name",
         "runtime": "HTMLParamElement.prototype.name"
-      },
-      "HTMLParamElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLParamElement.prototype.removeEventListener"
       },
       "HTMLParamElement#type": {
         "accessor": {
@@ -20017,23 +19511,11 @@
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "HTMLPictureElement.prototype.addEventListener"
       },
-      "HTMLPictureElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLPictureElement.prototype.removeEventListener"
-      },
       "HTMLPreElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "HTMLPreElement.prototype.addEventListener"
-      },
-      "HTMLPreElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLPreElement.prototype.removeEventListener"
       },
       "HTMLPreElement#width": {
         "accessor": {
@@ -20072,12 +19554,6 @@
         "spec": "html#dom-progress-position",
         "runtime": "HTMLProgressElement.prototype.position"
       },
-      "HTMLProgressElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLProgressElement.prototype.removeEventListener"
-      },
       "HTMLProgressElement#value": {
         "accessor": {
           "get": "non-throwing",
@@ -20099,12 +19575,6 @@
         },
         "spec": "html#dom-quote-cite",
         "runtime": "HTMLQuoteElement.prototype.cite"
-      },
-      "HTMLQuoteElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLQuoteElement.prototype.removeEventListener"
       },
       "HTMLScriptElement.supports": {
         "color": "throwing",
@@ -20204,12 +19674,6 @@
         },
         "spec": "html#dom-script-referrerpolicy",
         "runtime": "HTMLScriptElement.prototype.referrerPolicy"
-      },
-      "HTMLScriptElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLScriptElement.prototype.removeEventListener"
       },
       "HTMLScriptElement#src": {
         "accessor": {
@@ -20334,12 +19798,6 @@
         "spec": "html#dom-select-remove",
         "runtime": "HTMLSelectElement.prototype.remove"
       },
-      "HTMLSelectElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLSelectElement.prototype.removeEventListener"
-      },
       "HTMLSelectElement#reportValidity": {
         "color": "non-throwing",
         "conditions": [],
@@ -20458,12 +19916,6 @@
         "spec": "html#dom-slot-name",
         "runtime": "HTMLSlotElement.prototype.name"
       },
-      "HTMLSlotElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLSlotElement.prototype.removeEventListener"
-      },
       "HTMLSourceElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -20485,12 +19937,6 @@
         },
         "spec": "html#dom-source-media",
         "runtime": "HTMLSourceElement.prototype.media"
-      },
-      "HTMLSourceElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLSourceElement.prototype.removeEventListener"
       },
       "HTMLSourceElement#sizes": {
         "accessor": {
@@ -20538,12 +19984,6 @@
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "HTMLSpanElement.prototype.addEventListener"
       },
-      "HTMLSpanElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLSpanElement.prototype.removeEventListener"
-      },
       "HTMLStyleElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -20574,12 +20014,6 @@
         "spec": "html#dom-style-media",
         "runtime": "HTMLStyleElement.prototype.media"
       },
-      "HTMLStyleElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLStyleElement.prototype.removeEventListener"
-      },
       "HTMLStyleElement#type": {
         "accessor": {
           "get": "non-throwing",
@@ -20601,12 +20035,6 @@
         },
         "spec": "html#dom-caption-align",
         "runtime": "HTMLTableCaptionElement.prototype.align"
-      },
-      "HTMLTableCaptionElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTableCaptionElement.prototype.removeEventListener"
       },
       "HTMLTableCellElement#abbr": {
         "accessor": {
@@ -20701,12 +20129,6 @@
         "spec": "html#dom-tdth-nowrap",
         "runtime": "HTMLTableCellElement.prototype.noWrap"
       },
-      "HTMLTableCellElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTableCellElement.prototype.removeEventListener"
-      },
       "HTMLTableCellElement#rowSpan": {
         "accessor": {
           "get": "non-throwing",
@@ -20769,12 +20191,6 @@
         "spec": "html#dom-col-choff",
         "runtime": "HTMLTableColElement.prototype.chOff"
       },
-      "HTMLTableColElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTableColElement.prototype.removeEventListener"
-      },
       "HTMLTableColElement#span": {
         "accessor": {
           "get": "non-throwing",
@@ -20798,16 +20214,6 @@
         },
         "spec": "html#dom-col-width",
         "runtime": "HTMLTableColElement.prototype.width"
-      },
-      "HTMLTableDataCellElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "HTMLTableDataCellElement.prototype.addEventListener"
-      },
-      "HTMLTableDataCellElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTableDataCellElement.prototype.removeEventListener"
       },
       "HTMLTableElement#addEventListener": {
         "color": "non-throwing",
@@ -20919,12 +20325,6 @@
         "spec": "html#dom-table-insertrow",
         "runtime": "HTMLTableElement.prototype.insertRow"
       },
-      "HTMLTableElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTableElement.prototype.removeEventListener"
-      },
       "HTMLTableElement#rows": {
         "accessor": {
           "get": "non-throwing",
@@ -20981,16 +20381,6 @@
         "spec": "html#dom-table-width",
         "runtime": "HTMLTableElement.prototype.width"
       },
-      "HTMLTableHeaderCellElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "HTMLTableHeaderCellElement.prototype.addEventListener"
-      },
-      "HTMLTableHeaderCellElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTableHeaderCellElement.prototype.removeEventListener"
-      },
       "HTMLTableRowElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -21046,12 +20436,6 @@
         "color": "throwing",
         "spec": "html#dom-tr-insertcell",
         "runtime": "HTMLTableRowElement.prototype.insertCell"
-      },
-      "HTMLTableRowElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTableRowElement.prototype.removeEventListener"
       },
       "HTMLTableRowElement#rowIndex": {
         "accessor": {
@@ -21117,12 +20501,6 @@
         "spec": "html#dom-tbody-insertrow",
         "runtime": "HTMLTableSectionElement.prototype.insertRow"
       },
-      "HTMLTableSectionElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTableSectionElement.prototype.removeEventListener"
-      },
       "HTMLTableSectionElement#rows": {
         "accessor": {
           "get": "non-throwing",
@@ -21152,12 +20530,6 @@
         },
         "spec": "html#dom-template-content",
         "runtime": "HTMLTemplateElement.prototype.content"
-      },
-      "HTMLTemplateElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTemplateElement.prototype.removeEventListener"
       },
       "HTMLTemplateElement#shadowRootClonable": {
         "accessor": {
@@ -21299,12 +20671,6 @@
         "spec": "html#dom-textarea-readonly",
         "runtime": "HTMLTextAreaElement.prototype.readOnly"
       },
-      "HTMLTextAreaElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTextAreaElement.prototype.removeEventListener"
-      },
       "HTMLTextAreaElement#reportValidity": {
         "color": "non-throwing",
         "conditions": [],
@@ -21442,23 +20808,11 @@
         "spec": "html#dom-time-datetime",
         "runtime": "HTMLTimeElement.prototype.dateTime"
       },
-      "HTMLTimeElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTimeElement.prototype.removeEventListener"
-      },
       "HTMLTitleElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "HTMLTitleElement.prototype.addEventListener"
-      },
-      "HTMLTitleElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTitleElement.prototype.removeEventListener"
       },
       "HTMLTitleElement#text": {
         "accessor": {
@@ -21538,12 +20892,6 @@
         "spec": "html#dom-track-readystate",
         "runtime": "HTMLTrackElement.prototype.readyState"
       },
-      "HTMLTrackElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLTrackElement.prototype.removeEventListener"
-      },
       "HTMLTrackElement#src": {
         "accessor": {
           "get": "non-throwing",
@@ -21582,12 +20930,6 @@
         "spec": "html#dom-ul-compact",
         "runtime": "HTMLUListElement.prototype.compact"
       },
-      "HTMLUListElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLUListElement.prototype.removeEventListener"
-      },
       "HTMLUListElement#type": {
         "accessor": {
           "get": "non-throwing",
@@ -21601,12 +20943,6 @@
         "conditions": [],
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "HTMLUnknownElement.prototype.addEventListener"
-      },
-      "HTMLUnknownElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLUnknownElement.prototype.removeEventListener"
       },
       "HTMLVideoElement#addEventListener": {
         "color": "non-throwing",
@@ -21661,12 +20997,6 @@
         },
         "spec": "html#dom-video-poster",
         "runtime": "HTMLVideoElement.prototype.poster"
-      },
-      "HTMLVideoElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "HTMLVideoElement.prototype.removeEventListener"
       },
       "HTMLVideoElement#requestVideoFrameCallback": {
         "color": "throwing",
@@ -21776,11 +21106,6 @@
         "spec": "IndexedDB-3#dom-idbcursorwithvalue-value",
         "runtime": "IDBCursorWithValue.prototype.value"
       },
-      "IDBDatabase#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "IDBDatabase.prototype.addEventListener"
-      },
       "IDBDatabase#close": {
         "color": "throwing",
         "spec": "IndexedDB-3#dom-idbdatabase-close",
@@ -21843,11 +21168,6 @@
         },
         "spec": "IndexedDB-3#dom-idbdatabase-onversionchange",
         "runtime": "IDBDatabase.prototype.onversionchange"
-      },
-      "IDBDatabase#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "IDBDatabase.prototype.removeEventListener"
       },
       "IDBDatabase#transaction": {
         "color": "throwing",
@@ -22154,11 +21474,6 @@
       "IDBObjectStoreParameters#keyPath": {
         "accessor": false
       },
-      "IDBOpenDBRequest#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "IDBOpenDBRequest.prototype.addEventListener"
-      },
       "IDBOpenDBRequest#onblocked": {
         "accessor": {
           "get": "throwing",
@@ -22175,21 +21490,11 @@
         "spec": "IndexedDB-3#dom-idbopendbrequest-onupgradeneeded",
         "runtime": "IDBOpenDBRequest.prototype.onupgradeneeded"
       },
-      "IDBOpenDBRequest#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "IDBOpenDBRequest.prototype.removeEventListener"
-      },
       "IDBOpenDBRequestEventMap#blocked": {
         "accessor": false
       },
       "IDBOpenDBRequestEventMap#upgradeneeded": {
         "accessor": false
-      },
-      "IDBRequest#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "IDBRequest.prototype.addEventListener"
       },
       "IDBRequest#error": {
         "accessor": {
@@ -22222,11 +21527,6 @@
         },
         "spec": "IndexedDB-3#dom-idbrequest-readystate",
         "runtime": "IDBRequest.prototype.readyState"
-      },
-      "IDBRequest#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "IDBRequest.prototype.removeEventListener"
       },
       "IDBRequest#result": {
         "accessor": {
@@ -22262,11 +21562,6 @@
         "color": "throwing",
         "spec": "IndexedDB-3#dom-idbtransaction-abort",
         "runtime": "IDBTransaction.prototype.abort"
-      },
-      "IDBTransaction#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "IDBTransaction.prototype.addEventListener"
       },
       "IDBTransaction#commit": {
         "color": "throwing",
@@ -22341,11 +21636,6 @@
         },
         "spec": "IndexedDB-3#dom-idbtransaction-onerror",
         "runtime": "IDBTransaction.prototype.onerror"
-      },
-      "IDBTransaction#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "IDBTransaction.prototype.removeEventListener"
       },
       "IDBTransactionEventMap#abort": {
         "accessor": false
@@ -23304,16 +22594,6 @@
       "LockOptions#steal": {
         "accessor": false
       },
-      "MathMLElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MathMLElement.prototype.addEventListener"
-      },
-      "MathMLElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MathMLElement.prototype.removeEventListener"
-      },
       "MathMLElementTagNameMap#annotation": {
         "accessor": false
       },
@@ -23477,22 +22757,12 @@
         },
         "runtime": "MediaDeviceInfo.prototype.label"
       },
-      "MediaDevices#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MediaDevices.prototype.addEventListener"
-      },
       "MediaDevices#ondevicechange": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "MediaDevices.prototype.ondevicechange"
-      },
-      "MediaDevices#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MediaDevices.prototype.removeEventListener"
       },
       "MediaDevicesEventMap#devicechange": {
         "accessor": false
@@ -23637,11 +22907,6 @@
         "spec": "encrypted-media-2#dom-mediakeys-setservercertificate",
         "runtime": "MediaKeys.prototype.setServerCertificate"
       },
-      "MediaKeySession#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MediaKeySession.prototype.addEventListener"
-      },
       "MediaKeySession#close": {
         "color": "throwing",
         "spec": "encrypted-media-2#dom-mediakeysession-close",
@@ -23701,11 +22966,6 @@
         "color": "throwing",
         "spec": "encrypted-media-2#dom-mediakeysession-remove",
         "runtime": "MediaKeySession.prototype.remove"
-      },
-      "MediaKeySession#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MediaKeySession.prototype.removeEventListener"
       },
       "MediaKeySession#sessionId": {
         "accessor": {
@@ -23869,16 +23129,6 @@
       "MediaPositionState#position": {
         "accessor": false
       },
-      "MediaQueryList#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MediaQueryList.prototype.addEventListener"
-      },
-      "MediaQueryList#addListener": {
-        "color": "throwing",
-        "spec": "cssom-view-1#dom-mediaquerylist-addlistener",
-        "runtime": "MediaQueryList.prototype.addListener"
-      },
       "MediaQueryList#matches": {
         "accessor": {
           "get": "throwing",
@@ -23902,11 +23152,6 @@
         },
         "spec": "cssom-view-1#dom-mediaquerylist-onchange",
         "runtime": "MediaQueryList.prototype.onchange"
-      },
-      "MediaQueryList#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MediaQueryList.prototype.removeEventListener"
       },
       "MediaQueryList#removeListener": {
         "color": "throwing",
@@ -23942,11 +23187,6 @@
         "color": "throwing",
         "spec": "mediastream-recording#dom-mediarecorder-mediarecorder",
         "runtime": "new MediaRecorder"
-      },
-      "MediaRecorder#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MediaRecorder.prototype.addEventListener"
       },
       "MediaRecorder#audioBitsPerSecond": {
         "accessor": {
@@ -24016,11 +23256,6 @@
         "color": "throwing",
         "spec": "mediastream-recording#dom-mediarecorder-pause",
         "runtime": "MediaRecorder.prototype.pause"
-      },
-      "MediaRecorder#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MediaRecorder.prototype.removeEventListener"
       },
       "MediaRecorder#requestData": {
         "color": "throwing",
@@ -24112,11 +23347,6 @@
         "spec": "mediasession#dom-mediasession-playbackstate",
         "runtime": "MediaSession.prototype.playbackState"
       },
-      "MediaSession#setActionHandler": {
-        "color": "throwing",
-        "spec": "mediasession#dom-mediasession-setactionhandler",
-        "runtime": "MediaSession.prototype.setActionHandler"
-      },
       "MediaSession#setCameraActive": {
         "color": "throwing",
         "spec": "mediasession#dom-mediasession-setcameraactive",
@@ -24174,11 +23404,6 @@
         "spec": "media-source-2#dom-mediasource-activesourcebuffers",
         "runtime": "MediaSource.prototype.activeSourceBuffers"
       },
-      "MediaSource#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MediaSource.prototype.addEventListener"
-      },
       "MediaSource#addSourceBuffer": {
         "color": "throwing",
         "spec": "media-source-2#dom-mediasource-addsourcebuffer",
@@ -24234,11 +23459,6 @@
         "spec": "media-source-2#dom-mediasource-readystate",
         "runtime": "MediaSource.prototype.readyState"
       },
-      "MediaSource#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MediaSource.prototype.removeEventListener"
-      },
       "MediaSource#removeSourceBuffer": {
         "color": "throwing",
         "spec": "media-source-2#dom-mediasource-removesourcebuffer",
@@ -24273,11 +23493,6 @@
         },
         "runtime": "MediaStream.prototype.active"
       },
-      "MediaStream#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MediaStream.prototype.addEventListener"
-      },
       "MediaStream#id": {
         "accessor": {
           "get": "throwing",
@@ -24298,11 +23513,6 @@
           "set": "throwing"
         },
         "runtime": "MediaStream.prototype.onremovetrack"
-      },
-      "MediaStream#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MediaStream.prototype.removeEventListener"
       },
       "MediaStreamAudioDestinationNode.new": {
         "color": "throwing",
@@ -24350,11 +23560,6 @@
       },
       "MediaStreamEventMap#removetrack": {
         "accessor": false
-      },
-      "MediaStreamTrack#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MediaStreamTrack.prototype.addEventListener"
       },
       "MediaStreamTrack#contentHint": {
         "accessor": {
@@ -24425,11 +23630,6 @@
           "set": "throwing"
         },
         "runtime": "MediaStreamTrack.prototype.readyState"
-      },
-      "MediaStreamTrack#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MediaStreamTrack.prototype.removeEventListener"
       },
       "MediaStreamTrackEvent#track": {
         "accessor": {
@@ -24666,11 +23866,6 @@
         "spec": "html#dom-messageevent-data",
         "runtime": "MessageEvent.prototype.data"
       },
-      "MessageEvent#initMessageEvent": {
-        "color": "throwing",
-        "spec": "html#dom-messageevent-initmessageevent",
-        "runtime": "MessageEvent.prototype.initMessageEvent"
-      },
       "MessageEvent#lastEventId": {
         "accessor": {
           "get": "non-throwing",
@@ -24740,11 +23935,6 @@
       "MessageEventTargetEventMap#messageerror": {
         "accessor": false
       },
-      "MessagePort#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MessagePort.prototype.addEventListener"
-      },
       "MessagePort#close": {
         "color": "throwing",
         "spec": "html#dom-messageport-close",
@@ -24755,21 +23945,11 @@
         "spec": "html#dom-messageport-postmessage",
         "runtime": "MessagePort.prototype.postMessage"
       },
-      "MessagePort#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MessagePort.prototype.removeEventListener"
-      },
       "MessagePortEventMap#message": {
         "accessor": false
       },
       "MessagePortEventMap#messageerror": {
         "accessor": false
-      },
-      "MIDIAccess#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MIDIAccess.prototype.addEventListener"
       },
       "MIDIAccess#inputs": {
         "accessor": {
@@ -24792,11 +23972,6 @@
         },
         "runtime": "MIDIAccess.prototype.outputs"
       },
-      "MIDIAccess#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MIDIAccess.prototype.removeEventListener"
-      },
       "MIDIAccess#sysexEnabled": {
         "accessor": {
           "get": "throwing",
@@ -24817,22 +23992,12 @@
       "MIDIConnectionEventInit#port": {
         "accessor": false
       },
-      "MIDIInput#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MIDIInput.prototype.addEventListener"
-      },
       "MIDIInput#onmidimessage": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "MIDIInput.prototype.onmidimessage"
-      },
-      "MIDIInput#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MIDIInput.prototype.removeEventListener"
       },
       "MIDIInputEventMap#midimessage": {
         "accessor": false
@@ -24852,21 +24017,6 @@
       },
       "MIDIOptions#sysex": {
         "accessor": false
-      },
-      "MIDIOutput#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MIDIOutput.prototype.addEventListener"
-      },
-      "MIDIOutput#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MIDIOutput.prototype.removeEventListener"
-      },
-      "MIDIPort#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "MIDIPort.prototype.addEventListener"
       },
       "MIDIPort#connection": {
         "accessor": {
@@ -24902,11 +24052,6 @@
           "set": "throwing"
         },
         "runtime": "MIDIPort.prototype.onstatechange"
-      },
-      "MIDIPort#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "MIDIPort.prototype.removeEventListener"
       },
       "MIDIPort#state": {
         "accessor": {
@@ -25345,11 +24490,6 @@
         "spec": "html#dom-navigationactivation-navigationtype",
         "runtime": "NavigationActivation.prototype.navigationType"
       },
-      "NavigationHistoryEntry#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "NavigationHistoryEntry.prototype.addEventListener"
-      },
       "NavigationHistoryEntry#getState": {
         "color": "throwing",
         "spec": "html#dom-navigationhistoryentry-getstate",
@@ -25386,11 +24526,6 @@
         },
         "spec": "html#handler-navigationhistoryentry-ondispose",
         "runtime": "NavigationHistoryEntry.prototype.ondispose"
-      },
-      "NavigationHistoryEntry#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "NavigationHistoryEntry.prototype.removeEventListener"
       },
       "NavigationHistoryEntry#sameDocument": {
         "accessor": {
@@ -26218,11 +25353,6 @@
         "spec": "notifications#dom-notification-requestpermission",
         "runtime": "Notification.requestPermission"
       },
-      "Notification#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "Notification.prototype.addEventListener"
-      },
       "Notification#badge": {
         "accessor": {
           "get": "throwing",
@@ -26307,11 +25437,6 @@
         },
         "spec": "notifications#dom-notification-onshow",
         "runtime": "Notification.prototype.onshow"
-      },
-      "Notification#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "Notification.prototype.removeEventListener"
       },
       "Notification#requireInteraction": {
         "accessor": {
@@ -26412,11 +25537,6 @@
         "spec": "webaudio-1.0#dom-offlineaudiocontext-offlineaudiocontext",
         "runtime": "new OfflineAudioContext"
       },
-      "OfflineAudioContext#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "OfflineAudioContext.prototype.addEventListener"
-      },
       "OfflineAudioContext#length": {
         "accessor": {
           "get": "throwing",
@@ -26432,11 +25552,6 @@
         },
         "spec": "webaudio-1.0#dom-offlineaudiocontext-oncomplete",
         "runtime": "OfflineAudioContext.prototype.oncomplete"
-      },
-      "OfflineAudioContext#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "OfflineAudioContext.prototype.removeEventListener"
       },
       "OfflineAudioContext#resume": {
         "color": "throwing",
@@ -26459,11 +25574,6 @@
         "color": "throwing",
         "spec": "html#dom-offscreencanvas",
         "runtime": "new OffscreenCanvas"
-      },
-      "OffscreenCanvas#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "OffscreenCanvas.prototype.addEventListener"
       },
       "OffscreenCanvas#convertToBlob": {
         "color": "throwing",
@@ -26498,11 +25608,6 @@
         },
         "spec": "html#handler-offscreencanvas-oncontextrestored",
         "runtime": "OffscreenCanvas.prototype.oncontextrestored"
-      },
-      "OffscreenCanvas#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "OffscreenCanvas.prototype.removeEventListener"
       },
       "OffscreenCanvas#transferToImageBitmap": {
         "color": "throwing",
@@ -26585,11 +25690,6 @@
         "spec": "webaudio-1.0#dom-oscillatornode-oscillatornode",
         "runtime": "new OscillatorNode"
       },
-      "OscillatorNode#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "OscillatorNode.prototype.addEventListener"
-      },
       "OscillatorNode#detune": {
         "accessor": {
           "get": "throwing",
@@ -26605,11 +25705,6 @@
         },
         "spec": "webaudio-1.0#dom-oscillatornode-frequency",
         "runtime": "OscillatorNode.prototype.frequency"
-      },
-      "OscillatorNode#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "OscillatorNode.prototype.removeEventListener"
       },
       "OscillatorNode#type": {
         "accessor": {
@@ -27033,11 +26128,6 @@
       "PaymentOptions#shippingType": {
         "accessor": false
       },
-      "PaymentRequest#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "PaymentRequest.prototype.addEventListener"
-      },
       "PaymentRequest#id": {
         "accessor": {
           "get": "throwing",
@@ -27065,11 +26155,6 @@
           "set": "throwing"
         },
         "runtime": "PaymentRequest.prototype.onshippingoptionchange"
-      },
-      "PaymentRequest#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "PaymentRequest.prototype.removeEventListener"
       },
       "PaymentRequest#shippingAddress": {
         "accessor": {
@@ -27100,11 +26185,6 @@
       },
       "PaymentRequestEventMap#shippingoptionchange": {
         "accessor": false
-      },
-      "PaymentResponse#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "PaymentResponse.prototype.addEventListener"
       },
       "PaymentResponse#details": {
         "accessor": {
@@ -27147,11 +26227,6 @@
           "set": "throwing"
         },
         "runtime": "PaymentResponse.prototype.payerPhone"
-      },
-      "PaymentResponse#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "PaymentResponse.prototype.removeEventListener"
       },
       "PaymentResponse#requestId": {
         "accessor": {
@@ -27252,12 +26327,6 @@
         },
         "spec": "resource-timing#dom-performance-onresourcetimingbufferfull",
         "runtime": "Performance.prototype.onresourcetimingbufferfull"
-      },
-      "Performance#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "Performance.prototype.removeEventListener"
       },
       "Performance#timeOrigin": {
         "accessor": {
@@ -27902,11 +26971,6 @@
       "PermissionDescriptor#name": {
         "accessor": false
       },
-      "PermissionStatus#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "PermissionStatus.prototype.addEventListener"
-      },
       "PermissionStatus#name": {
         "accessor": {
           "get": "throwing",
@@ -27922,11 +26986,6 @@
         },
         "spec": "permissions#dom-permissionstatus-onchange",
         "runtime": "PermissionStatus.prototype.onchange"
-      },
-      "PermissionStatus#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "PermissionStatus.prototype.removeEventListener"
       },
       "PermissionStatus#state": {
         "accessor": {
@@ -27974,11 +27033,6 @@
       "PictureInPictureEventInit#pictureInPictureWindow": {
         "accessor": false
       },
-      "PictureInPictureWindow#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "PictureInPictureWindow.prototype.addEventListener"
-      },
       "PictureInPictureWindow#height": {
         "accessor": {
           "get": "throwing",
@@ -27994,11 +27048,6 @@
         },
         "spec": "picture-in-picture#dom-pictureinpicturewindow-onresize",
         "runtime": "PictureInPictureWindow.prototype.onresize"
-      },
-      "PictureInPictureWindow#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "PictureInPictureWindow.prototype.removeEventListener"
       },
       "PictureInPictureWindow#width": {
         "accessor": {
@@ -28910,11 +27959,6 @@
         "spec": "html#dom-window-releaseevents",
         "runtime": "releaseEvents"
       },
-      "RemotePlayback#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "RemotePlayback.prototype.addEventListener"
-      },
       "RemotePlayback#cancelWatchAvailability": {
         "color": "throwing",
         "spec": "remote-playback#dom-remoteplayback-cancelwatchavailability",
@@ -28949,11 +27993,6 @@
         "spec": "remote-playback#dom-remoteplayback-prompt",
         "runtime": "RemotePlayback.prototype.prompt"
       },
-      "RemotePlayback#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "RemotePlayback.prototype.removeEventListener"
-      },
       "RemotePlayback#state": {
         "accessor": {
           "get": "throwing",
@@ -28961,11 +28000,6 @@
         },
         "spec": "remote-playback#dom-remoteplayback-state",
         "runtime": "RemotePlayback.prototype.state"
-      },
-      "RemotePlayback#watchAvailability": {
-        "color": "throwing",
-        "spec": "remote-playback#dom-remoteplayback-watchavailability",
-        "runtime": "RemotePlayback.prototype.watchAvailability"
       },
       "RemotePlaybackEventMap#connect": {
         "accessor": false
@@ -29395,11 +28429,6 @@
       "RTCConfiguration#rtcpMuxPolicy": {
         "accessor": false
       },
-      "RTCDataChannel#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "RTCDataChannel.prototype.addEventListener"
-      },
       "RTCDataChannel#binaryType": {
         "accessor": {
           "get": "throwing",
@@ -29519,11 +28548,6 @@
         },
         "runtime": "RTCDataChannel.prototype.readyState"
       },
-      "RTCDataChannel#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "RTCDataChannel.prototype.removeEventListener"
-      },
       "RTCDataChannelEvent#channel": {
         "accessor": {
           "get": "throwing",
@@ -29576,11 +28600,6 @@
       "RTCDtlsFingerprint#value": {
         "accessor": false
       },
-      "RTCDtlsTransport#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "RTCDtlsTransport.prototype.addEventListener"
-      },
       "RTCDtlsTransport#iceTransport": {
         "accessor": {
           "get": "throwing",
@@ -29602,11 +28621,6 @@
         },
         "runtime": "RTCDtlsTransport.prototype.onstatechange"
       },
-      "RTCDtlsTransport#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "RTCDtlsTransport.prototype.removeEventListener"
-      },
       "RTCDtlsTransport#state": {
         "accessor": {
           "get": "throwing",
@@ -29619,11 +28633,6 @@
       },
       "RTCDtlsTransportEventMap#statechange": {
         "accessor": false
-      },
-      "RTCDTMFSender#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "RTCDTMFSender.prototype.addEventListener"
       },
       "RTCDTMFSender#canInsertDTMF": {
         "accessor": {
@@ -29638,11 +28647,6 @@
           "set": "throwing"
         },
         "runtime": "RTCDTMFSender.prototype.ontonechange"
-      },
-      "RTCDTMFSender#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "RTCDTMFSender.prototype.removeEventListener"
       },
       "RTCDTMFSender#toneBuffer": {
         "accessor": {
@@ -29999,11 +29003,6 @@
       "RTCIceServer#username": {
         "accessor": false
       },
-      "RTCIceTransport#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "RTCIceTransport.prototype.addEventListener"
-      },
       "RTCIceTransport#gatheringState": {
         "accessor": {
           "get": "throwing",
@@ -30031,11 +29030,6 @@
           "set": "throwing"
         },
         "runtime": "RTCIceTransport.prototype.onstatechange"
-      },
-      "RTCIceTransport#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "RTCIceTransport.prototype.removeEventListener"
       },
       "RTCIceTransport#state": {
         "accessor": {
@@ -30308,11 +29302,6 @@
       "RTCOutboundRtpStreamStats#totalPacketSendDelay": {
         "accessor": false
       },
-      "RTCPeerConnection#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "RTCPeerConnection.prototype.addEventListener"
-      },
       "RTCPeerConnection#canTrickleIceCandidates": {
         "accessor": {
           "get": "throwing",
@@ -30445,11 +29434,6 @@
           "set": "throwing"
         },
         "runtime": "RTCPeerConnection.prototype.remoteDescription"
-      },
-      "RTCPeerConnection#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "RTCPeerConnection.prototype.removeEventListener"
       },
       "RTCPeerConnection#sctp": {
         "accessor": {
@@ -30770,11 +29754,6 @@
       "RTCRtpTransceiverInit#streams": {
         "accessor": false
       },
-      "RTCSctpTransport#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "RTCSctpTransport.prototype.addEventListener"
-      },
       "RTCSctpTransport#maxChannels": {
         "accessor": {
           "get": "throwing",
@@ -30795,11 +29774,6 @@
           "set": "throwing"
         },
         "runtime": "RTCSctpTransport.prototype.onstatechange"
-      },
-      "RTCSctpTransport#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "RTCSctpTransport.prototype.removeEventListener"
       },
       "RTCSctpTransport#state": {
         "accessor": {
@@ -30996,11 +29970,6 @@
         "spec": "cssom-view-1#dom-screen-width",
         "runtime": "Screen.prototype.width"
       },
-      "ScreenOrientation#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "ScreenOrientation.prototype.addEventListener"
-      },
       "ScreenOrientation#angle": {
         "accessor": {
           "get": "throwing",
@@ -31015,11 +29984,6 @@
         },
         "runtime": "ScreenOrientation.prototype.onchange"
       },
-      "ScreenOrientation#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "ScreenOrientation.prototype.removeEventListener"
-      },
       "ScreenOrientation#type": {
         "accessor": {
           "get": "throwing",
@@ -31029,11 +29993,6 @@
       },
       "ScreenOrientationEventMap#change": {
         "accessor": false
-      },
-      "ScriptProcessorNode#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "ScriptProcessorNode.prototype.addEventListener"
       },
       "ScriptProcessorNode#bufferSize": {
         "accessor": {
@@ -31050,11 +30009,6 @@
         },
         "spec": "webaudio-1.0#dom-scriptprocessornode-onaudioprocess",
         "runtime": "ScriptProcessorNode.prototype.onaudioprocess"
-      },
-      "ScriptProcessorNode#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "ScriptProcessorNode.prototype.removeEventListener"
       },
       "ScriptProcessorNodeEventMap#audioprocess": {
         "accessor": false
@@ -31280,11 +30234,6 @@
         },
         "runtime": "Selection.prototype.type"
       },
-      "ServiceWorker#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "ServiceWorker.prototype.addEventListener"
-      },
       "ServiceWorker#onstatechange": {
         "accessor": {
           "get": "throwing",
@@ -31297,11 +30246,6 @@
         "color": "throwing",
         "spec": "service-workers#dom-serviceworker-postmessage",
         "runtime": "ServiceWorker.prototype.postMessage"
-      },
-      "ServiceWorker#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "ServiceWorker.prototype.removeEventListener"
       },
       "ServiceWorker#scriptURL": {
         "accessor": {
@@ -31318,11 +30262,6 @@
         },
         "spec": "service-workers#dom-serviceworker-state",
         "runtime": "ServiceWorker.prototype.state"
-      },
-      "ServiceWorkerContainer#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "ServiceWorkerContainer.prototype.addEventListener"
       },
       "ServiceWorkerContainer#controller": {
         "accessor": {
@@ -31379,11 +30318,6 @@
         "spec": "service-workers#dom-serviceworkercontainer-register",
         "runtime": "ServiceWorkerContainer.prototype.register"
       },
-      "ServiceWorkerContainer#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "ServiceWorkerContainer.prototype.removeEventListener"
-      },
       "ServiceWorkerContainer#startMessages": {
         "color": "throwing",
         "spec": "service-workers#dom-serviceworkercontainer-startmessages",
@@ -31408,11 +30342,6 @@
         },
         "spec": "service-workers#dom-serviceworkerregistration-active",
         "runtime": "ServiceWorkerRegistration.prototype.active"
-      },
-      "ServiceWorkerRegistration#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "ServiceWorkerRegistration.prototype.addEventListener"
       },
       "ServiceWorkerRegistration#cookies": {
         "accessor": {
@@ -31457,11 +30386,6 @@
           "set": "throwing"
         },
         "runtime": "ServiceWorkerRegistration.prototype.pushManager"
-      },
-      "ServiceWorkerRegistration#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "ServiceWorkerRegistration.prototype.removeEventListener"
       },
       "ServiceWorkerRegistration#scope": {
         "accessor": {
@@ -31515,11 +30439,6 @@
         "spec": "html#dom-settimeout",
         "runtime": "setTimeout"
       },
-      "ShadowRoot#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "ShadowRoot.prototype.addEventListener"
-      },
       "ShadowRoot#clonable": {
         "accessor": {
           "get": "throwing",
@@ -31572,11 +30491,6 @@
         },
         "spec": "dom#dom-shadowroot-onslotchange",
         "runtime": "ShadowRoot.prototype.onslotchange"
-      },
-      "ShadowRoot#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "ShadowRoot.prototype.removeEventListener"
       },
       "ShadowRoot#serializable": {
         "accessor": {
@@ -31637,11 +30551,6 @@
         "spec": "html#dom-sharedworker",
         "runtime": "new SharedWorker"
       },
-      "SharedWorker#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SharedWorker.prototype.addEventListener"
-      },
       "SharedWorker#port": {
         "accessor": {
           "get": "throwing",
@@ -31649,11 +30558,6 @@
         },
         "spec": "html#dom-sharedworker-port",
         "runtime": "SharedWorker.prototype.port"
-      },
-      "SharedWorker#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SharedWorker.prototype.removeEventListener"
       },
       "Slottable#assignedSlot": {
         "accessor": {
@@ -31667,11 +30571,6 @@
         "color": "throwing",
         "spec": "media-source-2#dom-sourcebuffer-abort",
         "runtime": "SourceBuffer.prototype.abort"
-      },
-      "SourceBuffer#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SourceBuffer.prototype.addEventListener"
       },
       "SourceBuffer#appendBuffer": {
         "color": "throwing",
@@ -31760,11 +30659,6 @@
         "spec": "media-source-2#dom-sourcebuffer-remove",
         "runtime": "SourceBuffer.prototype.remove"
       },
-      "SourceBuffer#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SourceBuffer.prototype.removeEventListener"
-      },
       "SourceBuffer#timestampOffset": {
         "accessor": {
           "get": "throwing",
@@ -31796,11 +30690,6 @@
       "SourceBufferEventMap#updatestart": {
         "accessor": false
       },
-      "SourceBufferList#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SourceBufferList.prototype.addEventListener"
-      },
       "SourceBufferList#length": {
         "accessor": {
           "get": "throwing",
@@ -31824,11 +30713,6 @@
         },
         "spec": "media-source-2#dom-sourcebufferlist-onremovesourcebuffer",
         "runtime": "SourceBufferList.prototype.onremovesourcebuffer"
-      },
-      "SourceBufferList#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SourceBufferList.prototype.removeEventListener"
       },
       "SourceBufferListEventMap#addsourcebuffer": {
         "accessor": false
@@ -31876,11 +30760,6 @@
         "spec": "speech-api#dom-speechrecognitionresultlist-length",
         "runtime": "SpeechRecognitionResultList.prototype.length"
       },
-      "SpeechSynthesis#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SpeechSynthesis.prototype.addEventListener"
-      },
       "SpeechSynthesis#onvoiceschanged": {
         "accessor": {
           "get": "throwing",
@@ -31904,11 +30783,6 @@
         },
         "spec": "speech-api#dom-speechsynthesis-pending",
         "runtime": "SpeechSynthesis.prototype.pending"
-      },
-      "SpeechSynthesis#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SpeechSynthesis.prototype.removeEventListener"
       },
       "SpeechSynthesis#speaking": {
         "accessor": {
@@ -31992,11 +30866,6 @@
         "spec": "speech-api#dom-speechsynthesisutterance-speechsynthesisutterance",
         "runtime": "new SpeechSynthesisUtterance"
       },
-      "SpeechSynthesisUtterance#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SpeechSynthesisUtterance.prototype.addEventListener"
-      },
       "SpeechSynthesisUtterance#lang": {
         "accessor": {
           "get": "throwing",
@@ -32076,11 +30945,6 @@
         },
         "spec": "speech-api#dom-speechsynthesisutterance-rate",
         "runtime": "SpeechSynthesisUtterance.prototype.rate"
-      },
-      "SpeechSynthesisUtterance#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SpeechSynthesisUtterance.prototype.removeEventListener"
       },
       "SpeechSynthesisUtterance#text": {
         "accessor": {
@@ -32519,11 +31383,6 @@
         "spec": "webcrypto-2#dfn-SubtleCrypto-method-wrapKey",
         "runtime": "SubtleCrypto.prototype.wrapKey"
       },
-      "SVGAElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGAElement.prototype.addEventListener"
-      },
       "SVGAElement#rel": {
         "accessor": {
           "get": "throwing",
@@ -32537,11 +31396,6 @@
           "set": "throwing"
         },
         "runtime": "SVGAElement.prototype.relList"
-      },
-      "SVGAElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGAElement.prototype.removeEventListener"
       },
       "SVGAElement#target": {
         "accessor": {
@@ -32800,46 +31654,6 @@
         },
         "runtime": "SVGAnimatedTransformList.prototype.baseVal"
       },
-      "SVGAnimateElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGAnimateElement.prototype.addEventListener"
-      },
-      "SVGAnimateElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGAnimateElement.prototype.removeEventListener"
-      },
-      "SVGAnimateMotionElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGAnimateMotionElement.prototype.addEventListener"
-      },
-      "SVGAnimateMotionElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGAnimateMotionElement.prototype.removeEventListener"
-      },
-      "SVGAnimateTransformElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGAnimateTransformElement.prototype.addEventListener"
-      },
-      "SVGAnimateTransformElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGAnimateTransformElement.prototype.removeEventListener"
-      },
-      "SVGAnimationElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGAnimationElement.prototype.addEventListener"
-      },
-      "SVGAnimationElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGAnimationElement.prototype.removeEventListener"
-      },
       "SVGAnimationElement#targetElement": {
         "accessor": {
           "get": "throwing",
@@ -32858,11 +31672,6 @@
       },
       "SVGBoundingBoxOptions#stroke": {
         "accessor": false
-      },
-      "SVGCircleElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGCircleElement.prototype.addEventListener"
       },
       "SVGCircleElement#cx": {
         "accessor": {
@@ -32885,16 +31694,6 @@
         },
         "runtime": "SVGCircleElement.prototype.r"
       },
-      "SVGCircleElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGCircleElement.prototype.removeEventListener"
-      },
-      "SVGClipPathElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGClipPathElement.prototype.addEventListener"
-      },
       "SVGClipPathElement#clipPathUnits": {
         "accessor": {
           "get": "throwing",
@@ -32902,11 +31701,6 @@
         },
         "spec": "css-masking-1#dom-svgclippathelement-clippathunits",
         "runtime": "SVGClipPathElement.prototype.clipPathUnits"
-      },
-      "SVGClipPathElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGClipPathElement.prototype.removeEventListener"
       },
       "SVGClipPathElement#transform": {
         "accessor": {
@@ -32940,11 +31734,6 @@
         "accessor": false,
         "runtime": "SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN"
       },
-      "SVGComponentTransferFunctionElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGComponentTransferFunctionElement.prototype.addEventListener"
-      },
       "SVGComponentTransferFunctionElement#amplitude": {
         "accessor": {
           "get": "throwing",
@@ -32976,11 +31765,6 @@
         },
         "spec": "filter-effects-1#dom-svgcomponenttransferfunctionelement-offset",
         "runtime": "SVGComponentTransferFunctionElement.prototype.offset"
-      },
-      "SVGComponentTransferFunctionElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGComponentTransferFunctionElement.prototype.removeEventListener"
       },
       "SVGComponentTransferFunctionElement#slope": {
         "accessor": {
@@ -33036,22 +31820,6 @@
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "SVGDefsElement.prototype.addEventListener"
       },
-      "SVGDefsElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGDefsElement.prototype.removeEventListener"
-      },
-      "SVGDescElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGDescElement.prototype.addEventListener"
-      },
-      "SVGDescElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGDescElement.prototype.removeEventListener"
-      },
       "SVGElement#addEventListener": {
         "color": "non-throwing",
         "conditions": [],
@@ -33072,12 +31840,6 @@
           "set": "throwing"
         },
         "runtime": "SVGElement.prototype.ownerSVGElement"
-      },
-      "SVGElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGElement.prototype.removeEventListener"
       },
       "SVGElement#viewportElement": {
         "accessor": {
@@ -33275,11 +32037,6 @@
       "SVGElementTagNameMap#view": {
         "accessor": false
       },
-      "SVGEllipseElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGEllipseElement.prototype.addEventListener"
-      },
       "SVGEllipseElement#cx": {
         "accessor": {
           "get": "throwing",
@@ -33293,11 +32050,6 @@
           "set": "throwing"
         },
         "runtime": "SVGEllipseElement.prototype.cy"
-      },
-      "SVGEllipseElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGEllipseElement.prototype.removeEventListener"
       },
       "SVGEllipseElement#rx": {
         "accessor": {
@@ -33381,11 +32133,6 @@
         "accessor": false,
         "runtime": "SVGFEBlendElement.SVG_FEBLEND_MODE_UNKNOWN"
       },
-      "SVGFEBlendElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEBlendElement.prototype.addEventListener"
-      },
       "SVGFEBlendElement#in1": {
         "accessor": {
           "get": "throwing",
@@ -33409,11 +32156,6 @@
         },
         "spec": "filter-effects-1#dom-svgfeblendelement-mode",
         "runtime": "SVGFEBlendElement.prototype.mode"
-      },
-      "SVGFEBlendElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEBlendElement.prototype.removeEventListener"
       },
       "SVGFEBlendElement#SVG_FEBLEND_MODE_COLOR": {
         "accessor": false,
@@ -33503,11 +32245,6 @@
         "accessor": false,
         "runtime": "SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_UNKNOWN"
       },
-      "SVGFEColorMatrixElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEColorMatrixElement.prototype.addEventListener"
-      },
       "SVGFEColorMatrixElement#in1": {
         "accessor": {
           "get": "throwing",
@@ -33515,11 +32252,6 @@
         },
         "spec": "filter-effects-1#dom-svgfecolormatrixelement-in1",
         "runtime": "SVGFEColorMatrixElement.prototype.in1"
-      },
-      "SVGFEColorMatrixElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEColorMatrixElement.prototype.removeEventListener"
       },
       "SVGFEColorMatrixElement#SVG_FECOLORMATRIX_TYPE_HUEROTATE": {
         "accessor": false,
@@ -33557,11 +32289,6 @@
         "spec": "filter-effects-1#dom-svgfecolormatrixelement-values",
         "runtime": "SVGFEColorMatrixElement.prototype.values"
       },
-      "SVGFEComponentTransferElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEComponentTransferElement.prototype.addEventListener"
-      },
       "SVGFEComponentTransferElement#in1": {
         "accessor": {
           "get": "throwing",
@@ -33569,11 +32296,6 @@
         },
         "spec": "filter-effects-1#dom-svgfecomponenttransferelement-in1",
         "runtime": "SVGFEComponentTransferElement.prototype.in1"
-      },
-      "SVGFEComponentTransferElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEComponentTransferElement.prototype.removeEventListener"
       },
       "SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_ARITHMETIC": {
         "accessor": false,
@@ -33602,11 +32324,6 @@
       "SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_XOR": {
         "accessor": false,
         "runtime": "SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_XOR"
-      },
-      "SVGFECompositeElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFECompositeElement.prototype.addEventListener"
       },
       "SVGFECompositeElement#in1": {
         "accessor": {
@@ -33664,11 +32381,6 @@
         "spec": "filter-effects-1#dom-svgfecompositeelement-operator",
         "runtime": "SVGFECompositeElement.prototype.operator"
       },
-      "SVGFECompositeElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFECompositeElement.prototype.removeEventListener"
-      },
       "SVGFECompositeElement#SVG_FECOMPOSITE_OPERATOR_ARITHMETIC": {
         "accessor": false,
         "runtime": "SVGFECompositeElement.prototype.SVG_FECOMPOSITE_OPERATOR_ARITHMETIC"
@@ -33712,11 +32424,6 @@
       "SVGFEConvolveMatrixElement.SVG_EDGEMODE_WRAP": {
         "accessor": false,
         "runtime": "SVGFEConvolveMatrixElement.SVG_EDGEMODE_WRAP"
-      },
-      "SVGFEConvolveMatrixElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEConvolveMatrixElement.prototype.addEventListener"
       },
       "SVGFEConvolveMatrixElement#bias": {
         "accessor": {
@@ -33798,11 +32505,6 @@
         "spec": "filter-effects-1#dom-svgfeconvolvematrixelement-preservealpha",
         "runtime": "SVGFEConvolveMatrixElement.prototype.preserveAlpha"
       },
-      "SVGFEConvolveMatrixElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEConvolveMatrixElement.prototype.removeEventListener"
-      },
       "SVGFEConvolveMatrixElement#SVG_EDGEMODE_DUPLICATE": {
         "accessor": false,
         "runtime": "SVGFEConvolveMatrixElement.prototype.SVG_EDGEMODE_DUPLICATE"
@@ -33834,11 +32536,6 @@
         },
         "spec": "filter-effects-1#dom-svgfeconvolvematrixelement-targety",
         "runtime": "SVGFEConvolveMatrixElement.prototype.targetY"
-      },
-      "SVGFEDiffuseLightingElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEDiffuseLightingElement.prototype.addEventListener"
       },
       "SVGFEDiffuseLightingElement#diffuseConstant": {
         "accessor": {
@@ -33872,11 +32569,6 @@
         "spec": "filter-effects-1#dom-svgfediffuselightingelement-kernelunitlengthy",
         "runtime": "SVGFEDiffuseLightingElement.prototype.kernelUnitLengthY"
       },
-      "SVGFEDiffuseLightingElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEDiffuseLightingElement.prototype.removeEventListener"
-      },
       "SVGFEDiffuseLightingElement#surfaceScale": {
         "accessor": {
           "get": "throwing",
@@ -33905,11 +32597,6 @@
         "accessor": false,
         "runtime": "SVGFEDisplacementMapElement.SVG_CHANNEL_UNKNOWN"
       },
-      "SVGFEDisplacementMapElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEDisplacementMapElement.prototype.addEventListener"
-      },
       "SVGFEDisplacementMapElement#in1": {
         "accessor": {
           "get": "throwing",
@@ -33925,11 +32612,6 @@
         },
         "spec": "filter-effects-1#dom-svgfedisplacementmapelement-in2",
         "runtime": "SVGFEDisplacementMapElement.prototype.in2"
-      },
-      "SVGFEDisplacementMapElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEDisplacementMapElement.prototype.removeEventListener"
       },
       "SVGFEDisplacementMapElement#scale": {
         "accessor": {
@@ -33975,11 +32657,6 @@
         "spec": "filter-effects-1#dom-svgfedisplacementmapelement-ychannelselector",
         "runtime": "SVGFEDisplacementMapElement.prototype.yChannelSelector"
       },
-      "SVGFEDistantLightElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEDistantLightElement.prototype.addEventListener"
-      },
       "SVGFEDistantLightElement#azimuth": {
         "accessor": {
           "get": "throwing",
@@ -33995,16 +32672,6 @@
         },
         "spec": "filter-effects-1#dom-svgfedistantlightelement-elevation",
         "runtime": "SVGFEDistantLightElement.prototype.elevation"
-      },
-      "SVGFEDistantLightElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEDistantLightElement.prototype.removeEventListener"
-      },
-      "SVGFEDropShadowElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEDropShadowElement.prototype.addEventListener"
       },
       "SVGFEDropShadowElement#dx": {
         "accessor": {
@@ -34030,11 +32697,6 @@
         "spec": "filter-effects-1#dom-svgfedropshadowelement-in1",
         "runtime": "SVGFEDropShadowElement.prototype.in1"
       },
-      "SVGFEDropShadowElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEDropShadowElement.prototype.removeEventListener"
-      },
       "SVGFEDropShadowElement#stdDeviationX": {
         "accessor": {
           "get": "throwing",
@@ -34051,61 +32713,6 @@
         "spec": "filter-effects-1#dom-svgfedropshadowelement-stddeviationy",
         "runtime": "SVGFEDropShadowElement.prototype.stdDeviationY"
       },
-      "SVGFEFloodElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEFloodElement.prototype.addEventListener"
-      },
-      "SVGFEFloodElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEFloodElement.prototype.removeEventListener"
-      },
-      "SVGFEFuncAElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEFuncAElement.prototype.addEventListener"
-      },
-      "SVGFEFuncAElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEFuncAElement.prototype.removeEventListener"
-      },
-      "SVGFEFuncBElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEFuncBElement.prototype.addEventListener"
-      },
-      "SVGFEFuncBElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEFuncBElement.prototype.removeEventListener"
-      },
-      "SVGFEFuncGElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEFuncGElement.prototype.addEventListener"
-      },
-      "SVGFEFuncGElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEFuncGElement.prototype.removeEventListener"
-      },
-      "SVGFEFuncRElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEFuncRElement.prototype.addEventListener"
-      },
-      "SVGFEFuncRElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEFuncRElement.prototype.removeEventListener"
-      },
-      "SVGFEGaussianBlurElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEGaussianBlurElement.prototype.addEventListener"
-      },
       "SVGFEGaussianBlurElement#in1": {
         "accessor": {
           "get": "throwing",
@@ -34113,11 +32720,6 @@
         },
         "spec": "filter-effects-1#dom-svgfegaussianblurelement-in1",
         "runtime": "SVGFEGaussianBlurElement.prototype.in1"
-      },
-      "SVGFEGaussianBlurElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEGaussianBlurElement.prototype.removeEventListener"
       },
       "SVGFEGaussianBlurElement#stdDeviationX": {
         "accessor": {
@@ -34135,11 +32737,6 @@
         "spec": "filter-effects-1#dom-svgfegaussianblurelement-stddeviationy",
         "runtime": "SVGFEGaussianBlurElement.prototype.stdDeviationY"
       },
-      "SVGFEImageElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEImageElement.prototype.addEventListener"
-      },
       "SVGFEImageElement#preserveAspectRatio": {
         "accessor": {
           "get": "throwing",
@@ -34148,26 +32745,6 @@
         "spec": "filter-effects-1#dom-svgfeimageelement-preserveaspectratio",
         "runtime": "SVGFEImageElement.prototype.preserveAspectRatio"
       },
-      "SVGFEImageElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEImageElement.prototype.removeEventListener"
-      },
-      "SVGFEMergeElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEMergeElement.prototype.addEventListener"
-      },
-      "SVGFEMergeElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEMergeElement.prototype.removeEventListener"
-      },
-      "SVGFEMergeNodeElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEMergeNodeElement.prototype.addEventListener"
-      },
       "SVGFEMergeNodeElement#in1": {
         "accessor": {
           "get": "throwing",
@@ -34175,11 +32752,6 @@
         },
         "spec": "filter-effects-1#dom-svgfemergenodeelement-in1",
         "runtime": "SVGFEMergeNodeElement.prototype.in1"
-      },
-      "SVGFEMergeNodeElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEMergeNodeElement.prototype.removeEventListener"
       },
       "SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_DILATE": {
         "accessor": false,
@@ -34192,11 +32764,6 @@
       "SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_UNKNOWN": {
         "accessor": false,
         "runtime": "SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_UNKNOWN"
-      },
-      "SVGFEMorphologyElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEMorphologyElement.prototype.addEventListener"
       },
       "SVGFEMorphologyElement#in1": {
         "accessor": {
@@ -34230,11 +32797,6 @@
         "spec": "filter-effects-1#dom-svgfemorphologyelement-radiusy",
         "runtime": "SVGFEMorphologyElement.prototype.radiusY"
       },
-      "SVGFEMorphologyElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEMorphologyElement.prototype.removeEventListener"
-      },
       "SVGFEMorphologyElement#SVG_MORPHOLOGY_OPERATOR_DILATE": {
         "accessor": false,
         "runtime": "SVGFEMorphologyElement.prototype.SVG_MORPHOLOGY_OPERATOR_DILATE"
@@ -34246,11 +32808,6 @@
       "SVGFEMorphologyElement#SVG_MORPHOLOGY_OPERATOR_UNKNOWN": {
         "accessor": false,
         "runtime": "SVGFEMorphologyElement.prototype.SVG_MORPHOLOGY_OPERATOR_UNKNOWN"
-      },
-      "SVGFEOffsetElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEOffsetElement.prototype.addEventListener"
       },
       "SVGFEOffsetElement#dx": {
         "accessor": {
@@ -34276,21 +32833,6 @@
         "spec": "filter-effects-1#dom-svgfeoffsetelement-in1",
         "runtime": "SVGFEOffsetElement.prototype.in1"
       },
-      "SVGFEOffsetElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEOffsetElement.prototype.removeEventListener"
-      },
-      "SVGFEPointLightElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFEPointLightElement.prototype.addEventListener"
-      },
-      "SVGFEPointLightElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFEPointLightElement.prototype.removeEventListener"
-      },
       "SVGFEPointLightElement#x": {
         "accessor": {
           "get": "throwing",
@@ -34314,11 +32856,6 @@
         },
         "spec": "filter-effects-1#dom-svgfepointlightelement-z",
         "runtime": "SVGFEPointLightElement.prototype.z"
-      },
-      "SVGFESpecularLightingElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFESpecularLightingElement.prototype.addEventListener"
       },
       "SVGFESpecularLightingElement#in1": {
         "accessor": {
@@ -34344,11 +32881,6 @@
         "spec": "filter-effects-1#dom-svgfespecularlightingelement-kernelunitlengthy",
         "runtime": "SVGFESpecularLightingElement.prototype.kernelUnitLengthY"
       },
-      "SVGFESpecularLightingElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFESpecularLightingElement.prototype.removeEventListener"
-      },
       "SVGFESpecularLightingElement#specularConstant": {
         "accessor": {
           "get": "throwing",
@@ -34372,11 +32904,6 @@
         },
         "spec": "filter-effects-1#dom-svgfespecularlightingelement-surfacescale",
         "runtime": "SVGFESpecularLightingElement.prototype.surfaceScale"
-      },
-      "SVGFESpotLightElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFESpotLightElement.prototype.addEventListener"
       },
       "SVGFESpotLightElement#limitingConeAngle": {
         "accessor": {
@@ -34410,11 +32937,6 @@
         "spec": "filter-effects-1#dom-svgfespotlightelement-pointsatz",
         "runtime": "SVGFESpotLightElement.prototype.pointsAtZ"
       },
-      "SVGFESpotLightElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFESpotLightElement.prototype.removeEventListener"
-      },
       "SVGFESpotLightElement#specularExponent": {
         "accessor": {
           "get": "throwing",
@@ -34447,11 +32969,6 @@
         "spec": "filter-effects-1#dom-svgfespotlightelement-z",
         "runtime": "SVGFESpotLightElement.prototype.z"
       },
-      "SVGFETileElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFETileElement.prototype.addEventListener"
-      },
       "SVGFETileElement#in1": {
         "accessor": {
           "get": "throwing",
@@ -34459,11 +32976,6 @@
         },
         "spec": "filter-effects-1#dom-svgfetileelement-in1",
         "runtime": "SVGFETileElement.prototype.in1"
-      },
-      "SVGFETileElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFETileElement.prototype.removeEventListener"
       },
       "SVGFETurbulenceElement.SVG_STITCHTYPE_NOSTITCH": {
         "accessor": false,
@@ -34489,11 +33001,6 @@
         "accessor": false,
         "runtime": "SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_UNKNOWN"
       },
-      "SVGFETurbulenceElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFETurbulenceElement.prototype.addEventListener"
-      },
       "SVGFETurbulenceElement#baseFrequencyX": {
         "accessor": {
           "get": "throwing",
@@ -34517,11 +33024,6 @@
         },
         "spec": "filter-effects-1#dom-svgfeturbulenceelement-numoctaves",
         "runtime": "SVGFETurbulenceElement.prototype.numOctaves"
-      },
-      "SVGFETurbulenceElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFETurbulenceElement.prototype.removeEventListener"
       },
       "SVGFETurbulenceElement#seed": {
         "accessor": {
@@ -34571,11 +33073,6 @@
         "spec": "filter-effects-1#dom-svgfeturbulenceelement-type",
         "runtime": "SVGFETurbulenceElement.prototype.type"
       },
-      "SVGFilterElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGFilterElement.prototype.addEventListener"
-      },
       "SVGFilterElement#filterUnits": {
         "accessor": {
           "get": "throwing",
@@ -34599,11 +33096,6 @@
         },
         "spec": "filter-effects-1#dom-svgfilterelement-primitiveunits",
         "runtime": "SVGFilterElement.prototype.primitiveUnits"
-      },
-      "SVGFilterElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGFilterElement.prototype.removeEventListener"
       },
       "SVGFilterElement#width": {
         "accessor": {
@@ -34683,22 +33175,12 @@
         },
         "runtime": "SVGFitToViewBox.prototype.viewBox"
       },
-      "SVGForeignObjectElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGForeignObjectElement.prototype.addEventListener"
-      },
       "SVGForeignObjectElement#height": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "SVGForeignObjectElement.prototype.height"
-      },
-      "SVGForeignObjectElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGForeignObjectElement.prototype.removeEventListener"
       },
       "SVGForeignObjectElement#width": {
         "accessor": {
@@ -34727,28 +33209,12 @@
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "SVGGElement.prototype.addEventListener"
       },
-      "SVGGElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGGElement.prototype.removeEventListener"
-      },
-      "SVGGeometryElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGGeometryElement.prototype.addEventListener"
-      },
       "SVGGeometryElement#pathLength": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "SVGGeometryElement.prototype.pathLength"
-      },
-      "SVGGeometryElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGGeometryElement.prototype.removeEventListener"
       },
       "SVGGradientElement.SVG_SPREADMETHOD_PAD": {
         "accessor": false,
@@ -34766,11 +33232,6 @@
         "accessor": false,
         "runtime": "SVGGradientElement.SVG_SPREADMETHOD_UNKNOWN"
       },
-      "SVGGradientElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGGradientElement.prototype.addEventListener"
-      },
       "SVGGradientElement#gradientTransform": {
         "accessor": {
           "get": "throwing",
@@ -34784,11 +33245,6 @@
           "set": "throwing"
         },
         "runtime": "SVGGradientElement.prototype.gradientUnits"
-      },
-      "SVGGradientElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGGradientElement.prototype.removeEventListener"
       },
       "SVGGradientElement#spreadMethod": {
         "accessor": {
@@ -34819,23 +33275,12 @@
         "spec": "dom#dom-eventtarget-addeventlistener",
         "runtime": "SVGGraphicsElement.prototype.addEventListener"
       },
-      "SVGGraphicsElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGGraphicsElement.prototype.removeEventListener"
-      },
       "SVGGraphicsElement#transform": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "SVGGraphicsElement.prototype.transform"
-      },
-      "SVGImageElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGImageElement.prototype.addEventListener"
       },
       "SVGImageElement#crossOrigin": {
         "accessor": {
@@ -34857,11 +33302,6 @@
           "set": "throwing"
         },
         "runtime": "SVGImageElement.prototype.preserveAspectRatio"
-      },
-      "SVGImageElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGImageElement.prototype.removeEventListener"
       },
       "SVGImageElement#width": {
         "accessor": {
@@ -35014,16 +33454,6 @@
         },
         "runtime": "SVGLengthList.prototype.numberOfItems"
       },
-      "SVGLinearGradientElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGLinearGradientElement.prototype.addEventListener"
-      },
-      "SVGLinearGradientElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGLinearGradientElement.prototype.removeEventListener"
-      },
       "SVGLinearGradientElement#x1": {
         "accessor": {
           "get": "throwing",
@@ -35051,16 +33481,6 @@
           "set": "throwing"
         },
         "runtime": "SVGLinearGradientElement.prototype.y2"
-      },
-      "SVGLineElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGLineElement.prototype.addEventListener"
-      },
-      "SVGLineElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGLineElement.prototype.removeEventListener"
       },
       "SVGLineElement#x1": {
         "accessor": {
@@ -35114,11 +33534,6 @@
         "accessor": false,
         "runtime": "SVGMarkerElement.SVG_MARKERUNITS_USERSPACEONUSE"
       },
-      "SVGMarkerElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGMarkerElement.prototype.addEventListener"
-      },
       "SVGMarkerElement#markerHeight": {
         "accessor": {
           "get": "throwing",
@@ -35168,11 +33583,6 @@
         },
         "runtime": "SVGMarkerElement.prototype.refY"
       },
-      "SVGMarkerElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGMarkerElement.prototype.removeEventListener"
-      },
       "SVGMarkerElement#SVG_MARKER_ORIENT_ANGLE": {
         "accessor": false,
         "runtime": "SVGMarkerElement.prototype.SVG_MARKER_ORIENT_ANGLE"
@@ -35196,11 +33606,6 @@
       "SVGMarkerElement#SVG_MARKERUNITS_USERSPACEONUSE": {
         "accessor": false,
         "runtime": "SVGMarkerElement.prototype.SVG_MARKERUNITS_USERSPACEONUSE"
-      },
-      "SVGMaskElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGMaskElement.prototype.addEventListener"
       },
       "SVGMaskElement#height": {
         "accessor": {
@@ -35226,11 +33631,6 @@
         "spec": "css-masking-1#dom-svgmaskelement-maskunits",
         "runtime": "SVGMaskElement.prototype.maskUnits"
       },
-      "SVGMaskElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGMaskElement.prototype.removeEventListener"
-      },
       "SVGMaskElement#width": {
         "accessor": {
           "get": "throwing",
@@ -35255,26 +33655,6 @@
         "spec": "css-masking-1#dom-svgmaskelement-y",
         "runtime": "SVGMaskElement.prototype.y"
       },
-      "SVGMetadataElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGMetadataElement.prototype.addEventListener"
-      },
-      "SVGMetadataElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGMetadataElement.prototype.removeEventListener"
-      },
-      "SVGMPathElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGMPathElement.prototype.addEventListener"
-      },
-      "SVGMPathElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGMPathElement.prototype.removeEventListener"
-      },
       "SVGNumber#value": {
         "accessor": {
           "get": "throwing",
@@ -35296,27 +33676,12 @@
         },
         "runtime": "SVGNumberList.prototype.numberOfItems"
       },
-      "SVGPathElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGPathElement.prototype.addEventListener"
-      },
       "SVGPathElement#pathLength": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "SVGPathElement.prototype.pathLength"
-      },
-      "SVGPathElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGPathElement.prototype.removeEventListener"
-      },
-      "SVGPatternElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGPatternElement.prototype.addEventListener"
       },
       "SVGPatternElement#height": {
         "accessor": {
@@ -35345,11 +33710,6 @@
           "set": "throwing"
         },
         "runtime": "SVGPatternElement.prototype.patternUnits"
-      },
-      "SVGPatternElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGPatternElement.prototype.removeEventListener"
       },
       "SVGPatternElement#width": {
         "accessor": {
@@ -35385,26 +33745,6 @@
           "set": "throwing"
         },
         "runtime": "SVGPointList.prototype.numberOfItems"
-      },
-      "SVGPolygonElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGPolygonElement.prototype.addEventListener"
-      },
-      "SVGPolygonElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGPolygonElement.prototype.removeEventListener"
-      },
-      "SVGPolylineElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGPolylineElement.prototype.addEventListener"
-      },
-      "SVGPolylineElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGPolylineElement.prototype.removeEventListener"
       },
       "SVGPreserveAspectRatio.SVG_MEETORSLICE_MEET": {
         "accessor": false,
@@ -35532,11 +33872,6 @@
         "accessor": false,
         "runtime": "SVGPreserveAspectRatio.prototype.SVG_PRESERVEASPECTRATIO_XMINYMIN"
       },
-      "SVGRadialGradientElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGRadialGradientElement.prototype.addEventListener"
-      },
       "SVGRadialGradientElement#cx": {
         "accessor": {
           "get": "throwing",
@@ -35579,27 +33914,12 @@
         },
         "runtime": "SVGRadialGradientElement.prototype.r"
       },
-      "SVGRadialGradientElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGRadialGradientElement.prototype.removeEventListener"
-      },
-      "SVGRectElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGRectElement.prototype.addEventListener"
-      },
       "SVGRectElement#height": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "SVGRectElement.prototype.height"
-      },
-      "SVGRectElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGRectElement.prototype.removeEventListener"
       },
       "SVGRectElement#rx": {
         "accessor": {
@@ -35636,16 +33956,6 @@
         },
         "runtime": "SVGRectElement.prototype.y"
       },
-      "SVGScriptElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGScriptElement.prototype.addEventListener"
-      },
-      "SVGScriptElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGScriptElement.prototype.removeEventListener"
-      },
       "SVGScriptElement#type": {
         "accessor": {
           "get": "throwing",
@@ -35653,32 +33963,12 @@
         },
         "runtime": "SVGScriptElement.prototype.type"
       },
-      "SVGSetElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGSetElement.prototype.addEventListener"
-      },
-      "SVGSetElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGSetElement.prototype.removeEventListener"
-      },
-      "SVGStopElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGStopElement.prototype.addEventListener"
-      },
       "SVGStopElement#offset": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "SVGStopElement.prototype.offset"
-      },
-      "SVGStopElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGStopElement.prototype.removeEventListener"
       },
       "SVGStringList#length": {
         "accessor": {
@@ -35694,11 +33984,6 @@
         },
         "runtime": "SVGStringList.prototype.numberOfItems"
       },
-      "SVGStyleElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGStyleElement.prototype.addEventListener"
-      },
       "SVGStyleElement#disabled": {
         "accessor": {
           "get": "throwing",
@@ -35712,11 +33997,6 @@
           "set": "throwing"
         },
         "runtime": "SVGStyleElement.prototype.media"
-      },
-      "SVGStyleElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGStyleElement.prototype.removeEventListener"
       },
       "SVGStyleElement#title": {
         "accessor": {
@@ -35759,12 +34039,6 @@
         },
         "runtime": "SVGSVGElement.prototype.height"
       },
-      "SVGSVGElement#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGSVGElement.prototype.removeEventListener"
-      },
       "SVGSVGElement#width": {
         "accessor": {
           "get": "throwing",
@@ -35785,26 +34059,6 @@
           "set": "throwing"
         },
         "runtime": "SVGSVGElement.prototype.y"
-      },
-      "SVGSwitchElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGSwitchElement.prototype.addEventListener"
-      },
-      "SVGSwitchElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGSwitchElement.prototype.removeEventListener"
-      },
-      "SVGSymbolElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGSymbolElement.prototype.addEventListener"
-      },
-      "SVGSymbolElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGSymbolElement.prototype.removeEventListener"
       },
       "SVGTests#requiredExtensions": {
         "accessor": {
@@ -35832,11 +34086,6 @@
         "accessor": false,
         "runtime": "SVGTextContentElement.LENGTHADJUST_UNKNOWN"
       },
-      "SVGTextContentElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGTextContentElement.prototype.addEventListener"
-      },
       "SVGTextContentElement#lengthAdjust": {
         "accessor": {
           "get": "throwing",
@@ -35856,27 +34105,12 @@
         "accessor": false,
         "runtime": "SVGTextContentElement.prototype.LENGTHADJUST_UNKNOWN"
       },
-      "SVGTextContentElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGTextContentElement.prototype.removeEventListener"
-      },
       "SVGTextContentElement#textLength": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "SVGTextContentElement.prototype.textLength"
-      },
-      "SVGTextElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGTextElement.prototype.addEventListener"
-      },
-      "SVGTextElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGTextElement.prototype.removeEventListener"
       },
       "SVGTextPathElement.TEXTPATH_METHODTYPE_ALIGN": {
         "accessor": false,
@@ -35902,22 +34136,12 @@
         "accessor": false,
         "runtime": "SVGTextPathElement.TEXTPATH_SPACINGTYPE_UNKNOWN"
       },
-      "SVGTextPathElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGTextPathElement.prototype.addEventListener"
-      },
       "SVGTextPathElement#method": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "SVGTextPathElement.prototype.method"
-      },
-      "SVGTextPathElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGTextPathElement.prototype.removeEventListener"
       },
       "SVGTextPathElement#spacing": {
         "accessor": {
@@ -35957,11 +34181,6 @@
         "accessor": false,
         "runtime": "SVGTextPathElement.prototype.TEXTPATH_SPACINGTYPE_UNKNOWN"
       },
-      "SVGTextPositioningElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGTextPositioningElement.prototype.addEventListener"
-      },
       "SVGTextPositioningElement#dx": {
         "accessor": {
           "get": "throwing",
@@ -35975,11 +34194,6 @@
           "set": "throwing"
         },
         "runtime": "SVGTextPositioningElement.prototype.dy"
-      },
-      "SVGTextPositioningElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGTextPositioningElement.prototype.removeEventListener"
       },
       "SVGTextPositioningElement#rotate": {
         "accessor": {
@@ -36001,16 +34215,6 @@
           "set": "throwing"
         },
         "runtime": "SVGTextPositioningElement.prototype.y"
-      },
-      "SVGTitleElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGTitleElement.prototype.addEventListener"
-      },
-      "SVGTitleElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGTitleElement.prototype.removeEventListener"
       },
       "SVGTransform.SVG_TRANSFORM_MATRIX": {
         "accessor": false,
@@ -36103,16 +34307,6 @@
         },
         "runtime": "SVGTransformList.prototype.numberOfItems"
       },
-      "SVGTSpanElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGTSpanElement.prototype.addEventListener"
-      },
-      "SVGTSpanElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGTSpanElement.prototype.removeEventListener"
-      },
       "SVGUnitTypes.SVG_UNIT_TYPE_OBJECTBOUNDINGBOX": {
         "accessor": false,
         "runtime": "SVGUnitTypes.SVG_UNIT_TYPE_OBJECTBOUNDINGBOX"
@@ -36144,22 +34338,12 @@
         },
         "runtime": "SVGURIReference.prototype.href"
       },
-      "SVGUseElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGUseElement.prototype.addEventListener"
-      },
       "SVGUseElement#height": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
         "runtime": "SVGUseElement.prototype.height"
-      },
-      "SVGUseElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGUseElement.prototype.removeEventListener"
       },
       "SVGUseElement#width": {
         "accessor": {
@@ -36181,16 +34365,6 @@
           "set": "throwing"
         },
         "runtime": "SVGUseElement.prototype.y"
-      },
-      "SVGViewElement#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "SVGViewElement.prototype.addEventListener"
-      },
-      "SVGViewElement#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "SVGViewElement.prototype.removeEventListener"
       },
       "Text.new": {
         "color": "throwing",
@@ -36436,11 +34610,6 @@
         "spec": "html#dom-texttrack-addcue",
         "runtime": "TextTrack.prototype.addCue"
       },
-      "TextTrack#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "TextTrack.prototype.addEventListener"
-      },
       "TextTrack#cues": {
         "accessor": {
           "get": "throwing",
@@ -36510,16 +34679,6 @@
         "spec": "html#dom-texttrack-removecue",
         "runtime": "TextTrack.prototype.removeCue"
       },
-      "TextTrack#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "TextTrack.prototype.removeEventListener"
-      },
-      "TextTrackCue#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "TextTrackCue.prototype.addEventListener"
-      },
       "TextTrackCue#endTime": {
         "accessor": {
           "get": "throwing",
@@ -36560,11 +34719,6 @@
         "spec": "html#dom-texttrackcue-pauseonexit",
         "runtime": "TextTrackCue.prototype.pauseOnExit"
       },
-      "TextTrackCue#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "TextTrackCue.prototype.removeEventListener"
-      },
       "TextTrackCue#startTime": {
         "accessor": {
           "get": "throwing",
@@ -36598,11 +34752,6 @@
       "TextTrackEventMap#cuechange": {
         "accessor": false
       },
-      "TextTrackList#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "TextTrackList.prototype.addEventListener"
-      },
       "TextTrackList#length": {
         "accessor": {
           "get": "throwing",
@@ -36634,11 +34783,6 @@
         },
         "spec": "html#handler-texttracklist-onremovetrack",
         "runtime": "TextTrackList.prototype.onremovetrack"
-      },
-      "TextTrackList#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "TextTrackList.prototype.removeEventListener"
       },
       "TextTrackListEventMap#addtrack": {
         "accessor": false
@@ -37531,11 +35675,6 @@
         "spec": "webcodecs#dom-videodecoder-videodecoder",
         "runtime": "new VideoDecoder"
       },
-      "VideoDecoder#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "VideoDecoder.prototype.addEventListener"
-      },
       "VideoDecoder#close": {
         "color": "throwing",
         "spec": "webcodecs#dom-videodecoder-close",
@@ -37571,11 +35710,6 @@
         },
         "spec": "webcodecs#dom-videodecoder-ondequeue",
         "runtime": "VideoDecoder.prototype.ondequeue"
-      },
-      "VideoDecoder#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "VideoDecoder.prototype.removeEventListener"
       },
       "VideoDecoder#reset": {
         "color": "throwing",
@@ -37642,11 +35776,6 @@
         "spec": "webcodecs#dom-videoencoder-videoencoder",
         "runtime": "new VideoEncoder"
       },
-      "VideoEncoder#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "VideoEncoder.prototype.addEventListener"
-      },
       "VideoEncoder#close": {
         "color": "throwing",
         "spec": "webcodecs#dom-videoencoder-close",
@@ -37682,11 +35811,6 @@
         },
         "spec": "webcodecs#dom-videoencoder-ondequeue",
         "runtime": "VideoEncoder.prototype.ondequeue"
-      },
-      "VideoEncoder#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "VideoEncoder.prototype.removeEventListener"
       },
       "VideoEncoder#reset": {
         "color": "throwing",
@@ -38019,11 +36143,6 @@
         },
         "runtime": "ViewTransition.prototype.updateCallbackDone"
       },
-      "VisualViewport#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "VisualViewport.prototype.addEventListener"
-      },
       "VisualViewport#height": {
         "accessor": {
           "get": "throwing",
@@ -38080,11 +36199,6 @@
         "spec": "cssom-view-1#dom-visualviewport-pagetop",
         "runtime": "VisualViewport.prototype.pageTop"
       },
-      "VisualViewport#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "VisualViewport.prototype.removeEventListener"
-      },
       "VisualViewport#scale": {
         "accessor": {
           "get": "throwing",
@@ -38111,11 +36225,6 @@
         "color": "throwing",
         "spec": "webvtt1#dom-vttcue-vttcue",
         "runtime": "new VTTCue"
-      },
-      "VTTCue#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "VTTCue.prototype.addEventListener"
       },
       "VTTCue#align": {
         "accessor": {
@@ -38169,11 +36278,6 @@
         },
         "spec": "webvtt1#dom-vttcue-region",
         "runtime": "VTTCue.prototype.region"
-      },
-      "VTTCue#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "VTTCue.prototype.removeEventListener"
       },
       "VTTCue#size": {
         "accessor": {
@@ -38276,11 +36380,6 @@
         "spec": "webvtt1#dom-vttregion-width",
         "runtime": "VTTRegion.prototype.width"
       },
-      "WakeLockSentinel#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "WakeLockSentinel.prototype.addEventListener"
-      },
       "WakeLockSentinel#onrelease": {
         "accessor": {
           "get": "throwing",
@@ -38294,11 +36393,6 @@
           "set": "throwing"
         },
         "runtime": "WakeLockSentinel.prototype.released"
-      },
-      "WakeLockSentinel#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "WakeLockSentinel.prototype.removeEventListener"
       },
       "WakeLockSentinel#type": {
         "accessor": {
@@ -44496,11 +42590,6 @@
         "accessor": false,
         "runtime": "WebSocket.OPEN"
       },
-      "WebSocket#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "WebSocket.prototype.addEventListener"
-      },
       "WebSocket#binaryType": {
         "accessor": {
           "get": "throwing",
@@ -44593,11 +42682,6 @@
         },
         "spec": "websockets#dom-websocket-readystate",
         "runtime": "WebSocket.prototype.readyState"
-      },
-      "WebSocket#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "WebSocket.prototype.removeEventListener"
       },
       "WebSocket#send": {
         "color": "throwing",
@@ -45183,12 +43267,6 @@
         "spec": "html#dom-window-releaseevents",
         "runtime": "Window.prototype.releaseEvents"
       },
-      "Window#removeEventListener": {
-        "color": "non-throwing",
-        "conditions": [],
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "Window.prototype.removeEventListener"
-      },
       "Window#resizeBy": {
         "color": "throwing",
         "spec": "cssom-view-1#dom-window-resizeby",
@@ -45725,20 +43803,10 @@
         "spec": "html#dom-worker",
         "runtime": "new Worker"
       },
-      "Worker#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "Worker.prototype.addEventListener"
-      },
       "Worker#postMessage": {
         "color": "throwing",
         "spec": "html#dom-worker-postmessage",
         "runtime": "Worker.prototype.postMessage"
-      },
-      "Worker#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "Worker.prototype.removeEventListener"
       },
       "Worker#terminate": {
         "color": "throwing",
@@ -45853,16 +43921,6 @@
       "WriteParams#type": {
         "accessor": false
       },
-      "XMLDocument#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "XMLDocument.prototype.addEventListener"
-      },
-      "XMLDocument#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "XMLDocument.prototype.removeEventListener"
-      },
       "XMLHttpRequest.DONE": {
         "accessor": false,
         "runtime": "XMLHttpRequest.DONE"
@@ -45892,11 +43950,6 @@
         "color": "throwing",
         "spec": "xhr#dom-xmlhttprequest-abort",
         "runtime": "XMLHttpRequest.prototype.abort"
-      },
-      "XMLHttpRequest#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "XMLHttpRequest.prototype.addEventListener"
       },
       "XMLHttpRequest#DONE": {
         "accessor": false,
@@ -45949,11 +44002,6 @@
         },
         "spec": "xhr#dom-xmlhttprequest-readystate",
         "runtime": "XMLHttpRequest.prototype.readyState"
-      },
-      "XMLHttpRequest#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "XMLHttpRequest.prototype.removeEventListener"
       },
       "XMLHttpRequest#response": {
         "accessor": {
@@ -46052,11 +44100,6 @@
       "XMLHttpRequestEventMap#readystatechange": {
         "accessor": false
       },
-      "XMLHttpRequestEventTarget#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "XMLHttpRequestEventTarget.prototype.addEventListener"
-      },
       "XMLHttpRequestEventTarget#onabort": {
         "accessor": {
           "get": "throwing",
@@ -46113,11 +44156,6 @@
         "spec": "xhr#handler-xhr-ontimeout",
         "runtime": "XMLHttpRequestEventTarget.prototype.ontimeout"
       },
-      "XMLHttpRequestEventTarget#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "XMLHttpRequestEventTarget.prototype.removeEventListener"
-      },
       "XMLHttpRequestEventTargetEventMap#abort": {
         "accessor": false
       },
@@ -46139,16 +44177,6 @@
       "XMLHttpRequestEventTargetEventMap#timeout": {
         "accessor": false
       },
-      "XMLHttpRequestUpload#addEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-addeventlistener",
-        "runtime": "XMLHttpRequestUpload.prototype.addEventListener"
-      },
-      "XMLHttpRequestUpload#removeEventListener": {
-        "color": "throwing",
-        "spec": "dom#dom-eventtarget-removeeventlistener",
-        "runtime": "XMLHttpRequestUpload.prototype.removeEventListener"
-      },
       "XMLSerializer#serializeToString": {
         "color": "throwing",
         "spec": "html#dom-xmlserializer-serializetostring",
@@ -46164,11 +44192,6 @@
         "conditions": [],
         "spec": "dom#dom-xpathevaluatorbase-creatensresolver",
         "runtime": "XPathEvaluatorBase.prototype.createNSResolver"
-      },
-      "XPathEvaluatorBase#evaluate": {
-        "color": "throwing",
-        "spec": "dom#dom-xpathevaluatorbase-evaluate",
-        "runtime": "XPathEvaluatorBase.prototype.evaluate"
       },
       "XPathExpression#evaluate": {
         "color": "throwing",
@@ -46412,11 +44435,6 @@
         "color": "throwing",
         "spec": "IndexedDB-3#dom-idbobjectstore-createindex",
         "runtime": "IDBObjectStore.prototype.createIndex"
-      },
-      "MessageEvent#initMessageEvent": {
-        "color": "throwing",
-        "spec": "html#dom-messageevent-initmessageevent",
-        "runtime": "MessageEvent.prototype.initMessageEvent"
       },
       "Navigator#requestMediaKeySystemAccess": {
         "color": "throwing",

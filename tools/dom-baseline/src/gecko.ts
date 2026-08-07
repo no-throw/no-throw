@@ -10,7 +10,7 @@ import { memberKey, staticMemberKey } from "@nothrow/core/baseline";
  * than measurement (#26, #30 §F):
  *
  * > *Presence* is a sound throwing signal. *Absence* is one implementation's
- * > behaviour, not the contract, and reading absence as clean is the unsafe
+ * > behavior, not the contract, and reading absence as clean is the unsafe
  * > direction — precisely #22's ECMA-402 mistake.
  *
  * So this module only ever produces keys that are **throwing**. There is no

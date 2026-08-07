@@ -34,9 +34,9 @@ The pipeline:
    rules #26 established — members are leaves; throws count from a member's own
    region or a noun's steps only; calls count from the definitional sentence
    plus the steps — which take a naive median of 131 definitions visited per
-   member down to 10.
+   member down to a median of 10.
 3. **Gecko's `[Throws]` is a one-way oracle.** Presence is a sound *throwing*
-   signal and adds a hazard site. Absence is one implementation's behaviour and
+   signal and adds a hazard site. Absence is one implementation's behavior and
    is never read at all: there is no function in `gecko.ts` that answers "is it
    clean", because that answer would be unsound.
 4. **Classification** keys on the **shape of the throw condition**, never on the
@@ -67,7 +67,7 @@ safe direction — any of them saying accessor makes it one:
    WebGL's constant tables, CSSOM's ~500 generated CSS-property attributes, and
    TypeScript's invented `*EventMap`/`*TagNameMap` interfaces.
 
-Get and set carry independent colours (#29 §1), read off the position of the
+Get and set carry independent colors (#29 §1), read off the position of the
 "setter steps" heading in the attribute's own region and narrowed through the
 call graph. **`set` is never clean**: there is no write probe, because assigning
 to a shared receiver would corrupt every later probe, and an unprobed clean
@@ -97,7 +97,7 @@ Hostile values come **first**, because the budget is spent round-robin across a
 member's overloads and `ParentNode.querySelector` declares five.
 
 A rejection counts as a counterexample, not just a synchronous throw: under
-#12's one colour, full surface, a clean entry promises both.
+#12's one color, full surface, a clean entry promises both.
 
 Sensitivity sits near 45%, so **a green gate is not evidence of cleanliness,
 only the absence of a refutation.** `--self-check` plants known-throwing members
@@ -127,7 +127,7 @@ ship throwing. A counterexample outside that list fails the build.
 A member that *queues* a callback rather than invoking it is the one place where
 forgetting an entry is unsound rather than over-strict: the floor's only remedy
 is `try { el.addEventListener('x', risky) } catch {}`, a bridge the engine
-accepts while it neutralises nothing.
+accepts while it neutralizes nothing.
 
 A stack-recording callback answers the question directly — *was I invoked
 synchronously?* — and that is exactly what a condition is about (#30 §B: which
@@ -136,13 +136,21 @@ parameters does this body transfer control into). Three outcomes, no fourth:
 | verdict | evidence | entry |
 | --- | --- | --- |
 | `sync` | the callback ran before the call returned | conditional: `conditions: ["param<i>"]` |
-| `queued` | the member was called and the callback did **not** run during it | relaxation: `conditions: []` |
-| `unreachable` | the probe could not call the member at all | **no relaxation; the member floors** |
+| `queued` | it did not run during the call **and was seen running afterwards** | relaxation: `conditions: []` |
+| `unreachable` | the probe could not call the member, or never saw the callback run at all | **no relaxation; the member floors** |
 
-`queued` is a positive observation rather than a silence, which is what earns
-the relaxation. Where the callback was also seen running later — after an event
-dispatch, a microtask drain or a timer — that is recorded as corroboration, but
-it changes no verdict.
+Both halves of `queued` are required, and the second is the load-bearing one:
+a verdict read off "the callback did not run" is read off an *absence*, which is
+the same unsafe direction as reading Gecko's silence as clean. `DOMTokenList`'s
+`forEach` is the case that proves it — plainly synchronous, but a token list
+with nothing in it never enters the callback, so absence would have called it
+deferred. It is a self-check control for exactly that reason, and the gate also
+rejects any `queued` entry whose evidence does not name what it saw happen.
+
+The price is paid where the callback is never invoked *for any* input:
+`removeEventListener` and `createNodeIterator` take a callback they will not
+enter, the probe cannot say so positively, and they floor. That is over-strict
+and it is the direction the doctrine picks.
 
 The adjudication is committed to
 [`deferred-worklist.json`](deferred-worklist.json) so a reviewer can read every
@@ -159,10 +167,11 @@ Sound, and cheaper to state than to hide:
   near 38% of the IDL-backed surface.
 - **Members the gate cannot reach**, which is jsdom's reach plus the members
   that would tear down the harness (`alert`, `close`, `submit`, …).
+- **Members holding a callback they never enter** — see the price above.
 - **IDL-generated iteration members** — `entries`, `keys`, `values`, `forEach`
   and `@@iterator` on an interface declaring `iterable<>`. WebIDL generates them
   and defines them in its own prose with no per-member attribution, so nothing
-  in the pipeline reaches them. Colouring them would take a new adjudicated
+  in the pipeline reaches them. Coloring them would take a new adjudicated
   rule, not a new mechanism.
 - **`setTimeout`, `queueMicrotask` and `requestAnimationFrame` are throwing**,
   which is worth stating plainly because #30 §E lists them among the

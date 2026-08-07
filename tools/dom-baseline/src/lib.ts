@@ -1,5 +1,5 @@
-import { collectDomMembers, createLibProgram } from "@nothrow/core/baseline";
-import type { DomInventory, LibProgram } from "@nothrow/core/baseline";
+import { createLibProgram } from "@nothrow/core/baseline";
+import type { LibProgram } from "@nothrow/core/baseline";
 import type ts from "typescript";
 
 /**
@@ -17,12 +17,4 @@ export const DOM_LIBS = [
 
 export function createDomProgram(tsApi: typeof ts): LibProgram {
   return createLibProgram(tsApi, DOM_LIBS);
-}
-
-export function domInventory(tsApi: typeof ts): {
-  readonly lib: LibProgram;
-  readonly inventory: DomInventory;
-} {
-  const lib = createDomProgram(tsApi);
-  return { lib, inventory: collectDomMembers(lib) };
 }

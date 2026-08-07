@@ -1,4 +1,5 @@
-import type { Dfn, DfnGraph, ProseThrow } from "./dfns.js";
+import { MEMBER_DFN_TYPES } from "./dfns.js";
+import type { Dfn, DfnGraph, Phase, ProseThrow } from "./dfns.js";
 
 /**
  * A member's *whole* hazard set, as a transitive closure over the definition
@@ -45,7 +46,7 @@ interface Reached {
   readonly key: string;
   readonly via: readonly string[];
   /** Which half of an attribute this definition was reached from. */
-  readonly phase: "get" | "set" | "both";
+  readonly phase: Phase;
 }
 
 export function hazardsOf(graph: DfnGraph, rootKey: string): MemberProse | undefined {
@@ -103,10 +104,7 @@ export function hazardsOf(graph: DfnGraph, rootKey: string): MemberProse | undef
  * A hazard belongs to the getter only if *every* step on the way to it did.
  * `both` on either side widens, which is the over-approximating direction.
  */
-function narrow(
-  outer: "get" | "set" | "both",
-  inner: "get" | "set" | "both",
-): "get" | "set" | "both" {
+function narrow(outer: Phase, inner: Phase): Phase {
   if (outer === "both") return inner;
   if (inner === "both") return outer;
   return outer === inner ? outer : "both";
@@ -120,7 +118,7 @@ function narrow(
 export function memberDfnIndex(graph: DfnGraph): ReadonlyMap<string, Dfn> {
   const index = new Map<string, Dfn>();
   for (const node of graph.nodes.values()) {
-    if (!["method", "attribute", "constructor"].includes(node.dfnType ?? "")) continue;
+    if (!MEMBER_DFN_TYPES.has(node.dfnType ?? "")) continue;
     const names = new Set<string>();
     for (const alternate of node.lt) {
       const bare = alternate.replace(/\(.*$/, "").trim();

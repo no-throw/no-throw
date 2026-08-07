@@ -1,7 +1,7 @@
 import { baselineData, collectDomMembers } from "@nothrow/core/baseline";
 import ts from "typescript";
 
-import { DeferredProbe } from "../gates/deferred.js";
+import { DeferredProbe, type Adjudication } from "../gates/deferred.js";
 import { createDomEnvironment } from "../gates/environment.js";
 import { createDomProgram } from "../lib.js";
 import { readWorklist } from "../worklist.js";
@@ -16,14 +16,27 @@ import { readWorklist } from "../worklist.js";
  *    bridge #21 warned about, so it fails the build.
  * 2. **Nothing is left unadjudicated.** Every worklist entry carries `sync`,
  *    `queued` or `unreachable`. There is no fourth answer.
- * 3. **The probe can tell the two apart** (`--self-check`). A probe that
- *    answered `queued` for everything would hand out relaxations to members
- *    that invoke their callback synchronously, which is the unsound direction.
+ * 3. **No verdict rests on an absence.** A `queued` entry has to say what was
+ *    observed happening, not what was observed not happening.
+ * 4. **The probe can tell the two apart** (`--self-check`), including on a
+ *    member whose collection may be empty. A probe that answered `queued` for
+ *    everything would hand out relaxations to members that invoke their
+ *    callback synchronously, which is the unsound direction.
  */
 
-/** A member that invokes its callback during the call, and one that does not. */
-const SYNC_CONTROL = { key: "NodeList#forEach", paramIndex: 0 };
-const QUEUED_CONTROL = { key: "EventTarget#addEventListener", paramIndex: 1 };
+/**
+ * Controls the probe has to get right, in both directions.
+ *
+ * `DOMTokenList#forEach` is the regression guard for the mistake this gate
+ * exists to prevent: it is plainly synchronous, and a probe that read `queued`
+ * off "the callback did not run" would say so, because a token list with
+ * nothing in it never enters the callback at all.
+ */
+const CONTROLS = [
+  { want: "sync", key: "NodeList#forEach", paramIndex: 0 },
+  { want: "sync", key: "DOMTokenList#forEach", paramIndex: 0 },
+  { want: "queued", key: "EventTarget#addEventListener", paramIndex: 1 },
+] as const;
 
 const selfCheck = process.argv.includes("--self-check");
 const worklist = readWorklist();
@@ -35,10 +48,8 @@ if (selfCheck) {
   const probe = new DeferredProbe(lib, inventory.implementers, environment);
 
   const results: { control: string; want: string; got: string; evidence: string }[] = [];
-  for (const [want, control] of [
-    ["sync", SYNC_CONTROL],
-    ["queued", QUEUED_CONTROL],
-  ] as const) {
+  for (const control of CONTROLS) {
+    const { want } = control;
     const member = inventory.members.find((entry) => entry.key === control.key);
     if (member === undefined) {
       results.push({
@@ -82,10 +93,21 @@ console.log(`  ${JSON.stringify(worklist.counts)}`);
 
 const problems: string[] = [];
 
-const adjudications = new Map<string, string[]>();
+const ADJUDICATIONS: readonly Adjudication[] = ["sync", "queued", "unreachable"];
+
+const adjudications = new Map<string, Adjudication[]>();
 for (const entry of worklist.entries) {
-  if (!["sync", "queued", "unreachable"].includes(entry.adjudication)) {
+  if (!ADJUDICATIONS.includes(entry.adjudication)) {
     problems.push(`${entry.key} ${entry.param}: unadjudicated (${entry.adjudication})`);
+  }
+  // A `queued` verdict has to name what was observed *happening*, not what was
+  // observed not happening. Absence is what makes a synchronous member read as
+  // deferred, and a relaxation handed out on that basis is the fake bridge this
+  // gate exists to prevent.
+  if (entry.adjudication === "queued" && !entry.evidence.includes("afterwards")) {
+    problems.push(
+      `${entry.key} ${entry.param}: queued on an absence — "${entry.evidence}"`,
+    );
   }
   const bucket = adjudications.get(entry.key) ?? [];
   bucket.push(entry.adjudication);

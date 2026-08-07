@@ -4,6 +4,7 @@ import type ts from "typescript";
 import type { IdlArg, IdlRow } from "./idl/corpus.js";
 import type { MemberEvidence } from "./prose.js";
 import { enforceRangeShape, shapeOf, type Domain, type Shape } from "./shapes.js";
+import type { Phase } from "./specs/dfns.js";
 import type { ProseHazard } from "./specs/hazards.js";
 
 export type SiteVerdict = "type-excluded" | "type-reachable" | "review";
@@ -16,12 +17,7 @@ export interface ClassifiedSite {
   readonly condition: string;
   /** Where the throw is written, for the audit trail. */
   readonly at: string;
-  /**
-   * Which half of an attribute this site belongs to, so an accessor fact can
-   * colour get and set independently (#29 §1). `both` for everything that is
-   * not an attribute.
-   */
-  readonly phase: "get" | "set" | "both";
+  readonly phase: Phase;
 }
 
 export interface Proposal {
@@ -93,7 +89,7 @@ function classifyMember(
   }
 
   // Gecko is a **one-way** oracle (#26). Presence of `[Throws]` is a sound
-  // throwing signal; absence is one implementation's behaviour and is never
+  // throwing signal; absence is one implementation's behavior and is never
   // read here at all, which is why nothing below ever moves a site toward
   // `type-excluded`.
   if (geckoThrows.has(member.key)) {
@@ -253,6 +249,6 @@ function domainHolds(
       // The declared type is the brand only if the prose names a type and the
       // declared type is that type or a subtype of it. Anything wider — `any`,
       // a union with a non-matching arm — leaves the guard reachable.
-      return target !== undefined && domains.isExactly(operand.types, target);
+      return target !== undefined && domains.isSubtypeOf(operand.types, target);
   }
 }

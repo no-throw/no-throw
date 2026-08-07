@@ -1,3 +1,4 @@
+import type { DomMember } from "@nothrow/core/baseline";
 import { JSDOM, VirtualConsole } from "jsdom";
 
 /**
@@ -13,8 +14,13 @@ import { JSDOM, VirtualConsole } from "jsdom";
  * evidence either.
  */
 
-const MARKUP = `<!doctype html><html><head><title>probe</title></head><body>
-<div id="probe"><p id="para">text</p><span>x</span></div>
+/**
+ * Deliberately not empty. A collection with nothing in it never enters the
+ * callback a `forEach` was given, and a probe that read a verdict off that
+ * silence would call a synchronous member deferred.
+ */
+const MARKUP = `<!doctype html><html><head><title>probe</title></head><body class="probe-body">
+<div id="probe" class="alpha beta" data-x="1"><p id="para">text</p><span>x</span></div>
 <form id="form"><input id="input" name="i" value="v"><select id="select"><option>o</option></select><textarea id="area"></textarea></form>
 <table id="table"><tbody><tr><td>c</td></tr></tbody></table>
 </body></html>`;
@@ -156,20 +162,30 @@ export function createDomEnvironment(): DomEnvironment {
 }
 
 /**
- * A receiver for a member declared on `owner`, preferring the interface itself
- * and falling back to anything that implements it. `ARIAMixin` and
- * `GlobalEventHandlers` have no constructor of their own, so without the
- * fallback the whole mixin surface — a large part of `lib.dom.d.ts` — would be
- * unprobed.
+ * The object a member is reached from: the window for a global, the constructor
+ * object for the static side, and an instance otherwise — preferring the
+ * declaring interface itself and falling back to anything that implements it.
+ * `ARIAMixin` and `GlobalEventHandlers` have no constructor of their own, so
+ * without that fallback the whole mixin surface — a large part of
+ * `lib.dom.d.ts` — would be unprobed.
  */
 export function receiverFor(
   environment: DomEnvironment,
-  owner: string,
+  member: DomMember,
   implementers: ReadonlyMap<string, readonly string[]>,
 ): unknown {
-  const direct = environment.pool.get(owner);
+  const globals = environment.window as unknown as Record<string, unknown>;
+  if (member.owner === "globalThis") return environment.window;
+  if (member.isStatic) {
+    try {
+      return globals[member.owner];
+    } catch {
+      return undefined;
+    }
+  }
+  const direct = environment.pool.get(member.owner);
   if (direct !== undefined) return direct;
-  for (const candidate of implementers.get(owner) ?? []) {
+  for (const candidate of implementers.get(member.owner) ?? []) {
     const instance = environment.pool.get(candidate);
     if (instance !== undefined) return instance;
   }

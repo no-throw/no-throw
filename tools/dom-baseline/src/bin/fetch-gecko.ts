@@ -15,5 +15,5 @@ console.log(
     .join(" "),
 );
 console.log(
-  "\nPresence is a sound throwing signal; absence is one implementation's behaviour and is never read.",
+  "\nPresence is a sound throwing signal; absence is one implementation's behavior and is never read.",
 );

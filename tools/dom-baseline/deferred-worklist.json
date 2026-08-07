@@ -2,9 +2,9 @@
   "typescript": "5.9.3",
   "engine": "jsdom",
   "counts": {
-    "sync": 1,
-    "queued": 176,
-    "unreachable": 443
+    "sync": 2,
+    "queued": 88,
+    "unreachable": 530
   },
   "entries": [
     {
@@ -35,7 +35,7 @@
       "key": "addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Animation#addEventListener",
@@ -53,7 +53,7 @@
       "key": "AnimationFrameProvider#requestAnimationFrame",
       "param": "param0",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "AudioBufferSourceNode#addEventListener",
@@ -323,25 +323,25 @@
       "key": "Document#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Document#createNodeIterator",
       "param": "param2",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Document#createTreeWalker",
       "param": "param2",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Document#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Document#startViewTransition",
@@ -352,20 +352,20 @@
     {
       "key": "DOMTokenList#forEach",
       "param": "param0",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "sync",
+      "evidence": "the callback ran before the call returned; the throw would escape at the call site"
     },
     {
       "key": "Element#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Element#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "EventCounts#forEach",
@@ -389,25 +389,25 @@
       "key": "EventTarget#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "EventTarget#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "FileReader#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "FileReader#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "FileSystemDirectoryEntry#getDirectory",
@@ -490,8 +490,8 @@
     {
       "key": "FormData#forEach",
       "param": "param0",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Geolocation#getCurrentPosition",
@@ -521,19 +521,19 @@
       "key": "GlobalEventHandlers#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "GlobalEventHandlers#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Headers#forEach",
       "param": "param0",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Highlight#forEach",
@@ -551,151 +551,151 @@
       "key": "HTMLAnchorElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLAnchorElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLAreaElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLAreaElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLAudioElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLAudioElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLBaseElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLBaseElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLBodyElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLBodyElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLBRElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLBRElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLButtonElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLButtonElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLCanvasElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLCanvasElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLCanvasElement#toBlob",
       "param": "param0",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDataElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDataElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDataListElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDataListElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDetailsElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDetailsElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDialogElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDialogElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDirectoryElement#addEventListener",
@@ -713,25 +713,25 @@
       "key": "HTMLDivElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDivElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDListElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLDListElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLDocument#addEventListener",
@@ -749,37 +749,37 @@
       "key": "HTMLElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLEmbedElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLEmbedElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLFieldSetElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLFieldSetElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLFontElement#addEventListener",
@@ -797,13 +797,13 @@
       "key": "HTMLFormElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLFormElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLFrameElement#addEventListener",
@@ -833,145 +833,145 @@
       "key": "HTMLHeadElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLHeadElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLHeadingElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLHeadingElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLHRElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLHRElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLHtmlElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLHtmlElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLIFrameElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLIFrameElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLImageElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLImageElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLInputElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLInputElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLLabelElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLLabelElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLLegendElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLLegendElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLLIElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLLIElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLLinkElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLLinkElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLMapElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLMapElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLMarqueeElement#addEventListener",
@@ -989,301 +989,301 @@
       "key": "HTMLMediaElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLMediaElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLMenuElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLMenuElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLMetaElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLMetaElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLMeterElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLMeterElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLModElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLModElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLObjectElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLObjectElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLOListElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLOListElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLOptGroupElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLOptGroupElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLOptionElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLOptionElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLOutputElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLOutputElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLParagraphElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLParagraphElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLParamElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLParamElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLPictureElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLPictureElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLPreElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLPreElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLProgressElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLProgressElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLQuoteElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLQuoteElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLScriptElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLScriptElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLSelectElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLSelectElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLSlotElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLSlotElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLSourceElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLSourceElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLSpanElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLSpanElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLStyleElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLStyleElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableCaptionElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableCaptionElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableCellElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableCellElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableColElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableColElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableDataCellElement#addEventListener",
@@ -1301,13 +1301,13 @@
       "key": "HTMLTableElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableHeaderCellElement#addEventListener",
@@ -1325,121 +1325,121 @@
       "key": "HTMLTableRowElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableRowElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTableSectionElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTableSectionElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTemplateElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTemplateElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTextAreaElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTextAreaElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTimeElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTimeElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTitleElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTitleElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLTrackElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLTrackElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLUListElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLUListElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLUnknownElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLUnknownElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLVideoElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "HTMLVideoElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "HTMLVideoElement#requestVideoFrameCallback",
@@ -1877,13 +1877,13 @@
       "key": "Performance#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Performance#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "PerformanceObserver.new",
@@ -1919,7 +1919,7 @@
       "key": "queueMicrotask",
       "param": "param0",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "RemotePlayback#addEventListener",
@@ -1942,8 +1942,8 @@
     {
       "key": "removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "ReportingObserver.new",
@@ -1955,7 +1955,7 @@
       "key": "requestAnimationFrame",
       "param": "param0",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "requestIdleCallback",
@@ -2177,13 +2177,13 @@
       "key": "setInterval",
       "param": "param0",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "setTimeout",
       "param": "param0",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "ShadowRoot#addEventListener",
@@ -2387,13 +2387,13 @@
       "key": "SVGDefsElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "SVGDefsElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "SVGDescElement#addEventListener",
@@ -2411,13 +2411,13 @@
       "key": "SVGElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "SVGElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "SVGEllipseElement#addEventListener",
@@ -2759,13 +2759,13 @@
       "key": "SVGGElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "SVGGElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "SVGGeometryElement#addEventListener",
@@ -2795,13 +2795,13 @@
       "key": "SVGGraphicsElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "SVGGraphicsElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "SVGImageElement#addEventListener",
@@ -3011,13 +3011,13 @@
       "key": "SVGSVGElement#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "SVGSVGElement#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "SVGSwitchElement#addEventListener",
@@ -3178,8 +3178,8 @@
     {
       "key": "URLSearchParams#forEach",
       "param": "param0",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "VideoDecoder#addEventListener",
@@ -3611,13 +3611,13 @@
       "key": "Window#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Window#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "Window#requestIdleCallback",
@@ -3629,31 +3629,31 @@
       "key": "WindowEventHandlers#addEventListener",
       "param": "param1",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "WindowEventHandlers#removeEventListener",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "WindowOrWorkerGlobalScope#queueMicrotask",
       "param": "param0",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "WindowOrWorkerGlobalScope#setInterval",
       "param": "param0",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "WindowOrWorkerGlobalScope#setTimeout",
       "param": "param0",
       "adjudication": "queued",
-      "evidence": "the callback did not run during the call, and was observed running later"
+      "evidence": "the callback did not run during the call, and was observed running afterwards"
     },
     {
       "key": "Worker#addEventListener",
@@ -3718,8 +3718,8 @@
     {
       "key": "XPathEvaluatorBase#createExpression",
       "param": "param1",
-      "adjudication": "queued",
-      "evidence": "the callback did not run during the call"
+      "adjudication": "unreachable",
+      "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
       "key": "XPathEvaluatorBase#evaluate",

@@ -51,8 +51,6 @@ export interface DomInventory {
    * definition *is* the definition of the redeclared one.
    */
   readonly bases: ReadonlyMap<string, readonly string[]>;
-  /** Interfaces reachable as `declare var X: { prototype: X, … }`. */
-  readonly constructed: ReadonlySet<string>;
 }
 
 interface MutableMember {
@@ -93,7 +91,6 @@ export function collectDomMembers({
   const drafts = new Map<string, MutableMember>();
   const extendedBy = new Map<string, Set<string>>();
   const extend = new Map<string, readonly string[]>();
-  const constructed = new Set<string>();
 
   for (const file of files) {
     const lib = libTargetOfFileName(file.fileName);
@@ -139,9 +136,6 @@ export function collectDomMembers({
           continue;
         }
         const owner = declaration.name.text;
-        if (typeNode.members.some((member) => isPrototypeSlot(tsApi, member))) {
-          constructed.add(owner);
-        }
         const receiver = checker.getTypeAtLocation(declaration);
         for (const member of typeNode.members) {
           if (isPrototypeSlot(tsApi, member)) continue;
@@ -163,7 +157,6 @@ export function collectDomMembers({
       .sort((left, right) => left.key.localeCompare(right.key)),
     implementers: closeOver(extendedBy),
     bases: closeOverBases(extend),
-    constructed,
   };
 }
 

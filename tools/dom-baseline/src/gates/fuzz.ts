@@ -10,7 +10,7 @@ export interface Counterexample {
   readonly message: string;
   readonly receiver: string;
   readonly args: readonly string[];
-  /** A rejection, not a synchronous throw. Same hazard under #12's one colour. */
+  /** A rejection, not a synchronous throw. Same hazard under #12's one color. */
   readonly async: boolean;
 }
 
@@ -104,15 +104,11 @@ export class HostileFuzzer {
     this.#arbitrary = new Arbitrary(lib, environment);
   }
 
-  get environment(): DomEnvironment {
-    return this.#environment;
-  }
-
   probeCall(member: DomMember): ProbeResult {
     if (UNPROBEABLE.has(member.name)) {
       return skip(member.key, "call", "would tear down or block the harness");
     }
-    const receiver = this.#receiverFor(member);
+    const receiver = receiverFor(this.#environment, member, this.#implementers);
     if (receiver === undefined) {
       return skip(member.key, "call", "no constructible receiver");
     }
@@ -171,9 +167,9 @@ export class HostileFuzzer {
     };
   }
 
-  /** Read the member as a property: the accessor fact's `get` colour. */
+  /** Read the member as a property: the accessor fact's `get` color. */
   probeGet(member: DomMember): ProbeResult {
-    const receiver = this.#receiverFor(member);
+    const receiver = receiverFor(this.#environment, member, this.#implementers);
     if (receiver === undefined) {
       return skip(member.key, "get", "no constructible receiver");
     }
@@ -195,7 +191,7 @@ export class HostileFuzzer {
   }
 
   /**
-   * Rejections observed after the synchronous run. Under #12's one colour, full
+   * Rejections observed after the synchronous run. Under #12's one color, full
    * surface, a rejection is the same hazard as a synchronous throw: a clean
    * entry promises the call does not throw **and** the promise does not reject.
    */
@@ -224,19 +220,6 @@ export class HostileFuzzer {
         },
       ),
     );
-  }
-
-  #receiverFor(member: DomMember): unknown {
-    if (member.owner === "globalThis") return this.#environment.window;
-    if (member.isStatic) {
-      const globals = this.#environment.window as unknown as Record<string, unknown>;
-      try {
-        return globals[member.owner];
-      } catch {
-        return undefined;
-      }
-    }
-    return receiverFor(this.#environment, member.owner, this.#implementers);
   }
 
   #valuesForParameter(parameter: LibParam): readonly unknown[] | undefined {

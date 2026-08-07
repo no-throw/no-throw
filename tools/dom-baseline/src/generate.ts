@@ -26,7 +26,7 @@ import { joinToIdl, type Structure } from "./join.js";
 import { attachProse } from "./prose.js";
 import { REFUTED_KEYS } from "./refutations.js";
 import { buildDfnGraph } from "./specs/dfns.js";
-import { buildWorklist, writeWorklist, type Worklist } from "./worklist.js";
+import { buildWorklist, type Worklist } from "./worklist.js";
 
 const OUTPUT = new URL(
   "../../../packages/core/baseline-data/dom.json",
@@ -127,6 +127,10 @@ export async function generateBaseline(): Promise<GenerationReport> {
     environment,
   );
   const refuted = new Set(gate.counterexamples.map((found) => found.key));
+  // A recorded refutation is stale only when the gate *had the chance* to
+  // reproduce it and did not. A member no longer proposed clean is not probed
+  // at all, which says nothing about the refutation.
+  const probedClean = new Set(gate.probed.map((result) => result.key));
   const unprobedCalls = new Set(
     gate.unprobed.filter((result) => result.probe === "call").map((result) => result.key),
   );
@@ -172,7 +176,9 @@ export async function generateBaseline(): Promise<GenerationReport> {
   return {
     data,
     counterexamples: gate.counterexamples.filter((found) => !REFUTED_KEYS.has(found.key)),
-    staleRefutations: [...REFUTED_KEYS].filter((key) => !refuted.has(key)),
+    staleRefutations: [...REFUTED_KEYS].filter(
+      (key) => probedClean.has(key) && !refuted.has(key),
+    ),
     gate,
     worklist: buildWorklist(verdicts, ts.version, "jsdom"),
     summary: summarize(
@@ -259,20 +265,21 @@ function colorFor(
   gate: GateOutcome,
 ): BaselineEntry["color"] {
   if (proposal === undefined || !isCallableKind(member.kind)) return undefined;
-  if (isCleanCall(proposal, verdicts)) {
-    // A *refuted* clean ships throwing: there the gate knows something.
-    if (gate.refuted) return "throwing";
-    // Unprobed is not refuted — and it is not evidence either. A clean claim
-    // the gate could not reach has no verdict at all, so the colour is simply
-    // absent, and absence floors.
-    return gate.unprobedCall ? undefined : "non-throwing";
-  }
-  return proposal.color === undefined ? undefined : "throwing";
+  // A *refuted* clean ships throwing: there the gate knows something.
+  if (gate.refuted) return "throwing";
+  if (proposal.color === "throwing") return "throwing";
+  if (proposal.color === undefined) return undefined;
+  // Prose found nothing, but that is only half an answer. An unprobed claim and
+  // an unadjudicated callback are both *no* answer rather than a throwing one,
+  // so the color is simply absent — and absence floors.
+  return gate.unprobedCall || !isCleanCall(proposal, verdicts)
+    ? undefined
+    : "non-throwing";
 }
 
 /**
  * Which parameters stay conditions. A `sync` verdict keeps the parameter — the
- * callback runs inside the call, so its colour is the caller's problem at the
+ * callback runs inside the call, so its color is the caller's problem at the
  * call site. A `queued` one drops it, and a member all of whose callbacks are
  * queued ends up with `conditions: []`: the relaxation entry that keeps
  * `try { el.addEventListener('x', risky) } catch {}` from being a reachable
@@ -396,5 +403,3 @@ export function writeBaseline(data: BaselineData): string {
   );
   return path;
 }
-
-export { writeWorklist };

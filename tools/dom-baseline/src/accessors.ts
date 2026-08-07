@@ -85,11 +85,11 @@ export function accessorFactFor(
   // positive record that says so.
   //
   // Assigning to one throws in strict mode, and that is deliberately *not*
-  // coloured. Where TypeScript declares the member `readonly` the assignment is
+  // colored. Where TypeScript declares the member `readonly` the assignment is
   // a compile error, so a type-checked program cannot reach the throw; where it
   // does not, the write is still type-legal and gets the fact's `set` half.
   // Either way the throw is a programmer-bug `TypeError`, which #30's Out of
-  // Scope rules out of the colour model, and no control is transferred, so it
+  // Scope rules out of the color model, and no control is transferred, so it
   // is not an escape site under §C.
   if (idl?.kind === "const" || descriptor?.writable === false) {
     const source: AccessorSource = idl?.kind === "const" ? "idl" : "runtime";
@@ -118,7 +118,7 @@ export function accessorFactFor(
 }
 
 /**
- * The getter's colour, from the member's prose. `set` is never clean: there is
+ * The getter's color, from the member's prose. `set` is never clean: there is
  * no write probe, because assigning to a shared receiver would corrupt every
  * later probe, and an unprobed clean claim floors. That is also exactly what
  * #29 §1 asks for — reading `location.href` costs nothing, assigning to it
@@ -137,7 +137,7 @@ function liveDescriptor(
   environment: DomEnvironment,
   implementers: ReadonlyMap<string, readonly string[]>,
 ): PropertyDescriptor | undefined {
-  const receiver = holderFor(member, environment, implementers);
+  const receiver = receiverFor(environment, member, implementers);
   if (receiver === null || receiver === undefined) return undefined;
   // Up the prototype chain: an attribute is defined on the interface prototype
   // the receiver inherits from, and the question is about the property as
@@ -152,20 +152,4 @@ function liveDescriptor(
     }
   }
   return undefined;
-}
-
-function holderFor(
-  member: DomMember,
-  environment: DomEnvironment,
-  implementers: ReadonlyMap<string, readonly string[]>,
-): unknown {
-  if (member.owner === "globalThis") return environment.window;
-  if (member.isStatic) {
-    try {
-      return (environment.window as unknown as Record<string, unknown>)[member.owner];
-    } catch {
-      return undefined;
-    }
-  }
-  return receiverFor(environment, member.owner, implementers);
 }

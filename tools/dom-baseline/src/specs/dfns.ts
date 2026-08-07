@@ -8,19 +8,28 @@ import { loadCachedSpecs, loadSpecIndex } from "./source.js";
  *
  * Read naively the graph is useless — #26 measured a median of 131 definitions
  * visited per member and `Element.getAttribute` reported throwing. Three rules
- * take it to a median of 4, and each is a soundness/precision trade made here
+ * take it to a median of 10, and each is a soundness/precision trade made here
  * rather than discovered late:
  *
  * 1. **Members are leaves.** Prose links `document.domain` to *point at* it,
  *    not to call it. Leaving members in the propagating set made
  *    `document.domain` the root cause of 1,676 hazards.
  * 2. **Throws count from a member's own region, or from a noun's steps only.**
- *    Otherwise every concept inherits its neighbours' hazards.
+ *    Otherwise every concept inherits its neighbors' hazards.
  * 3. **Calls count from the definitional sentence plus the steps.** Not every
  *    algorithm is a numbered list: *"To append a node to a parent, pre-insert
  *    node into parent before null"* is one sentence that delegates, and reading
  *    only `<ol>`s reported `Node.appendChild` clean — a false clean.
  */
+
+/**
+ * Which half of an attribute a throw or a call belongs to. #29 §1 makes get and
+ * set independent colors normative — reading `location.href` must not require
+ * the bridge that assigning to it does — and an attribute's definition writes
+ * both algorithms in one region, so the split is read off the position of the
+ * "setter steps" heading. Everything that is not an attribute is `both`.
+ */
+export type Phase = "get" | "set" | "both";
 
 export interface ProseThrow {
   readonly kind: "throw" | "reject";
@@ -31,7 +40,7 @@ export interface ProseThrow {
   readonly linked: boolean;
   /**
    * Which half of an attribute the throw belongs to. #29 §1 makes get and set
-   * independent colours normative — reading `location.href` must not require
+   * independent colors normative — reading `location.href` must not require
    * the bridge that assigning to it does — and an attribute's definition writes
    * both algorithms in one region, so the split is read off the position of the
    * "setter steps" heading. Everything else is `both`.
@@ -55,8 +64,7 @@ export interface Dfn {
 
 export interface Callee {
   readonly key: string;
-  /** Which half of an attribute delegates here; `both` for everything else. */
-  readonly phase: "get" | "set" | "both";
+  readonly phase: Phase;
 }
 
 export interface DfnGraph {
@@ -72,7 +80,12 @@ export interface DfnGraph {
   };
 }
 
-const MEMBER_DFN_TYPES = new Set(["method", "attribute", "constructor"]);
+/** The `data-dfn-type`s that name a member rather than a concept. */
+export const MEMBER_DFN_TYPES: ReadonlySet<string> = new Set([
+  "method",
+  "attribute",
+  "constructor",
+]);
 
 const DFN_TAG = /<dfn\b([^>]*)>/g;
 const LINK = /<a\b[^>]*href="([^"]+)"/g;
@@ -195,7 +208,7 @@ function regionOf(
     const current = raw[last];
     if (next === undefined || current === undefined) break;
     if (!aliases(current.tag, next.tag)) break;
-    // Only an immediate neighbour is an alias: `matches(selectors)</dfn> and
+    // Only an immediate neighbor is an alias: `matches(selectors)</dfn> and
     // <dfn>webkitMatchesSelector(selectors)`. Anything with a step list, a
     // paragraph break or more than a clause of prose between them is a
     // definition of its own, and merging those made the graph denser than the
@@ -214,7 +227,7 @@ function regionOf(
 
 /**
  * Two definitions are aliases only if they define the *same kind of thing for
- * the same interface*. Without that, a run merges unrelated neighbours and the
+ * the same interface*. Without that, a run merges unrelated neighbors and the
  * graph comes out denser than the naive reading the merge exists to fix.
  */
 function aliases(left: string, right: string): boolean {
@@ -249,8 +262,13 @@ function readDfn(
   // sentence *is* the algorithm in a great many definitions. Everything past it
   // is commentary and examples, and reading that is what made the graph dense.
   const calleeScan = isMember ? region : `${region.slice(0, 1200)}\n${steps}`;
-  const setterAt = dfnType === "attribute" ? setterFrom(throwScan) : undefined;
-  const calleeSetterAt = dfnType === "attribute" ? setterFrom(calleeScan) : undefined;
+  // Before the "setter steps" heading the prose is the getter's, after it the
+  // setter's. Absent the heading the whole region is `both`, which is the
+  // over-approximating direction.
+  const setterAt =
+    dfnType === "attribute" ? SETTER_HEADING.exec(throwScan)?.index : undefined;
+  const calleeSetterAt =
+    dfnType === "attribute" ? SETTER_HEADING.exec(calleeScan)?.index : undefined;
 
   return {
     key: `${shortname}#${id}`,
@@ -267,16 +285,6 @@ function readDfn(
 }
 
 const SETTER_HEADING = /\bsetter steps\b|\bon setting\b|\bsetting\s+(?:the\s+)?(?:it|this)\b/i;
-
-/**
- * Where an attribute's setter algorithm begins. Before it the prose is the
- * getter's, after it the setter's. Absent the heading the whole region is
- * `both`, which is the over-approximating direction.
- */
-function setterFrom(region: string): number | undefined {
-  const at = SETTER_HEADING.exec(region)?.index;
-  return at;
-}
 
 function readThrows(
   scanned: string,

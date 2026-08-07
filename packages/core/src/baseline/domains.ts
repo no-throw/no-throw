@@ -135,7 +135,7 @@ export class TypeDomains {
    * brand test: WebIDL's wrong-type guards name an interface, and TypeScript's
    * declaration of the same position is what says whether a call can reach one.
    */
-  isExactly(types: readonly ts.Type[], name: string): boolean {
+  isSubtypeOf(types: readonly ts.Type[], name: string): boolean {
     return this.#all(types, (type) => this.#inheritsFrom(type, name, 0));
   }
 
