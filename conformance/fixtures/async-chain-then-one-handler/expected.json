@@ -1,0 +1,14 @@
+{
+  "description": "Chain fold, `X.then(a)`: throwing if X or `a` is. Handlers are ordinary functions, so a throwing one colors the link over a clean head.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 17,
+      "column": 3,
+      "endLine": 17,
+      "endColumn": 31,
+      "messageId": "inferredThrowingAwait",
+      "message": "Awaiting `resolves().then(dirty)` escapes this `@nothrow` function: a handler in the chain has a body that was analyzed and can throw. Your outs: bridge it with `try { await … } catch`, or make that handler non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

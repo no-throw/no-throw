@@ -85,6 +85,11 @@ export function hiddenTransfersOf(
       // seam, which knows which call produced the iterator. There is nothing
       // left here for the static type alone to name.
       return [];
+    case "await":
+    case "float":
+      // A rejection is the promise's own color, resolved by the call that
+      // produced it. Nothing runs at the site itself.
+      return [];
   }
 }
 

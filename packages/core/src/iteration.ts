@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { bodyOf, type Bodied } from "./declarations.js";
+import { bodyOf, hasModifier, type Bodied } from "./declarations.js";
 
 /**
  * Which part of the iteration protocol a site runs, and so which members
@@ -26,6 +26,12 @@ export interface Consumption {
   readonly source: ts.Expression | undefined;
   /** The node whose type describes what is being consumed. */
   readonly typeAt: ts.Node;
+  /**
+   * Whether the site runs `[Symbol.asyncIterator]`. Only `for await` does, and
+   * it falls back to the synchronous member where the value has no async one —
+   * so this picks which member answers rather than which protocol exists.
+   */
+  readonly async: boolean;
 }
 
 /**
@@ -52,29 +58,37 @@ export function iterationEscapeAt(
   checker: ts.TypeChecker,
 ): IterationEscape | undefined {
   if (ts.isForOfStatement(node)) {
-    return iterating(node.expression, node.expression);
+    return iterating(
+      node.expression,
+      node.expression,
+      node.awaitModifier !== undefined,
+    );
   }
 
   // `...x` in an array literal or an argument list iterates; the same token in
   // an assignment target is a rest binding, and `{ ...o }` is a different node
   // kind entirely — object spread copies properties and iterates nothing.
   if (ts.isSpreadElement(node)) {
-    return isAssignmentTarget(node) ? undefined : iterating(node, node.expression);
+    return isAssignmentTarget(node)
+      ? undefined
+      : iterating(node, node.expression, false);
   }
 
   if (ts.isYieldExpression(node) && node.asteriskToken !== undefined) {
     return node.expression === undefined
       ? undefined
-      : iterating(node, node.expression);
+      : iterating(node, node.expression, isInAsyncGenerator(node));
   }
 
   if (ts.isArrayBindingPattern(node)) {
-    return iterating(node, destructuredSource(node));
+    return iterating(node, destructuredSource(node), false);
   }
 
   if (ts.isArrayLiteralExpression(node)) {
     const assigned = assignedTo(node);
-    return assigned === undefined ? undefined : iterating(node, assigned.from);
+    return assigned === undefined
+      ? undefined
+      : iterating(node, assigned.from, false);
   }
 
   return iteratorMethodCall(node, checker);
@@ -84,6 +98,7 @@ export function iterationEscapeAt(
 function iterating(
   node: ts.Node,
   source: ts.Expression | undefined,
+  async: boolean,
 ): IterationEscape {
   return {
     kind: "consumption",
@@ -92,8 +107,19 @@ function iterating(
       protocol: { kind: "iterable" },
       source,
       typeAt: source ?? node,
+      async,
     },
   };
+}
+
+/** Whether a `yield*` delegates over the asynchronous protocol. */
+function isInAsyncGenerator(node: ts.Node): boolean {
+  for (let n: ts.Node | undefined = node; n !== undefined; n = n.parent) {
+    if (ts.isFunctionLike(n)) {
+      return hasModifier(n, ts.SyntaxKind.AsyncKeyword);
+    }
+  }
+  return false;
 }
 
 /**
@@ -135,6 +161,9 @@ function iteratorMethodCall(
       protocol: { kind: "member", name },
       source: receiver,
       typeAt: receiver,
+      // The syntax names the member, so there is no `[Symbol.iterator]` to
+      // choose a spelling of.
+      async: false,
     },
   };
 }
@@ -165,6 +194,9 @@ export function constituentsOf(
  * shaped like an `IteratorResult`. The result shape is what keeps an ordinary
  * object with a `next` method — a linked-list node, a parser cursor — from
  * being read as one.
+ *
+ * An asynchronous iterator answers with a *promise* of one, and is an iterator
+ * for every purpose here: one color covers its whole surface too.
  */
 export function isIteratorType(
   type: ts.Type,
@@ -176,11 +208,19 @@ export function isIteratorType(
   return checker
     .getTypeOfSymbol(next)
     .getCallSignatures()
-    .some(
-      (signature) =>
-        checker.getPropertyOfType(signature.getReturnType(), "done") !==
-        undefined,
-    );
+    .some((signature) => {
+      const result = signature.getReturnType();
+      return (
+        checker.getPropertyOfType(result, "done") !== undefined ||
+        hasDone(checker.getAwaitedType(result), checker)
+      );
+    });
+}
+
+function hasDone(type: ts.Type | undefined, checker: ts.TypeChecker): boolean {
+  return (
+    type !== undefined && checker.getPropertyOfType(type, "done") !== undefined
+  );
 }
 
 /**
@@ -192,11 +232,12 @@ export function protocolMember(
   type: ts.Type,
   name: ProtocolMemberName,
   checker: ts.TypeChecker,
+  async: boolean,
 ): Bodied | undefined {
   const apparent = checker.getApparentType(type);
   const symbol =
     name === "iterator"
-      ? wellKnownIterator(apparent, checker)
+      ? wellKnownIterator(apparent, checker, async)
       : checker.getPropertyOfType(apparent, name);
 
   // An overloaded member declares itself more than once, and the one that runs
@@ -208,17 +249,29 @@ export function protocolMember(
 }
 
 /**
- * `[Symbol.iterator]`, found by scanning: TypeScript names well-known symbol
- * members `__@iterator@<id>` with an id that is not ours to predict, so the
- * name cannot be handed to `getPropertyOfType`.
+ * `[Symbol.iterator]` or `[Symbol.asyncIterator]`, found by scanning:
+ * TypeScript names well-known symbol members `__@iterator@<id>` with an id that
+ * is not ours to predict, so the name cannot be handed to
+ * `getPropertyOfType`.
+ *
+ * A site that wants the asynchronous member falls back to the synchronous one,
+ * which is what `for await` does at runtime — it wraps each value of a plain
+ * iterable in a promise.
  */
 function wellKnownIterator(
   type: ts.Type,
   checker: ts.TypeChecker,
+  async: boolean,
 ): ts.Symbol | undefined {
-  return checker
-    .getPropertiesOfType(type)
-    .find((property) => String(property.escapedName).startsWith("__@iterator@"));
+  const properties = checker.getPropertiesOfType(type);
+  const named = (prefix: string): ts.Symbol | undefined =>
+    properties.find((property) =>
+      String(property.escapedName).startsWith(prefix),
+    );
+
+  return async
+    ? (named("__@asyncIterator@") ?? named("__@iterator@"))
+    : named("__@iterator@");
 }
 
 /** The expression a destructuring pattern is fed by, where there is one. */

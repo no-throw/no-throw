@@ -1,0 +1,14 @@
+{
+  "description": "Chain fold, head row: `f()` contributes f's color, and a `.then` over a rejecting head is throwing however clean the handler is.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 17,
+      "column": 3,
+      "endLine": 17,
+      "endColumn": 29,
+      "messageId": "inferredThrowingAwait",
+      "message": "Awaiting `rejects().then(keep)` escapes this `@nothrow` function: the call that produced it has a body that was analyzed and can throw. Your outs: bridge it with `try { await … } catch`, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}
