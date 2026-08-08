@@ -15,12 +15,7 @@
       "description": "The npm package these colors are about. Overlays name their target here; it is how an overlay is matched, never by its own npm name.",
       "type": "string"
     },
-    "exports": {
-      "description": "npm export subpath to the symbols reachable through it.",
-      "type": "object",
-      "patternProperties": { "^\\.(/.+)?$": { "$ref": "#/$defs/subpath" } },
-      "additionalProperties": false
-    },
+    "exports": { "$ref": "#/$defs/exports" },
     "files": {
       "description": "SRI hashes of the files these colors were written for. Any mismatch floors the manifest; required by `nothrow emit`, absent in overlays.",
       "type": "object",
@@ -28,6 +23,12 @@
     }
   },
   "$defs": {
+    "exports": {
+      "description": "npm export subpath to the symbols reachable through it.",
+      "type": "object",
+      "patternProperties": { "^\\.(/.+)?$": { "$ref": "#/$defs/subpath" } },
+      "additionalProperties": false
+    },
     "subpath": {
       "type": "object",
       "patternProperties": { "^[A-Za-z_$][A-Za-z0-9_$]*([.#][A-Za-z_$][A-Za-z0-9_$]*)*$": { "$ref": "#/$defs/entry" } },

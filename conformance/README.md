@@ -18,6 +18,7 @@ fixtures/<name>/
   tsconfig.json     the project the fixture is analyzed as
   expected.json     the diagnostics it must produce
   package.json      where the walk-up stops, for a fixture with dependencies
+  nothrow.overrides.json   what the project asserts for itself
   src/**/*.ts       the code
   *.js              the config files and scripts a project keeps at its root
   node_modules/<dep>/
@@ -25,6 +26,9 @@ fixtures/<name>/
     index.d.ts      what the consumer's program actually sees
     index.js        never analyzed, only hashed
     nothrow.json    the colors the package ships
+  node_modules/@nothrow/<overlay>/
+    package.json    a name deliberately unlike its target's, since nothing reads it
+    nothrow.json    the same shape, naming its target in `package`
 ```
 
 The driver lints the fixture directory the way a user runs `eslint .`, not the

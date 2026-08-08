@@ -3,11 +3,8 @@ import { relative, sep } from "node:path";
 import ts from "typescript";
 import { formatConditionPath } from "./baseline/paths.js";
 import { createCarrier } from "./carrier/chain.js";
-import {
-  integrityOf,
-  manifestSchema,
-  type ManifestEntry,
-} from "./carrier/manifest.js";
+import type { ManifestEntry } from "./carrier/document.js";
+import { integrityOf } from "./carrier/manifest.js";
 import {
   join,
   normalize,
@@ -15,6 +12,7 @@ import {
   type PackageHome,
 } from "./carrier/packages.js";
 import { validate } from "./carrier/schema.js";
+import { manifestSchema } from "./carrier/schemas.js";
 import {
   surfaceOver,
   type ExportKey,
@@ -138,7 +136,7 @@ export function emitManifest(
   // The schema is the contract hand-authors validate against, so an emitter
   // that drifted from it would publish something the reader refuses. Checking
   // here costs one pass and makes that impossible rather than unlikely.
-  if (validate(manifestSchema(), document).length > 0) {
+  if (validate(manifestSchema(), document, []).length > 0) {
     return blocked(
       "emit produced a manifest that does not validate against " +
         "`nothrow.schema.json`, which is a bug in `nothrow emit`.",

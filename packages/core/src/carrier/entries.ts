@@ -3,7 +3,7 @@ import { parseConditionPath } from "../baseline/paths.js";
 import type { Color } from "../baseline/types.js";
 import { parametersOf, type Condition } from "../conditions.js";
 import type { Bodied } from "../declarations.js";
-import type { ManifestEntry } from "./manifest.js";
+import type { ManifestEntry } from "./document.js";
 
 /** An entry, read as the engine's own terms. */
 export interface CarriedFacts {

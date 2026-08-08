@@ -135,10 +135,58 @@ parameter list is eager though its body is lazy.
 
 A callee with no visible body — a `.d.ts` declaration, or one the checker
 cannot resolve at all — is the carrier chain's question rather than the
-program's. A dependency that ships a `nothrow.json` beside its `package.json`
-is colored by it; one that ships tagged declarations instead has those tags
-trusted as assertions; anything the chain cannot answer floors to throwing, and
-the diagnostic says which.
+program's, and [the next section](#coloring-code-you-do-not-own) is that chain.
+Anything it cannot answer floors to throwing, and the diagnostic says which.
+
+## Coloring code you do not own
+
+Four carriers can answer for a bodyless declaration. They are asked in this
+order, **per key** — a rung that knows one export leaves the rest to the rungs
+below it:
+
+| rung | what it is | who writes it |
+| --- | --- | --- |
+| `nothrow.overrides.json` | one file at your project root | you |
+| an `@nothrow/*` overlay | an installed package of colors | anyone |
+| what the package ships | its own `nothrow.json`, else its surviving `@nothrow` tags | its author |
+| the baseline | colors for TypeScript's own libs, keyed by lib target | us |
+
+Under all four is the floor: unanswered means throwing.
+
+**You are never blocked.** Whatever nobody else has colored, you can color
+yourself, and nothing outranks you:
+
+```json
+{
+  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "flaky": {
+      "exports": {
+        ".": { "safeParse": { "color": "non-throwing", "conditions": [] } }
+      }
+    }
+  }
+}
+```
+
+An **overlay** is that same shape for one package, published so everyone else
+gets it too: a `nothrow.json` with a `package` field naming its target, in a
+package under the `@nothrow` scope. It is matched by that field and never by
+its own npm name — `@nothrow/lodash` is a convention, not a lookup — so an
+overlay for a scoped target needs no escape from npm's flat scopes. The
+resolver is version-blind in v1.
+
+Both are held to [a published schema](packages/core/schema) — the same file the
+engine validates them against, so what your editor accepts and what the tool
+honors cannot drift apart. Both may key **interface members** and state
+**accessor facts**, so `declare const _: LoDashStatic` is colorable — neither
+of which `nothrow emit` will ever write for a package whose source it verified.
+
+A package's own manifest is verified against SRI hashes of the files it was
+written for. A mismatch floors **that manifest** and names the file that
+drifted; an overlay and an override are about a package rather than in it, so
+neither is touched.
 
 ## Higher-order functions
 
@@ -399,11 +447,13 @@ a parameter default — **hidden transfers** — accessors, dynamic keys, spread
 and coercion — **generators and the sync iteration protocol**, **async** —
 `await`, promise chains, floats and `for await` — **hybrid inference** for
 unmarked functions whose bodies are visible, **conditional cleanliness** for
-higher-order functions, the **shipped rung of the carrier chain**, which is a
-dependency's own `nothrow.json` and, absent a valid one, its surviving
-`@nothrow` tags, **`nothrow emit` and `emit --check`**, and the
+higher-order functions, **every rung of the carrier chain but the baseline** —
+a local `nothrow.overrides.json`, installed `@nothrow/*` overlays, and what a
+dependency ships, which is its own `nothrow.json` or, absent a valid one, its
+surviving `@nothrow` tags — **`nothrow emit` and `emit --check`**, and the
 `configs.recommended` preset. Everything the chain cannot answer floors to
-throwing with a diagnostic naming your outs. The ES
+throwing with a diagnostic naming your outs, and every out it names is now a
+rung you can really reach for. The ES
 standard-library baseline ships as data in `@nothrow/core`,
 and so does the DOM baseline, but nothing consults either yet, so every
 standard-library and DOM call floors too — `new Error(…)` included, iterating
@@ -419,8 +469,7 @@ about seven were about the program's own code; `for…of` alone accounted for 45
 and `Array.prototype.push` for 18. Consulting the baselines is what turns that
 around.
 
-The rungs above and beside the shipped one — `@nothrow/*` overlays and a local
-`nothrow.overrides.json` — are not built yet. The design is locked and lives in
+Not built yet: the baseline rung. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages

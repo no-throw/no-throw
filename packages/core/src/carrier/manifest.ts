@@ -1,30 +1,12 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import type { AccessorFact, Color, ConditionPath } from "../baseline/types.js";
-import { join, readJson, type PackageHome } from "./packages.js";
-import { validate, type SchemaIssue } from "./schema.js";
-
-/**
- * One symbol's colors on the wire. The same four facts the baseline carries,
- * with the same fail-safe reading of absence, so every rung of the resolver
- * chain composes the same way.
- */
-export interface ManifestEntry {
-  readonly color?: Color;
-  readonly async?: boolean;
-  readonly conditions?: readonly ConditionPath[];
-  readonly accessor?: AccessorFact;
-}
-
-/**
- * An entry, or the fact that one was written and cannot be used. The second is
- * not the same as no entry at all: a key the manifest claims and this reader
- * cannot honor floors rather than falling through to a rung that knows less
- * about it.
- */
-export type EntryState =
-  | { readonly kind: "entry"; readonly entry: ManifestEntry }
-  | { readonly kind: "unusable" };
+import {
+  readColorDocument,
+  type ColorTable,
+  type TablePath,
+} from "./document.js";
+import { isRecord, join, type PackageHome } from "./packages.js";
+import { manifestSchema } from "./schemas.js";
 
 /**
  * What a package's `nothrow.json` amounts to. The three failures are kept
@@ -36,7 +18,13 @@ export type EntryState =
 export type ManifestState =
   | {
       readonly kind: "valid";
-      readonly entryFor: (subpath: string, key: string) => EntryState | undefined;
+      readonly table: ColorTable;
+      /**
+       * The npm package these colors are about: an overlay's target, and a
+       * shipped manifest's own name. It is the only thing an overlay is matched
+       * by — never the npm name the overlay itself was published under.
+       */
+      readonly target: string | undefined;
     }
   | { readonly kind: "stale"; readonly file: string }
   | { readonly kind: "unreadable" }
@@ -44,25 +32,8 @@ export type ManifestState =
 
 const ABSENT: ManifestState = { kind: "absent" };
 
-/** The wire version this release understands. */
-const VERSION = 1;
-
-const SCHEMA_FILE = new URL(
-  "../../schema/nothrow.schema.json",
-  import.meta.url,
-);
-
-let schema: unknown;
-
-/**
- * The published schema, which is also the one the reader enforces. Shipping
- * one file for both is what keeps the contract hand-authors validate against
- * from drifting away from the contract the engine actually applies.
- */
-export function manifestSchema(): unknown {
-  schema ??= JSON.parse(readFileSync(SCHEMA_FILE, "utf8")) as unknown;
-  return schema;
-}
+/** One table, at `exports`. */
+const TABLES: TablePath = ["exports"];
 
 const states = new Map<string, ManifestState>();
 
@@ -70,6 +41,10 @@ const states = new Map<string, ManifestState>();
  * The manifest a package ships, verified. Hashes are checked here rather than
  * at load: only manifests actually consulted are verified, and a package is
  * answered once per process.
+ *
+ * An overlay's `nothrow.json` is read by this same function, because it is the
+ * same file in the same shape — what makes it an overlay is that it names some
+ * other package in `package`, and that a project installed it.
  */
 export function manifestAt(home: PackageHome): ManifestState {
   const known = states.get(home.directory);
@@ -84,49 +59,20 @@ function readManifest(home: PackageHome): ManifestState {
   const path = join(home.directory, "nothrow.json");
   if (!existsSync(path)) return ABSENT;
 
-  const document = readJson(path);
-  if (document === undefined) return ABSENT;
+  const document = readColorDocument(path, manifestSchema(), [], TABLES);
+  if (document.kind !== "read") {
+    return document.kind === "unreadable" ? { kind: "unreadable" } : ABSENT;
+  }
 
-  const issues = validate(manifestSchema(), document);
-  // An issue inside one entry floors that entry; anything shallower is a
-  // manifest that does not describe a manifest, and nothing is taken from it.
-  if (issues.some((issue) => !isEntryIssue(issue))) return ABSENT;
-
-  if (document["version"] !== VERSION) return { kind: "unreadable" };
-
-  const stale = staleFile(home, document["files"]);
+  const stale = staleFile(home, document.value["files"]);
   if (stale !== undefined) return { kind: "stale", file: stale };
 
-  const exported = document["exports"] as Record<string, unknown>;
-  const unusable = new Set(issues.map((issue) => entryOf(issue.path)));
-
+  const target = document.value["package"];
   return {
     kind: "valid",
-    entryFor: (subpath, key) => {
-      if (unusable.has(entryOf(["exports", subpath, key]))) {
-        return { kind: "unusable" };
-      }
-      const entries = exported[subpath];
-      const entry = isRecord(entries) ? entries[key] : undefined;
-      return isRecord(entry)
-        ? { kind: "entry", entry: entry as ManifestEntry }
-        : undefined;
-    },
+    table: document.tableAt([]),
+    target: typeof target === "string" ? target : undefined,
   };
-}
-
-/** `exports` → subpath → key → the fault: three segments deep, and no more. */
-function isEntryIssue(issue: SchemaIssue): boolean {
-  return issue.path.length > 3 && issue.path[0] === "exports";
-}
-
-/**
- * Which entry a path lands in, as an identity. Encoded rather than joined: a
- * subpath follows npm's grammar and a key follows JSDoc's, and any separator
- * either of them could hold would merge two entries and floor the wrong one.
- */
-function entryOf(path: readonly string[]): string {
-  return JSON.stringify(path.slice(0, 3));
 }
 
 /**
@@ -157,8 +103,4 @@ function staleFile(
  */
 export function integrityOf(path: string): string {
   return `sha256-${createHash("sha256").update(readFileSync(path)).digest("base64")}`;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
