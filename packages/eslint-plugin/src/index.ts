@@ -18,9 +18,16 @@ const plugin = {
  * The complete contract, in one install: the invariant, mark hygiene, and the
  * float rule the async story leans on. Everything is an error because CI is
  * where the guarantee lives — a warning enforces nothing.
+ *
+ * Every rule in it is type-aware, and a type-aware rule handed a file with no
+ * type information does not report — it throws out of ESLint. So the preset
+ * carries its own scope rather than leaving one for the reader to remember:
+ * dropped into a config unscoped, it has to survive `eslint .` in a project
+ * whose root holds the `.js` that configures ESLint in the first place.
  */
 plugin.configs.recommended = {
   name: "nothrow/recommended",
+  files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
   plugins: {
     nothrow: plugin as unknown as FlatConfig.Plugin,
     "@typescript-eslint": tseslint as unknown as FlatConfig.Plugin,

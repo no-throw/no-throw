@@ -1,0 +1,14 @@
+{
+  "description": "A hash mismatch floors the shipped manifest and nothing else: the overlay and the override are independent of the package's files, so their keys still answer while the manifest's own go to the floor that names the stale file.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 7,
+      "column": 3,
+      "endLine": 7,
+      "endColumn": 12,
+      "messageId": "unbridgedCall",
+      "message": "Call to `shipped` escapes this `@nothrow` function: it is colored by a `nothrow.json` that no longer matches its package's files — `./index.js` has changed since the manifest was written — so the manifest is ignored and no surviving `@nothrow` tag colors it either. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

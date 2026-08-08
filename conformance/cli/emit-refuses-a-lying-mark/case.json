@@ -1,0 +1,11 @@
+{
+  "description": "A mark the engine cannot verify stops the file: emit exits non-zero, names the mark, and writes nothing — which is what makes a published manifest true by construction rather than by discipline.",
+  "steps": [
+    {
+      "emit": [],
+      "expect": "refused",
+      "names": ["`parse`", "an uncaught `throw`"]
+    },
+    { "absent": "nothrow.json" }
+  ]
+}

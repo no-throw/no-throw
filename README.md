@@ -46,7 +46,7 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    files: ["src/**/*.ts"],
+    files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: { projectService: true },
@@ -55,6 +55,14 @@ export default [
   nothrow.configs.recommended,
 ];
 ```
+
+The preset carries that same `files` scope itself, so it sits at the end of the
+array unscoped and `eslint .` is safe: the `eslint.config.js` you just wrote is
+never handed to a type-aware rule. Keep the parser block in agreement with it.
+TypeScript the preset reaches but the parser does not falls to ESLint's default
+parser and crashes the same way; TypeScript the parser reaches that no
+`tsconfig.json` includes is a parse error, which is `projectService`'s business
+to settle and not ours.
 
 `configs.recommended` is the whole contract, all at `error`:
 
@@ -127,10 +135,58 @@ parameter list is eager though its body is lazy.
 
 A callee with no visible body — a `.d.ts` declaration, or one the checker
 cannot resolve at all — is the carrier chain's question rather than the
-program's. A dependency that ships a `nothrow.json` beside its `package.json`
-is colored by it; one that ships tagged declarations instead has those tags
-trusted as assertions; anything the chain cannot answer floors to throwing, and
-the diagnostic says which.
+program's, and [the next section](#coloring-code-you-do-not-own) is that chain.
+Anything it cannot answer floors to throwing, and the diagnostic says which.
+
+## Coloring code you do not own
+
+Four carriers can answer for a bodyless declaration. They are asked in this
+order, **per key** — a rung that knows one export leaves the rest to the rungs
+below it:
+
+| rung | what it is | who writes it |
+| --- | --- | --- |
+| `nothrow.overrides.json` | one file at your project root | you |
+| an `@no-throw/*` overlay | an installed package of colors | anyone |
+| what the package ships | its own `nothrow.json`, else its surviving `@nothrow` tags | its author |
+| the baseline | colors for TypeScript's own libs, keyed by lib target | us |
+
+Under all four is the floor: unanswered means throwing.
+
+**You are never blocked.** Whatever nobody else has colored, you can color
+yourself, and nothing outranks you:
+
+```json
+{
+  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "flaky": {
+      "exports": {
+        ".": { "safeParse": { "color": "non-throwing", "conditions": [] } }
+      }
+    }
+  }
+}
+```
+
+An **overlay** is that same shape for one package, published so everyone else
+gets it too: a `nothrow.json` with a `package` field naming its target, in a
+package under the `@no-throw` scope. It is matched by that field and never by
+its own npm name — `@no-throw/lodash` is a convention, not a lookup — so an
+overlay for a scoped target needs no escape from npm's flat scopes. The
+resolver is version-blind in v1.
+
+Both are held to [a published schema](packages/core/schema) — the same file the
+engine validates them against, so what your editor accepts and what the tool
+honors cannot drift apart. Both may key **interface members** and state
+**accessor facts**, so `declare const _: LoDashStatic` is colorable — neither
+of which `nothrow emit` will ever write for a package whose source it verified.
+
+A package's own manifest is verified against SRI hashes of the files it was
+written for. A mismatch floors **that manifest** and names the file that
+drifted; an overlay and an override are about a package rather than in it, so
+neither is touched.
 
 ## Higher-order functions
 
@@ -334,6 +390,54 @@ is the overwhelmingly common case. A type declaring its own `toString`,
 `valueOf` or `Symbol.toPrimitive` takes that member's color, and `any` or
 `unknown` floors.
 
+## Publishing a package
+
+Your marks are verified against your source, and a consumer never sees your
+source: `removeComments` strips the tags, and declaration emit erases `async`.
+`nothrow emit` writes down what survives that.
+
+```bash
+nothrow emit           # lower verified marks into nothrow.json
+nothrow emit --check   # fail if the manifest has drifted from the source
+```
+
+Run it after your build, from the package root — it reads `tsconfig.json` in
+the working directory unless `--project` names another one, and writes
+`nothrow.json` beside the first `package.json` above the project, which is
+where a consumer's walk-up finds it. What goes in are the marks the engine
+verifies, keyed by the name a consumer imports; what comes with them are the
+facts the `.d.ts` cannot carry — `async`, the paths a conditional mark is clean
+given, and SRI hashes of everything the build produced from that source, which
+is every body a color was read off.
+
+**Emit refuses what it cannot verify.** A mark whose body escapes, a mark that
+binds to nothing, a mark on an accessor — each exits non-zero naming the mark,
+and nothing is written. A published manifest is therefore true by construction
+rather than by discipline, which is what lets a consumer trust it over your
+declarations.
+
+The accessor case is a deliberate asymmetry. A manifest can state an accessor's
+color, and hand-written overlays need to; emit never does, because declaration
+emit preserves `get` and `set` — if you own the source, the accessor is already
+in your `.d.ts`, and what a consumer needs is a color you cannot verify for
+both halves at once. The same holds for interface members.
+
+Wire `--check` into the script that publishes, so a manifest cannot go out
+stale:
+
+```json
+{
+  "scripts": {
+    "prepublishOnly": "tsc && nothrow emit --check"
+  }
+}
+```
+
+It recomputes the manifest and compares. A rebuilt `.js` with identical
+declarations is drift like any other, because the hash is what your consumers
+check. Exit codes are `0` wrote or matched, `1` refused or drifted, `2` could
+not run.
+
 ## Status
 
 This is early, and **nothing is published to npm yet**. What works today: the
@@ -343,10 +447,13 @@ a parameter default — **hidden transfers** — accessors, dynamic keys, spread
 and coercion — **generators and the sync iteration protocol**, **async** —
 `await`, promise chains, floats and `for await` — **hybrid inference** for
 unmarked functions whose bodies are visible, **conditional cleanliness** for
-higher-order functions, the **shipped rung of the carrier chain**, which is a
-dependency's own `nothrow.json` and, absent a valid one, its surviving
-`@nothrow` tags, and the `configs.recommended` preset. Everything the chain
-cannot answer floors to throwing with a diagnostic naming your outs. The ES
+higher-order functions, **every rung of the carrier chain but the baseline** —
+a local `nothrow.overrides.json`, installed `@no-throw/*` overlays, and what a
+dependency ships, which is its own `nothrow.json` or, absent a valid one, its
+surviving `@nothrow` tags — **`nothrow emit` and `emit --check`**, and the
+`configs.recommended` preset. Everything the chain cannot answer floors to
+throwing with a diagnostic naming your outs, and every out it names is now a
+rung you can really reach for. The ES
 standard-library baseline ships as data in `@no-throw/core`,
 and so does the DOM baseline, but nothing consults either yet, so every
 standard-library and DOM call floors too — `new Error(…)` included, iterating
@@ -362,9 +469,7 @@ about seven were about the program's own code; `for…of` alone accounted for 45
 and `Array.prototype.push` for 18. Consulting the baselines is what turns that
 around.
 
-The rungs above and beside the shipped one — `@no-throw/*` overlays and a local
-`nothrow.overrides.json` — and `nothrow emit`, which is what writes a manifest
-in the first place, are not built yet. The design is locked and lives in
+Not built yet: the baseline rung. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages
@@ -385,7 +490,9 @@ pnpm install && pnpm test
 
 `pnpm test` builds, checks that the packages are in lockstep, and runs the
 [conformance suite](conformance) — fixture projects on disk paired with the
-diagnostics they must produce. Every behavior lands there.
+diagnostics they must produce. Every behavior lands there, the CLI's included:
+`nothrow emit` is exercised as a process over producer packages, and what it
+writes is read back by a separate consumer project through the ordinary driver.
 
 The plugin's `eslint` peer range names the majors a consumer may install it
 against. CI enumerates that range and holds it to two things per major: the
