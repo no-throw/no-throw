@@ -1,0 +1,11 @@
+{
+  "description": "The other place: an interface member has no body to verify, so it never becomes a key. A mark on one refuses the whole emit rather than leaving a surface the author believes is colored and is not.",
+  "steps": [
+    {
+      "emit": [],
+      "expect": "refused",
+      "names": ["interface member"]
+    },
+    { "absent": "nothrow.json" }
+  ]
+}

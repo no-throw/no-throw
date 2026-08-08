@@ -51,6 +51,20 @@ export function formatDiagnostic(diagnostic: Diagnostic): string {
   return [head, ...(suggestions ?? []).flatMap(formatSuggestion)].join("\n  ");
 }
 
+/** A titled block of diagnostics, or nothing at all where there are none. */
+export function section(
+  title: string,
+  diagnostics: readonly Diagnostic[],
+): string[] {
+  if (diagnostics.length === 0) return [];
+  return [
+    `${title}:`,
+    ...[...diagnostics]
+      .sort(byPosition)
+      .map((diagnostic) => `  ${formatDiagnostic(diagnostic)}`),
+  ];
+}
+
 function formatSuggestion(suggestion: Suggestion): string[] {
   return [
     `suggests ${JSON.stringify(suggestion.desc)}, producing:`,
