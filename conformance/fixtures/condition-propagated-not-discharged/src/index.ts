@@ -3,17 +3,17 @@ interface User {
 }
 
 /** @nothrow */
-export function myMapKeys<T>(xs: readonly T[], key: (t: T) => string): string[] {
+export function myMapKeys<T>(xs: readonly T[], key: (t: T) => string): string {
   return myMap(xs, key);
 }
 
-function myMap<T, U>(xs: readonly T[], f: (t: T) => U): U[] {
-  const out: U[] = [];
-  for (let i = 0; i < xs.length; i += 1) out[out.length] = f(xs[i]);
+function myMap<T>(xs: readonly T[], f: (t: T) => string): string {
+  let out = "";
+  for (let i = 0; i < xs.length; i += 1) out = f(xs[i]);
   return out;
 }
 
 /** @nothrow */
-export function names(users: readonly User[]): string[] {
+export function names(users: readonly User[]): string {
   return myMapKeys(users, (u) => JSON.parse(u.name) as string);
 }

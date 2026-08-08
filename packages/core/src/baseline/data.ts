@@ -47,3 +47,38 @@ export function lookupBaselineEntry(
 ): BaselineEntry | undefined {
   return baselineData(sourceOfLibTarget(libTarget)).libs[libTarget]?.[key];
 }
+
+const owners = new Map<BaselineSource, ReadonlySet<string>>();
+
+/**
+ * Whether the baseline enumerates the type a member is written on.
+ *
+ * The generators walk what a global reaches — a prototype interface, a
+ * constructor object — and nothing else, so `Error` is enumerated and
+ * `IteratorYieldResult` is not. That boundary is what #29 §4's rule turns on:
+ * absence may only be read as a floor where an enumeration was owed an answer.
+ * An interface describing an object literal — a result bag, an options bag —
+ * was owed none, and its declaration answers as any other hand-written one
+ * does.
+ */
+export function baselineCoversOwner(libTarget: string, owner: string): boolean {
+  const source = sourceOfLibTarget(libTarget);
+  let known = owners.get(source);
+  if (known === undefined) {
+    known = ownersIn(baselineData(source));
+    owners.set(source, known);
+  }
+  return known.has(owner);
+}
+
+/** Every type the shipped keys name: `Array#push` and `Response.json` both. */
+function ownersIn(data: BaselineData): ReadonlySet<string> {
+  const found = new Set<string>();
+  for (const table of Object.values(data.libs)) {
+    for (const key of Object.keys(table)) {
+      const at = key.search(/[#.]/u);
+      if (at > 0) found.add(key.slice(0, at));
+    }
+  }
+  return found;
+}

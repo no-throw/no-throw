@@ -261,8 +261,8 @@ condition has no form for, so that floors too.
 of it: a throw cannot be laundered through one.
 
 Iteration over anything else resolves through `[Symbol.iterator]` and the
-`next` it hands back, so an in-program iterable is colored by its own bodies.
-Builtin iterables are the baseline's to answer and floor until it is wired up.
+`next` it hands back, so an in-program iterable is colored by its own bodies
+and a builtin one — an array, a `Map`, a string — by its baseline entry.
 
 ## Async
 
@@ -447,30 +447,30 @@ a parameter default — **hidden transfers** — accessors, dynamic keys, spread
 and coercion — **generators and the sync iteration protocol**, **async** —
 `await`, promise chains, floats and `for await` — **hybrid inference** for
 unmarked functions whose bodies are visible, **conditional cleanliness** for
-higher-order functions, **every rung of the carrier chain but the baseline** —
-a local `nothrow.overrides.json`, installed `@nothrow/*` overlays, and what a
-dependency ships, which is its own `nothrow.json` or, absent a valid one, its
-surviving `@nothrow` tags — **`nothrow emit` and `emit --check`**, and the
-`configs.recommended` preset. Everything the chain cannot answer floors to
-throwing with a diagnostic naming your outs, and every out it names is now a
-rung you can really reach for. The ES
-standard-library baseline ships as data in `@nothrow/core`,
-and so does the DOM baseline, but nothing consults either yet, so every
-standard-library and DOM call floors too — `new Error(…)` included, iterating
-an array or a `Map` with it, and with them the `map`/`forEach` family, whose
-conditional entries are what the call-site join will discharge — and so does
-every coercion of an object that inherits its `toString` and `valueOf` rather
-than declaring them.
+higher-order functions, **the whole carrier chain** — a local
+`nothrow.overrides.json`, installed `@nothrow/*` overlays, what a dependency
+ships, which is its own `nothrow.json` or, absent a valid one, its surviving
+`@nothrow` tags, and the **shipped standard-library and DOM baselines** —
+**`nothrow emit` and `emit --check`**, and the `configs.recommended` preset.
+Everything the chain cannot answer floors to throwing with a diagnostic naming
+your outs, and every out it names is a rung you can really reach for.
 
-That caveat, not the analysis, is most of what you will see today, and the
-ratio is worth knowing before you try it. Marking five pure functions over
-in-memory `Map`s — no I/O — in a real project produced 128 errors, of which
-about seven were about the program's own code; `for…of` alone accounted for 45
-and `Array.prototype.push` for 18. Consulting the baselines is what turns that
-around.
+The baselines apply per lib target, so a project with no `dom` in its `lib`
+gets no DOM colors, and a member with no entry floors — which is how a
+TypeScript release landing ahead of a `@nothrow/core` release stays safe. What
+that buys: `Object.keys`, `s.trim()`, `for…of` over an array or a `Map`,
+`bytes[i]` on a `Uint8Array`, coercing an object that inherits its `toString`,
+spreading a DOM element and `el.id` are all green, and `users.forEach(cb)` is
+judged on the `cb` you actually passed. What still costs a bridge is what
+really throws: `JSON.parse`, `decodeURIComponent`, `document.createElement`.
 
-Not built yet: the baseline rung. The design is locked and lives in
-[the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
+Two things are worth knowing before you try it. `Array.prototype.map`,
+`filter`, `slice` and `push` ship **throwing**, because `ArraySpeciesCreate`
+and `Set` on a frozen array are reachable without lying to the type system and
+[the dial sign-off](docs/baseline-dials.md) rules those a hazard; the
+`forEach`/`every`/`some`/`find` family is where the conditional entries are.
+And writing through an unnarrowable key — `xs[i] = v` — floors, because the
+join reaches every accessor the receiver has.
 
 ## Packages
 

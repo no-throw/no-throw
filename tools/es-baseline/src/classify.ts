@@ -81,16 +81,26 @@ export function classifyMembers(
   return members.map((member) => classifyMember(member, corpus, domains, dials));
 }
 
+/**
+ * An accessor clause is named `get X` / `set X`, and the two family rewrites
+ * below are about `X`. Splitting the prefix off is what lets
+ * `get Uint8Array.prototype.length` reach `get %TypedArray%.prototype.length`,
+ * which is where ECMA-262 actually defines the four typed-array getters.
+ */
+const ACCESSOR_CLAUSE = /^(get |set )/;
+
 export function specFor(corpus: SpecCorpus, specKey: string): SpecBuiltin | undefined {
+  const prefix = ACCESSOR_CLAUSE.exec(specKey)?.[1] ?? "";
+  const name = specKey.slice(prefix.length);
   return (
     corpus.builtins.get(specKey) ??
-    corpus.builtins.get(toTypedArrayIntrinsic(specKey)) ??
-    corpus.builtins.get(specKey.replace(NATIVE_ERROR, "NativeError"))
+    corpus.builtins.get(prefix + toTypedArrayIntrinsic(name)) ??
+    corpus.builtins.get(prefix + name.replace(NATIVE_ERROR, "NativeError"))
   );
-  // Deliberately no `get X` fallback here: reading a property is not a call, so
-  // an accessor's color belongs in the accessor fact and nowhere else. Giving
-  // the member a color from its getter's clause would ship a call claim about
-  // something that cannot be called.
+  // Deliberately no `get X` fallback for a member's *own* key: reading a
+  // property is not a call, so an accessor's color belongs in the accessor fact
+  // and nowhere else. Giving the member a color from its getter's clause would
+  // ship a call claim about something that cannot be called.
 }
 
 function classifyMember(

@@ -18,8 +18,8 @@ export function persist(items: readonly Item[]): void {
 
 const goodRepo = {
   save(item: Item): void {
-    saved[saved.length] = item.raw;
+    saved.last = item.raw;
   },
 };
 
-const saved: string[] = [];
+const saved = { last: "" };
