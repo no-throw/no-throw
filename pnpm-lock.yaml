@@ -38,6 +38,10 @@ importers:
         version: 22.20.1
 
   packages/cli:
+    dependencies:
+      '@nothrow/core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       '@types/node':
         specifier: ^22.10.2

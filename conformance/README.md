@@ -142,6 +142,64 @@ pnpm run build && pnpm run conformance
 A failing fixture prints its name, its description, and what it expected
 against what it got — enough to act on from the CI log alone.
 
+## The CLI, at the same seam
+
+`nothrow emit` is exercised as a **process over a package on disk**, never
+through an API. A case is a directory holding a `producer` — a whole npm
+package, source and built `dist` both, committed rather than built for the same
+reason a fixture's dependency is — and, where the case has one, a `consumer`
+project of the ordinary fixture shape.
+
+```
+cli/<name>/
+  case.json         what to run, and what it has to do
+  producer/
+    package.json    the entry points a key is resolved through
+    tsconfig.json   what emit builds a program from
+    src/**/*.ts     the marks
+    dist/**         what a consumer resolves, and what the manifest hashes
+  consumer/         a fixture project, with the producer as a dependency
+    expected.json
+```
+
+`case.json` is a list of steps, run in order against a copy of the case:
+
+```json
+{
+  "description": "one line, printed next to the verdict",
+  "steps": [
+    { "emit": [], "expect": "ok" },
+    { "entries": { ".": { "each": { "color": "non-throwing", "conditions": ["param1"] } } } },
+    { "append": "dist/index.js", "text": "// rebuilt\n" },
+    { "emit": ["--check"], "expect": "refused", "names": ["hashes differently"] },
+    { "replace": "src/index.ts", "find": "/** @nothrow */\n", "with": "" },
+    { "absent": "nothrow.json" },
+    { "consumer": "consumer" }
+  ]
+}
+```
+
+`emit` runs the binary and holds its exit code to `ok` or `refused`; `names`
+asserts what the output has to say, which is where the diagnostic contract for
+a refusal lives. `append` and `replace` are the changes `--check` has to
+notice — a rebuild that changed no declaration, and an edit to the source.
+`entries` asserts the facts of an emitted entry, because the wire format is the
+spec's and not the emitter's.
+
+`consumer` is the one that matters: it installs the producer, emitted manifest
+and all, into the consumer's `node_modules` and runs that project through the
+**same driver every other fixture goes through**. The wire format is validated
+by the reader that actually reads it, rather than by a snapshot of the bytes.
+
+A producer strips comments, so the manifest is the only carrier left — which is
+what emit exists for. That the emitted file validates against
+`nothrow.schema.json` needs no step: emit checks its own output against the
+published schema and refuses to write one that does not.
+
+```bash
+pnpm run build && pnpm run conformance:cli
+```
+
 ## The suite runs twice
 
 `conformance` runs every fixture under hybrid inference, which is what ships,

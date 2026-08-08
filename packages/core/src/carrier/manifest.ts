@@ -59,7 +59,7 @@ let schema: unknown;
  * one file for both is what keeps the contract hand-authors validate against
  * from drifting away from the contract the engine actually applies.
  */
-function manifestSchema(): unknown {
+export function manifestSchema(): unknown {
   schema ??= JSON.parse(readFileSync(SCHEMA_FILE, "utf8")) as unknown;
   return schema;
 }
@@ -150,7 +150,12 @@ function staleFile(
   return undefined;
 }
 
-function integrityOf(path: string): string {
+/**
+ * A file's SRI hash, in the one spelling both sides of the wire use. Shared
+ * with the emitter rather than restated there: a producer that hashed
+ * differently from the reader would floor every manifest it published.
+ */
+export function integrityOf(path: string): string {
   return `sha256-${createHash("sha256").update(readFileSync(path)).digest("base64")}`;
 }
 

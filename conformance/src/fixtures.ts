@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { Diagnostic, Suggestion } from "./diagnostics.js";
 
 /**
@@ -22,11 +22,16 @@ export function loadFixtures(fixturesRoot: string): Fixture[] {
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort()
-    .map((name) => loadFixture(fixturesRoot, name));
+    .map((name) => loadFixture(join(fixturesRoot, name)));
 }
 
-function loadFixture(fixturesRoot: string, name: string): Fixture {
-  const directory = join(fixturesRoot, name);
+/**
+ * One fixture project, wherever it sits. The CLI suite consumes a manifest a
+ * process just emitted, and what makes that the wire format's test rather than
+ * a snapshot is that the reader reading it is this one.
+ */
+export function loadFixture(directory: string): Fixture {
+  const name = basename(directory);
   const path = join(directory, "expected.json");
   const raw: unknown = JSON.parse(readFileSync(path, "utf8"));
   const root = asRecord(raw, path);
