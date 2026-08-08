@@ -1,5 +1,11 @@
 import ts from "typescript";
 import { bodyOf, hasModifier, type Bodied } from "./declarations.js";
+import {
+  resolvedDeclaration,
+  type SymbolRef,
+  type TypeFacts,
+  type TypeRef,
+} from "./type-facts.js";
 
 /**
  * Which part of the iteration protocol a site runs, and so which members
@@ -55,7 +61,7 @@ export type ProtocolMemberName = "next" | "return" | "iterator";
  */
 export function iterationEscapeAt(
   node: ts.Node,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): IterationEscape | undefined {
   if (ts.isForOfStatement(node)) {
     return iterating(
@@ -91,7 +97,7 @@ export function iterationEscapeAt(
       : iterating(node, assigned.from, false);
   }
 
-  return iteratorMethodCall(node, checker);
+  return iteratorMethodCall(node, facts);
 }
 
 /** A site that starts from an iterable, reported at `node`. */
@@ -134,7 +140,7 @@ function isInAsyncGenerator(node: ts.Node): boolean {
  */
 function iteratorMethodCall(
   node: ts.Node,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): IterationEscape | undefined {
   if (!ts.isCallExpression(node)) return undefined;
 
@@ -145,12 +151,12 @@ function iteratorMethodCall(
   if (name !== "next" && name !== "return" && name !== "throw") return undefined;
 
   const receiver = callee.expression;
-  if (!isIteratorType(checker.getTypeAtLocation(receiver), checker)) {
+  if (!isIteratorType(facts.typeAt(receiver), facts)) {
     return undefined;
   }
 
   if (name === "throw") return { kind: "iterator-throw", node };
-  if (hasVisibleBody(checker.getResolvedSignature(node)?.declaration)) {
+  if (hasVisibleBody(resolvedDeclaration(node, facts))) {
     return undefined;
   }
 
@@ -182,11 +188,10 @@ function hasVisibleBody(declaration: ts.Declaration | undefined): boolean {
  * out to carry, and coloring one constituent would color by coin toss.
  */
 export function constituentsOf(
-  type: ts.Type,
-  checker: ts.TypeChecker,
-): readonly ts.Type[] {
-  const apparent = checker.getApparentType(type);
-  return apparent.isUnion() ? apparent.types : [apparent];
+  type: TypeRef,
+  facts: TypeFacts,
+): readonly TypeRef[] {
+  return facts.constituentsOf(facts.apparentType(type));
 }
 
 /**
@@ -198,29 +203,23 @@ export function constituentsOf(
  * An asynchronous iterator answers with a *promise* of one, and is an iterator
  * for every purpose here: one color covers its whole surface too.
  */
-export function isIteratorType(
-  type: ts.Type,
-  checker: ts.TypeChecker,
-): boolean {
-  const next = checker.getPropertyOfType(checker.getApparentType(type), "next");
+export function isIteratorType(type: TypeRef, facts: TypeFacts): boolean {
+  const next = facts.propertyOfType(facts.apparentType(type), "next");
   if (next === undefined) return false;
 
-  return checker
-    .getTypeOfSymbol(next)
-    .getCallSignatures()
+  return facts
+    .callSignaturesOf(facts.typeOfSymbol(next))
     .some((signature) => {
-      const result = signature.getReturnType();
+      const result = facts.returnTypeOf(signature);
       return (
-        checker.getPropertyOfType(result, "done") !== undefined ||
-        hasDone(checker.getAwaitedType(result), checker)
+        facts.propertyOfType(result, "done") !== undefined ||
+        hasDone(facts.awaitedType(result), facts)
       );
     });
 }
 
-function hasDone(type: ts.Type | undefined, checker: ts.TypeChecker): boolean {
-  return (
-    type !== undefined && checker.getPropertyOfType(type, "done") !== undefined
-  );
+function hasDone(type: TypeRef | undefined, facts: TypeFacts): boolean {
+  return type !== undefined && facts.propertyOfType(type, "done") !== undefined;
 }
 
 /**
@@ -229,49 +228,44 @@ function hasDone(type: ts.Type | undefined, checker: ts.TypeChecker): boolean {
  * missing one.
  */
 export function protocolMember(
-  type: ts.Type,
+  type: TypeRef,
   name: ProtocolMemberName,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
   async: boolean,
 ): Bodied | undefined {
-  const apparent = checker.getApparentType(type);
+  const apparent = facts.apparentType(type);
   const symbol =
     name === "iterator"
-      ? wellKnownIterator(apparent, checker, async)
-      : checker.getPropertyOfType(apparent, name);
+      ? wellKnownIterator(apparent, facts, async)
+      : facts.propertyOfType(apparent, name);
 
   // An overloaded member declares itself more than once, and the one that runs
   // is the implementation.
-  const declaration = symbol?.valueDeclaration ?? symbol?.declarations?.[0];
+  const declaration =
+    symbol === undefined
+      ? undefined
+      : (facts.valueDeclarationOf(symbol) ?? facts.declarationsOf(symbol)[0]);
   return declaration !== undefined && ts.isFunctionLike(declaration)
     ? declaration
     : undefined;
 }
 
 /**
- * `[Symbol.iterator]` or `[Symbol.asyncIterator]`, found by scanning:
- * TypeScript names well-known symbol members `__@iterator@<id>` with an id that
- * is not ours to predict, so the name cannot be handed to
- * `getPropertyOfType`.
+ * `[Symbol.iterator]` or `[Symbol.asyncIterator]`.
  *
  * A site that wants the asynchronous member falls back to the synchronous one,
  * which is what `for await` does at runtime — it wraps each value of a plain
  * iterable in a promise.
  */
 function wellKnownIterator(
-  type: ts.Type,
-  checker: ts.TypeChecker,
+  type: TypeRef,
+  facts: TypeFacts,
   async: boolean,
-): ts.Symbol | undefined {
-  const properties = checker.getPropertiesOfType(type);
-  const named = (prefix: string): ts.Symbol | undefined =>
-    properties.find((property) =>
-      String(property.escapedName).startsWith(prefix),
-    );
-
+): SymbolRef | undefined {
   return async
-    ? (named("__@asyncIterator@") ?? named("__@iterator@"))
-    : named("__@iterator@");
+    ? (facts.wellKnownMember(type, "asyncIterator") ??
+        facts.wellKnownMember(type, "iterator"))
+    : facts.wellKnownMember(type, "iterator");
 }
 
 /** The expression a destructuring pattern is fed by, where there is one. */

@@ -44,7 +44,7 @@ export function dischargeAt(
   caller: Bodied,
   resolution: Resolution,
 ): readonly Outcome[] {
-  const { checker } = resolution;
+  const { facts } = resolution;
   const { paramIndex, members } = condition.path;
 
   const args = argumentsOf(transfer);
@@ -78,10 +78,10 @@ export function dischargeAt(
   // function entered. The member is answered by the checker's symbol for it —
   // but on the value in hand, since a binding's declared type is a promise a
   // subclass is free to override the named member out from under.
-  const argumentPath = pathOf(argument, caller, checker);
+  const argumentPath = pathOf(argument, caller, facts);
   if (argumentPath !== undefined) return [propagate(argumentPath, members)];
 
-  const receiver = resolveReceiver(argument, checker);
+  const receiver = resolveReceiver(argument, facts);
   if (receiver.kind === "mutable") {
     return [{ kind: "floor", reason: "mutable-binding" }];
   }

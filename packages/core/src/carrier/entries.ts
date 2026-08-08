@@ -1,8 +1,8 @@
-import ts from "typescript";
 import { parseConditionPath } from "../baseline/paths.js";
 import type { Color } from "../baseline/types.js";
 import { parametersOf, type Condition } from "../conditions.js";
 import type { Bodied } from "../declarations.js";
+import type { TypeFacts, TypeRef } from "../type-facts.js";
 import type { ManifestEntry } from "./document.js";
 
 /** An entry, read as the engine's own terms. */
@@ -27,14 +27,14 @@ export interface CarriedFacts {
 export function carriedFacts(
   declaration: Bodied,
   entry: ManifestEntry,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): CarriedFacts | undefined {
   const color = entry.color;
   if (color === undefined) return undefined;
 
   const conditions =
     entry.conditions === undefined
-      ? maximallyConditioned(declaration, checker)
+      ? maximallyConditioned(declaration, facts)
       : declaredConditions(declaration, entry.conditions);
   if (conditions === undefined) return undefined;
 
@@ -48,13 +48,13 @@ export function carriedFacts(
  */
 function maximallyConditioned(
   declaration: Bodied,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): readonly Condition[] {
   const conditions: Condition[] = [];
 
   parametersOf(declaration).forEach((parameter, paramIndex) => {
     if (parameter.dotDotDotToken !== undefined) return;
-    if (!isCallable(checker.getTypeAtLocation(parameter), checker)) return;
+    if (!isCallable(facts.typeAt(parameter), facts)) return;
     conditions.push({
       path: { paramIndex, members: [] },
       owner: declaration,
@@ -93,9 +93,10 @@ function declaredConditions(
   return conditions;
 }
 
-function isCallable(type: ts.Type, checker: ts.TypeChecker): boolean {
-  const parts = type.isUnion() ? type.types : [type];
-  return parts.some(
-    (part) => checker.getApparentType(part).getCallSignatures().length > 0,
-  );
+function isCallable(type: TypeRef, facts: TypeFacts): boolean {
+  return facts
+    .constituentsOf(type)
+    .some(
+      (part) => facts.callSignaturesOf(facts.apparentType(part)).length > 0,
+    );
 }

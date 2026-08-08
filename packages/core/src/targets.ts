@@ -20,14 +20,20 @@ import {
 } from "./declarations.js";
 import { calleeExpression, type Transfer } from "./escapes.js";
 import { isMarkedFunction } from "./marks.js";
+import {
+  boundDeclaration,
+  resolvedDeclaration,
+  type SymbolRef,
+  type TypeFacts,
+} from "./type-facts.js";
 
 /**
- * What resolving a callee takes. The checker answers what the program says;
+ * What resolving a callee takes. The type facts answer what the program says;
  * the carrier answers everything the program has no body for, and the two
  * travel together because a target is only ever one or the other.
  */
 export interface Resolution {
-  readonly checker: ts.TypeChecker;
+  readonly facts: TypeFacts;
   readonly carrier: Carrier;
 }
 
@@ -124,12 +130,12 @@ export function resolveValue(
   resolution: Resolution,
   seen: Set<ts.Node> = new Set(),
 ): ValueResolution {
-  const { checker } = resolution;
+  const { facts } = resolution;
   const expression = skipParens(expr);
 
-  const root = parameterRoot(expression, body, checker);
+  const root = parameterRoot(expression, body, facts);
   if (root === "own") {
-    const path = pathOf(expression, body, checker);
+    const path = pathOf(expression, body, facts);
     return path === undefined
       ? { kind: "unknown" }
       : { kind: "targets", targets: [{ kind: "condition", path }] };
@@ -166,8 +172,8 @@ function resolveBinding(
   resolution: Resolution,
   seen: Set<ts.Node>,
 ): ValueResolution {
-  const { checker } = resolution;
-  const declaration = checker.getSymbolAtLocation(identifier)?.valueDeclaration;
+  const { facts } = resolution;
+  const declaration = boundDeclaration(identifier, facts);
   if (declaration === undefined) return { kind: "unknown" };
 
   if (ts.isFunctionDeclaration(declaration)) {
@@ -202,7 +208,7 @@ function resolveBinding(
  */
 export function resolveReceiver(
   expr: ts.Expression,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
   seen: Set<ts.Node> = new Set(),
 ): ReceiverResolution {
   const expression = skipParens(expr);
@@ -215,16 +221,16 @@ export function resolveReceiver(
   }
 
   if (ts.isConditionalExpression(expression)) {
-    const whenTrue = resolveReceiver(expression.whenTrue, checker, seen);
+    const whenTrue = resolveReceiver(expression.whenTrue, facts, seen);
     if (whenTrue.kind !== "values") return whenTrue;
-    const whenFalse = resolveReceiver(expression.whenFalse, checker, seen);
+    const whenFalse = resolveReceiver(expression.whenFalse, facts, seen);
     if (whenFalse.kind !== "values") return whenFalse;
     return { kind: "values", values: [...whenTrue.values, ...whenFalse.values] };
   }
 
   if (!ts.isIdentifier(expression)) return { kind: "unknown" };
 
-  const declaration = checker.getSymbolAtLocation(expression)?.valueDeclaration;
+  const declaration = boundDeclaration(expression, facts);
   if (declaration === undefined || !ts.isVariableDeclaration(declaration)) {
     return { kind: "unknown" };
   }
@@ -237,7 +243,7 @@ export function resolveReceiver(
     return { kind: "unknown" };
   }
   seen.add(declaration);
-  return resolveReceiver(initializer, checker, seen);
+  return resolveReceiver(initializer, facts, seen);
 }
 
 /**
@@ -250,17 +256,17 @@ export function memberTargets(
   members: readonly string[],
   resolution: Resolution,
 ): readonly Target[] {
-  const { checker } = resolution;
-  let type = checker.getTypeAtLocation(value);
-  let symbol: ts.Symbol | undefined;
+  const { facts } = resolution;
+  let type = facts.typeAt(value);
+  let symbol: SymbolRef | undefined;
 
   for (const member of members) {
-    symbol = type.getProperty(member);
+    symbol = facts.propertyOfType(type, member);
     if (symbol === undefined) return [floor("unresolvable")];
-    type = checker.getTypeOfSymbolAtLocation(symbol, value);
+    type = facts.typeOfSymbolAt(symbol, value);
   }
 
-  const declarations = symbol?.declarations ?? [];
+  const declarations = symbol === undefined ? [] : facts.declarationsOf(symbol);
   if (declarations.length === 0) return [floor("unresolvable")];
   return declarations.map((declaration) => memberTarget(declaration, resolution));
 }
@@ -310,7 +316,7 @@ function initializerOf(declaration: ts.Declaration): ts.Expression | undefined {
  * it was written rather than quietly poisoning its callers.
  */
 function transferTarget(transfer: Transfer, resolution: Resolution): Target {
-  const target = targetOf(transfer, resolution.checker);
+  const target = targetOf(transfer, resolution.facts);
   if (target === undefined) return floor("unresolvable");
   return hasVisibleBody(target)
     ? functionTarget(target)
@@ -335,13 +341,13 @@ function carriedTarget(
   // and an unanswered question is the ordinary floor.
   if (answer.entry.color === undefined) return floor("bodyless");
 
-  const facts = carriedFacts(declaration, answer.entry, resolution.checker);
-  if (facts === undefined) return floor("unusable-entry");
+  const carried = carriedFacts(declaration, answer.entry, resolution.facts);
+  if (carried === undefined) return floor("unusable-entry");
   return {
     kind: "carried",
-    color: facts.color,
-    async: facts.async,
-    conditions: facts.color === "throwing" ? [] : facts.conditions,
+    color: carried.color,
+    async: carried.async,
+    conditions: carried.color === "throwing" ? [] : carried.conditions,
   };
 }
 
@@ -355,7 +361,7 @@ export function constructedTarget(
   resolution: Resolution,
 ): DeclaredTarget {
   return declaredTarget(
-    constructedBodyAt(expression, resolution.checker),
+    constructedBodyAt(expression, resolution.facts),
     resolution,
   );
 }
@@ -375,22 +381,19 @@ export function declaredTarget(
 }
 
 /** The body an escape site transfers control into, where one can be named. */
-function targetOf(
-  transfer: Transfer,
-  checker: ts.TypeChecker,
-): Bodied | undefined {
+function targetOf(transfer: Transfer, facts: TypeFacts): Bodied | undefined {
   if (ts.isNewExpression(transfer)) {
     return (
-      constructedBodyAt(transfer.expression, checker) ??
-      constructSignatureOf(transfer, checker)
+      constructedBodyAt(transfer.expression, facts) ??
+      constructSignatureOf(transfer, facts)
     );
   }
   if (calleeExpression(transfer).kind === ts.SyntaxKind.SuperKeyword) {
     const base = inheritedFrom(transfer);
-    return base === undefined ? undefined : constructedBodyAt(base, checker);
+    return base === undefined ? undefined : constructedBodyAt(base, facts);
   }
 
-  const declaration = checker.getResolvedSignature(transfer)?.declaration;
+  const declaration = resolvedDeclaration(transfer, facts);
   return declaration !== undefined && ts.isFunctionLike(declaration)
     ? declaration
     : undefined;
@@ -404,10 +407,11 @@ function targetOf(
  */
 function constructedBodyAt(
   expression: ts.Expression,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): Bodied | undefined {
+  const symbol = facts.symbolOfType(facts.typeAt(expression));
   const declaration =
-    checker.getTypeAtLocation(expression).symbol?.valueDeclaration;
+    symbol === undefined ? undefined : facts.valueDeclarationOf(symbol);
   return declaration !== undefined && ts.isClassLike(declaration)
     ? constructedBody(declaration)
     : undefined;
@@ -422,9 +426,9 @@ function constructedBodyAt(
  */
 function constructSignatureOf(
   construction: ts.NewExpression,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): ts.SignatureDeclaration | undefined {
-  const declaration = checker.getResolvedSignature(construction)?.declaration;
+  const declaration = resolvedDeclaration(construction, facts);
   return declaration !== undefined &&
     ts.isFunctionLike(declaration) &&
     bodyOf(declaration) === undefined

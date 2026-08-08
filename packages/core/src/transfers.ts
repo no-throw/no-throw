@@ -7,6 +7,12 @@ import type {
   Escape,
 } from "./escapes.js";
 import type { Resolution } from "./targets.js";
+import {
+  resolvedDeclaration,
+  type SymbolRef,
+  type TypeFacts,
+  type TypeRef,
+} from "./type-facts.js";
 
 /** How a hidden transfer reads in a diagnostic: the verb the site is. */
 export type TransferSite =
@@ -67,7 +73,7 @@ export function hiddenTransfersOf(
   escape: Escape,
   resolution: Resolution,
 ): readonly Transfer[] {
-  const { checker } = resolution;
+  const { facts } = resolution;
   switch (escape.kind) {
     case "throw":
       return [];
@@ -86,9 +92,9 @@ export function hiddenTransfersOf(
     case "spread":
       return spreadTransfers(escape.node, escape.node.expression, resolution);
     case "coercion":
-      return coercionTransfers(escape.node, checker);
+      return coercionTransfers(escape.node, facts);
     case "instance-check":
-      return instanceCheckTransfers(escape.node, checker);
+      return instanceCheckTransfers(escape.node, facts);
     case "consumption":
     case "iterator-throw":
       // The protocol members a consumption runs are resolved by the iteration
@@ -108,28 +114,13 @@ export function textOf(node: ts.Node): string {
   return node.getText().replace(/\s+/gu, " ");
 }
 
-/** `any` and `unknown` say nothing about what runs, so they cannot be read. */
-const OPAQUE_TYPE = ts.TypeFlags.Any | ts.TypeFlags.Unknown;
-
-/** Types that run no user code when coerced. */
-const PRIMITIVE_TYPE =
-  ts.TypeFlags.StringLike |
-  ts.TypeFlags.NumberLike |
-  ts.TypeFlags.BigIntLike |
-  ts.TypeFlags.BooleanLike |
-  ts.TypeFlags.ESSymbolLike |
-  ts.TypeFlags.Null |
-  ts.TypeFlags.Undefined |
-  ts.TypeFlags.Void |
-  ts.TypeFlags.Never;
-
 function accessTransfers(
   node: AccessExpression,
   site: "read" | "write" | "update",
   resolution: Resolution,
 ): readonly Transfer[] {
   const text = textOf(node);
-  const receiver = receiverType(node.expression, resolution.checker);
+  const receiver = receiverType(node.expression, resolution.facts);
   if (receiver === undefined) return [unnameable(node, site, text)];
 
   const half: Half =
@@ -151,7 +142,7 @@ function namedMemberTargets(
   half: Half,
   resolution: Resolution,
 ): readonly TransferTarget[] {
-  const symbol = resolution.checker.getSymbolAtLocation(node);
+  const symbol = resolution.facts.symbolAt(node);
   return symbol === undefined ? [] : accessorTargets(symbol, half, resolution);
 }
 
@@ -161,58 +152,58 @@ function namedMemberTargets(
  * has is. The fallback is what already works — narrowing is precision on top.
  */
 function keyedMemberTargets(
-  receiver: ts.Type,
+  receiver: TypeRef,
   key: ts.Expression,
   half: Half,
   resolution: Resolution,
 ): readonly TransferTarget[] {
-  const { checker } = resolution;
-  const names = narrowKey(key, checker);
+  const { facts } = resolution;
+  const names = narrowKey(key, facts);
   const symbols =
     names === undefined
-      ? membersOf(receiver, checker)
-      : names.flatMap((name) => memberNamed(receiver, name, checker));
+      ? membersOf(receiver, facts)
+      : names.flatMap((name) => memberNamed(receiver, name, facts));
   return symbols.flatMap((symbol) => accessorTargets(symbol, half, resolution));
 }
 
 function narrowKey(
   key: ts.Expression,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): readonly string[] | undefined {
-  const type = checker.getTypeAtLocation(key);
   const names: string[] = [];
 
-  for (const part of constituentsOf(type)) {
-    if (!part.isStringLiteral()) return undefined;
-    names.push(part.value);
+  for (const part of facts.constituentsOf(facts.typeAt(key))) {
+    const literal = facts.stringLiteralValue(part);
+    if (literal === undefined) return undefined;
+    names.push(literal);
   }
 
   return names;
 }
 
 function accessorTargets(
-  symbol: ts.Symbol,
+  symbol: SymbolRef,
   half: Half,
   resolution: Resolution,
 ): readonly TransferTarget[] {
   const targets: TransferTarget[] = [];
 
-  for (const declaration of symbol.declarations ?? []) {
+  for (const declaration of resolution.facts.declarationsOf(symbol)) {
     const fact = accessorFactOf(declaration, resolution);
     if (fact !== undefined) {
-      targets.push(...factTargets(symbol, half, fact));
+      targets.push(...factTargets(symbol, half, fact, resolution.facts));
       continue;
     }
 
     if (half !== "set" && ts.isGetAccessorDeclaration(declaration)) {
       targets.push({
-        target: { kind: "getter", name: memberName(symbol) },
+        target: { kind: "getter", name: memberName(symbol, resolution.facts) },
         declaration,
       });
     }
     if (half !== "get" && ts.isSetAccessorDeclaration(declaration)) {
       targets.push({
-        target: { kind: "setter", name: memberName(symbol) },
+        target: { kind: "setter", name: memberName(symbol, resolution.facts) },
         declaration,
       });
     }
@@ -238,23 +229,24 @@ function accessorFactOf(
 
 /** The halves a site consults, colored by the fact rather than by a body. */
 function factTargets(
-  symbol: ts.Symbol,
+  symbol: SymbolRef,
   half: Half,
   fact: AccessorFact,
+  facts: TypeFacts,
 ): readonly TransferTarget[] {
   if (fact === false) return [];
 
   const targets: TransferTarget[] = [];
   if (half !== "set") {
     targets.push({
-      target: { kind: "getter", name: memberName(symbol) },
+      target: { kind: "getter", name: memberName(symbol, facts) },
       declaration: undefined,
       carried: fact.get,
     });
   }
   if (half !== "get") {
     targets.push({
-      target: { kind: "setter", name: memberName(symbol) },
+      target: { kind: "setter", name: memberName(symbol, facts) },
       declaration: undefined,
       carried: fact.set,
     });
@@ -282,8 +274,8 @@ function bindingTargets(
   element: ts.BindingElement,
   resolution: Resolution,
 ): readonly TransferTarget[] | undefined {
-  const { checker } = resolution;
-  const source = receiverType(element.parent, checker);
+  const { facts } = resolution;
+  const source = receiverType(element.parent, facts);
   if (source === undefined) return undefined;
   if (element.dotDotDotToken !== undefined) {
     return ownEnumerableTargets(source, resolution);
@@ -298,7 +290,7 @@ function bindingTargets(
     return [];
   }
 
-  return memberNamed(source, name.text, checker).flatMap((symbol) =>
+  return memberNamed(source, name.text, facts).flatMap((symbol) =>
     accessorTargets(symbol, "get", resolution),
   );
 }
@@ -313,9 +305,9 @@ function assignmentTargets(
   element: Exclude<DestructuringElement, ts.BindingElement>,
   resolution: Resolution,
 ): readonly TransferTarget[] | undefined {
-  const { checker } = resolution;
+  const { facts } = resolution;
   if (ts.isSpreadAssignment(element)) {
-    const source = assignedSource(element.parent, checker);
+    const source = assignedSource(element.parent, facts);
     return source === undefined
       ? undefined
       : ownEnumerableTargets(source, resolution);
@@ -323,15 +315,15 @@ function assignmentTargets(
 
   const { name } = element;
   if (!ts.isIdentifier(name)) return undefined;
-  const symbol = checker.getPropertySymbolOfDestructuringAssignment(name);
+  const symbol = facts.destructuredProperty(name);
   return symbol === undefined ? [] : accessorTargets(symbol, "get", resolution);
 }
 
 /** The value a destructuring pattern is assigned, where the syntax says. */
 function assignedSource(
   pattern: ts.ObjectLiteralExpression,
-  checker: ts.TypeChecker,
-): ts.Type | undefined {
+  facts: TypeFacts,
+): TypeRef | undefined {
   const { parent } = pattern;
   if (
     !ts.isBinaryExpression(parent) ||
@@ -340,7 +332,7 @@ function assignedSource(
   ) {
     return undefined;
   }
-  return receiverType(parent.right, checker);
+  return receiverType(parent.right, facts);
 }
 
 function spreadTransfers(
@@ -349,7 +341,7 @@ function spreadTransfers(
   resolution: Resolution,
 ): readonly Transfer[] {
   const text = textOf(source);
-  const type = receiverType(source, resolution.checker);
+  const type = receiverType(source, resolution.facts);
   if (type === undefined) return [unnameable(node, "spread", text)];
 
   const targets = ownEnumerableTargets(type, resolution);
@@ -357,19 +349,23 @@ function spreadTransfers(
 }
 
 function ownEnumerableTargets(
-  source: ts.Type,
+  source: TypeRef,
   resolution: Resolution,
 ): readonly TransferTarget[] {
-  return membersOf(source, resolution.checker).flatMap((symbol) =>
-    (symbol.declarations ?? []).flatMap((declaration) => {
+  const { facts } = resolution;
+  return membersOf(source, facts).flatMap((symbol) =>
+    facts.declarationsOf(symbol).flatMap((declaration) => {
       if (!mayBeOwn(declaration)) return [];
 
       const fact = accessorFactOf(declaration, resolution);
-      if (fact !== undefined) return factTargets(symbol, "get", fact);
+      if (fact !== undefined) return factTargets(symbol, "get", fact, facts);
       return ts.isGetAccessorDeclaration(declaration)
         ? [
             {
-              target: { kind: "getter" as const, name: memberName(symbol) },
+              target: {
+                kind: "getter" as const,
+                name: memberName(symbol, facts),
+              },
               declaration,
             },
           ]
@@ -394,25 +390,25 @@ function mayBeOwn(declaration: ts.Declaration): boolean {
 
 function coercionTransfers(
   value: ts.Expression,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): readonly Transfer[] {
   const text = textOf(value);
-  const type = checker.getTypeAtLocation(value);
-  if ((type.flags & OPAQUE_TYPE) !== 0) {
+  const type = facts.typeAt(value);
+  if (facts.isOpaque(type)) {
     return [unnameable(value, "coercion", text)];
   }
-  if (isPrimitive(type)) return [];
+  if (isPrimitive(type, facts)) return [];
   // A type parameter is not itself a primitive, but a constraint that is bounds
   // every value it can hold — so `${k}` on `K extends string` costs nothing.
-  const constraint = checker.getBaseConstraintOfType(type);
-  if (constraint !== undefined && isPrimitive(constraint)) return [];
+  const constraint = facts.baseConstraintOf(type);
+  if (constraint !== undefined && isPrimitive(constraint, facts)) return [];
 
   // `ToPrimitive` tries all three in turn, and which of them stops depends on
   // the hint and on what each returns — neither of which is static.
   const targets = [
-    ...declaredWellKnownTargets(type, "toPrimitive", checker),
-    ...inheritedMethodTargets(type, "valueOf", checker),
-    ...inheritedMethodTargets(type, "toString", checker),
+    ...declaredWellKnownTargets(type, "toPrimitive", facts),
+    ...inheritedMethodTargets(type, "valueOf", facts),
+    ...inheritedMethodTargets(type, "toString", facts),
   ];
 
   // A type with no conversion member at all cannot be coerced without a
@@ -429,11 +425,11 @@ function coercionTransfers(
 
 function instanceCheckTransfers(
   node: ts.BinaryExpression,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): readonly Transfer[] {
   const text = textOf(node);
-  const constructor = checker.getTypeAtLocation(node.right);
-  if ((constructor.flags & OPAQUE_TYPE) !== 0) {
+  const constructor = facts.typeAt(node.right);
+  if (facts.isOpaque(constructor)) {
     return [unnameable(node, "instance-check", text)];
   }
 
@@ -441,7 +437,7 @@ function instanceCheckTransfers(
   // `Function.prototype`'s runs `OrdinaryHasInstance`, which reads a data
   // property and walks the prototype chain — it reaches no user code at all,
   // unlike the `valueOf`/`toString` a coercion inherits.
-  const targets = declaredWellKnownTargets(constructor, "hasInstance", checker);
+  const targets = declaredWellKnownTargets(constructor, "hasInstance", facts);
   return targets.length === 0
     ? []
     : [{ node, site: "instance-check", text, targets }];
@@ -457,8 +453,8 @@ function callTransfers(
   call: ts.CallExpression,
   resolution: Resolution,
 ): readonly Transfer[] {
-  const { checker } = resolution;
-  const callee = libCalleeKey(call, checker);
+  const { facts } = resolution;
+  const callee = libCalleeKey(call, facts);
   if (callee === "ObjectConstructor#assign") {
     return call.arguments.slice(1).flatMap((source) =>
       // A spread argument's sources are the elements of whatever it spreads,
@@ -472,14 +468,14 @@ function callTransfers(
     return [];
   }
   const [value] = call.arguments;
-  return value === undefined ? [] : coercionTransfers(value, checker);
+  return value === undefined ? [] : coercionTransfers(value, facts);
 }
 
 function libCalleeKey(
   call: ts.CallExpression,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): string | undefined {
-  const declaration = checker.getResolvedSignature(call)?.declaration;
+  const declaration = resolvedDeclaration(call, facts);
   if (
     declaration === undefined ||
     libTargetOfFileName(declaration.getSourceFile().fileName) === undefined
@@ -502,30 +498,41 @@ function libCalleeKey(
  * baseline's to answer.
  */
 function declaredWellKnownTargets(
-  type: ts.Type,
+  type: TypeRef,
   name: string,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): readonly TransferTarget[] {
-  const symbols = membersOf(checker.getApparentType(type), checker).filter(
-    (symbol) => wellKnownName(symbol) === name,
-  );
-  return symbols.flatMap((symbol) => methodTargets(symbol));
+  const apparent = facts.apparentType(type);
+  const parts = facts.isUnion(apparent)
+    ? facts.constituentsOf(apparent).map((part) => facts.apparentType(part))
+    : [apparent];
+
+  return parts.flatMap((part) => {
+    const symbol = facts.wellKnownMember(part, name);
+    return symbol === undefined ? [] : methodTargets(symbol, facts);
+  });
 }
 
 /** A member as an ordinary lookup sees it, `Object.prototype`'s included. */
 function inheritedMethodTargets(
-  type: ts.Type,
+  type: TypeRef,
   name: string,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): readonly TransferTarget[] {
-  return memberNamed(checker.getApparentType(type), name, checker).flatMap(
-    (symbol) => methodTargets(symbol),
+  return memberNamed(facts.apparentType(type), name, facts).flatMap((symbol) =>
+    methodTargets(symbol, facts),
   );
 }
 
-function methodTargets(symbol: ts.Symbol): readonly TransferTarget[] {
-  const target: HiddenCallee = { kind: "method", name: memberName(symbol) };
-  const declarations = symbol.declarations ?? [];
+function methodTargets(
+  symbol: SymbolRef,
+  facts: TypeFacts,
+): readonly TransferTarget[] {
+  const target: HiddenCallee = {
+    kind: "method",
+    name: memberName(symbol, facts),
+  };
+  const declarations = facts.declarationsOf(symbol);
   if (declarations.length === 0) return [{ target, declaration: undefined }];
 
   return declarations.map((declaration) => ({
@@ -541,48 +548,36 @@ function methodTargets(symbol: ts.Symbol): readonly TransferTarget[] {
  * only what *every* constituent has, which is the wrong direction: a member one
  * constituent declares still runs when the value is that constituent.
  */
-function membersOf(
-  type: ts.Type,
-  checker: ts.TypeChecker,
-): readonly ts.Symbol[] {
-  if (!type.isUnion()) return checker.getPropertiesOfType(type);
-  return type.types.flatMap((part) =>
-    checker.getPropertiesOfType(checker.getApparentType(part)),
-  );
+function membersOf(type: TypeRef, facts: TypeFacts): readonly SymbolRef[] {
+  if (!facts.isUnion(type)) return facts.propertiesOfType(type);
+  return facts
+    .constituentsOf(type)
+    .flatMap((part) => facts.propertiesOfType(facts.apparentType(part)));
 }
 
 /** One named member, across a union's constituents, inherited ones included. */
 function memberNamed(
-  type: ts.Type,
+  type: TypeRef,
   name: string,
-  checker: ts.TypeChecker,
-): readonly ts.Symbol[] {
-  if (!type.isUnion()) {
-    const symbol = checker.getPropertyOfType(type, name);
+  facts: TypeFacts,
+): readonly SymbolRef[] {
+  if (!facts.isUnion(type)) {
+    const symbol = facts.propertyOfType(type, name);
     return symbol === undefined ? [] : [symbol];
   }
-  return type.types.flatMap((part) =>
-    memberNamed(checker.getApparentType(part), name, checker),
-  );
+  return facts
+    .constituentsOf(type)
+    .flatMap((part) => memberNamed(facts.apparentType(part), name, facts));
 }
 
 /** The apparent type of a receiver, or nothing when it cannot be read. */
-function receiverType(
-  node: ts.Node,
-  checker: ts.TypeChecker,
-): ts.Type | undefined {
-  const type = checker.getApparentType(checker.getTypeAtLocation(node));
-  return (type.flags & OPAQUE_TYPE) === 0 ? type : undefined;
+function receiverType(node: ts.Node, facts: TypeFacts): TypeRef | undefined {
+  const type = facts.apparentType(facts.typeAt(node));
+  return facts.isOpaque(type) ? undefined : type;
 }
 
-function constituentsOf(type: ts.Type): readonly ts.Type[] {
-  return type.isUnion() ? type.types : [type];
-}
-
-function isPrimitive(type: ts.Type): boolean {
-  return constituentsOf(type).every(
-    (part) => (part.flags & PRIMITIVE_TYPE) !== 0,
-  );
+function isPrimitive(type: TypeRef, facts: TypeFacts): boolean {
+  return facts.constituentsOf(type).every((part) => facts.isPrimitive(part));
 }
 
 /**
@@ -592,13 +587,18 @@ function isPrimitive(type: ts.Type): boolean {
  */
 const WELL_KNOWN_MEMBER = /^__@(\w+)@\d+$/u;
 
-function wellKnownName(symbol: ts.Symbol): string | undefined {
-  return WELL_KNOWN_MEMBER.exec(symbol.getName())?.[1];
+function wellKnownName(
+  symbol: SymbolRef,
+  facts: TypeFacts,
+): string | undefined {
+  return WELL_KNOWN_MEMBER.exec(facts.nameOf(symbol))?.[1];
 }
 
-function memberName(symbol: ts.Symbol): string {
-  const wellKnown = wellKnownName(symbol);
-  return wellKnown === undefined ? symbol.getName() : `[Symbol.${wellKnown}]`;
+function memberName(symbol: SymbolRef, facts: TypeFacts): string {
+  const wellKnown = wellKnownName(symbol, facts);
+  return wellKnown === undefined
+    ? facts.nameOf(symbol)
+    : `[Symbol.${wellKnown}]`;
 }
 
 const UNNAMEABLE: TransferTarget = {

@@ -1,0 +1,8 @@
+node_modules/
+# Every probe writes its own fixture tree; deep-chain-glob.mjs deliberately
+# writes one at the spike root, because a config with no `include` next to
+# node_modules is the shape it exists to test.
+fixtures/
+bench-*/
+src/
+tsconfig.glob.json

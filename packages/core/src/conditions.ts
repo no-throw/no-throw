@@ -1,6 +1,7 @@
 import ts from "typescript";
 import type { Bodied } from "./declarations.js";
 import type { Transfer } from "./escapes.js";
+import { boundDeclaration, type TypeFacts } from "./type-facts.js";
 
 /**
  * An access path over one function's own parameters — a condition path in the
@@ -83,9 +84,9 @@ export type ParameterRoot =
 export function parameterRoot(
   expr: ts.Expression,
   body: Bodied,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): ParameterRoot {
-  const parameter = rootParameter(expr, checker);
+  const parameter = rootParameter(expr, facts);
   if (parameter === undefined) return "other";
   // The body walk never crosses a function boundary, so a parameter reachable
   // from here that is not ours belongs to a function enclosing this one.
@@ -100,9 +101,9 @@ export function parameterRoot(
 export function pathOf(
   expr: ts.Expression,
   body: Bodied,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): ParameterPath | undefined {
-  const parameter = rootParameter(expr, checker);
+  const parameter = rootParameter(expr, facts);
   if (parameter === undefined) return undefined;
 
   const paramIndex = parametersOf(body).indexOf(parameter);
@@ -110,7 +111,7 @@ export function pathOf(
 
   const members: string[] = [];
   for (const access of accessChain(expr)) {
-    if (checker.getSymbolAtLocation(access.name) === undefined) return undefined;
+    if (facts.symbolAt(access.name) === undefined) return undefined;
     members.push(access.name.text);
   }
 
@@ -125,7 +126,7 @@ export function skipParens(expr: ts.Expression): ts.Expression {
 
 function rootParameter(
   expr: ts.Expression,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): ts.ParameterDeclaration | undefined {
   let current = skipParens(expr);
   while (ts.isPropertyAccessExpression(current)) {
@@ -133,7 +134,7 @@ function rootParameter(
   }
   if (!ts.isIdentifier(current)) return undefined;
 
-  const declaration = checker.getSymbolAtLocation(current)?.valueDeclaration;
+  const declaration = boundDeclaration(current, facts);
   return declaration !== undefined && ts.isParameter(declaration)
     ? declaration
     : undefined;

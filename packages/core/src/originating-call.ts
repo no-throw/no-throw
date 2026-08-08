@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { boundDeclaration, type TypeFacts } from "./type-facts.js";
 
 /**
  * The expression→originating-call rule: the call that produced a value, where
@@ -15,12 +16,12 @@ import ts from "typescript";
  */
 export function originatingCall(
   expression: ts.Expression,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): ts.CallExpression | undefined {
   if (ts.isCallExpression(expression)) return expression;
   if (!ts.isIdentifier(expression)) return undefined;
 
-  const declaration = checker.getSymbolAtLocation(expression)?.valueDeclaration;
+  const declaration = boundDeclaration(expression, facts);
   if (declaration === undefined || !ts.isVariableDeclaration(declaration)) {
     return undefined;
   }

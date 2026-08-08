@@ -22,6 +22,8 @@ import type { Condition } from "./conditions.js";
 import { findMarks, type MarkProblemKind } from "./marks.js";
 import { isVisiblyAsync } from "./promises.js";
 import { createColorResolver, type BodyEscape } from "./resolve-color.js";
+import type { TypeFacts } from "./type-facts.js";
+import { typeFactsOf } from "./type-facts/typescript.js";
 
 /** The wire version this release writes, which is the one it reads. */
 const VERSION = 1;
@@ -114,11 +116,13 @@ export function emitManifest(
     );
   }
 
+  const facts = typeFactsOf(program.getTypeChecker());
   const surface = surfaceOver(
     entryPointSources(home, sources, commandLine),
     program,
+    facts,
   );
-  const collected = collectEntries(sources, program, surface);
+  const collected = collectEntries(sources, program, surface, facts);
   if (collected.kind === "refused") return collected;
 
   const document: ManifestDocument = {
@@ -241,6 +245,7 @@ function collectEntries(
   sources: readonly ts.SourceFile[],
   program: ts.Program,
   surface: ExportSurface,
+  facts: TypeFacts,
 ):
   | { readonly kind: "exports"; readonly exports: ManifestDocument["exports"] }
   | { readonly kind: "refused"; readonly refusals: readonly EmitRefusal[] } {
@@ -259,8 +264,8 @@ function collectEntries(
     // Built per file, as the enforcement walk builds it: the chain's first
     // question is which package is asking.
     const colors = createColorResolver({
-      checker: program.getTypeChecker(),
-      carrier: createCarrier(sourceFile, program),
+      facts,
+      carrier: createCarrier(sourceFile, program, facts),
     });
 
     for (const seed of marks.bound) {
