@@ -94,6 +94,17 @@ export function isMarkedFunction(declaration: ts.Node): boolean {
   return bindingTarget(host) === declaration && nothrowTagsOn(host).length > 0;
 }
 
+/**
+ * A `@nothrow` written directly on a declaration, with no whitelist applied
+ * and no body behind it. This is the carrier reading of the tag rather than
+ * the authoring one: on a bodyless declaration a dependency ships, the tag is
+ * *trusted as an assertion* — the same trust class as the declaration's types
+ * — because the real seam is body visibility, not the package boundary.
+ */
+export function hasDeclaredMark(declaration: ts.Node): boolean {
+  return nothrowTagsOn(declaration).length > 0;
+}
+
 /** The construct a mark for this declaration would have to be written on. */
 function markHostOf(declaration: ts.Node): ts.Node | undefined {
   if (canCarryBody(declaration)) return declaration;

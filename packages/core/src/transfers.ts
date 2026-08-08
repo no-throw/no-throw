@@ -1,10 +1,12 @@
 import ts from "typescript";
 import { libTargetOfFileName, memberKey } from "./baseline/keys.js";
+import type { AccessorFact, Color } from "./baseline/types.js";
 import type {
   AccessExpression,
   DestructuringElement,
   Escape,
 } from "./escapes.js";
+import type { Resolution } from "./targets.js";
 
 /** How a hidden transfer reads in a diagnostic: the verb the site is. */
 export type TransferSite =
@@ -27,6 +29,12 @@ export interface TransferTarget {
   readonly target: HiddenCallee | undefined;
   /** The body to read a color off, or absent when there is none. */
   readonly declaration: ts.SignatureDeclaration | undefined;
+  /**
+   * The color a carrier's accessor fact gives this half. A declared *property*
+   * that is really a getter has no accessor declaration to read, so the fact is
+   * the only thing that can say a body runs here at all.
+   */
+  readonly carried?: Color;
 }
 
 /**
@@ -49,15 +57,17 @@ type Half = "get" | "set" | "both";
 /**
  * The hidden transfers at one escape site, resolved through the static type.
  *
- * The chain that answers "is this member really an accessor?" is the
- * *declaration* plus the sound floor for opaque members. Overlay, shipped
- * manifest and baseline rungs slot in behind this same call, which is why the
- * question is asked here rather than in the walk.
+ * The chain that answers "is this member really an accessor?" is the carrier
+ * chain first and the *declaration* second — not the declaration alone, which
+ * #26/#29 proved false across ~2,500 first-party members. An accessor fact
+ * outranks the declaration in both directions: it can say a declared property
+ * is really a getter/setter pair, and it can say a member really is data.
  */
 export function hiddenTransfersOf(
   escape: Escape,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly Transfer[] {
+  const { checker } = resolution;
   switch (escape.kind) {
     case "throw":
       return [];
@@ -65,16 +75,16 @@ export function hiddenTransfersOf(
       // Only a call signature is keyed below; `new String(o)` and a tagged
       // template resolve to different members of the same lib interfaces.
       return ts.isCallExpression(escape.node)
-        ? callTransfers(escape.node, checker)
+        ? callTransfers(escape.node, resolution)
         : [];
     case "read":
     case "write":
     case "update":
-      return accessTransfers(escape.node, escape.kind, checker);
+      return accessTransfers(escape.node, escape.kind, resolution);
     case "destructure":
-      return destructuringTransfers(escape.node, checker);
+      return destructuringTransfers(escape.node, resolution);
     case "spread":
-      return spreadTransfers(escape.node, escape.node.expression, checker);
+      return spreadTransfers(escape.node, escape.node.expression, resolution);
     case "coercion":
       return coercionTransfers(escape.node, checker);
     case "instance-check":
@@ -116,17 +126,17 @@ const PRIMITIVE_TYPE =
 function accessTransfers(
   node: AccessExpression,
   site: "read" | "write" | "update",
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly Transfer[] {
   const text = textOf(node);
-  const receiver = receiverType(node.expression, checker);
+  const receiver = receiverType(node.expression, resolution.checker);
   if (receiver === undefined) return [unnameable(node, site, text)];
 
   const half: Half =
     site === "read" ? "get" : site === "write" ? "set" : "both";
   const targets = ts.isPropertyAccessExpression(node)
-    ? namedMemberTargets(node, half, checker)
-    : keyedMemberTargets(receiver, node.argumentExpression, half, checker);
+    ? namedMemberTargets(node, half, resolution)
+    : keyedMemberTargets(receiver, node.argumentExpression, half, resolution);
 
   return targets.length === 0 ? [] : [{ node, site, text, targets }];
 }
@@ -139,10 +149,10 @@ function accessTransfers(
 function namedMemberTargets(
   node: ts.PropertyAccessExpression,
   half: Half,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly TransferTarget[] {
-  const symbol = checker.getSymbolAtLocation(node);
-  return symbol === undefined ? [] : accessorTargets(symbol, half);
+  const symbol = resolution.checker.getSymbolAtLocation(node);
+  return symbol === undefined ? [] : accessorTargets(symbol, half, resolution);
 }
 
 /**
@@ -154,14 +164,15 @@ function keyedMemberTargets(
   receiver: ts.Type,
   key: ts.Expression,
   half: Half,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly TransferTarget[] {
+  const { checker } = resolution;
   const names = narrowKey(key, checker);
   const symbols =
     names === undefined
       ? membersOf(receiver, checker)
       : names.flatMap((name) => memberNamed(receiver, name, checker));
-  return symbols.flatMap((symbol) => accessorTargets(symbol, half));
+  return symbols.flatMap((symbol) => accessorTargets(symbol, half, resolution));
 }
 
 function narrowKey(
@@ -182,10 +193,17 @@ function narrowKey(
 function accessorTargets(
   symbol: ts.Symbol,
   half: Half,
+  resolution: Resolution,
 ): readonly TransferTarget[] {
   const targets: TransferTarget[] = [];
 
   for (const declaration of symbol.declarations ?? []) {
+    const fact = accessorFactOf(declaration, resolution);
+    if (fact !== undefined) {
+      targets.push(...factTargets(symbol, half, fact));
+      continue;
+    }
+
     if (half !== "set" && ts.isGetAccessorDeclaration(declaration)) {
       targets.push({
         target: { kind: "getter", name: memberName(symbol) },
@@ -203,14 +221,55 @@ function accessorTargets(
   return targets;
 }
 
+/**
+ * The accessor fact a carrier states for one declaration. `false` is a
+ * *positive* record that the member really is data, which is why absence is not
+ * that record and cannot be read as one — but absence here leaves the
+ * declaration to answer, which for a hand-written `.d.ts` is the trust base
+ * (#30 §C), not a floor.
+ */
+function accessorFactOf(
+  declaration: ts.Declaration,
+  resolution: Resolution,
+): AccessorFact | undefined {
+  const answer = resolution.carrier.answerFor(declaration);
+  return answer?.kind === "entry" ? answer.entry.accessor : undefined;
+}
+
+/** The halves a site consults, colored by the fact rather than by a body. */
+function factTargets(
+  symbol: ts.Symbol,
+  half: Half,
+  fact: AccessorFact,
+): readonly TransferTarget[] {
+  if (fact === false) return [];
+
+  const targets: TransferTarget[] = [];
+  if (half !== "set") {
+    targets.push({
+      target: { kind: "getter", name: memberName(symbol) },
+      declaration: undefined,
+      carried: fact.get,
+    });
+  }
+  if (half !== "get") {
+    targets.push({
+      target: { kind: "setter", name: memberName(symbol) },
+      declaration: undefined,
+      carried: fact.set,
+    });
+  }
+  return targets;
+}
+
 function destructuringTransfers(
   node: DestructuringElement,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly Transfer[] {
   const text = textOf(node);
   const targets = ts.isBindingElement(node)
-    ? bindingTargets(node, checker)
-    : assignmentTargets(node, checker);
+    ? bindingTargets(node, resolution)
+    : assignmentTargets(node, resolution);
 
   if (targets === undefined) return [unnameable(node, "destructure", text)];
   return targets.length === 0
@@ -221,17 +280,18 @@ function destructuringTransfers(
 /** `undefined` where the source type cannot be read: the caller floors. */
 function bindingTargets(
   element: ts.BindingElement,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly TransferTarget[] | undefined {
+  const { checker } = resolution;
   const source = receiverType(element.parent, checker);
   if (source === undefined) return undefined;
   if (element.dotDotDotToken !== undefined) {
-    return ownEnumerableTargets(source, checker);
+    return ownEnumerableTargets(source, resolution);
   }
 
   const name = element.propertyName ?? element.name;
   if (ts.isComputedPropertyName(name)) {
-    return keyedMemberTargets(source, name.expression, "get", checker);
+    return keyedMemberTargets(source, name.expression, "get", resolution);
   }
   if (ts.isArrayBindingPattern(name) || ts.isObjectBindingPattern(name)) {
     // Only reachable with a property name, which the branch above took.
@@ -239,7 +299,7 @@ function bindingTargets(
   }
 
   return memberNamed(source, name.text, checker).flatMap((symbol) =>
-    accessorTargets(symbol, "get"),
+    accessorTargets(symbol, "get", resolution),
   );
 }
 
@@ -251,19 +311,20 @@ function bindingTargets(
  */
 function assignmentTargets(
   element: Exclude<DestructuringElement, ts.BindingElement>,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly TransferTarget[] | undefined {
+  const { checker } = resolution;
   if (ts.isSpreadAssignment(element)) {
     const source = assignedSource(element.parent, checker);
     return source === undefined
       ? undefined
-      : ownEnumerableTargets(source, checker);
+      : ownEnumerableTargets(source, resolution);
   }
 
   const { name } = element;
   if (!ts.isIdentifier(name)) return undefined;
   const symbol = checker.getPropertySymbolOfDestructuringAssignment(name);
-  return symbol === undefined ? [] : accessorTargets(symbol, "get");
+  return symbol === undefined ? [] : accessorTargets(symbol, "get", resolution);
 }
 
 /** The value a destructuring pattern is assigned, where the syntax says. */
@@ -285,41 +346,46 @@ function assignedSource(
 function spreadTransfers(
   node: ts.Node,
   source: ts.Expression,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly Transfer[] {
   const text = textOf(source);
-  const type = receiverType(source, checker);
+  const type = receiverType(source, resolution.checker);
   if (type === undefined) return [unnameable(node, "spread", text)];
 
-  const targets = ownEnumerableTargets(type, checker);
+  const targets = ownEnumerableTargets(type, resolution);
   return targets.length === 0 ? [] : [{ node, site: "spread", text, targets }];
 }
 
 function ownEnumerableTargets(
   source: ts.Type,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly TransferTarget[] {
-  return membersOf(source, checker).flatMap((symbol) =>
-    (symbol.declarations ?? [])
-      .filter(mayBeOwnGetAccessor)
-      .map((declaration) => ({
-        target: { kind: "getter" as const, name: memberName(symbol) },
-        declaration,
-      })),
+  return membersOf(source, resolution.checker).flatMap((symbol) =>
+    (symbol.declarations ?? []).flatMap((declaration) => {
+      if (!mayBeOwn(declaration)) return [];
+
+      const fact = accessorFactOf(declaration, resolution);
+      if (fact !== undefined) return factTargets(symbol, "get", fact);
+      return ts.isGetAccessorDeclaration(declaration)
+        ? [
+            {
+              target: { kind: "getter" as const, name: memberName(symbol) },
+              declaration,
+            },
+          ]
+        : [];
+    }),
   );
 }
 
 /**
- * A get accessor written in a class body and not `static` is on the prototype,
- * so an instance does not own it — which is why spreading a DOM element touches
- * nothing. That is the one case where own-ness has an answer: an accessor
- * declared on an interface or a type literal could describe either an object
- * literal or a class instance, and the sound reading of that is that it is own.
+ * A member written in a class body and not `static` lives on the prototype, so
+ * an instance does not own it — which is why spreading a DOM element touches
+ * nothing. That is the one case where own-ness has an answer: a member declared
+ * on an interface or a type literal could describe either an object literal or
+ * a class instance, and the sound reading of that is that it is own.
  */
-function mayBeOwnGetAccessor(
-  declaration: ts.Declaration,
-): declaration is ts.GetAccessorDeclaration {
-  if (!ts.isGetAccessorDeclaration(declaration)) return false;
+function mayBeOwn(declaration: ts.Declaration): boolean {
   return (
     !ts.isClassLike(declaration.parent) ||
     (ts.getCombinedModifierFlags(declaration) & ts.ModifierFlags.Static) !== 0
@@ -389,8 +455,9 @@ function instanceCheckTransfers(
  */
 function callTransfers(
   call: ts.CallExpression,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly Transfer[] {
+  const { checker } = resolution;
   const callee = libCalleeKey(call, checker);
   if (callee === "ObjectConstructor#assign") {
     return call.arguments.slice(1).flatMap((source) =>
@@ -398,7 +465,7 @@ function callTransfers(
       // and the syntax names none of them.
       ts.isSpreadElement(source)
         ? [unnameable(source, "spread", textOf(source))]
-        : spreadTransfers(source, source, checker),
+        : spreadTransfers(source, source, resolution),
     );
   }
   if (callee !== "StringConstructor#()" && callee !== "NumberConstructor#()") {

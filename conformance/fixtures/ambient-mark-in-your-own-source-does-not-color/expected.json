@@ -1,0 +1,23 @@
+{
+  "description": "A mark on your own ambient declaration colors nothing: in-source `@nothrow` keeps one meaning — a verified seed — and the unverified assertion belongs in the overrides channel, which is where the mark's own diagnostic sends it.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 1,
+      "column": 5,
+      "endLine": 1,
+      "endColumn": 13,
+      "messageId": "ambientDeclaration",
+      "message": "`@nothrow` binds to nothing on an ambient declaration: there is no body to verify it against, and an in-source mark is always verified. Assert the color in `nothrow.overrides.json` instead."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 6,
+      "column": 10,
+      "endLine": 6,
+      "endColumn": 22,
+      "messageId": "unbridgedCall",
+      "message": "Call to `readConfig` escapes this `@nothrow` function: it is declared without a body — an ambient declaration, a `.d.ts`, or a value known only by its function type — and no mark, manifest, overlay or override colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

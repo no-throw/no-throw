@@ -24,7 +24,28 @@ export type FloorReason =
    * its target through a type rather than being handed one, so no argument is
    * written at the site that could discharge them.
    */
-  | "conditioned";
+  | "conditioned"
+  /** A carrier answered, and what it said is that this one throws. */
+  | "carried-throwing"
+  /**
+   * The package ships a manifest whose hashes no longer match its files, and
+   * no surviving tag colors this. The diagnostic names the file that drifted.
+   */
+  | "stale-manifest"
+  /** The package ships a manifest written for a wire version this cannot read. */
+  | "unreadable-manifest"
+  /**
+   * It carries a `@nothrow` tag, and a valid manifest in the same package
+   * supersedes tags package-wide without naming it. A different diagnosis from
+   * "nothing colors it": the manifest is what is missing an entry.
+   */
+  | "superseded-tag"
+  /**
+   * A carrier claims this symbol with an entry this release cannot use — a
+   * shape outside the schema, or a condition path with no engine form. The
+   * fact it was stating is the one that would have made it clean.
+   */
+  | "unusable-entry";
 
 /**
  * Why a callee is throwing. `inferred` is the one answer that is not a floor:
@@ -87,6 +108,8 @@ export type RejectionSubject =
 export interface Rejects {
   readonly reason: RejectionReason;
   readonly subject: RejectionSubject;
+  /** The file whose hash drifted; only `stale-manifest` carries one. */
+  readonly staleFile?: string | undefined;
 }
 
 /**

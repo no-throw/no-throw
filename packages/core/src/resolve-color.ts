@@ -1,6 +1,7 @@
 import ts from "typescript";
 import type {
   ConsumptionReason,
+  FloorReason,
   Rejects,
   RejectionReason,
   RejectionSubject,
@@ -45,6 +46,7 @@ import {
   declaredTarget,
   resolveValue,
   type DeclaredTarget,
+  type Resolution,
   type Target,
 } from "./targets.js";
 import {
@@ -64,6 +66,8 @@ export type BodyEscape =
       readonly kind: "callee";
       readonly node: Transfer;
       readonly reason: ThrowingReason;
+      /** The file whose hash drifted; only `stale-manifest` carries one. */
+      readonly staleFile?: string | undefined;
     }
   /** A condition whose argument was read and can throw — a true positive. */
   | {
@@ -76,12 +80,14 @@ export type BodyEscape =
       readonly node: Transfer;
       readonly condition: Condition;
       readonly reason: UndischargedReason;
+      readonly staleFile?: string | undefined;
     }
   /** A `for…of`, spread, destructuring, `.next()` or `yield*`. */
   | {
       readonly kind: "consumption";
       readonly node: ts.Node;
       readonly reason: ConsumptionReason;
+      readonly staleFile?: string | undefined;
     }
   /** `.throw()`: the consumer throwing, with a detour through the iterator. */
   | { readonly kind: "iterator-throw"; readonly node: ts.Node }
@@ -90,6 +96,7 @@ export type BodyEscape =
       readonly kind: "returned-iterator";
       readonly node: ts.Expression;
       readonly reason: ConsumptionReason;
+      readonly staleFile?: string | undefined;
     }
   /**
    * A rejection reaching the body: at an `await`, at a statement-position
@@ -118,6 +125,7 @@ export type BodyEscape =
       /** Absent when the type could not name what runs, which always floors. */
       readonly target: HiddenCallee | undefined;
       readonly reason: ThrowingReason;
+      readonly staleFile?: string | undefined;
     };
 
 /**
@@ -155,8 +163,26 @@ interface ColorNode {
   readonly facet: Facet;
 }
 
-/** A callee with source behind it: the only target a condition can be asked about. */
+/** A callee with source behind it, which is what inference reads. */
 type BodiedTarget = Extract<Target, { kind: "function" }>;
+
+/** A callee that can carry conditions: one with a body, or one with an entry. */
+type ConditionedTarget = Extract<Target, { kind: "function" | "carried" }>;
+
+/** A callee the carrier chain answered for rather than the program. */
+type CarriedTarget = Extract<Target, { kind: "carried" }>;
+
+/**
+ * Why entering a carried callee escapes, or nothing where the carrier says it
+ * does not. Every site that meets one asks these two questions in this order;
+ * only the shape each wraps the answer in differs.
+ */
+function carriedReason(target: CarriedTarget): FloorReason | undefined {
+  if (target.color === "throwing") return "carried-throwing";
+  // Clean given conditions of its own, reached through a type rather than
+  // handed anything: nothing here could discharge them.
+  return target.conditions.length > 0 ? "conditioned" : undefined;
+}
 
 /** One callee of one transfer, with the transfer it was written at. */
 interface SiteTarget {
@@ -177,7 +203,11 @@ type Conditions = (body: Bodied) => readonly Condition[];
 type Consumed =
   | { readonly kind: "clean" }
   | { readonly kind: "color"; readonly node: ColorNode }
-  | { readonly kind: "floor"; readonly reason: ConsumptionReason };
+  | {
+      readonly kind: "floor";
+      readonly reason: ConsumptionReason;
+      readonly staleFile?: string | undefined;
+    };
 
 const CONSUMED_CLEAN: Consumed = { kind: "clean" };
 
@@ -198,6 +228,7 @@ type Rejection =
       readonly kind: "floor";
       readonly reason: RejectionReason;
       readonly subject: RejectionSubject;
+      readonly staleFile?: string | undefined;
     }
   | { readonly kind: "join"; readonly parts: readonly Rejection[] }
   | {
@@ -239,7 +270,8 @@ interface HiddenSite {
   readonly targets: readonly HiddenTarget[];
 }
 
-export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
+export function createColorResolver(resolution: Resolution): ColorResolver {
+  const { checker } = resolution;
   const policy = colorPolicy();
 
   const walks = new Map<Bodied, Map<Phase, readonly Escape[]>>();
@@ -251,13 +283,23 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
    */
   const hiddenAt = memoize(
     (escape: Escape): readonly HiddenSite[] =>
-      hiddenTransfersOf(escape, checker).map((transfer) => ({
+      hiddenTransfersOf(escape, resolution).map((transfer) => ({
         node: transfer.node,
         site: transfer.site,
         text: transfer.text,
         targets: transfer.targets.map((entry) => ({
           named: entry.target,
-          target: declaredTarget(entry.declaration),
+          // An accessor fact colors a half of a member the declaration says is
+          // data, so there is no body behind it to read — the fact is all of it.
+          target:
+            entry.carried === undefined
+              ? declaredTarget(entry.declaration, resolution)
+              : {
+                  kind: "carried" as const,
+                  color: entry.carried,
+                  async: false,
+                  conditions: [],
+                },
         })),
       })),
   );
@@ -306,7 +348,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   function targetsOf(site: Transfer, body: Bodied): readonly Target[] {
     const known = targetsAt.get(site);
     if (known !== undefined) return known;
-    const targets = calleeTargets(site, body, checker);
+    const targets = calleeTargets(site, body, resolution);
     targetsAt.set(site, targets);
     return targets;
   }
@@ -334,22 +376,35 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
    */
   function dischargesAt(
     site: Transfer,
-    callee: BodiedTarget,
+    conditions: readonly Condition[],
     body: Bodied,
-    conditionsOf: Conditions,
   ): readonly Discharged[] {
     const byPath = outcomesAt.get(site) ?? new Map<string, readonly Outcome[]>();
     outcomesAt.set(site, byPath);
 
-    return conditionsOf(callee.declaration).flatMap((condition) => {
+    return conditions.flatMap((condition) => {
       const key = pathKey(condition.path);
       let outcomes = byPath.get(key);
       if (outcomes === undefined) {
-        outcomes = dischargeAt(site, condition, body, checker);
+        outcomes = dischargeAt(site, condition, body, resolution);
         byPath.set(key, outcomes);
       }
       return outcomes.map((outcome) => ({ condition, outcome }));
     });
+  }
+
+  /**
+   * Every condition one callee carries. A body's are read off the fixpoint; a
+   * carrier's are written down, and both are discharged by the same join at the
+   * same call site — which is the whole point of recording them positively.
+   */
+  function conditionsOfTarget(
+    target: ConditionedTarget,
+    conditionsOf: Conditions,
+  ): readonly Condition[] {
+    return target.kind === "carried"
+      ? target.conditions
+      : conditionsOf(target.declaration);
   }
 
   /**
@@ -360,7 +415,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   function implicitSuper(body: Bodied): Target | undefined {
     if (!ts.isClassLike(body)) return undefined;
     const base = baseClassExpression(body);
-    return base === undefined ? undefined : constructedTarget(base, checker);
+    return base === undefined ? undefined : constructedTarget(base, resolution);
   }
 
   /**
@@ -373,7 +428,9 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
     bottom: [],
     unresolved: [],
     dependenciesOf: (body) =>
-      bodiedTargetsIn(body, "all").map(({ target }) => target.declaration),
+      conditionedTargetsIn(body, "all").flatMap(({ target }) =>
+        target.kind === "function" ? [target.declaration] : [],
+      ),
     recompute: (body, conditionsOf) => {
       const derived = new Map<string, Condition>();
       const add = (path: Condition["path"], entry: Transfer): void => {
@@ -386,12 +443,11 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
           add(target.path, site);
           continue;
         }
-        if (target.kind !== "function") continue;
+        if (target.kind !== "function" && target.kind !== "carried") continue;
         for (const { outcome } of dischargesAt(
           site,
-          target,
+          conditionsOfTarget(target, conditionsOf),
           body,
-          conditionsOf,
         )) {
           if (outcome.kind === "propagate") add(outcome.path, site);
         }
@@ -451,13 +507,14 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
       }
     }
 
-    for (const { site, target } of bodiedTargetsIn(declaration, phase)) {
-      if (!target.marked) dependencies.push(nodeFor(target.declaration, "call"));
+    for (const { site, target } of conditionedTargetsIn(declaration, phase)) {
+      if (target.kind === "function" && !target.marked) {
+        dependencies.push(nodeFor(target.declaration, "call"));
+      }
       for (const { outcome } of dischargesAt(
         site,
-        target,
+        conditionsOfTarget(target, settledConditions),
         declaration,
-        settledConditions,
       )) {
         if (outcome.kind === "function" && !outcome.marked) {
           dependencies.push(nodeFor(outcome.declaration, "call"));
@@ -503,6 +560,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   ): boolean {
     const target = implicitSuper(body);
     if (target === undefined) return false;
+    if (target.kind === "carried") return carriedReason(target) !== undefined;
     if (target.kind !== "function") return true;
     return (
       flooredCallee(target, throwingOf) !== undefined ||
@@ -510,13 +568,15 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
     );
   }
 
-  function bodiedTargetsIn(
+  function conditionedTargetsIn(
     body: Bodied,
     phase: Phase,
-  ): { site: Transfer; target: BodiedTarget }[] {
-    const found: { site: Transfer; target: BodiedTarget }[] = [];
+  ): { site: Transfer; target: ConditionedTarget }[] {
+    const found: { site: Transfer; target: ConditionedTarget }[] = [];
     for (const { site, target } of targetsIn(body, phase)) {
-      if (target.kind === "function") found.push({ site, target });
+      if (target.kind === "function" || target.kind === "carried") {
+        found.push({ site, target });
+      }
     }
     return found;
   }
@@ -538,9 +598,17 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
         continue;
       }
       if (escape.kind === "consumption") {
-        const reason = consumedReason(consumedBy(escape.site, body), throwingOf);
-        if (reason !== undefined) {
-          found.push({ kind: "consumption", node: escape.site.node, reason });
+        const consumed = consumedReason(
+          consumedBy(escape.site, body),
+          throwingOf,
+        );
+        if (consumed !== undefined) {
+          found.push({
+            kind: "consumption",
+            node: escape.site.node,
+            reason: consumed.reason,
+            staleFile: consumed.staleFile,
+          });
         }
         continue;
       }
@@ -595,28 +663,45 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
 
     if (target.kind === "floor") {
       if (!awaitedDirectly(site)) {
-        found.push({ kind: "callee", node: site, reason: target.reason });
+        found.push({
+          kind: "callee",
+          node: site,
+          reason: target.reason,
+          staleFile: target.staleFile,
+        });
       }
       return;
     }
 
-    const floored = flooredCallee(target, throwingOf);
-    if (floored !== undefined) {
-      // The sync channel, and only it. A visibly-`async` callee cannot
-      // sync-throw, so what it can do is read at the `await`, the chain or the
-      // discard instead; and where the call *is* the awaited expression, the
-      // `await` is already the one site for both channels.
-      if (!isVisiblyAsync(target.declaration) && !awaitedDirectly(site)) {
-        found.push({ kind: "callee", node: site, reason: floored });
+    // A carrier's `async` flag stands in for the modifier declaration emit
+    // erased, so the carve-out applies to a carried callee exactly as it does
+    // to a visible one — and that flag is the only thing that can license the
+    // terminal `.catch(h)` bridge across a `.d.ts` boundary.
+    if (target.kind === "carried") {
+      if (target.color === "throwing") {
+        if (!target.async && !awaitedDirectly(site)) {
+          found.push({ kind: "callee", node: site, reason: "carried-throwing" });
+        }
+        return;
       }
-      return;
+    } else {
+      const floored = flooredCallee(target, throwingOf);
+      if (floored !== undefined) {
+        // The sync channel, and only it. A visibly-`async` callee cannot
+        // sync-throw, so what it can do is read at the `await`, the chain or
+        // the discard instead; and where the call *is* the awaited expression,
+        // the `await` is already the one site for both channels.
+        if (!isVisiblyAsync(target.declaration) && !awaitedDirectly(site)) {
+          found.push({ kind: "callee", node: site, reason: floored });
+        }
+        return;
+      }
     }
 
     for (const { condition, outcome } of dischargesAt(
       site,
-      target,
+      conditionsOfTarget(target, settledConditions),
       body,
-      settledConditions,
     )) {
       const escape = undischarged(site, condition, outcome, throwingOf);
       if (escape !== undefined) found.push(escape);
@@ -642,7 +727,8 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
         site: hidden.site,
         text: hidden.text,
         target: named,
-        reason,
+        reason: reason.reason,
+        staleFile: reason.staleFile,
       });
       return;
     }
@@ -651,16 +737,23 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   function hiddenReason(
     target: DeclaredTarget,
     throwingOf: (callee: ColorNode) => boolean,
-  ): ThrowingReason | undefined {
-    if (target.kind === "floor") return target.reason;
+  ): { reason: ThrowingReason; staleFile?: string | undefined } | undefined {
+    if (target.kind === "floor") {
+      return { reason: target.reason, staleFile: target.staleFile };
+    }
+
+    if (target.kind === "carried") {
+      const reason = carriedReason(target);
+      return reason === undefined ? undefined : { reason };
+    }
 
     const floored = flooredCallee(target, throwingOf);
-    if (floored !== undefined) return floored;
+    if (floored !== undefined) return { reason: floored };
 
     // The site reaches this body through a type rather than handing it over,
     // so a condition on it has no argument here that could discharge one.
     return conditions.valueOf(target.declaration).length > 0
-      ? "conditioned"
+      ? { reason: "conditioned" }
       : undefined;
   }
 
@@ -681,15 +774,27 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
     outcome: Outcome,
     throwingOf: (callee: ColorNode) => boolean,
   ): BodyEscape | undefined {
-    const floored = (reason: UndischargedReason): BodyEscape => ({
+    const floored = (
+      reason: UndischargedReason,
+      staleFile?: string | undefined,
+    ): BodyEscape => ({
       kind: "argument-floored",
       node: site,
       condition,
       reason,
+      staleFile,
     });
 
     if (outcome.kind === "propagate") return undefined;
-    if (outcome.kind === "floor") return floored(outcome.reason);
+    if (outcome.kind === "floor") {
+      return floored(outcome.reason, outcome.staleFile);
+    }
+
+    // An argument the carrier colors is answered by what it says.
+    if (outcome.kind === "carried") {
+      const reason = carriedReason(outcome);
+      return reason === undefined ? undefined : floored(reason);
+    }
 
     if (!outcome.marked) {
       if (policy === "declare") return floored("unmarked");
@@ -808,7 +913,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
     const member = protocolMember(type, name, checker, async);
     return member === undefined
       ? floorConsumed("unresolvable")
-      : consumedFrom(declarationTarget(member), facet);
+      : consumedFrom(declarationTarget(member, resolution), facet);
   }
 
   /**
@@ -822,7 +927,15 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
     if (target.kind === "condition") {
       return floorConsumed("conditioned-producer");
     }
-    if (target.kind === "floor") return floorConsumed(target.reason);
+    if (target.kind === "floor") {
+      return floorConsumed(target.reason, target.staleFile);
+    }
+    // One color, full surface: a carrier calling the producer non-throwing is
+    // saying consuming what it hands back is clean too.
+    if (target.kind === "carried") {
+      const reason = carriedReason(target);
+      return reason === undefined ? CONSUMED_CLEAN : floorConsumed(reason);
+    }
     if (target.marked) return CONSUMED_CLEAN;
     if (policy === "declare") return floorConsumed("unmarked");
     return { kind: "color", node: nodeFor(target.declaration, facet) };
@@ -868,14 +981,16 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   function consumedReason(
     consumed: readonly Consumed[],
     throwingOf: (callee: ColorNode) => boolean,
-  ): ConsumptionReason | undefined {
+  ): { reason: ConsumptionReason; staleFile?: string | undefined } | undefined {
     for (const part of consumed) {
-      if (part.kind === "floor") return part.reason;
+      if (part.kind === "floor") {
+        return { reason: part.reason, staleFile: part.staleFile };
+      }
     }
     return consumed.some(
       (part) => part.kind === "color" && throwingOf(part.node),
     )
-      ? "inferred"
+      ? { reason: "inferred" }
       : undefined;
   }
 
@@ -956,7 +1071,7 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
   ): Rejection {
     if (argument === undefined) return REJECTION_CLEAN;
 
-    const resolved = resolveValue(argument, body, checker);
+    const resolved = resolveValue(argument, body, resolution);
     if (resolved.kind === "mutable") {
       return floorRejection("mutable-binding", "handler");
     }
@@ -984,7 +1099,15 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
         ? floorRejection("conditioned-producer", "promise")
         : floorRejection("conditioned-handler", "handler");
     }
-    if (target.kind === "floor") return floorRejection(target.reason, subject);
+    if (target.kind === "floor") {
+      return floorRejection(target.reason, subject, target.staleFile);
+    }
+    if (target.kind === "carried") {
+      const reason = carriedReason(target);
+      return reason === undefined
+        ? REJECTION_CLEAN
+        : floorRejection(reason, subject);
+    }
     if (target.marked) return REJECTION_CLEAN;
     if (policy === "declare") return floorRejection("unmarked", subject);
     return { kind: "color", node: nodeFor(target.declaration, "call"), subject };
@@ -1015,7 +1138,11 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
       case "clean":
         return undefined;
       case "floor":
-        return { reason: rejection.reason, subject: rejection.subject };
+        return {
+          reason: rejection.reason,
+          subject: rejection.subject,
+          staleFile: rejection.staleFile,
+        };
       case "color":
         return throwingOf(rejection.node)
           ? { reason: "inferred", subject: rejection.subject }
@@ -1158,7 +1285,8 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
       targets.length > 0 &&
       targets.every(
         (target) =>
-          target.kind === "function" && isVisiblyAsync(target.declaration),
+          (target.kind === "function" && isVisiblyAsync(target.declaration)) ||
+          (target.kind === "carried" && target.async),
       )
     );
   }
@@ -1194,24 +1322,33 @@ export function createColorResolver(checker: ts.TypeChecker): ColorResolver {
       if (!isIteratorType(checker.getTypeAtLocation(expression), checker)) {
         continue;
       }
-      const reason = consumedReason(producedBy(expression, body), throwingOf);
-      if (reason !== undefined) {
-        found.push({ kind: "returned-iterator", node: expression, reason });
+      const consumed = consumedReason(producedBy(expression, body), throwingOf);
+      if (consumed !== undefined) {
+        found.push({
+          kind: "returned-iterator",
+          node: expression,
+          reason: consumed.reason,
+          staleFile: consumed.staleFile,
+        });
       }
     }
     return found;
   }
 }
 
-function floorConsumed(reason: ConsumptionReason): Consumed {
-  return { kind: "floor", reason };
+function floorConsumed(
+  reason: ConsumptionReason,
+  staleFile?: string | undefined,
+): Consumed {
+  return { kind: "floor", reason, staleFile };
 }
 
 function floorRejection(
   reason: RejectionReason,
   subject: RejectionSubject,
+  staleFile?: string | undefined,
 ): Rejection {
-  return { kind: "floor", reason, subject };
+  return { kind: "floor", reason, subject, staleFile };
 }
 
 /** A join of one is that one: a tree with no branch reads better in a message. */
