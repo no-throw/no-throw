@@ -1,0 +1,18 @@
+{
+  "description": "The producer→consumer round trip: verified marks go out as entries, and a separate project reads them back through the resolver chain. The producer strips comments, so the manifest is the only carrier left. `async` is asserted on the entry rather than through the consumer on purpose — emit writes only non-throwing entries, and a non-throwing promise needs no bridge, so what makes the flag load-bearing is a throwing entry, which is `manifest-async-flag-absent-fails`'s counterfactual and not a shape emit can produce.",
+  "steps": [
+    { "emit": [], "expect": "ok" },
+    {
+      "entries": {
+        ".": {
+          "twice": { "color": "non-throwing", "conditions": [] },
+          "fetchOk": { "color": "non-throwing", "async": true, "conditions": [] },
+          "each": { "color": "non-throwing", "conditions": ["param1"] },
+          "widen": { "color": "non-throwing", "conditions": [] },
+          "register": { "color": "non-throwing", "conditions": [] }
+        }
+      }
+    },
+    { "consumer": "consumer" }
+  ]
+}

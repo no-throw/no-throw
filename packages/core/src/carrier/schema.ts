@@ -8,6 +8,11 @@
  * published schema directly. The subset is closed by what that file needs:
  * `$ref` into `$defs`, `type`, `enum`, `const`, `required`, `properties`,
  * `patternProperties`, `additionalProperties`, `items`, `pattern`, `oneOf`.
+ *
+ * A `$ref` may cross documents, by the `$id` of a schema handed in alongside
+ * the root. The overrides file is the manifest's entry shape under a different
+ * envelope, and a second copy of those `$defs` is a second contract to keep in
+ * step — the very drift shipping one file for both readers was meant to avoid.
  */
 
 /** Where a value failed the schema, as the property names leading to it. */
@@ -17,30 +22,51 @@ export interface SchemaIssue {
 
 type Schema = Record<string, unknown>;
 
+/** The documents a `$ref` may name, by `$id`. */
+type Documents = ReadonlyMap<string, Schema>;
+
 /**
  * Every place `value` departs from `schema`. Empty means valid. Issues carry
  * their location because the manifest reader treats them differently by depth:
  * a bad entry floors that entry, a bad envelope floors the file.
  */
-export function validate(schema: unknown, value: unknown): readonly SchemaIssue[] {
+export function validate(
+  schema: unknown,
+  value: unknown,
+  imported: readonly unknown[],
+): readonly SchemaIssue[] {
   if (!isSchema(schema)) return [{ path: [] }];
+
+  const documents = new Map<string, Schema>();
+  for (const document of [schema, ...imported]) {
+    if (!isSchema(document)) return [{ path: [] }];
+    const id = document["$id"];
+    if (typeof id === "string") documents.set(id, document);
+  }
+
   const issues: SchemaIssue[] = [];
-  check(schema, value, [], schema, issues);
+  check(schema, value, [], { root: schema, documents }, issues);
   return issues;
+}
+
+/** What a `$ref` in the schema being evaluated can reach. */
+interface Scope {
+  readonly root: Schema;
+  readonly documents: Documents;
 }
 
 function check(
   schema: Schema,
   value: unknown,
   path: readonly string[],
-  root: Schema,
+  scope: Scope,
   issues: SchemaIssue[],
 ): void {
   const reference = schema["$ref"];
   if (typeof reference === "string") {
-    const resolved = resolve(reference, root);
+    const resolved = resolve(reference, scope);
     if (resolved === undefined) issues.push({ path });
-    else check(resolved, value, path, root, issues);
+    else check(resolved.schema, value, path, resolved.scope, issues);
     return;
   }
 
@@ -49,14 +75,14 @@ function check(
   checkType(schema, value, path, issues);
   checkEnum(schema, value, path, issues);
   checkPattern(schema, value, path, issues);
-  checkOneOf(schema, value, path, root, issues);
+  checkOneOf(schema, value, path, scope, issues);
 
   // A value that is not even the right shape says nothing useful about its
   // members, and reporting every one of them would bury the real fault.
   if (issues.length !== before) return;
 
-  if (Array.isArray(value)) checkItems(schema, value, path, root, issues);
-  else if (isSchema(value)) checkObject(schema, value, path, root, issues);
+  if (Array.isArray(value)) checkItems(schema, value, path, scope, issues);
+  else if (isSchema(value)) checkObject(schema, value, path, scope, issues);
 }
 
 function checkType(
@@ -122,7 +148,7 @@ function checkOneOf(
   schema: Schema,
   value: unknown,
   path: readonly string[],
-  root: Schema,
+  scope: Scope,
   issues: SchemaIssue[],
 ): void {
   const branches = schema["oneOf"];
@@ -131,7 +157,7 @@ function checkOneOf(
   const accepted = branches.some((branch) => {
     if (!isSchema(branch)) return false;
     const attempt: SchemaIssue[] = [];
-    check(branch, value, path, root, attempt);
+    check(branch, value, path, scope, attempt);
     return attempt.length === 0;
   });
   if (!accepted) issues.push({ path });
@@ -141,13 +167,13 @@ function checkItems(
   schema: Schema,
   value: readonly unknown[],
   path: readonly string[],
-  root: Schema,
+  scope: Scope,
   issues: SchemaIssue[],
 ): void {
   const items = schema["items"];
   if (!isSchema(items)) return;
   value.forEach((element, index) => {
-    check(items, element, [...path, String(index)], root, issues);
+    check(items, element, [...path, String(index)], scope, issues);
   });
 }
 
@@ -155,7 +181,7 @@ function checkObject(
   schema: Schema,
   value: Schema,
   path: readonly string[],
-  root: Schema,
+  scope: Scope,
   issues: SchemaIssue[],
 ): void {
   const required = schema["required"];
@@ -174,7 +200,7 @@ function checkObject(
   for (const [key, member] of Object.entries(value)) {
     const declared = properties?.[key];
     if (isSchema(declared)) {
-      check(declared, member, [...path, key], root, issues);
+      check(declared, member, [...path, key], scope, issues);
       continue;
     }
 
@@ -183,7 +209,9 @@ function checkObject(
     );
     if (matched.length > 0) {
       for (const [, branch] of matched) {
-        if (isSchema(branch)) check(branch, member, [...path, key], root, issues);
+        if (isSchema(branch)) {
+          check(branch, member, [...path, key], scope, issues);
+        }
       }
       continue;
     }
@@ -192,21 +220,38 @@ function checkObject(
     // amendment land compatibly — so only an explicit rule rejects one.
     if (additional === false) issues.push({ path: [...path, key] });
     else if (isSchema(additional)) {
-      check(additional, member, [...path, key], root, issues);
+      check(additional, member, [...path, key], scope, issues);
     }
   }
 }
 
-/** A local `#/a/b` pointer. The schema references nothing else. */
-function resolve(reference: string, root: Schema): Schema | undefined {
-  if (!reference.startsWith("#/")) return undefined;
+/**
+ * A `#/a/b` pointer, into this document or into one handed in beside it. A
+ * pointer into another document takes that document's scope with it, so what a
+ * borrowed definition's own `$ref`s mean is fixed by where they were written.
+ */
+function resolve(
+  reference: string,
+  scope: Scope,
+): { schema: Schema; scope: Scope } | undefined {
+  const hash = reference.indexOf("#");
+  if (hash < 0) return undefined;
 
-  let current: unknown = root;
-  for (const segment of reference.slice(2).split("/")) {
+  const id = reference.slice(0, hash);
+  const document = id === "" ? scope.root : scope.documents.get(id);
+  if (document === undefined) return undefined;
+
+  const pointer = reference.slice(hash + 1);
+  if (!pointer.startsWith("/")) return undefined;
+
+  let current: unknown = document;
+  for (const segment of pointer.slice(1).split("/")) {
     if (!isSchema(current)) return undefined;
     current = current[decodeURIComponent(segment)];
   }
-  return isSchema(current) ? current : undefined;
+  return isSchema(current)
+    ? { schema: current, scope: { root: document, documents: scope.documents } }
+    : undefined;
 }
 
 function asSchema(value: unknown): Schema | undefined {

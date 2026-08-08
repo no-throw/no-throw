@@ -143,6 +143,13 @@ export type BodyEscape =
 export interface ColorResolver {
   /** Every reason `body` escapes, in source order. */
   escapesIn(body: Bodied): readonly BodyEscape[];
+  /**
+   * The paths over `body`'s own parameters it is non-throwing given, settled.
+   * The enforcement walk never asks — a condition is the lattice it works in —
+   * but a carrier writing the color down has to record it positively, because
+   * absence on the wire means maximally conditioned.
+   */
+  conditionsIn(body: Bodied): readonly Condition[];
 }
 
 /**
@@ -1303,6 +1310,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
         ...returnedIterators(body, throwingOf),
       ];
     },
+    conditionsIn: settledConditions,
   };
 
   /**

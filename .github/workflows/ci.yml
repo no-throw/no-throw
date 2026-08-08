@@ -66,6 +66,10 @@ jobs:
 
       - run: pnpm run conformance
 
+      # The CLI half of the same suite: `nothrow emit` as a process over
+      # producer packages, and a consumer project reading what it wrote.
+      - run: pnpm run conformance:cli
+
   eslint-peer:
     name: ESLint peer gate
     runs-on: ubuntu-latest

@@ -1,9 +1,8 @@
 import { fileURLToPath } from "node:url";
 import {
-  byPosition,
   compare,
-  formatDiagnostic,
   placeOf,
+  section,
   type Diagnostic,
 } from "./diagnostics.js";
 import { runFixture } from "./driver-eslint.js";
@@ -124,14 +123,4 @@ function supersetReport(
     (diagnostic) => !places.has(placeOf(diagnostic)),
   );
   return section("reported by the hybrid run, but lost with inference off", lost);
-}
-
-function section(title: string, diagnostics: readonly Diagnostic[]): string[] {
-  if (diagnostics.length === 0) return [];
-  return [
-    `${title}:`,
-    ...[...diagnostics]
-      .sort(byPosition)
-      .map((diagnostic) => `  ${formatDiagnostic(diagnostic)}`),
-  ];
 }
