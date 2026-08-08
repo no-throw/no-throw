@@ -1,10 +1,38 @@
 import nothrow from "@nothrow/eslint-plugin";
 import { createProgram } from "@typescript-eslint/typescript-estree";
 import { ESLint, type Linter } from "eslint";
+import { readFileSync } from "node:fs";
 import { relative, sep } from "node:path";
 import tseslint from "typescript-eslint";
-import type { Diagnostic } from "./diagnostics.js";
+import type { Diagnostic, Suggestion } from "./diagnostics.js";
 import type { FixtureConfig } from "./fixtures.js";
+
+/**
+ * The diagnostics whose remedy is a mechanical bridge, and so the only ones
+ * that may offer an edit. Held here rather than read off the plugin because it
+ * is the spec's claim about the plugin: anywhere else, an offer is an offer to
+ * silence a true report. A messageId this suite has not heard of is not on the
+ * list, so a new one that starts offering edits trips this rather than
+ * inheriting a permission nobody granted.
+ */
+const BRIDGEABLE = new Set([
+  "unbridgedCall",
+  "inferredThrowingCall",
+  "conditionArgumentThrowing",
+  "conditionArgumentFloored",
+  "carriedConditionArgumentThrowing",
+  "carriedConditionArgumentFloored",
+  "unbridgedConsumption",
+  "inferredThrowingConsumption",
+  "iteratorThrow",
+  "unbridgedAwait",
+  "inferredThrowingAwait",
+  "unprovableFloat",
+  "inferredThrowingFloat",
+  "fakeBridge",
+  "unbridgedHiddenTransfer",
+  "inferredThrowingHiddenTransfer",
+]);
 
 /**
  * The v1 driver: run a fixture project through the real plugin, over the real
@@ -67,6 +95,7 @@ export async function runFixture(
 
   for (const result of results) {
     const file = toFixturePath(directory, result.filePath);
+    const source = readFileSync(result.filePath, "utf8");
 
     for (const message of result.messages) {
       if (message.fatal === true || message.ruleId === null) {
@@ -88,14 +117,15 @@ export async function runFixture(
           `${file}:${message.line}:${message.column}: \`${message.ruleId}\` offered an autofix; no rule may`,
         );
       }
-      // Our rules will offer suggestions once there is a bridge edit to
-      // suggest, and nothing in `expected.json` can express one yet: fail
-      // loudly rather than drop them from the seam silently. Rules the preset
-      // merely turns on are somebody else's surface, and pinning a
-      // dependency's suggestion text here would assert nothing about us.
-      if (message.suggestions !== undefined && isOurs(message.ruleId)) {
+      // Rules the preset merely turns on are somebody else's surface, and
+      // pinning a dependency's suggestion text here would assert nothing about
+      // us — so only ours are carried, and only ours are held to the list.
+      const suggestions = isOurs(message.ruleId)
+        ? (message.suggestions ?? [])
+        : [];
+      if (suggestions.length > 0 && !BRIDGEABLE.has(message.messageId)) {
         throw new Error(
-          `${file}:${message.line}:${message.column}: \`${message.ruleId}\` offered suggestions, which the expectation format cannot yet assert`,
+          `${file}:${message.line}:${message.column}: \`${message.messageId}\` offered an edit, and its remedy is not a mechanical bridge`,
         );
       }
 
@@ -107,11 +137,29 @@ export async function runFixture(
         endColumn: message.endColumn ?? message.column,
         messageId: message.messageId,
         message: message.message,
+        suggestions: suggestions.map((suggestion) =>
+          toSuggestion(suggestion, source),
+        ),
       });
     }
   }
 
   return diagnostics;
+}
+
+/**
+ * What accepting the edit leaves on disk. Line endings are a checkout artifact
+ * — the fixtures are LF, a Windows clone may not be — so they are normalized
+ * away rather than asserted.
+ */
+function toSuggestion(
+  suggestion: Linter.LintSuggestion,
+  source: string,
+): Suggestion {
+  const [start, end] = suggestion.fix.range;
+  const output =
+    source.slice(0, start) + suggestion.fix.text + source.slice(end);
+  return { desc: suggestion.desc, output: output.split(/\r?\n/) };
 }
 
 function isOurs(ruleId: string): boolean {
