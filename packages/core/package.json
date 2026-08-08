@@ -16,7 +16,8 @@
   },
   "files": [
     "dist",
-    "baseline-data"
+    "baseline-data",
+    "schema"
   ],
   "peerDependencies": {
     "typescript": ">=5.0.0"

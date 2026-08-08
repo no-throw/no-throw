@@ -1,0 +1,4 @@
+{
+  "description": "#15's counterfactual, with the flag: `async` on a throwing entry says the callee rejects rather than sync-throws, so a terminal `.catch(h)` with a non-throwing handler is the whole bridge.",
+  "diagnostics": []
+}

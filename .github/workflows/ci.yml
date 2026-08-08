@@ -6,8 +6,68 @@ on:
   pull_request:
 
 jobs:
+  # The plugin's `eslint` peer range is a claim about which majors a consumer may
+  # install it against. The jobs that hold the claim true enumerate it from the
+  # range itself rather than restating it here, so widening the claim widens what
+  # has to pass.
+  eslint-majors:
+    name: ESLint peer range
+    runs-on: ubuntu-latest
+    outputs:
+      majors: ${{ steps.read.outputs.majors }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Assigning first, rather than interpolating the command into `echo`, is
+      # what makes an unreadable range fail here with the script's own message
+      # instead of one job later as an opaque `fromJSON` error.
+      - id: read
+        run: |
+          majors=$(node scripts/eslint-peer-matrix.mjs majors)
+          echo "majors=$majors" >> "$GITHUB_OUTPUT"
+
   conformance:
-    name: Build and conformance suite
+    name: Build and conformance suite (ESLint ${{ matrix.eslint }})
+    needs: eslint-majors
+    runs-on: ubuntu-latest
+    strategy:
+      # Which majors pass is the whole question here, so one failing leg must
+      # not take the answer for the others with it.
+      fail-fast: false
+      matrix:
+        eslint: ${{ fromJSON(needs.eslint-majors.outputs.majors) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: node scripts/eslint-peer-matrix.mjs pin ${{ matrix.eslint }}
+
+      # Pinning is an override, and an override moves the lockfile. The drift
+      # check `--frozen-lockfile` buys is in the jobs below, which resolve the
+      # same workspace and do not lint.
+      - run: pnpm install --no-frozen-lockfile
+
+      - name: The pin took
+        run: node scripts/eslint-peer-matrix.mjs verify ${{ matrix.eslint }}
+
+      - run: pnpm run build
+
+      - run: pnpm run check:lockstep
+
+      - run: pnpm run conformance
+
+  eslint-peer:
+    name: ESLint peer gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,9 +83,14 @@ jobs:
 
       - run: pnpm run build
 
-      - run: pnpm run check:lockstep
+      # The install-time half of the claim, which the matrix above cannot
+      # answer: it resolves its ESLint through an override, and an override
+      # rewrites peer ranges, so no conflict survives to be reported.
+      - name: Peer gate
+        run: pnpm run gate:peer
 
-      - run: pnpm run conformance
+      - name: Peer gate can fail
+        run: pnpm run gate:peer -- --self-check
 
   baseline:
     name: Baseline gates

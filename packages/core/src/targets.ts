@@ -1,9 +1,13 @@
 import ts from "typescript";
+import type { Color } from "./baseline/types.js";
+import type { Carrier } from "./carrier/chain.js";
+import { carriedFacts } from "./carrier/entries.js";
 import type { FloorReason } from "./colors.js";
 import {
   parameterRoot,
   pathOf,
   skipParens,
+  type Condition,
   type ParameterPath,
 } from "./conditions.js";
 import {
@@ -16,6 +20,16 @@ import {
 } from "./declarations.js";
 import { calleeExpression, type Transfer } from "./escapes.js";
 import { isMarkedFunction } from "./marks.js";
+
+/**
+ * What resolving a callee takes. The checker answers what the program says;
+ * the carrier answers everything the program has no body for, and the two
+ * travel together because a target is only ever one or the other.
+ */
+export interface Resolution {
+  readonly checker: ts.TypeChecker;
+  readonly carrier: Carrier;
+}
 
 /**
  * What an expression in callee or argument position turns out to name. The two
@@ -31,7 +45,30 @@ export type Target =
       /** Marked, so its color is pinned and its body is enforced elsewhere. */
       readonly marked: boolean;
     }
-  | { readonly kind: "floor"; readonly reason: FloorReason };
+  /**
+   * Colored by the carrier chain rather than by a body: a shipped manifest, a
+   * surviving tag on a bodyless declaration, and — as the chain grows — an
+   * overlay, an override or the baseline. A pin like a mark, with no body for
+   * the fixpoint to walk.
+   */
+  | {
+      readonly kind: "carried";
+      readonly color: Color;
+      /**
+       * Whether the declaration was `async`. Declaration emit erases it, so a
+       * carrier is the only thing that can say a callee rejects rather than
+       * sync-throws.
+       */
+      readonly async: boolean;
+      /** Empty on a throwing entry: nothing to discharge. */
+      readonly conditions: readonly Condition[];
+    }
+  | {
+      readonly kind: "floor";
+      readonly reason: FloorReason;
+      /** The file whose hash drifted; only `stale-manifest` carries one. */
+      readonly staleFile?: string | undefined;
+    };
 
 /**
  * What a *declaration* names, as opposed to a value in hand. A condition is a
@@ -65,14 +102,14 @@ export type ReceiverResolution =
 export function calleeTargets(
   transfer: Transfer,
   body: Bodied,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly Target[] {
-  const resolved = resolveValue(calleeExpression(transfer), body, checker);
+  const resolved = resolveValue(calleeExpression(transfer), body, resolution);
   if (resolved.kind === "targets") return resolved.targets;
   // The signature is the function *type*, which is what a reassignable binding
   // resolves to and is one of the values it can hold, not the one that runs.
   if (resolved.kind === "mutable") return [floor("mutable-binding")];
-  return [transferTarget(transfer, checker)];
+  return [transferTarget(transfer, resolution)];
 }
 
 /**
@@ -84,9 +121,10 @@ export function calleeTargets(
 export function resolveValue(
   expr: ts.Expression,
   body: Bodied,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
   seen: Set<ts.Node> = new Set(),
 ): ValueResolution {
+  const { checker } = resolution;
   const expression = skipParens(expr);
 
   const root = parameterRoot(expression, body, checker);
@@ -105,9 +143,9 @@ export function resolveValue(
   }
 
   if (ts.isConditionalExpression(expression)) {
-    const whenTrue = resolveValue(expression.whenTrue, body, checker, seen);
+    const whenTrue = resolveValue(expression.whenTrue, body, resolution, seen);
     if (whenTrue.kind !== "targets") return whenTrue;
-    const whenFalse = resolveValue(expression.whenFalse, body, checker, seen);
+    const whenFalse = resolveValue(expression.whenFalse, body, resolution, seen);
     if (whenFalse.kind !== "targets") return whenFalse;
     return {
       kind: "targets",
@@ -116,7 +154,7 @@ export function resolveValue(
   }
 
   if (ts.isIdentifier(expression)) {
-    return resolveBinding(expression, body, checker, seen);
+    return resolveBinding(expression, body, resolution, seen);
   }
 
   return { kind: "unknown" };
@@ -125,14 +163,18 @@ export function resolveValue(
 function resolveBinding(
   identifier: ts.Identifier,
   body: Bodied,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
   seen: Set<ts.Node>,
 ): ValueResolution {
+  const { checker } = resolution;
   const declaration = checker.getSymbolAtLocation(identifier)?.valueDeclaration;
   if (declaration === undefined) return { kind: "unknown" };
 
   if (ts.isFunctionDeclaration(declaration)) {
-    return { kind: "targets", targets: [declarationTarget(declaration)] };
+    return {
+      kind: "targets",
+      targets: [declarationTarget(declaration, resolution)],
+    };
   }
 
   if (!ts.isVariableDeclaration(declaration)) return { kind: "unknown" };
@@ -149,7 +191,7 @@ function resolveBinding(
     return { kind: "unknown" };
   }
   seen.add(declaration);
-  return resolveValue(initializer, body, checker, seen);
+  return resolveValue(initializer, body, resolution, seen);
 }
 
 /**
@@ -206,8 +248,9 @@ export function resolveReceiver(
 export function memberTargets(
   value: ts.Expression,
   members: readonly string[],
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly Target[] {
+  const { checker } = resolution;
   let type = checker.getTypeAtLocation(value);
   let symbol: ts.Symbol | undefined;
 
@@ -219,15 +262,18 @@ export function memberTargets(
 
   const declarations = symbol?.declarations ?? [];
   if (declarations.length === 0) return [floor("unresolvable")];
-  return declarations.map(memberTarget);
+  return declarations.map((declaration) => memberTarget(declaration, resolution));
 }
 
-function memberTarget(declaration: ts.Declaration): Target {
+function memberTarget(
+  declaration: ts.Declaration,
+  resolution: Resolution,
+): Target {
   if (
     ts.isMethodDeclaration(declaration) ||
     ts.isFunctionDeclaration(declaration)
   ) {
-    return declarationTarget(declaration);
+    return declarationTarget(declaration, resolution);
   }
 
   const initializer = initializerOf(declaration);
@@ -238,11 +284,12 @@ function memberTarget(declaration: ts.Declaration): Target {
     return functionTarget(initializer);
   }
 
-  return floor(
-    ts.isMethodSignature(declaration) || ts.isPropertySignature(declaration)
-      ? "bodyless"
-      : "unresolvable",
-  );
+  if (ts.isMethodSignature(declaration)) {
+    return carriedTarget(declaration, resolution);
+  }
+  // A property holding a function type names no parameter list a condition
+  // could be a path over, so nothing keyed on it could be discharged here.
+  return floor(ts.isPropertySignature(declaration) ? "bodyless" : "unresolvable");
 }
 
 function initializerOf(declaration: ts.Declaration): ts.Expression | undefined {
@@ -262,10 +309,40 @@ function initializerOf(declaration: ts.Declaration): ts.Expression | undefined {
  * through a seed is colored against the mark and a lying mark fails loud where
  * it was written rather than quietly poisoning its callers.
  */
-function transferTarget(transfer: Transfer, checker: ts.TypeChecker): Target {
-  const target = targetOf(transfer, checker);
+function transferTarget(transfer: Transfer, resolution: Resolution): Target {
+  const target = targetOf(transfer, resolution.checker);
   if (target === undefined) return floor("unresolvable");
-  return hasVisibleBody(target) ? functionTarget(target) : floor("bodyless");
+  return hasVisibleBody(target)
+    ? functionTarget(target)
+    : carriedTarget(target, resolution);
+}
+
+/**
+ * What the carrier chain makes of a declaration with no body to read. Module
+ * resolution has already decided this is the chain's question rather than the
+ * program's: source resolves to a visible body and never arrives here.
+ */
+function carriedTarget(
+  declaration: ts.SignatureDeclaration | ts.ClassLikeDeclaration,
+  resolution: Resolution,
+): DeclaredTarget {
+  const answer = resolution.carrier.answerFor(declaration);
+  if (answer === undefined) return floor("bodyless");
+  if (answer.kind === "floor") {
+    return { kind: "floor", reason: answer.reason, staleFile: answer.staleFile };
+  }
+  // An entry that carries only an accessor fact says nothing about calling it,
+  // and an unanswered question is the ordinary floor.
+  if (answer.entry.color === undefined) return floor("bodyless");
+
+  const facts = carriedFacts(declaration, answer.entry, resolution.checker);
+  if (facts === undefined) return floor("unusable-entry");
+  return {
+    kind: "carried",
+    color: facts.color,
+    async: facts.async,
+    conditions: facts.color === "throwing" ? [] : facts.conditions,
+  };
 }
 
 /**
@@ -275,9 +352,12 @@ function transferTarget(transfer: Transfer, checker: ts.TypeChecker): Target {
  */
 export function constructedTarget(
   expression: ts.Expression,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): DeclaredTarget {
-  return declaredTarget(constructedBodyAt(expression, checker));
+  return declaredTarget(
+    constructedBodyAt(expression, resolution.checker),
+    resolution,
+  );
 }
 
 /**
@@ -287,10 +367,11 @@ export function constructedTarget(
  */
 export function declaredTarget(
   declaration: Bodied | undefined,
+  resolution: Resolution,
 ): DeclaredTarget {
   return declaration === undefined
     ? floor("unresolvable")
-    : declarationTarget(declaration);
+    : declarationTarget(declaration, resolution);
 }
 
 /** The body an escape site transfers control into, where one can be named. */
@@ -355,10 +436,13 @@ function constructSignatureOf(
  * A declaration named by something other than a transfer — a protocol member
  * reached through the static type — as a target.
  */
-export function declarationTarget(declaration: Bodied): DeclaredTarget {
+export function declarationTarget(
+  declaration: Bodied,
+  resolution: Resolution,
+): DeclaredTarget {
   return hasVisibleBody(declaration)
     ? functionTarget(declaration)
-    : floor("bodyless");
+    : carriedTarget(declaration, resolution);
 }
 
 function functionTarget(declaration: Bodied): DeclaredTarget {

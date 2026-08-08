@@ -1,0 +1,34 @@
+{
+  "description": "The fake bridge already has the `try`, so wrapping it in a second one would be the wrong edit entirely: what is missing is the `await` that puts the rejection on the existing `catch`'s path, and that is what the suggestion writes.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 8,
+      "column": 5,
+      "endLine": 8,
+      "endColumn": 14,
+      "messageId": "fakeBridge",
+      "message": "`rejects()` is `async`, so this `try`/`catch` can never fire: an `async` function does not throw, it rejects, and a `catch` with no `await` is not on that path. The promise is discarded here and the call that produced it has a body that was analyzed and can throw. Write `try { await … } catch` instead, or end the chain with a `.catch(h)` whose handler is non-throwing.",
+      "suggestions": [
+        {
+          "desc": "Add the missing `await`, so the `catch` is on the rejection's path.",
+          "output": [
+            "async function rejects(): Promise<void> {",
+            "  throw \"boom\";",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export async function pretendsToBridge(): Promise<void> {",
+            "  try {",
+            "    await rejects();",
+            "  } catch {",
+            "    return;",
+            "  }",
+            "}",
+            ""
+          ]
+        }
+      ]
+    }
+  ]
+}

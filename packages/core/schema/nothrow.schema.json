@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://midnightdesign.github.io/no-throw/nothrow.schema.json",
+  "title": "no-throw manifest",
+  "description": "Colors a package's exported surface. `nothrow.json` sits beside a package's `package.json`; the same shape minus `files` and `package`, nested under a `packages` key, is `nothrow.overrides.json`. Readers ignore unknown fields, and absence of a fact always means the strict reading.",
+  "type": "object",
+  "required": ["version", "exports"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": {
+      "description": "Bumped only on a breaking reinterpretation. A version this reader does not know floors the whole manifest.",
+      "type": "integer"
+    },
+    "package": {
+      "description": "The npm package these colors are about. Overlays name their target here; it is how an overlay is matched, never by its own npm name.",
+      "type": "string"
+    },
+    "exports": {
+      "description": "npm export subpath to the symbols reachable through it.",
+      "type": "object",
+      "patternProperties": { "^\\.(/.+)?$": { "$ref": "#/$defs/subpath" } },
+      "additionalProperties": false
+    },
+    "files": {
+      "description": "SRI hashes of the files these colors were written for. Any mismatch floors the manifest; required by `nothrow emit`, absent in overlays.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/integrity" }
+    }
+  },
+  "$defs": {
+    "subpath": {
+      "type": "object",
+      "patternProperties": { "^[A-Za-z_$][A-Za-z0-9_$]*([.#][A-Za-z_$][A-Za-z0-9_$]*)*$": { "$ref": "#/$defs/entry" } },
+      "additionalProperties": false
+    },
+    "entry": {
+      "description": "One symbol, covering all of its overloads. Keys are public export names post-aliasing, in a strict JSDoc-namepath subset.",
+      "type": "object",
+      "properties": {
+        "color": { "$ref": "#/$defs/color" },
+        "async": {
+          "description": "Whether the declaration was `async`, which declaration emit erases. Default `false`, because absence must mean \"might sync-throw\".",
+          "type": "boolean"
+        },
+        "conditions": {
+          "description": "The access paths over this symbol's own parameters it is non-throwing given. Absence means maximally conditioned; unconditional cleanliness is recorded positively as [].",
+          "type": "array",
+          "items": { "$ref": "#/$defs/conditionPath" }
+        },
+        "accessor": { "$ref": "#/$defs/accessor" },
+        "note": {
+          "description": "Free text the engine ignores; JSON has no comments.",
+          "type": "string"
+        }
+      }
+    },
+    "color": { "enum": ["throwing", "non-throwing"] },
+    "conditionPath": {
+      "description": "Root `param<N>`, then `.member`, `[]` for element access, `.@@name` for a well-known symbol. The grammar is closed.",
+      "type": "string",
+      "pattern": "^param(0|[1-9][0-9]*)(\\[\\]|\\.@@[A-Za-z_$][A-Za-z0-9_$]*|\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"
+    },
+    "accessor": {
+      "description": "`false` is a positive record that a declared property really is data. Absence is not that record.",
+      "oneOf": [
+        { "const": false },
+        {
+          "type": "object",
+          "required": ["get", "set"],
+          "properties": {
+            "get": { "$ref": "#/$defs/color" },
+            "set": { "$ref": "#/$defs/color" }
+          }
+        }
+      ]
+    },
+    "integrity": {
+      "type": "string",
+      "pattern": "^sha256-[A-Za-z0-9+/]+=*$"
+    }
+  }
+}

@@ -11,6 +11,10 @@ const WHITELIST =
   "A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method or constructor, an accessor, or an object-literal method or function-valued property.";
 
 const messages = {
+  nonJsdocMark:
+    "`@{{tag}}` in a {{form}} comment is not a mark: a mark is read only from a JSDoc block comment, so this one enforces nothing. Write it as `/** @nothrow */`.",
+  misspelledMark:
+    "`@{{tag}}` is not a mark: the mark is spelled `@nothrow`, and this differs from it only in case and separators, so it is read as an unrelated tag and enforces nothing. Spell it `@nothrow`.",
   ineffectiveMark: `\`@nothrow\` binds to nothing here. The nearest valid site is {{site}} on line {{line}}. ${WHITELIST}`,
   ineffectiveMarkNoSite: `\`@nothrow\` binds to nothing here, and there is no valid site near it to move it to. ${WHITELIST}`,
   multiDeclarator:
@@ -29,6 +33,8 @@ type MessageId = keyof typeof messages;
 
 /** An unmapped problem kind is a compile error here, never a dropped report. */
 const messageIdByKind: Record<MarkProblemKind, MessageId> = {
+  "non-jsdoc-mark": "nonJsdocMark",
+  "misspelled-mark": "misspelledMark",
   "ineffective-mark": "ineffectiveMark",
   "ineffective-mark-no-site": "ineffectiveMarkNoSite",
   "multi-declarator": "multiDeclarator",

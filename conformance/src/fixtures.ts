@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Diagnostic } from "./diagnostics.js";
+import type { Diagnostic, Suggestion } from "./diagnostics.js";
 
 /**
  * How the fixture is wired up: `rules` turns the rules on one by one, which is
@@ -60,23 +60,30 @@ function readConfig(
 }
 
 const POSITION_KEYS = ["line", "column", "endLine", "endColumn"] as const;
-const KNOWN_KEYS = new Set<string>([
+const DIAGNOSTIC_KEYS = [
   "file",
   ...POSITION_KEYS,
   "messageId",
   "message",
-]);
+  "suggestions",
+];
+const SUGGESTION_KEYS = ["desc", "output"];
 
 function readDiagnostic(entry: unknown, where: string): Diagnostic {
   const record = asRecord(entry, where);
-
-  for (const key of Object.keys(record)) {
-    if (!KNOWN_KEYS.has(key)) throw new Error(`${where}: unknown key \`${key}\``);
-  }
+  rejectUnknownKeys(record, DIAGNOSTIC_KEYS, where);
 
   const message = record["message"];
   if (message !== undefined && typeof message !== "string") {
     throw new Error(`${where}: \`message\`, when present, must be a string`);
+  }
+
+  const suggestions = record["suggestions"];
+  if (suggestions !== undefined && !Array.isArray(suggestions)) {
+    throw new Error(
+      `${where}: \`suggestions\`, when present, must be an array — an ` +
+        "empty one asserts the diagnostic offers no edit",
+    );
   }
 
   return {
@@ -87,7 +94,45 @@ function readDiagnostic(entry: unknown, where: string): Diagnostic {
     endColumn: readPosition(record, "endColumn", where),
     messageId: readString(record, "messageId", where),
     ...(message === undefined ? {} : { message }),
+    ...(suggestions === undefined
+      ? {}
+      : {
+          suggestions: suggestions.map((suggestion, index) =>
+            readSuggestion(suggestion, `${where}: suggestions[${index}]`),
+          ),
+        }),
   };
+}
+
+function readSuggestion(entry: unknown, where: string): Suggestion {
+  const record = asRecord(entry, where);
+  rejectUnknownKeys(record, SUGGESTION_KEYS, where);
+
+  const output = record["output"];
+  if (
+    !Array.isArray(output) ||
+    output.some((line) => typeof line !== "string")
+  ) {
+    throw new Error(
+      `${where}: \`output\` must be the file the edit produces, one array ` +
+        "entry per line",
+    );
+  }
+
+  return { desc: readString(record, "desc", where), output: output as string[] };
+}
+
+/** A typo in an expectation is a silent pass otherwise. */
+function rejectUnknownKeys(
+  record: Record<string, unknown>,
+  known: readonly string[],
+  where: string,
+): void {
+  for (const key of Object.keys(record)) {
+    if (!known.includes(key)) {
+      throw new Error(`${where}: unknown key \`${key}\``);
+    }
+  }
 }
 
 function asRecord(value: unknown, where: string): Record<string, unknown> {

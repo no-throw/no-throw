@@ -11,9 +11,14 @@ import {
   type TransferSite,
   type UndischargedReason,
 } from "@nothrow/core";
-import { ESLintUtils, type TSESTree } from "@typescript-eslint/utils";
+import {
+  ESLintUtils,
+  type TSESLint,
+  type TSESTree,
+} from "@typescript-eslint/utils";
 import { relative, sep } from "node:path";
 import type ts from "typescript";
+import { bridgeEdit, type BridgeShape } from "../bridge.js";
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/MidnightDesign/no-throw#${name}`,
@@ -75,7 +80,7 @@ const RETURN_PROMISE_OUTS =
   "return a value instead; " +
   PRODUCER_CARRIERS;
 
-const messages = {
+const diagnostics = {
   uncaughtThrow: "Uncaught `throw` escapes this `@nothrow` function.",
   unbridgedCall:
     "Call to `{{callee}}` escapes this `@nothrow` function: it {{reason}}. " +
@@ -99,6 +104,19 @@ const messages = {
     "Call to `{{callee}}` escapes this `@nothrow` function: it is non-throwing " +
     "given `{{path}}`, and {{reason}}. `{{callee}}` enters `{{path}}` at " +
     "{{entry}}. " + OUTS,
+  // The same contract for a condition a carrier states. There is no body to
+  // point the reader at, so what the second clause names instead is the claim:
+  // a manifest, an overlay or an override said this, and it is discharged here.
+  carriedConditionArgumentThrowing:
+    "Call to `{{callee}}` escapes this `@nothrow` function: the carrier that " +
+    "colors it declares it non-throwing given `{{path}}`, and the argument " +
+    "passed for `{{path}}` is throwing — its body was analyzed and can throw. " +
+    "Your outs: bridge this call with `try`/`catch`, or pass something " +
+    "non-throwing for `{{path}}`.",
+  carriedConditionArgumentFloored:
+    "Call to `{{callee}}` escapes this `@nothrow` function: the carrier that " +
+    "colors it declares it non-throwing given `{{path}}`, and {{reason}}. " +
+    OUTS,
   unbridgedConsumption:
     "Consuming this iterator escapes this `@nothrow` function: {{reason}}. " +
     outs("consumption"),
@@ -176,14 +194,120 @@ const messages = {
     "the escapes inside it are reported too.",
 } as const;
 
+/**
+ * The labels an editor puts on the offered edits. They are the mechanical form
+ * of the first out each message names, which is why there is one per bridge
+ * shape and not one per diagnostic: the message above the list has already
+ * said what "this" is.
+ */
+const offers = {
+  suggestBridge: "Bridge this with `try`/`catch`.",
+  suggestAwaitBridge: "Bridge this with `try { await … } catch`.",
+  suggestAwait:
+    "Add the missing `await`, so the `catch` is on the rejection's path.",
+} as const;
+
+const messages = { ...diagnostics, ...offers } as const;
+
+type DiagnosticId = keyof typeof diagnostics;
+type OfferId = keyof typeof offers;
 type MessageId = keyof typeof messages;
+
+interface Bridge {
+  readonly shape: BridgeShape;
+  readonly messageId: OfferId;
+}
+
+const BRIDGE: Bridge = { shape: "wrap", messageId: "suggestBridge" };
+
+/** The `await` is written already, so wrapping produces the shape by itself. */
+const BRIDGE_AN_EXISTING_AWAIT: Bridge = {
+  shape: "wrap",
+  messageId: "suggestAwaitBridge",
+};
+
+/** Nothing awaits it yet, so the edit is the one that writes the `await`. */
+const BRIDGE_AND_ADD_THE_AWAIT: Bridge = {
+  shape: "awaiting-wrap",
+  messageId: "suggestAwaitBridge",
+};
+
+/** The `try` is there and cannot fire; only the `await` is missing. */
+const ADD_THE_AWAIT: Bridge = { shape: "await", messageId: "suggestAwait" };
+
+/**
+ * What each diagnostic offers to do about itself. `undefined` is a decision,
+ * not an omission: an offered edit is an offer to make the diagnostic go away,
+ * so it is made only where a mechanical bridge really is the remedy. Where the
+ * way out is something else — returning the error instead of throwing it,
+ * returning an iterator from a producer this rule can trace, awaiting a
+ * returned promise and returning a value in its place — the reader has to
+ * write it, and an edit here would be offering to silence a true report.
+ *
+ * A diagnostic with no entry is a compile error, never a silent no-offer.
+ */
+const bridgeFor: Record<DiagnosticId, Bridge | undefined> = {
+  uncaughtThrow: undefined,
+  unbridgedCall: BRIDGE,
+  inferredThrowingCall: BRIDGE,
+  conditionArgumentThrowing: BRIDGE,
+  conditionArgumentFloored: BRIDGE,
+  carriedConditionArgumentThrowing: BRIDGE,
+  carriedConditionArgumentFloored: BRIDGE,
+  unbridgedConsumption: BRIDGE,
+  inferredThrowingConsumption: BRIDGE,
+  iteratorThrow: BRIDGE,
+  unprovableReturnedIterator: undefined,
+  inferredThrowingReturnedIterator: undefined,
+  unbridgedAwait: BRIDGE_AN_EXISTING_AWAIT,
+  inferredThrowingAwait: BRIDGE_AN_EXISTING_AWAIT,
+  unprovableFloat: BRIDGE_AND_ADD_THE_AWAIT,
+  inferredThrowingFloat: BRIDGE_AND_ADD_THE_AWAIT,
+  fakeBridge: ADD_THE_AWAIT,
+  unprovableReturnedPromise: undefined,
+  inferredThrowingReturnedPromise: undefined,
+  unbridgedHiddenTransfer: BRIDGE,
+  inferredThrowingHiddenTransfer: BRIDGE,
+};
+
+/**
+ * The carrier chain's own failures, as predicates over whatever the message
+ * makes its subject. One clause each, reused across the four records below, so
+ * a reader is told the same thing about a stale manifest whether it floored a
+ * call, an argument, a consumption or a promise.
+ */
+const CARRIED_THROWING =
+  "is colored `throwing` by the carrier that answers for it — a shipped " +
+  "manifest, an overlay or an override — so calling it can throw";
+
+const UNREADABLE_MANIFEST =
+  "ships in a package whose `nothrow.json` names a `version` this release " +
+  "cannot read, so the whole manifest is ignored and nothing else colors it";
+
+const SUPERSEDED_TAG =
+  "carries a `@nothrow` tag that its package's own `nothrow.json` supersedes " +
+  "— a valid manifest answers for the whole package — and that manifest has " +
+  "no entry for it";
+
+const UNUSABLE_ENTRY =
+  "is claimed by a carrier entry this release cannot use — a shape outside " +
+  "the manifest schema, or a condition path with no form in this engine — so " +
+  "the fact that would have colored it is not applied";
+
+const staleManifest = (file: string): string =>
+  "is colored by a `nothrow.json` that no longer matches its package's " +
+  `files — \`${file}\` has changed since the manifest was written — so the ` +
+  "manifest is ignored and no surviving `@nothrow` tag colors it either";
+
+/** The one reason whose text needs a fact the record cannot hold. */
+type StaticFloorReason = Exclude<FloorReason, "stale-manifest">;
 
 /**
  * The why half of the two-clause floor contract, as a predicate: the call
  * messages make the callee its subject, the hidden-transfer ones the member
  * that runs. One record, so the normative text cannot drift between them.
  */
-const whyFloored: Record<FloorReason, string> = {
+const whyFloored: Record<StaticFloorReason, string> = {
   bodyless:
     "is declared without a body — an ambient declaration, a `.d.ts`, or a " +
     "value known only by its function type — and no mark, manifest, overlay " +
@@ -205,10 +329,27 @@ const whyFloored: Record<FloorReason, string> = {
     "is non-throwing only given conditions of its own, and this site reaches " +
     "it through a type rather than handing it anything, so there is no " +
     "argument here that could discharge them",
+  "carried-throwing": CARRIED_THROWING,
+  "unreadable-manifest": UNREADABLE_MANIFEST,
+  "superseded-tag": SUPERSEDED_TAG,
+  "unusable-entry": UNUSABLE_ENTRY,
 };
 
+/** The why clause for a callee, with the one fact a record cannot hold. */
+function whyCalleeFloored(
+  reason: FloorReason,
+  staleFile: string | undefined,
+): string {
+  return reason === "stale-manifest"
+    ? staleManifest(staleFile ?? "one of its files")
+    : whyFloored[reason];
+}
+
 /** The same contract for the argument that was supposed to discharge a path. */
-const whyUndischarged: Record<UndischargedReason, string> = {
+const whyUndischarged: Record<
+  Exclude<UndischargedReason, "stale-manifest">,
+  string
+> = {
   bodyless:
     "the argument passed for it is declared without a body — an ambient " +
     "declaration, a `.d.ts`, or an interface member — and no mark, manifest, " +
@@ -233,7 +374,20 @@ const whyUndischarged: Record<UndischargedReason, string> = {
   "beyond-depth":
     "carrying it up to this function would make a path deeper than the engine " +
     "follows",
+  "carried-throwing": `the argument passed for it ${CARRIED_THROWING}`,
+  "unreadable-manifest": `the argument passed for it ${UNREADABLE_MANIFEST}`,
+  "superseded-tag": `the argument passed for it ${SUPERSEDED_TAG}`,
+  "unusable-entry": `the argument passed for it ${UNUSABLE_ENTRY}`,
 };
+
+function whyArgumentUndischarged(
+  reason: UndischargedReason,
+  staleFile: string | undefined,
+): string {
+  return reason === "stale-manifest"
+    ? `the argument passed for it ${staleManifest(staleFile ?? "one of its files")}`
+    : whyUndischarged[reason];
+}
 
 /**
  * The why half of the floor contract for a consumption site. The subject is
@@ -241,7 +395,7 @@ const whyUndischarged: Record<UndischargedReason, string> = {
  * the protocol, and the author wrote none of it.
  */
 const whyConsumptionFloored: Record<
-  Exclude<ConsumptionReason, "inferred">,
+  Exclude<ConsumptionReason, "inferred" | "stale-manifest">,
   string
 > = {
   bodyless:
@@ -271,7 +425,20 @@ const whyConsumptionFloored: Record<
   conditioned:
     "what consuming it runs is non-throwing only given conditions of its own, " +
     "and consuming an iterator hands nothing over that could discharge them",
+  "carried-throwing": `what consuming it runs ${CARRIED_THROWING}`,
+  "unreadable-manifest": `what consuming it runs ${UNREADABLE_MANIFEST}`,
+  "superseded-tag": `what consuming it runs ${SUPERSEDED_TAG}`,
+  "unusable-entry": `what consuming it runs ${UNUSABLE_ENTRY}`,
 };
+
+function whyConsumption(
+  reason: Exclude<ConsumptionReason, "inferred">,
+  staleFile: string | undefined,
+): string {
+  return reason === "stale-manifest"
+    ? `what consuming it runs ${staleManifest(staleFile ?? "one of its files")}`
+    : whyConsumptionFloored[reason];
+}
 
 /**
  * What a rejection message is *about*. A chain's color is a join over its head
@@ -304,7 +471,7 @@ const rejectionCulprit: Record<RejectionSubject, string> = {
  * text is where the difference has to live: one is a refinement this engine
  * has not made yet, the other is unknowable from here.
  */
-const whyRejects: Record<RejectionReason, string> = {
+const whyRejects: Record<Exclude<RejectionReason, "stale-manifest">, string> = {
   inferred: "has a body that was analyzed and can throw",
   bodyless:
     "is declared without a body — an ambient declaration, a `.d.ts`, or a " +
@@ -336,6 +503,13 @@ const whyRejects: Record<RejectionReason, string> = {
   "conditioned-handler":
     "is reached through a parameter of this function, and a chain handler is " +
     "not something a call site can discharge",
+  "carried-throwing":
+    "is colored `throwing` by the carrier that answers for it — a shipped " +
+    "manifest, an overlay or an override — so the promise it hands back can " +
+    "reject",
+  "unreadable-manifest": UNREADABLE_MANIFEST,
+  "superseded-tag": SUPERSEDED_TAG,
+  "unusable-entry": UNUSABLE_ENTRY,
 };
 
 /** The why clause — who, then what is wrong with them — and what to fix. */
@@ -343,9 +517,13 @@ function rejectionData(rejects: Rejects): {
   readonly reason: string;
   readonly culprit: string;
 } {
-  const { reason, subject } = rejects;
+  const { reason, subject, staleFile } = rejects;
+  const why =
+    reason === "stale-manifest"
+      ? staleManifest(staleFile ?? "one of its files")
+      : whyRejects[reason];
   return {
-    reason: `${rejectionSubject[subject]} ${whyRejects[reason]}`,
+    reason: `${rejectionSubject[subject]} ${why}`,
     culprit: rejectionCulprit[subject],
   };
 }
@@ -389,6 +567,18 @@ type Report =
         readonly callee: string;
         readonly path: string;
         readonly entry: string;
+        readonly reason: string;
+      };
+    }
+  | {
+      readonly messageId: "carriedConditionArgumentThrowing";
+      readonly data: { readonly callee: string; readonly path: string };
+    }
+  | {
+      readonly messageId: "carriedConditionArgumentFloored";
+      readonly data: {
+        readonly callee: string;
+        readonly path: string;
         readonly reason: string;
       };
     }
@@ -441,7 +631,10 @@ function reportFor(finding: Finding, cwd: string): Report {
     case "unbridged-call":
       return {
         messageId: "unbridgedCall",
-        data: { callee: finding.callee, reason: whyFloored[finding.reason] },
+        data: {
+          callee: finding.callee,
+          reason: whyCalleeFloored(finding.reason, finding.staleFile),
+        },
       };
     case "inferred-throwing-call":
       return {
@@ -449,30 +642,46 @@ function reportFor(finding: Finding, cwd: string): Report {
         data: { callee: finding.callee },
       };
     case "throwing-condition-argument":
-      return {
-        messageId: "conditionArgumentThrowing",
-        data: {
-          callee: finding.callee,
-          path: finding.path,
-          entry: entryText(finding.entry, cwd),
-        },
-      };
-    case "floored-condition-argument":
-      return {
-        messageId: "conditionArgumentFloored",
-        data: {
-          callee: finding.callee,
-          path: finding.path,
-          entry: entryText(finding.entry, cwd),
-          reason: whyUndischarged[finding.reason],
-        },
-      };
+      // A condition a carrier states has no body behind it, so the clause that
+      // would point at one is replaced rather than filled with a guess.
+      return finding.entry === undefined
+        ? {
+            messageId: "carriedConditionArgumentThrowing",
+            data: { callee: finding.callee, path: finding.path },
+          }
+        : {
+            messageId: "conditionArgumentThrowing",
+            data: {
+              callee: finding.callee,
+              path: finding.path,
+              entry: entryText(finding.entry, cwd),
+            },
+          };
+    case "floored-condition-argument": {
+      const reason = whyArgumentUndischarged(finding.reason, finding.staleFile);
+      return finding.entry === undefined
+        ? {
+            messageId: "carriedConditionArgumentFloored",
+            data: { callee: finding.callee, path: finding.path, reason },
+          }
+        : {
+            messageId: "conditionArgumentFloored",
+            data: {
+              callee: finding.callee,
+              path: finding.path,
+              entry: entryText(finding.entry, cwd),
+              reason,
+            },
+          };
+    }
     case "throwing-consumption":
       return finding.reason === "inferred"
         ? { messageId: "inferredThrowingConsumption" }
         : {
             messageId: "unbridgedConsumption",
-            data: { reason: whyConsumptionFloored[finding.reason] },
+            data: {
+              reason: whyConsumption(finding.reason, finding.staleFile),
+            },
           };
     case "iterator-throw":
       return { messageId: "iteratorThrow" };
@@ -481,7 +690,9 @@ function reportFor(finding: Finding, cwd: string): Report {
         ? { messageId: "inferredThrowingReturnedIterator" }
         : {
             messageId: "unprovableReturnedIterator",
-            data: { reason: whyConsumptionFloored[finding.reason] },
+            data: {
+              reason: whyConsumption(finding.reason, finding.staleFile),
+            },
           };
     case "rejected-await":
       return {
@@ -524,7 +735,7 @@ function reportFor(finding: Finding, cwd: string): Report {
               ? `the checker cannot resolve \`${finding.text}\` to a ` +
                 "declaration, so nothing can say whether a body runs here"
               : `it runs ${describeTarget(finding.target)}, which ` +
-                whyFloored[finding.reason],
+                whyCalleeFloored(finding.reason, finding.staleFile),
         },
       };
     case "inferred-throwing-hidden-transfer":
@@ -548,6 +759,31 @@ function entryText(entry: EntrySite, cwd: string): string {
   return `${path}:${entry.line}`;
 }
 
+/**
+ * The offer, where there is one to make. It is never a `fix`: wrapping a call
+ * in a bridge changes what the program does with an error, and a tool may not
+ * make that choice on the reader's behalf — `--fix` would rewrite a whole
+ * codebase into one that swallows everything and reports nothing.
+ */
+function offerFor(
+  messageId: DiagnosticId,
+  node: TSESTree.Node | undefined,
+  source: string,
+): TSESLint.ReportSuggestionArray<MessageId> | undefined {
+  const bridge = bridgeFor[messageId];
+  if (bridge === undefined || node === undefined) return undefined;
+
+  const edit = bridgeEdit(node, bridge.shape, source);
+  if (edit === undefined) return undefined;
+
+  return [
+    {
+      messageId: bridge.messageId,
+      fix: (fixer) => fixer.replaceTextRange(edit.range, edit.text),
+    },
+  ];
+}
+
 export const noEscapingThrow = createRule<[], MessageId>({
   name: "no-escaping-throw",
   meta: {
@@ -555,13 +791,13 @@ export const noEscapingThrow = createRule<[], MessageId>({
     docs: {
       description: "Enforce that no throw escapes a function marked `@nothrow`.",
     },
+    hasSuggestions: true,
     messages,
     schema: [],
   },
   defaultOptions: [],
   create(context) {
     const services = ESLintUtils.getParserServices(context);
-    const checker = services.program.getTypeChecker();
 
     return {
       // The whole file goes to the core in one piece: deciding which nodes are
@@ -570,12 +806,17 @@ export const noEscapingThrow = createRule<[], MessageId>({
         const sourceFile = services.esTreeNodeToTSNodeMap.get(
           node,
         ) as ts.SourceFile;
+        const source = context.sourceCode.getText();
 
-        for (const finding of analyzeSourceFile(sourceFile, checker)) {
+        for (const finding of analyzeSourceFile(sourceFile, services.program)) {
           const reportAt = services.tsNodeToESTreeNodeMap.get(finding.node);
+          const report = reportFor(finding, context.cwd);
+          const suggest = offerFor(report.messageId, reportAt, source);
+
           context.report({
             node: reportAt ?? node,
-            ...reportFor(finding, context.cwd),
+            ...report,
+            ...(suggest === undefined ? {} : { suggest }),
           });
         }
       },

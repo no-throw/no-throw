@@ -1,0 +1,23 @@
+{
+  "description": "`// @nothrow` is reported as the wrong comment form, wherever it sits, rather than binding or going quiet.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 1,
+      "column": 4,
+      "endLine": 1,
+      "endColumn": 12,
+      "messageId": "nonJsdocMark",
+      "message": "`@nothrow` in a line comment is not a mark: a mark is read only from a JSDoc block comment, so this one enforces nothing. Write it as `/** @nothrow */`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 6,
+      "column": 4,
+      "endLine": 6,
+      "endColumn": 12,
+      "messageId": "nonJsdocMark",
+      "message": "`@nothrow` in a line comment is not a mark: a mark is read only from a JSDoc block comment, so this one enforces nothing. Write it as `/** @nothrow */`."
+    }
+  ]
+}
