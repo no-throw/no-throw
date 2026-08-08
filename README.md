@@ -482,6 +482,15 @@ Three packages in the `@no-throw` npm scope, versioned in lockstep.
 | [`@no-throw/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
 | [`@no-throw/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
 
+The engine reads your program through the TypeScript compiler API in process,
+and all three packages carry that API across their own surface, so all three
+take `typescript` as a peer dependency at `>=5.0.0 <7.0.0`. The ceiling is not
+caution: TypeScript 7 ships the compiler as a Go binary and no programmatic API,
+so `import ts from "typescript"` still resolves and everything on it is
+`undefined`. Left unbounded, that is a peer a consumer satisfies at install and
+a `TypeError` at the first rule run — a worse place to find out. TypeScript 6 is
+the last release carrying the API, and the suite runs there too.
+
 ## Working on it
 
 ```bash
@@ -494,18 +503,29 @@ diagnostics they must produce. Every behavior lands there, the CLI's included:
 `nothrow emit` is exercised as a process over producer packages, and what it
 writes is read back by a separate consumer project through the ordinary driver.
 
-The plugin's `eslint` peer range names the majors a consumer may install it
-against. CI enumerates that range and holds it to two things per major: the
-suite passes there, and a packed tarball installs there under
-`strict-peer-dependencies=true`. Widening the claim widens what has to pass.
+Two peer ranges name what a consumer may install these packages against: the
+plugin's `eslint`, and the `typescript` all three share. CI enumerates each
+range and holds it to two things per major — the suite passes there, and a
+packed tarball installs there under `strict-peer-dependencies=true`. Widening a
+claim widens what has to pass.
 
 ```bash
-pnpm run gate:peer   # install what would be published, the way a consumer does
+pnpm run gate:peer:eslint      # install what would be published, the way a consumer does
+pnpm run gate:peer:typescript
 ```
+
+Both take `-- --self-check`. What makes one install evidence about three
+packages is that the range is read from the manifests before anything is
+installed: a package that reaches for the compiler and declares no peer, or
+declares a different one from its siblings, stops the read rather than
+appearing in a claim nothing checks. A consumer installing two of these gets
+the intersection of what they declare, so that intersection has to be a range
+somebody wrote down.
 
 The suite half needs the workspace resolved on the major under test, which
 `node scripts/eslint-peer-matrix.mjs pin 10 && pnpm install --no-frozen-lockfile`
-does. That edits the root manifest and the lockfile; `git checkout -- package.json
+does — `typescript-peer-matrix.mjs` takes the same three commands for the other
+range. That edits the root manifest and the lockfile; `git checkout -- package.json
 pnpm-lock.yaml` puts them back.
 
 The shipped baselines are generated data, so their correctness is CI over that
