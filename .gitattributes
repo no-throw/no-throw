@@ -2,3 +2,6 @@
 # must not depend on the platform a checkout happened on: a CRLF conversion
 # would fail every hash and turn the staleness fixtures into noise.
 conformance/fixtures/*/node_modules/** text eol=lf
+# A CLI case hashes the producer's built files and edits its source by exact
+# text, so both are pinned for the same reason.
+conformance/cli/** text eol=lf

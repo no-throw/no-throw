@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { Diagnostic, Suggestion } from "./diagnostics.js";
+import { asRecord, readString, rejectUnknownKeys } from "./json.js";
 
 /**
  * How the fixture is wired up: `rules` turns the rules on one by one, which is
@@ -22,11 +23,16 @@ export function loadFixtures(fixturesRoot: string): Fixture[] {
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort()
-    .map((name) => loadFixture(fixturesRoot, name));
+    .map((name) => loadFixture(join(fixturesRoot, name)));
 }
 
-function loadFixture(fixturesRoot: string, name: string): Fixture {
-  const directory = join(fixturesRoot, name);
+/**
+ * One fixture project, wherever it sits. The CLI suite consumes a manifest a
+ * process just emitted, and what makes that the wire format's test rather than
+ * a snapshot is that the reader reading it is this one.
+ */
+export function loadFixture(directory: string): Fixture {
+  const name = basename(directory);
   const path = join(directory, "expected.json");
   const raw: unknown = JSON.parse(readFileSync(path, "utf8"));
   const root = asRecord(raw, path);
@@ -120,38 +126,6 @@ function readSuggestion(entry: unknown, where: string): Suggestion {
   }
 
   return { desc: readString(record, "desc", where), output: output as string[] };
-}
-
-/** A typo in an expectation is a silent pass otherwise. */
-function rejectUnknownKeys(
-  record: Record<string, unknown>,
-  known: readonly string[],
-  where: string,
-): void {
-  for (const key of Object.keys(record)) {
-    if (!known.includes(key)) {
-      throw new Error(`${where}: unknown key \`${key}\``);
-    }
-  }
-}
-
-function asRecord(value: unknown, where: string): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`${where}: expected a JSON object`);
-  }
-  return value as Record<string, unknown>;
-}
-
-function readString(
-  record: Record<string, unknown>,
-  key: string,
-  where: string,
-): string {
-  const value = record[key];
-  if (typeof value !== "string" || value === "") {
-    throw new Error(`${where}: \`${key}\` must be a non-empty string`);
-  }
-  return value;
 }
 
 function readPosition(

@@ -1,0 +1,11 @@
+{
+  "description": "One of the two places schema-legal and emit-legal differ: an accessor's color is stateable only as an accessor fact, which emit never writes, so a marked getter is refused rather than quietly dropped.",
+  "steps": [
+    {
+      "emit": [],
+      "expect": "refused",
+      "names": ["`Box#value`", "accessor fact"]
+    },
+    { "absent": "nothrow.json" }
+  ]
+}
