@@ -1,0 +1,14 @@
+{
+  "description": "A one-star block comment is not a JSDoc comment, so `/* @nothrow */` is reported as the wrong comment form.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 1,
+      "column": 4,
+      "endLine": 1,
+      "endColumn": 12,
+      "messageId": "nonJsdocMark",
+      "message": "`@nothrow` in a block comment is not a mark: a mark is read only from a JSDoc block comment, so this one enforces nothing. Write it as `/** @nothrow */`."
+    }
+  ]
+}

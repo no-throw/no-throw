@@ -1,0 +1,41 @@
+{
+  "description": "A tag that is the mark up to case and separators is reported as a misspelling, not read as an unrelated tag.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 1,
+      "column": 5,
+      "endLine": 1,
+      "endColumn": 13,
+      "messageId": "misspelledMark",
+      "message": "`@NoThrow` is not a mark: the mark is spelled `@nothrow`, and this differs from it only in case and separators, so it is read as an unrelated tag and enforces nothing. Spell it `@nothrow`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 6,
+      "column": 5,
+      "endLine": 6,
+      "endColumn": 13,
+      "messageId": "misspelledMark",
+      "message": "`@NOTHROW` is not a mark: the mark is spelled `@nothrow`, and this differs from it only in case and separators, so it is read as an unrelated tag and enforces nothing. Spell it `@nothrow`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 11,
+      "column": 5,
+      "endLine": 11,
+      "endColumn": 14,
+      "messageId": "misspelledMark",
+      "message": "`@no-throw` is not a mark: the mark is spelled `@nothrow`, and this differs from it only in case and separators, so it is read as an unrelated tag and enforces nothing. Spell it `@nothrow`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 16,
+      "column": 5,
+      "endLine": 16,
+      "endColumn": 14,
+      "messageId": "misspelledMark",
+      "message": "`@no_throw` is not a mark: the mark is spelled `@nothrow`, and this differs from it only in case and separators, so it is read as an unrelated tag and enforces nothing. Spell it `@nothrow`."
+    }
+  ]
+}

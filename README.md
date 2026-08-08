@@ -81,6 +81,13 @@ thing that throws. For an ambient declaration, assert the color in
 `nothrow.overrides.json` instead: an in-source `@nothrow` means *verified seed*
 and nothing else.
 
+The comment form and the spelling are checked before position, for the same
+reason. A mark is read only from a JSDoc block comment, so `// @nothrow` and
+`/* @nothrow */` are errors rather than nothing; and a tag that is the mark up
+to case and separators — `@NoThrow`, `@no-throw` — is an error naming the one
+spelling. Further out than that is a different tag and stays silent: `@nothrowx`
+is not a guess the tool is entitled to make.
+
 ## What gets inferred
 
 Marking one function does not force you to mark its call tree. An unmarked
