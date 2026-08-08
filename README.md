@@ -41,7 +41,7 @@ project:
 
 ```js
 // eslint.config.js
-import nothrow from "@nothrow/eslint-plugin";
+import nothrow from "@no-throw/eslint-plugin";
 import tseslint from "typescript-eslint";
 
 export default [
@@ -147,7 +147,7 @@ below it:
 | rung | what it is | who writes it |
 | --- | --- | --- |
 | `nothrow.overrides.json` | one file at your project root | you |
-| an `@nothrow/*` overlay | an installed package of colors | anyone |
+| an `@no-throw/*` overlay | an installed package of colors | anyone |
 | what the package ships | its own `nothrow.json`, else its surviving `@nothrow` tags | its author |
 | the baseline | colors for TypeScript's own libs, keyed by lib target | us |
 
@@ -172,8 +172,8 @@ yourself, and nothing outranks you:
 
 An **overlay** is that same shape for one package, published so everyone else
 gets it too: a `nothrow.json` with a `package` field naming its target, in a
-package under the `@nothrow` scope. It is matched by that field and never by
-its own npm name — `@nothrow/lodash` is a convention, not a lookup — so an
+package under the `@no-throw` scope. It is matched by that field and never by
+its own npm name — `@no-throw/lodash` is a convention, not a lookup — so an
 overlay for a scoped target needs no escape from npm's flat scopes. The
 resolver is version-blind in v1.
 
@@ -448,13 +448,13 @@ and coercion — **generators and the sync iteration protocol**, **async** —
 `await`, promise chains, floats and `for await` — **hybrid inference** for
 unmarked functions whose bodies are visible, **conditional cleanliness** for
 higher-order functions, **every rung of the carrier chain but the baseline** —
-a local `nothrow.overrides.json`, installed `@nothrow/*` overlays, and what a
+a local `nothrow.overrides.json`, installed `@no-throw/*` overlays, and what a
 dependency ships, which is its own `nothrow.json` or, absent a valid one, its
 surviving `@nothrow` tags — **`nothrow emit` and `emit --check`**, and the
 `configs.recommended` preset. Everything the chain cannot answer floors to
 throwing with a diagnostic naming your outs, and every out it names is now a
 rung you can really reach for. The ES
-standard-library baseline ships as data in `@nothrow/core`,
+standard-library baseline ships as data in `@no-throw/core`,
 and so does the DOM baseline, but nothing consults either yet, so every
 standard-library and DOM call floors too — `new Error(…)` included, iterating
 an array or a `Map` with it, and with them the `map`/`forEach` family, whose
@@ -474,13 +474,13 @@ Not built yet: the baseline rung. The design is locked and lives in
 
 ## Packages
 
-Three packages in the `@nothrow` npm scope, versioned in lockstep.
+Three packages in the `@no-throw` npm scope, versioned in lockstep.
 
 | package | what it is |
 | --- | --- |
-| [`@nothrow/core`](packages/core) | the engine — color resolution and the escape-site walk |
-| [`@nothrow/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
-| [`@nothrow/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
+| [`@no-throw/core`](packages/core) | the engine — color resolution and the escape-site walk |
+| [`@no-throw/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
+| [`@no-throw/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
 
 ## Working on it
 

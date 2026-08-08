@@ -1,7 +1,7 @@
-# `@nothrow/eslint-plugin`
+# `@no-throw/eslint-plugin`
 
 The ESLint adapter for `no-throw`. It translates findings from
-[`@nothrow/core`](../core) into ESLint diagnostics and suggestions, and contains
+[`@no-throw/core`](../core) into ESLint diagnostics and suggestions, and contains
 no analysis.
 
 `nothrow/no-escaping-throw` carries the entire invariant. Escape kinds are

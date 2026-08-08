@@ -10,7 +10,7 @@ import {
   type RejectionSubject,
   type TransferSite,
   type UndischargedReason,
-} from "@nothrow/core";
+} from "@no-throw/core";
 import {
   ESLintUtils,
   type TSESLint,
@@ -31,13 +31,13 @@ const createRule = ESLintUtils.RuleCreator(
  */
 const CARRIERS =
   "assert the color in `nothrow.overrides.json`; install or write an " +
-  "`@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
+  "`@no-throw/*` overlay; or, if you own the package, ship a manifest with " +
   "`nothrow emit`.";
 
 /** The same rungs where what floored is something a *producer* colors. */
 const PRODUCER_CARRIERS =
   "assert the producer's color in `nothrow.overrides.json`; install or write " +
-  "an `@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
+  "an `@no-throw/*` overlay; or, if you own the package, ship a manifest with " +
   "`nothrow emit`.";
 
 const outs = (what: string): string =>

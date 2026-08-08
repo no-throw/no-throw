@@ -1,9 +1,9 @@
 {
-  "name": "@nothrow/dom-baseline-tools",
+  "name": "@no-throw/dom-baseline-tools",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Maintainer-side tooling: generates the DOM baseline shipped in @nothrow/core, and the CI gates that keep it maintainable.",
+  "description": "Maintainer-side tooling: generates the DOM baseline shipped in @no-throw/core, and the CI gates that keep it maintainable.",
   "scripts": {
     "fetch-specs": "node dist/bin/fetch-specs.js",
     "fetch-gecko": "node dist/bin/fetch-gecko.js",
@@ -13,7 +13,7 @@
     "gate:drift": "node dist/bin/gate-drift.js"
   },
   "dependencies": {
-    "@nothrow/core": "workspace:*",
+    "@no-throw/core": "workspace:*",
     "@webref/idl": "^3.82.1",
     "jsdom": "^26.0.0",
     "typescript": "^5.7.2",

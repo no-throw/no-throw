@@ -478,7 +478,7 @@ function accessorRefusal(key: ExportKey, at: EmitSite): EmitRefusal {
       "manifest states an accessor's color only as an accessor fact — a " +
       "shape `nothrow emit` never writes. Declaration emit preserves `get` " +
       "and `set`, so consumers already see the accessor; its color belongs " +
-      "in their `nothrow.overrides.json`, or in an `@nothrow/*` overlay.",
+      "in their `nothrow.overrides.json`, or in an `@no-throw/*` overlay.",
     at,
     sites: [],
   };

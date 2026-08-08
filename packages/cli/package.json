@@ -1,5 +1,5 @@
 {
-  "name": "@nothrow/cli",
+  "name": "@no-throw/cli",
   "version": "0.1.0",
   "type": "module",
   "description": "The no-throw command line tool. Hosts `nothrow emit`.",
@@ -11,7 +11,7 @@
     "dist"
   ],
   "dependencies": {
-    "@nothrow/core": "workspace:*"
+    "@no-throw/core": "workspace:*"
   },
   "peerDependencies": {
     "typescript": ">=5.0.0"

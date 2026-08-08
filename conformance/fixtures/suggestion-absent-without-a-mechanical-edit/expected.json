@@ -8,7 +8,7 @@
       "endLine": 4,
       "endColumn": 45,
       "messageId": "unbridgedCall",
-      "message": "Call to `risky` escapes this `@nothrow` function: it is declared without a body — an ambient declaration, a `.d.ts`, or a value known only by its function type — and no mark, manifest, overlay or override colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`.",
+      "message": "Call to `risky` escapes this `@nothrow` function: it is declared without a body — an ambient declaration, a `.d.ts`, or a value known only by its function type — and no mark, manifest, overlay or override colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`.",
       "suggestions": []
     },
     {
@@ -18,7 +18,7 @@
       "endLine": 8,
       "endColumn": 24,
       "messageId": "unbridgedCall",
-      "message": "Call to `risky` escapes this `@nothrow` function: it is declared without a body — an ambient declaration, a `.d.ts`, or a value known only by its function type — and no mark, manifest, overlay or override colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`.",
+      "message": "Call to `risky` escapes this `@nothrow` function: it is declared without a body — an ambient declaration, a `.d.ts`, or a value known only by its function type — and no mark, manifest, overlay or override colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`.",
       "suggestions": []
     }
   ]

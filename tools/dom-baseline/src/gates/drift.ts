@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { collectDomMembers, createLibProgram } from "@nothrow/core/baseline";
+import { collectDomMembers, createLibProgram } from "@no-throw/core/baseline";
 import type ts from "typescript";
 
 import { DOM_LIBS } from "../lib.js";

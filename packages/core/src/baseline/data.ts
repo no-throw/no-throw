@@ -39,7 +39,7 @@ export function sourceOfLibTarget(libTarget: string): BaselineSource {
 /**
  * The entry for one member of one lib target, or `undefined` — which the
  * caller must read as *floor*. A TypeScript release landing ahead of a
- * `@nothrow/core` release therefore floors its newcomers by construction.
+ * `@no-throw/core` release therefore floors its newcomers by construction.
  */
 export function lookupBaselineEntry(
   libTarget: string,

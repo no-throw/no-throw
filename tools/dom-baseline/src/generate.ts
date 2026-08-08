@@ -9,7 +9,7 @@ import {
   type BaselineEntry,
   type ConditionPath,
   type DomMember,
-} from "@nothrow/core/baseline";
+} from "@no-throw/core/baseline";
 import ts from "typescript";
 
 import { accessorFactFor, type AccessorRecord } from "./accessors.js";

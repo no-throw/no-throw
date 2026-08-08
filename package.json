@@ -17,13 +17,13 @@
     "conformance:cli": "node conformance/dist/run-cli.js",
     "test": "pnpm run build && pnpm run check:lockstep && pnpm run conformance && pnpm run conformance:cli",
     "gate:peer": "node scripts/gate-eslint-peer.mjs",
-    "baseline:generate": "pnpm --filter @nothrow/es-baseline-tools run generate",
-    "gate:fuzz": "pnpm --filter @nothrow/es-baseline-tools run gate:fuzz",
-    "gate:drift": "pnpm --filter @nothrow/es-baseline-tools run gate:drift",
-    "dom:generate": "pnpm --filter @nothrow/dom-baseline-tools run generate",
-    "dom:gate:fuzz": "pnpm --filter @nothrow/dom-baseline-tools run gate:fuzz",
-    "dom:gate:deferred": "pnpm --filter @nothrow/dom-baseline-tools run gate:deferred",
-    "dom:gate:drift": "pnpm --filter @nothrow/dom-baseline-tools run gate:drift"
+    "baseline:generate": "pnpm --filter @no-throw/es-baseline-tools run generate",
+    "gate:fuzz": "pnpm --filter @no-throw/es-baseline-tools run gate:fuzz",
+    "gate:drift": "pnpm --filter @no-throw/es-baseline-tools run gate:drift",
+    "dom:generate": "pnpm --filter @no-throw/dom-baseline-tools run generate",
+    "dom:gate:fuzz": "pnpm --filter @no-throw/dom-baseline-tools run gate:fuzz",
+    "dom:gate:deferred": "pnpm --filter @no-throw/dom-baseline-tools run gate:deferred",
+    "dom:gate:drift": "pnpm --filter @no-throw/dom-baseline-tools run gate:drift"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
