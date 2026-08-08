@@ -580,22 +580,9 @@ function isPrimitive(type: TypeRef, facts: TypeFacts): boolean {
   return facts.constituentsOf(type).every((part) => facts.isPrimitive(part));
 }
 
-/**
- * TypeScript spells a well-known symbol member `__@toPrimitive@<id>`, where the
- * id belongs to that program's `Symbol` declaration — so the name can only be
- * matched, never written down.
- */
-const WELL_KNOWN_MEMBER = /^__@(\w+)@\d+$/u;
-
-function wellKnownName(
-  symbol: SymbolRef,
-  facts: TypeFacts,
-): string | undefined {
-  return WELL_KNOWN_MEMBER.exec(facts.nameOf(symbol))?.[1];
-}
-
+/** The member as the source spells it, well-known symbols included. */
 function memberName(symbol: SymbolRef, facts: TypeFacts): string {
-  const wellKnown = wellKnownName(symbol, facts);
+  const wellKnown = facts.wellKnownNameOf(symbol);
   return wellKnown === undefined
     ? facts.nameOf(symbol)
     : `[Symbol.${wellKnown}]`;

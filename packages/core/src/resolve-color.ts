@@ -17,7 +17,6 @@ import {
   type Bodied,
 } from "./declarations.js";
 import {
-  calleeExpression,
   unbridgedEscapes,
   type Escape,
   type Phase,
@@ -25,7 +24,7 @@ import {
 } from "./escapes.js";
 import { createFixpoint } from "./infer.js";
 import {
-  constituentsOf,
+  apparentConstituentsOf,
   isIteratorType,
   protocolMember,
   type Consumption,
@@ -832,7 +831,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     const known = consumedAt.get(site.node);
     if (known !== undefined) return known;
 
-    const types = constituentsOf(facts.typeAt(site.typeAt), facts);
+    const types = apparentConstituentsOf(facts.typeAt(site.typeAt), facts);
     const consumed = types.flatMap((type) =>
       constituentConsumed(site, type, body),
     );
@@ -1301,104 +1300,8 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     );
   }
 
-  /**
-   * Warm the type queries the walk from `seed` is about to make, one frontier
-   * of the call graph at a time.
-   *
-   * The fixpoint discovers the graph depth-first — Tarjan has to — so left to
-   * itself it asks about one node, waits, and only then learns which node to
-   * ask about next. In process that is free. Over a wire it is one round trip
-   * per site, which #81 measured at roughly 24x the cost of the entire
-   * in-process pass; the same questions asked a frontier at a time collapse
-   * into one request each.
-   *
-   * Breadth-first is what makes that possible: the *syntactic* walk that finds
-   * a body's escape sites costs nothing and needs no types, so a whole
-   * frontier's sites can be named before any of them is asked about.
-   *
-   * Nothing here is load-bearing. Every answer still comes from the memoized
-   * resolvers below, so a frontier this misses is slower and never wrong —
-   * which is why it may follow the throwing dimension's edges alone and skip
-   * the condition graph's.
-   */
-  function primeFrom(seed: Bodied): void {
-    const seen = new Set<ColorNode>();
-    let frontier: readonly ColorNode[] = [
-      nodeFor(seed, "call"),
-      nodeFor(seed, "iteration"),
-    ];
-
-    while (frontier.length > 0) {
-      facts.prime(frontier.flatMap((node) => queriedNodes(node)));
-
-      const next: ColorNode[] = [];
-      for (const node of frontier) {
-        for (const dependency of dependenciesOf(node)) {
-          if (seen.has(dependency)) continue;
-          seen.add(dependency);
-          next.push(dependency);
-        }
-      }
-      frontier = next;
-    }
-  }
-
-  /**
-   * The nodes resolving one slot will ask the type system about. Best-effort by
-   * construction: it is a prefetch list, and the resolvers remain the authority
-   * on what they actually ask.
-   */
-  function queriedNodes(node: ColorNode): readonly ts.Node[] {
-    const asked: ts.Node[] = [];
-
-    for (const escape of escapesOf(node.declaration, phaseOf(node))) {
-      switch (escape.kind) {
-        case "throw":
-        case "iterator-throw":
-          break;
-        case "call":
-          asked.push(escape.node, calleeExpression(escape.node));
-          // A tagged template's arguments are the template's own parts, which
-          // no condition is ever read at.
-          if (!ts.isTaggedTemplateExpression(escape.node)) {
-            asked.push(...(escape.node.arguments ?? []));
-          }
-          break;
-        case "read":
-        case "write":
-        case "update":
-          asked.push(escape.node, escape.node.expression);
-          if (ts.isElementAccessExpression(escape.node)) {
-            asked.push(escape.node.argumentExpression);
-          }
-          break;
-        case "destructure":
-          asked.push(escape.node, escape.node.parent);
-          break;
-        case "spread":
-        case "coercion":
-        case "instance-check":
-          asked.push(escape.node);
-          break;
-        case "await":
-          asked.push(escape.node, escape.node.expression);
-          break;
-        case "float":
-          asked.push(escape.node);
-          break;
-        case "consumption":
-          asked.push(escape.site.typeAt);
-          if (escape.site.source !== undefined) asked.push(escape.site.source);
-          break;
-      }
-    }
-
-    return asked;
-  }
-
   return {
     escapesIn(body) {
-      primeFrom(body);
       const throwingOf = (callee: ColorNode): boolean =>
         throwing.valueOf(callee);
       // A mark covers both surfaces, so enforcement reads the whole body

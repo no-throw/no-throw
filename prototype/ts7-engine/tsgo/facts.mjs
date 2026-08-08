@@ -7,7 +7,14 @@
  * and these are the questions a type-aware linter asks that it cannot currently
  * answer.
  */
-import { SignatureKind, TypeFlags } from "@typescript/native-preview/unstable/sync";
+import {
+  SignatureKind,
+  SymbolFlags,
+  TypeFlags,
+} from "@typescript/native-preview/unstable/sync";
+
+/** How the compiler spells a well-known-symbol member; see the port's note. */
+const WELL_KNOWN_MEMBER = /^__@(\w+)@\d+$/u;
 
 const OPAQUE = TypeFlags.Any | TypeFlags.Unknown;
 
@@ -21,15 +28,6 @@ const PRIMITIVE =
   TypeFlags.Undefined |
   TypeFlags.Void |
   TypeFlags.Never;
-
-/** What a missing operation did when it was reached, so gaps are counted. */
-export class MissingOperation extends Error {
-  constructor(name) {
-    super(`tsgo has no equivalent for ${name}`);
-    this.name = "MissingOperation";
-    this.operation = name;
-  }
-}
 
 /**
  * @param checker  a tsgo `Checker`
@@ -54,16 +52,6 @@ export function tsgoFacts(checker, gaps = new Set()) {
   };
 
   return {
-    /**
-     * The array overloads, which is the whole reason this operation exists. Two
-     * requests warm a frontier however many nodes it has.
-     */
-    prime(sites) {
-      if (sites.length === 0) return;
-      checker.getTypeAtLocation(sites);
-      checker.getSymbolAtLocation(sites);
-    },
-
     typeAt: (n) => checker.getTypeAtLocation(n),
     symbolAt: (n) => checker.getSymbolAtLocation(n),
     signatureAt: (n) => checker.getResolvedSignature(n),
@@ -103,10 +91,11 @@ export function tsgoFacts(checker, gaps = new Set()) {
 
     typeOfSymbol: (symbol) => checker.getTypeOfSymbol(symbol),
     nameOf: (symbol) => symbol.name,
-    escapedNameOf: (symbol) => String(symbol.escapedName),
+    wellKnownNameOf: (symbol) =>
+      WELL_KNOWN_MEMBER.exec(String(symbol.escapedName))?.[1],
     valueDeclarationOf: (symbol) => node(symbol.valueDeclaration),
     declarationsOf: (symbol) => nodes(symbol.declarations),
-    isAlias: (symbol) => (symbol.flags & 0x200000) !== 0,
+    isAlias: (symbol) => (symbol.flags & SymbolFlags.Alias) !== 0,
     aliasedSymbol: (symbol) => checker.getAliasedSymbol(symbol),
     exportsOfModule: (symbol) => checker.getExportsOfModule(symbol),
     membersOfSymbol: (symbol) => table(symbol.getMembers()),

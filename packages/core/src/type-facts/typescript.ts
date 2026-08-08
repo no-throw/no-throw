@@ -6,6 +6,12 @@ import type {
   TypeRef,
 } from "../type-facts.js";
 
+/**
+ * How TypeScript spells a well-known-symbol member. The id belongs to that
+ * program's `Symbol` declaration, so the name can only be matched.
+ */
+const WELL_KNOWN_MEMBER = /^__@(\w+)@\d+$/u;
+
 /** `any` and `unknown` say nothing about what runs, so they cannot be read. */
 const OPAQUE_TYPE = ts.TypeFlags.Any | ts.TypeFlags.Unknown;
 
@@ -23,9 +29,7 @@ const PRIMITIVE_TYPE =
 
 /**
  * The in-process implementation: the host's own `TypeChecker`, which is the
- * configuration every consumer runs today. Types cross no boundary here, so
- * {@link TypeFacts.prime} has nothing to do — the batching the engine performs
- * for a wire-backed implementation costs it a walk it was going to do anyway.
+ * configuration every consumer runs today.
  *
  * The casts are the whole price of the opaque refs, and they are all here.
  */
@@ -62,24 +66,16 @@ export function typeFactsOf(checker: ts.TypeChecker): TypeFacts {
     value === undefined ? undefined : asSymbol(value);
 
   return {
-    prime: () => undefined,
-
     typeAt: (node) => asType(checker.getTypeAtLocation(node)),
     symbolAt: (node) => maybeSymbol(checker.getSymbolAtLocation(node)),
     signatureAt: (node) => {
-      const resolved = checker.getResolvedSignature(
-        node as ts.CallLikeExpression,
-      );
+      const resolved = checker.getResolvedSignature(node);
       return resolved === undefined ? undefined : asSignature(resolved);
     },
     typeOfSymbolAt: (target, node) =>
       asType(checker.getTypeOfSymbolAtLocation(symbol(target), node)),
     destructuredProperty: (name) =>
-      maybeSymbol(
-        checker.getPropertySymbolOfDestructuringAssignment(
-          name as ts.Identifier,
-        ),
-      ),
+      maybeSymbol(checker.getPropertySymbolOfDestructuringAssignment(name)),
 
     apparentType: (target) => asType(checker.getApparentType(type(target))),
     awaitedType: (target) => maybeType(checker.getAwaitedType(type(target))),
@@ -114,7 +110,8 @@ export function typeFactsOf(checker: ts.TypeChecker): TypeFacts {
 
     typeOfSymbol: (target) => asType(checker.getTypeOfSymbol(symbol(target))),
     nameOf: (target) => symbol(target).getName(),
-    escapedNameOf: (target) => String(symbol(target).escapedName),
+    wellKnownNameOf: (target) =>
+      WELL_KNOWN_MEMBER.exec(String(symbol(target).escapedName))?.[1],
     valueDeclarationOf: (target) => symbol(target).valueDeclaration,
     declarationsOf: (target) => symbol(target).declarations ?? [],
     isAlias: (target) => (symbol(target).flags & ts.SymbolFlags.Alias) !== 0,

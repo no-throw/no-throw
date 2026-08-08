@@ -23,26 +23,16 @@ import type ts from "typescript";
  * has no such method can still be judged against the interface.
  */
 export interface TypeFacts {
-  /**
-   * Warm whatever the coming pass will ask about these nodes. In process this
-   * is nothing; over a wire it is the difference between one request and one
-   * per node, which is the whole reason the engine discovers the graph in
-   * frontiers rather than depth-first.
-   *
-   * Priming is never load-bearing: skipping it changes timing, never answers.
-   */
-  prime(nodes: readonly ts.Node[]): void;
-
   typeAt(node: ts.Node): TypeRef;
   symbolAt(node: ts.Node): SymbolRef | undefined;
   /** The signature a call, `new` or tagged template actually resolves to. */
-  signatureAt(node: ts.Node): SignatureRef | undefined;
+  signatureAt(node: ts.CallLikeExpression): SignatureRef | undefined;
   /**
    * The type a symbol has *at a site*, which a generic member only has there.
    */
   typeOfSymbolAt(symbol: SymbolRef, node: ts.Node): TypeRef;
   /** The property a destructuring assignment's target names. */
-  destructuredProperty(name: ts.Node): SymbolRef | undefined;
+  destructuredProperty(name: ts.Identifier): SymbolRef | undefined;
 
   apparentType(type: TypeRef): TypeRef;
   /** What `await` on this type yields, where it is awaitable. */
@@ -83,8 +73,14 @@ export interface TypeFacts {
 
   typeOfSymbol(symbol: SymbolRef): TypeRef;
   nameOf(symbol: SymbolRef): string;
-  /** The name as the symbol table keys it, which is where `__@iterator` shows. */
-  escapedNameOf(symbol: SymbolRef): string;
+  /**
+   * The name after the `@@` where the symbol is a well-known-symbol member, and
+   * nothing where it is an ordinary one. The compiler's spelling of these —
+   * `__@toPrimitive@<id>`, with an id belonging to that program's `Symbol`
+   * declaration — is the port's to know and nobody else's, which is why the
+   * question is asked here rather than by matching a name.
+   */
+  wellKnownNameOf(symbol: SymbolRef): string | undefined;
   valueDeclarationOf(symbol: SymbolRef): ts.Declaration | undefined;
   declarationsOf(symbol: SymbolRef): readonly ts.Declaration[];
   isAlias(symbol: SymbolRef): boolean;
@@ -117,7 +113,7 @@ export function boundDeclaration(
 
 /** The declaration behind the signature a transfer resolves to, where there is one. */
 export function resolvedDeclaration(
-  node: ts.Node,
+  node: ts.CallLikeExpression,
   facts: TypeFacts,
 ): ts.Declaration | undefined {
   const signature = facts.signatureAt(node);

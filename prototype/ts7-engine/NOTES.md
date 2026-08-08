@@ -5,18 +5,25 @@ per-node-pull architecture cost once the checker is out of process?
 
 **Answer:** yes, it runs — the real `@nothrow/core` produces identical findings
 on 161 of 180 conformance fixtures driven by a TypeScript 7 client. But the
-premise the port was scoped on is wrong. Batching escape-site type queries, the
-restructure [#81][] called "the real work", buys **1.0x** on real code. What
-dominates is **port granularity**: two operations that ask the type system to
-enumerate a symbol table and then filter client-side accounted for 99% of every
-type question the engine asked. Fixing those two — one interface change and one
-laziness fix — cut a dogfooding run from **29,414 type queries to 336**, and a
-mark-dense project from **112,420 to 18,220**.
+architectural premise the ticket was filed on does not survive measurement.
+
+The restructure [#81][] called "the real work" — moving the engine from per-node
+pull to per-pass batch — was built, measured, and **removed**. It buys 1.0x in
+request count on real code and made a TypeScript 7 run **2.3x slower**, because
+prefetching a frontier over-fetches roughly four nodes for every one the engine
+turns out to want. Only two of the port's thirty operations have a bulk form at
+all, and they are ~21% of what the engine asks, so no prefetch could have paid.
+
+What does decide the bill is **port granularity**. Two operations that asked the
+type system to enumerate a symbol table and then filtered client-side accounted
+for 99% of every type question the engine made. Fixing those — one interface
+change and one laziness fix — cut a dogfooding run from **29,414 type queries to
+309**, and a mark-dense project from **112,420 to 13,220**.
 
 The measured verdict on TypeScript 7 is a **crossover, not a win or a loss**:
-tsgo builds the program ~8x faster and answers the engine's questions ~13–18x
+tsgo builds the program ~9x faster and answers the engine's questions ~7x
 slower, so it is ahead on mark-sparse projects and behind on mark-dense ones,
-crossing at roughly 75 marks per project.
+crossing at roughly **200 marks per project**.
 
 Everything here is measured on this machine (Windows 11, Node 22.12) against
 `@typescript/native-preview@7.0.0-dev.20260707.2`. Reproduction commands are in
@@ -69,10 +76,17 @@ instantiation in a fresh process loads in 40 ms), **an intermittent stall**
 turn a 500-function project into a 1,898-file one. Even that costs 168 ms, not
 35 s.
 
-**Conclusion:** environmental, not a checker pathology. Transport settles at
-0.04–0.09 ms per round trip across every shape and size, *better* than the
-0.20 ms the research note recorded. Nothing about the fixpoint's shape provokes
-the checker. The rest of this document's numbers can be trusted.
+**The original numbers contain the proof themselves.** That run reported a local
+AST walk of 1,105 ms where the independent-function fixture of the same size
+took 20.5 ms — a 54x slowdown in the one phase that issues **zero requests** and
+never touches the checker. Whatever was slow that day was slowing down plain
+client-side recursion, so it cannot have been a checker pathology, whatever the
+fixture looked like.
+
+**Conclusion:** environmental. Transport settles at 0.04–0.09 ms per round trip
+across every shape and size, *better* than the 0.20 ms the research note
+recorded. Nothing about the fixpoint's shape provokes the checker. The rest of
+this document's numbers can be trusted.
 
 ## 2. The API surface, checked rather than listed
 
@@ -138,27 +152,47 @@ surface walk reads a package's entry-point *files*, so `analyzeSourceFile` still
 takes a `ts.Program`. Under tsgo there is no such object. §5 measures exactly
 what that costs.
 
-## 4. The batching restructure, and what it turned out to be worth
+## 4. The batching restructure was built, measured, and removed
 
-The engine now walks the call graph **breadth-first from each seed**, priming
-each frontier's type queries in one call before resolving it
-(`primeFrom` in `resolve-color.ts`). This is legal in process — `prime` is a
-no-op there — and it is never load-bearing: every answer still comes from the
-memoized resolvers, so a frontier the prefetch misses is slower and never wrong.
-Tarjan still runs depth-first; only *discovery* is breadth-first, which is what
-the free syntactic walk makes possible.
+It was built as the ticket described: the engine walked the call graph
+breadth-first from each seed and primed each frontier's type queries in one call
+before resolving it, with the array overloads behind `TypeFacts.prime`. Tarjan
+still ran depth-first; only *discovery* was breadth-first, which the free
+syntactic walk makes possible. It was never load-bearing — every answer still
+came from the memoized resolvers, so a missed frontier was slower and never
+wrong.
 
-**It buys 1.0x.** Dogfooding `@nothrow/core`, the entire run issues 69 batchable
-queries. The 25x the research note measured came from a synthetic fixture of 500
-call sites, which is not the shape of real work.
+**It made TypeScript 7 2.3x slower.** Same corpus, same commit, prefetch gated
+on an environment variable:
 
-What the seam did buy is **visibility**, and that changed the answer. Counting
-every port call over a real project ([`request-cost.mjs`](request-cost.mjs)):
+| corpus | with prefetch | without |
+|---|---:|---:|
+| 20 files × 10 marks | 904, 883 ms | 401, 398 ms |
+| 40 files × 10 marks | 1863, 1862 ms | 778, 780 ms |
+
+Two reasons, and the second is the one that generalizes:
+
+- **It over-fetches.** The prefetch covered 9,600 nodes to serve 2,620 actual
+  queries — 73% waste. An array overload is one round trip, but the server still
+  resolves every node in it and the response still carries every type.
+- **It could not have paid even so.** Only `typeAt` and `symbolAt` have bulk
+  forms, and they are ~21% of what the engine asks. A *perfect* prefetch of
+  exactly the hit nodes still leaves ~79% of the queries one-at-a-time; the
+  measured ceiling was 1.1x fewer requests.
+
+So the restructure is gone, and with it `TypeFacts.prime`. The ticket's premise
+that "the engine must move from per-node pull to per-pass batch" is **refuted**:
+the pull is fine, and the 25x the research note measured came from a synthetic
+fixture of 500 call sites in one body, which is not the shape of real work.
+
+What the seam did buy is **visibility**, and that is what changed the answer.
+Counting every port call over a real project
+([`request-cost.mjs`](request-cost.mjs)):
 
 | | queries, before | after | |
 |---|---:|---:|---|
-| `@nothrow/core` (38 files, 3 marks) | 29,414 | **336** | 87x |
-| synthetic, 20 files × 10 marks | 112,420 | **18,220** | 6.2x |
+| `@nothrow/core` (38 files, 3 marks) | 29,414 | **309** | 95x |
+| synthetic, 20 files × 10 marks | 112,420 | **13,220** | 8.5x |
 
 Two causes, both "enumerate a symbol table, filter client-side" — the cheapest
 possible operation in process and the most expensive over a wire:
@@ -180,12 +214,13 @@ possible operation in process and the most expensive over a wire:
    a rung with somewhere to look it up.
 
 In-process wall clock moved with it, though it was never the constraint:
-analysis of `@nothrow/core` went 86 ms → 22 ms.
+analysis of `@nothrow/core` went 86 ms → 24 ms.
 
-**The projection model checks out.** 18,220 queries × 0.05 ms/request predicts
-911 ms of transport for the 200-mark corpus; the measured tsgo analysis time is
-1,006 ms. Query count *is* the cost out of process, which is why the port's
-granularity is the lever and the traversal order is not.
+**The projection model checks out.** 13,220 queries × 0.05 ms/request predicts
+661 ms of transport for the 200-mark corpus; the measured tsgo analysis time is
+442 ms, so the projection is conservative by about a third. Query count *is* the
+cost out of process, which is why the port's granularity is the lever and the
+traversal order is not.
 
 ## 5. Does the conformance suite pass on tsgo?
 
@@ -238,17 +273,18 @@ Median of 3 runs, whole project, both phases separated —
 
 | project | backend | files | findings | build | analysis | total |
 |---|---|---:|---:|---:|---:|---:|
-| `@nothrow/core` (3 marks) | TypeScript 6 | 38 | 3 | 387 ms | 22 ms | **408 ms** |
-| `@nothrow/core` | TypeScript 7 | 38 | 0 | **48 ms** | 30 ms | **78 ms** |
-| synthetic, 200 marks | TypeScript 6 | 21 | 200 | 394 ms | 75 ms | **470 ms** |
-| synthetic, 200 marks | TypeScript 7 | 21 | 200 | **35 ms** | 1006 ms | **1041 ms** |
-| synthetic, 600 marks | TypeScript 6 | 61 | 600 | 423 ms | 159 ms | **582 ms** |
-| synthetic, 600 marks | TypeScript 7 | 61 | 600 | **49 ms** | 2800 ms | **2849 ms** |
+| `@nothrow/core` (3 marks) | TypeScript 6 | 38 | 3 | 408 ms | 24 ms | **432 ms** |
+| `@nothrow/core` | TypeScript 7 | 38 | 0 | **47 ms** | 34 ms | **81 ms** |
+| synthetic, 200 marks | TypeScript 6 | 21 | 200 | 421 ms | 69 ms | **490 ms** |
+| synthetic, 200 marks | TypeScript 7 | 21 | 200 | **38 ms** | 442 ms | **480 ms** |
+| synthetic, 600 marks | TypeScript 6 | 61 | 600 | 453 ms | 162 ms | **614 ms** |
+| synthetic, 600 marks | TypeScript 7 | 61 | 600 | **43 ms** | 1344 ms | **1386 ms** |
 
-Build is **~8–9x faster** on tsgo. Analysis is **13–18x slower**, and linear in
-marks: about 4.7 ms per mark against 0.27 ms in process. The build saving is
-roughly 350 ms, so the two cross at **~75 marks per project** — below that tsgo
-wins outright, above it loses, and the gap widens linearly.
+Build is **~9x faster** on tsgo. Analysis is **~7x slower**, and linear in marks:
+2.2 ms per mark against 0.3 ms in process, holding at both 200 and 600. The
+build saving is roughly 380 ms, so the two cross at **~200 marks per project** —
+the 200-mark row is a dead heat, and it is a dead heat for the right reason
+rather than by luck.
 
 This is what #10's reasoning looks like when the premise flips. #10 chose
 in-process because no-throw is a guest paying ~50 ms marginal on a program the
@@ -294,7 +330,11 @@ What would make it safe to depend on:
 - **A conformance canary**, which §5 already is: the two-backend diff is a
   regression test on the API, not just on us. Run it against the pin and against
   `latest`; a new drop shows up as a fixture that stops agreeing, with the
-  operation named.
+  operation named. It has to be *stable* to be a gate, which took one fix: each
+  backend runs its fixtures in chunks of twenty children deep, because a single
+  child holding 180 whole TypeScript programs exhausts the heap and reports the
+  survivors as disagreements. A dead child now marks its fixtures errored rather
+  than passing them off as agreement.
 - **Never on the enforcement path unpinned.** The `TypeFacts` seam means a
   broken backend is a swapped implementation, not a rewrite — which is the
   actual insurance, and it now exists.
@@ -324,16 +364,21 @@ to choose (§6).
 Not throwaway; conformance is green on all 180 fixtures and 7 CLI cases,
 unchanged, at every step.
 
-- **`type-facts.ts`** — the port: ~30 operations named for what the engine wants
-  to know, over opaque `TypeRef`/`SymbolRef`/`SignatureRef`, plus `prime`.
+- **`type-facts.ts`** — the port: 30 operations named for what the engine wants
+  to know, over opaque `TypeRef`/`SymbolRef`/`SignatureRef`.
 - **`type-facts/typescript.ts`** — the in-process implementation. Every cast the
-  opaque refs cost is in this one file.
-- **`resolve-color.ts`** — `primeFrom`, the breadth-first discovery pass.
+  opaque refs cost is in this one file, and so is every detail of how the
+  compiler spells a well-known-symbol member.
 - **`iteration.ts`, `transfers.ts`** — the well-known-member scan, replaced by
-  one port question (§4.1).
+  two port questions (§4.1). `constituentsOf` renamed to
+  `apparentConstituentsOf` there, since the port now owns the shorter name for
+  the narrower operation.
 - **`carrier/chain.ts`** — `CarrierQuery.key` made lazy (§4.2).
 - **`analyze.ts`** — `analyzeSourceFile` takes an optional `TypeFacts`, which is
   how a non-TypeScript host, or an instrumented one, gets in.
+
+The breadth-first discovery pass and `TypeFacts.prime` were built here too, and
+removed again once measured (§4). Nothing of them is left.
 
 ## 10. What this graduates
 
@@ -351,3 +396,7 @@ unchanged, at every step.
    two invisible 100x costs into numbers. In-process they were affordable, which
    is exactly why nobody found them. A gate on queries-per-mark would keep the
    next one from hiding.
+5. **Re-price the CLI against the crossover.** §6 says tsgo wins below ~200
+   marks and loses above, and `nothrow emit` is the surface that pays the build
+   it would save. That is a product decision with a number attached now, and it
+   is the one #10's parked escape hatch was waiting for.

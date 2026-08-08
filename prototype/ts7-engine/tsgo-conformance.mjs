@@ -37,18 +37,49 @@ function fixtureNames(requested) {
   );
 }
 
-function run(backend, names) {
+/**
+ * How many fixtures one child takes. Each is its own project, so a child that
+ * took all 180 would pin 180 whole TypeScript programs and exhaust the heap
+ * partway through — the same hazard the conformance driver documents, and the
+ * reason this harness was intermittently reporting a hundred spurious
+ * disagreements before it was chunked.
+ */
+const PER_CHILD = 20;
+
+function runChunk(backend, names) {
   const args = backend === "ts7" ? ["--import", "./tsgo/register.mjs"] : [];
   const child = spawnSync(
     process.execPath,
     [...args, HERE, "--backend", backend, ...names],
     { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );
-  if (child.status !== 0) {
-    console.error(child.stderr || child.stdout);
-    throw new Error(`${backend} backend exited ${child.status}`);
+  if (child.status !== 0 || child.stdout === "") {
+    // A dead child is not a disagreement. Reporting every fixture it was
+    // carrying as an error keeps a crash from reading as a clean run.
+    const why = (child.stderr || child.stdout || "no output")
+      .split("\n")
+      .filter(Boolean)
+      .slice(-1)[0];
+    return {
+      reports: {},
+      errors: names.map((name) => [name, `${backend} child died: ${why}`]),
+      gaps: {},
+    };
   }
   return JSON.parse(child.stdout);
+}
+
+function run(backend, names) {
+  const merged = { reports: {}, errors: [], gaps: {} };
+  for (let at = 0; at < names.length; at += PER_CHILD) {
+    const chunk = runChunk(backend, names.slice(at, at + PER_CHILD));
+    Object.assign(merged.reports, chunk.reports);
+    merged.errors.push(...chunk.errors);
+    for (const [gap, count] of Object.entries(chunk.gaps)) {
+      merged.gaps[gap] = (merged.gaps[gap] ?? 0) + count;
+    }
+  }
+  return merged;
 }
 
 const argv = process.argv.slice(2);

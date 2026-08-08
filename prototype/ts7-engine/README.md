@@ -18,7 +18,13 @@ instance `@nothrow/core` loads: node objects carry instance-local JSDoc caches,
 so a second copy makes every mark silently invisible. Leaving it out lets it
 resolve up to the workspace's own.
 
-The scripts assume `@nothrow/core` is built (`pnpm run build` at the repo root).
+This spike is a plain npm project, deliberately outside the pnpm workspace, so
+that its pinned nightly cannot reach the packages. `@nothrow/core` comes in as a
+`file:` dependency, so build it with the workspace's own toolchain first:
+
+```bash
+pnpm run build   # at the repo root
+```
 
 ## Chasing the anomaly
 
@@ -76,9 +82,9 @@ node request-cost.mjs fixtures/marked-20x10x5/tsconfig.json
 ```
 
 Wraps the in-process `TypeFacts` in a recorder and runs the real engine, so the
-wire cost is measurable without a server. Reports queries per operation, prime
-batches, and the per-file distribution — which is what separates a fixed startup
-cost from one that scales.
+wire cost is measurable without a server. Reports queries per operation, how
+many of them have a bulk form at all, and the per-file distribution — which is
+what separates a fixed startup cost from one that scales.
 
 A mark-dense corpus is needed because dogfooding measures a project with three
 marks in it, and therefore says nothing about what a mark costs.

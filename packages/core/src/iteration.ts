@@ -187,7 +187,7 @@ function hasVisibleBody(declaration: ts.Declaration | undefined): boolean {
  * rather than sampled: `Clean | Broken` runs whichever protocol the value turns
  * out to carry, and coloring one constituent would color by coin toss.
  */
-export function constituentsOf(
+export function apparentConstituentsOf(
   type: TypeRef,
   facts: TypeFacts,
 ): readonly TypeRef[] {

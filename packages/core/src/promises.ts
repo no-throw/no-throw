@@ -6,7 +6,7 @@ import {
   isGenerator,
   type Bodied,
 } from "./declarations.js";
-import { constituentsOf } from "./iteration.js";
+import { apparentConstituentsOf } from "./iteration.js";
 import {
   resolvedDeclaration,
   type TypeFacts,
@@ -105,7 +105,7 @@ function handler(argument: ts.Expression | undefined): ts.Expression | undefined
  * turns out to carry.
  */
 export function isPromiseType(type: TypeRef, facts: TypeFacts): boolean {
-  return constituentsOf(type, facts).some((constituent) => {
+  return apparentConstituentsOf(type, facts).some((constituent) => {
     const then = facts.propertyOfType(constituent, "then");
     return (
       then !== undefined &&
