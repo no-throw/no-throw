@@ -1,5 +1,5 @@
 {
-  "description": "The other anonymous default export. `export default function () {}` is a function declaration rather than an export assignment, so it already bound under the old list; the rule keeps it binding, and the key it emits under is `default` all the same.",
+  "description": "The other anonymous default export. `export default function () {}` is a function declaration rather than an export assignment — a body of its own rather than a value — so it binds by the first half of the rule, and is keyed `default` all the same.",
   "diagnostics": [
     {
       "file": "src/index.ts",

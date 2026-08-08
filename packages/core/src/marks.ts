@@ -115,10 +115,11 @@ export function seedDeclaration(
 
   const holder = holderOf(seed);
   if (holder === undefined) return undefined;
-  return ts.isVariableDeclaration(holder) ||
-    ts.isPropertyAssignment(holder) ||
-    ts.isPropertyDeclaration(holder) ||
-    ts.isExportAssignment(holder)
+  // A variable statement is where the mark goes and the declaration inside it
+  // is what the surface publishes, so this is the one holder read one level in
+  // — and the one holder a function literal never sits directly under.
+  if (ts.isVariableDeclaration(holder)) return holder;
+  return isHolder(holder) && !ts.isVariableStatement(holder)
     ? holder
     : undefined;
 }
@@ -149,19 +150,12 @@ function markHostOf(declaration: ts.Node): ts.Node | undefined {
     return undefined;
   }
 
-  const parent = holderOf(declaration);
-  if (parent === undefined) return undefined;
-  if (
-    ts.isPropertyAssignment(parent) ||
-    ts.isPropertyDeclaration(parent) ||
-    ts.isExportAssignment(parent)
-  ) {
-    return parent;
-  }
-  if (!ts.isVariableDeclaration(parent)) return undefined;
-
-  const statement = parent.parent.parent;
-  return ts.isVariableStatement(statement) ? statement : undefined;
+  const target = seedDeclaration(declaration);
+  if (target === undefined) return undefined;
+  // The one place the two answers differ: the surface publishes the declaration
+  // inside a variable statement, and the mark is written on the statement.
+  const host = ts.isVariableDeclaration(target) ? target.parent.parent : target;
+  return isHolder(host) ? host : undefined;
 }
 
 /**
@@ -350,17 +344,37 @@ function tagNameAt(text: string, position: number): string {
   return TAG_NAME.exec(text)?.[0] ?? "";
 }
 
-/** The syntactic positions a mark may occupy. */
-type ValidSite =
-  | ts.FunctionDeclaration
+/** The syntactic positions a mark may occupy: a body of its own, or a value. */
+type ValidSite = BodyBearing | Holder;
+
+/** The declarations that hold their function as a value rather than a body. */
+type Holder =
   | ts.VariableStatement
-  | ts.MethodDeclaration
-  | ts.ConstructorDeclaration
-  | ts.GetAccessorDeclaration
-  | ts.SetAccessorDeclaration
   | ts.PropertyDeclaration
   | ts.PropertyAssignment
   | ts.ExportAssignment;
+
+function isHolder(node: ts.Node): node is Holder {
+  return (
+    ts.isVariableStatement(node) ||
+    ts.isPropertyDeclaration(node) ||
+    ts.isPropertyAssignment(node) ||
+    ts.isExportAssignment(node)
+  );
+}
+
+/**
+ * The one value a holder declares, or nothing where it declares more than one.
+ * A statement with two declarators leaves which one is marked a guess, which is
+ * an error rather than a reading.
+ */
+function valueOf(holder: Holder): ts.Expression | undefined {
+  if (ts.isExportAssignment(holder)) return holder.expression;
+  if (!ts.isVariableStatement(holder)) return holder.initializer;
+
+  const declarations = holder.declarationList.declarations;
+  return declarations.length === 1 ? declarations[0]?.initializer : undefined;
+}
 
 /**
  * The construct a mark binds to, or nothing.
@@ -369,41 +383,30 @@ type ValidSite =
  * > or whose initializer, read through parentheses, `as` and `satisfies` — is
  * > exactly one function literal**.
  *
- * A rule rather than a list of positions, because a list sprouts edges: five
- * of them in one sitting, among them the default export, which is a key the
- * namepath grammar names and no mark could ever have produced. A body is
- * required throughout, so the bodyless family is refused by the rule itself
- * rather than beside it, and it stops at declarations, which is what keeps the
- * rule identical to the emitter's scan set — a function with no declaration
- * has no namepath to key.
+ * A rule rather than a list of positions, because a list sprouts edges — among
+ * them the default export, a key the namepath grammar names that no mark could
+ * produce. A body is required throughout, so the bodyless family is refused by
+ * the rule itself rather than beside it, and it stops at declarations, which is
+ * what keeps the rule identical to the emitter's scan set: a function with no
+ * declaration has no namepath to key.
  */
 function bindingTarget(host: ts.Node): ts.FunctionLikeDeclaration | undefined {
   if (canCarryBody(host)) return host.body === undefined ? undefined : host;
+  if (!isHolder(host)) return undefined;
 
-  if (ts.isVariableStatement(host)) {
-    const declarations = host.declarationList.declarations;
-    if (declarations.length !== 1) return undefined;
-    return asFunction(declarations[0]?.initializer);
-  }
-
-  if (ts.isPropertyAssignment(host) || ts.isPropertyDeclaration(host)) {
-    return asFunction(host.initializer);
-  }
-
-  if (ts.isExportAssignment(host)) return asFunction(host.expression);
-
-  return undefined;
+  const value = valueOf(host);
+  return value === undefined ? undefined : functionLiteralAt(value);
 }
 
 function isValidSite(node: ts.Node): node is ValidSite {
   return bindingTarget(node) !== undefined;
 }
 
-function asFunction(
-  initializer: ts.Expression | undefined,
+/** The function literal a node is, read through the rule's wrappers. */
+function functionLiteralAt(
+  node: ts.Node,
 ): ts.FunctionLikeDeclaration | undefined {
-  if (initializer === undefined) return undefined;
-  const value = unwrapped(initializer);
+  const value = isTypeWrapper(node) ? unwrapped(node) : node;
   return ts.isFunctionExpression(value) || ts.isArrowFunction(value)
     ? value
     : undefined;
@@ -473,7 +476,7 @@ function problemKind(host: ts.Node): MarkProblemKind {
   ) {
     return "multi-declarator";
   }
-  if (canHoldAFunction(host)) return "non-function-value";
+  if (isHolder(host)) return "non-function-value";
   // The two positions where climbing to a valid site would be wrong advice
   // rather than merely unhelpful: both are functions, and moving the mark up
   // to the enclosing one claims something else entirely.
@@ -482,35 +485,20 @@ function problemKind(host: ts.Node): MarkProblemKind {
   return "ineffective-mark";
 }
 
-/** The declarations the rule reads an initializer off. */
-type Holder =
-  | ts.VariableStatement
-  | ts.PropertyAssignment
-  | ts.PropertyDeclaration
-  | ts.ExportAssignment;
-
 /**
- * A declaration the rule would have bound a mark on, had the function been
- * written there. What is wrong with it is its *value*, so it is told that
- * rather than pointed at some other site.
+ * A function literal handed straight to a call, with no declaration of its own.
+ * Read through the same wrappers the rule reads an initializer through, because
+ * a mark written on a parenthesized argument lands on the parentheses.
  */
-function canHoldAFunction(host: ts.Node): host is Holder {
-  return (
-    ts.isPropertyAssignment(host) ||
-    ts.isPropertyDeclaration(host) ||
-    ts.isExportAssignment(host) ||
-    ts.isVariableStatement(host)
-  );
-}
-
-/** A function literal handed straight to a call, with no declaration of its own. */
 function isCallArgument(host: ts.Node): boolean {
-  if (!ts.isFunctionExpression(host) && !ts.isArrowFunction(host)) return false;
-  const holder = holderOf(host);
+  const value = functionLiteralAt(host);
+  if (value === undefined) return false;
+
+  const holder = holderOf(value);
   return (
     holder !== undefined &&
     (ts.isCallExpression(holder) || ts.isNewExpression(holder)) &&
-    holder.arguments?.some((argument) => unwrapped(argument) === host) === true
+    holder.arguments?.some((argument) => unwrapped(argument) === value) === true
   );
 }
 
@@ -597,7 +585,7 @@ function firstContainedSite(node: ts.Node): ValidSite | undefined {
 
 function describeSite(site: ValidSite, sourceFile: ts.SourceFile): string {
   if (ts.isConstructorDeclaration(site)) return "the constructor";
-  if (ts.isExportAssignment(site)) return "the default export";
+  if (ts.isExportAssignment(site)) return exportNoun(site);
 
   const name = declaredName(site, sourceFile);
   const noun = siteNoun(site);
@@ -620,11 +608,20 @@ function siteNoun(site: ValidSite): string {
  * under — and a default export has no name at all.
  */
 function describeHolder(host: ts.Node, sourceFile: ts.SourceFile): string {
-  if (ts.isExportAssignment(host)) return "the default export";
-  const name = canHoldAFunction(host)
-    ? declaredName(host, sourceFile)
-    : undefined;
+  if (ts.isExportAssignment(host)) return exportNoun(host);
+  const name = isHolder(host) ? declaredName(host, sourceFile) : undefined;
   return name === undefined ? "this declaration" : `\`${name}\``;
+}
+
+/**
+ * The two export assignments are one node kind and two different things: only
+ * the first is the `default` a namepath can name, so calling the other one the
+ * default export would be false.
+ */
+function exportNoun(site: ts.ExportAssignment): string {
+  return site.isExportEquals === true
+    ? "the `export =` assignment"
+    : "the default export";
 }
 
 /** The name a declaration was written under, reaching into a variable statement. */

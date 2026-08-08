@@ -8,9 +8,9 @@ const createRule = ESLintUtils.RuleCreator(
 );
 
 /**
- * The rule itself, stated rather than enumerated. A list of positions is what
- * this replaced, and a list is what kept producing messages saying a mark binds
- * to nothing at a body sitting right there.
+ * The rule itself, stated rather than enumerated: a list of positions is what
+ * produces messages saying a mark binds to nothing at a body sitting right
+ * there.
  */
 const RULE =
   "A mark binds on a declaration whose own body — or whose initializer, read through parentheses, `as` and `satisfies` — is exactly one function literal.";

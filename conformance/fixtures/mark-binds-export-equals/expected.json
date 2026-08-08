@@ -1,0 +1,22 @@
+{
+  "description": "The edge a list would have sprouted next: `export =` is the same node kind as `export default`, and its value is a function written right there, so the rule binds it and the body is enforced. It is not keyed `default` — a consumer names the module itself — so the diagnostics never call it the default export.",
+  "diagnostics": [
+    {
+      "file": "src/alias.ts",
+      "line": 3,
+      "column": 5,
+      "endLine": 3,
+      "endColumn": 13,
+      "messageId": "nonFunctionValue",
+      "message": "`@nothrow` binds to nothing on the `export =` assignment: a mark is a claim about a body, and the value here is not a function written at this declaration. Mark the function where its body is written, or — if that body is not yours — assert its color in `nothrow.overrides.json`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}
