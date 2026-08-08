@@ -1,0 +1,13 @@
+{
+  "description": "A mark on a default-exported arrow binds, and the body is enforced. `default` is a key the namepath grammar lists and no mark could produce before, so a package's default export could carry nothing across the `.d.ts` boundary.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}

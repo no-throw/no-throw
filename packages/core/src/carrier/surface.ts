@@ -73,7 +73,40 @@ export function surfaceOver(
     }
   }
 
-  return { keyOf: (declaration) => keys.get(declaration) };
+  return {
+    keyOf: (declaration) => {
+      const direct = keys.get(declaration);
+      if (direct !== undefined) return direct;
+
+      const holder = typeHolderOf(declaration);
+      return holder === undefined ? undefined : keys.get(holder);
+    },
+  };
+}
+
+/**
+ * The declaration a bare function type is the type *of*. Declaration emit turns
+ * every function a mark can now bind on — a default-exported arrow, an
+ * arrow-valued field — into a property or a `const` whose type is a function
+ * type, and that type node is what the checker resolves a call to. The surface
+ * publishes the declaration, so the type node has to reach it, or the key emit
+ * wrote could never be looked up again.
+ *
+ * Only a declaration's own type counts: a function type nested inside a wider
+ * one is not something the surface reaches.
+ */
+function typeHolderOf(node: ts.Declaration): ts.Declaration | undefined {
+  if (!ts.isFunctionTypeNode(node) && !ts.isConstructorTypeNode(node)) {
+    return undefined;
+  }
+
+  const { parent } = node;
+  return (ts.isVariableDeclaration(parent) ||
+    ts.isPropertyDeclaration(parent) ||
+    ts.isPropertySignature(parent)) &&
+    parent.type === node
+    ? parent
+    : undefined;
 }
 
 /**

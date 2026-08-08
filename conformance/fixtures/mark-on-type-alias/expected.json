@@ -8,7 +8,7 @@
       "endLine": 1,
       "endColumn": 13,
       "messageId": "ineffectiveMarkNoSite",
-      "message": "`@nothrow` binds to nothing here, and there is no valid site near it to move it to. A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method or constructor, an accessor, or an object-literal method or function-valued property."
+      "message": "`@nothrow` binds to nothing here, and there is no valid site near it to move it to. A mark binds on a declaration whose own body — or whose initializer, read through parentheses, `as` and `satisfies` — is exactly one function literal."
     }
   ]
 }

@@ -8,9 +8,12 @@ export interface Span {
 }
 
 /**
- * The ways a `@nothrow` tag fails to bind. The bodyless family is called out
- * member by member because each has a different out: an ambient declaration
- * belongs in the overrides file, an overload belongs on its implementation.
+ * The ways a `@nothrow` tag fails to bind. Each cause reports itself, and only
+ * what that cause lets it say truthfully: the bodyless family is called out
+ * member by member because each has a different out — an ambient declaration
+ * belongs in the overrides file, an overload belongs on its implementation —
+ * and a function with no declaration at all is told something different again
+ * from a declaration holding something that is not a function.
  *
  * The first two are near misses — a mark that never reached the binder as one,
  * because of the comment it was written in or the way it was spelled. Both are
@@ -23,6 +26,9 @@ export type MarkProblemKind =
   | "ineffective-mark"
   | "ineffective-mark-no-site"
   | "multi-declarator"
+  | "non-function-value"
+  | "mark-on-call-argument"
+  | "mark-on-assignment"
   | "ambient-declaration"
   | "interface-member"
   | "abstract-method"
@@ -33,7 +39,8 @@ export interface MarkProblem {
   readonly span: Span;
   /**
    * Message parameters; `ineffective-mark` carries `site` and `line`,
-   * `non-jsdoc-mark` carries `tag` and `form`, `misspelled-mark` carries `tag`.
+   * `non-function-value` carries `declaration`, `non-jsdoc-mark` carries `tag`
+   * and `form`, `misspelled-mark` carries `tag`.
    */
   readonly data: Readonly<Record<string, string>>;
 }
@@ -41,7 +48,7 @@ export interface MarkProblem {
 export interface Marks {
   /**
    * The seeds, in source order. This is what the enforcement walk checks and
-   * what the manifest emitter will scan: one whitelist, both consumers.
+   * what the manifest emitter scans: one rule, both consumers.
    */
   readonly bound: readonly ts.FunctionLikeDeclaration[];
   readonly problems: readonly MarkProblem[];
@@ -84,7 +91,7 @@ export function findMarks(sourceFile: ts.SourceFile): Marks {
 }
 
 /**
- * Whether a declaration is a bound seed: the same whitelist as `findMarks`,
+ * Whether a declaration is a bound seed: the same rule as `findMarks`,
  * asked one declaration at a time, which is what resolving a callee's color
  * needs. Both routes go through `bindingTarget`, so they cannot disagree.
  */
@@ -95,7 +102,29 @@ export function isMarkedFunction(declaration: ts.Node): boolean {
 }
 
 /**
- * A `@nothrow` written directly on a declaration, with no whitelist applied
+ * The declaration a bound seed was written on: itself where it carries its own
+ * body, and the declaration it initializes where it is a function literal. This
+ * is what a *consumer* names — a mark on an arrow reaches the wire under the
+ * `const`, the field or the default export it initializes — so the emitter keys
+ * a seed by asking this rather than by inverting the binder a second time.
+ */
+export function seedDeclaration(
+  seed: ts.FunctionLikeDeclaration,
+): ts.Declaration | undefined {
+  if (canCarryBody(seed)) return seed;
+
+  const holder = holderOf(seed);
+  if (holder === undefined) return undefined;
+  return ts.isVariableDeclaration(holder) ||
+    ts.isPropertyAssignment(holder) ||
+    ts.isPropertyDeclaration(holder) ||
+    ts.isExportAssignment(holder)
+    ? holder
+    : undefined;
+}
+
+/**
+ * A `@nothrow` written directly on a declaration, with no binding rule applied
  * and no body behind it. This is the carrier reading of the tag rather than
  * the authoring one: on a bodyless declaration a dependency ships, the tag is
  * *trusted as an assertion* — the same trust class as the declaration's types
@@ -105,7 +134,12 @@ export function hasDeclaredMark(declaration: ts.Node): boolean {
   return nothrowTagsOn(declaration).length > 0;
 }
 
-/** The construct a mark for this declaration would have to be written on. */
+/**
+ * The construct a mark for this declaration would have to be written on: the
+ * inverse of `bindingTarget`, and it has to stay one. Where the two disagree,
+ * `isMarkedFunction` and `findMarks` disagree about the same source — one
+ * enforcing a mark the other never bound, or the reverse.
+ */
 function markHostOf(declaration: ts.Node): ts.Node | undefined {
   if (canCarryBody(declaration)) return declaration;
   if (
@@ -115,12 +149,30 @@ function markHostOf(declaration: ts.Node): ts.Node | undefined {
     return undefined;
   }
 
-  const { parent } = declaration;
-  if (ts.isPropertyAssignment(parent)) return parent;
+  const parent = holderOf(declaration);
+  if (parent === undefined) return undefined;
+  if (
+    ts.isPropertyAssignment(parent) ||
+    ts.isPropertyDeclaration(parent) ||
+    ts.isExportAssignment(parent)
+  ) {
+    return parent;
+  }
   if (!ts.isVariableDeclaration(parent)) return undefined;
 
   const statement = parent.parent.parent;
   return ts.isVariableStatement(statement) ? statement : undefined;
+}
+
+/**
+ * What holds a function literal, looking past the same wrappers the initializer
+ * is read through. Written off the same predicate as the peel so the two cannot
+ * drift apart.
+ */
+function holderOf(value: ts.Node): ts.Node | undefined {
+  let current: ts.Node = value;
+  while (isTypeWrapper(current.parent)) current = current.parent;
+  return current.parent;
 }
 
 /**
@@ -306,12 +358,24 @@ type ValidSite =
   | ts.ConstructorDeclaration
   | ts.GetAccessorDeclaration
   | ts.SetAccessorDeclaration
-  | ts.PropertyAssignment;
+  | ts.PropertyDeclaration
+  | ts.PropertyAssignment
+  | ts.ExportAssignment;
 
 /**
- * The construct a mark binds to, or nothing. A body is required throughout: a
- * mark is a claim about one, so the bodyless family is rejected rather than
- * trusted in your own source.
+ * The construct a mark binds to, or nothing.
+ *
+ * > `@nothrow` binds where it is written on a **declaration whose own body —
+ * > or whose initializer, read through parentheses, `as` and `satisfies` — is
+ * > exactly one function literal**.
+ *
+ * A rule rather than a list of positions, because a list sprouts edges: five
+ * of them in one sitting, among them the default export, which is a key the
+ * namepath grammar names and no mark could ever have produced. A body is
+ * required throughout, so the bodyless family is refused by the rule itself
+ * rather than beside it, and it stops at declarations, which is what keeps the
+ * rule identical to the emitter's scan set — a function with no declaration
+ * has no namepath to key.
  */
 function bindingTarget(host: ts.Node): ts.FunctionLikeDeclaration | undefined {
   if (canCarryBody(host)) return host.body === undefined ? undefined : host;
@@ -322,7 +386,11 @@ function bindingTarget(host: ts.Node): ts.FunctionLikeDeclaration | undefined {
     return asFunction(declarations[0]?.initializer);
   }
 
-  if (ts.isPropertyAssignment(host)) return asFunction(host.initializer);
+  if (ts.isPropertyAssignment(host) || ts.isPropertyDeclaration(host)) {
+    return asFunction(host.initializer);
+  }
+
+  if (ts.isExportAssignment(host)) return asFunction(host.expression);
 
   return undefined;
 }
@@ -335,9 +403,36 @@ function asFunction(
   initializer: ts.Expression | undefined,
 ): ts.FunctionLikeDeclaration | undefined {
   if (initializer === undefined) return undefined;
-  return ts.isFunctionExpression(initializer) || ts.isArrowFunction(initializer)
-    ? initializer
+  const value = unwrapped(initializer);
+  return ts.isFunctionExpression(value) || ts.isArrowFunction(value)
+    ? value
     : undefined;
+}
+
+/**
+ * An initializer with its type-only wrappers off. Parentheses, `as` and
+ * `satisfies` change nothing about which body is there, so peeling them binds
+ * the same claim the author wrote. An identifier is never peeled: that would
+ * let the claim be written in one file and checked in another.
+ */
+function unwrapped(expression: ts.Expression): ts.Expression {
+  let current = expression;
+  while (isTypeWrapper(current)) current = current.expression;
+  return current;
+}
+
+type TypeWrapper =
+  | ts.ParenthesizedExpression
+  | ts.AsExpression
+  | ts.SatisfiesExpression;
+
+function isTypeWrapper(node: ts.Node | undefined): node is TypeWrapper {
+  return (
+    node !== undefined &&
+    (ts.isParenthesizedExpression(node) ||
+      ts.isAsExpression(node) ||
+      ts.isSatisfiesExpression(node))
+  );
 }
 
 function problemFor(
@@ -346,6 +441,10 @@ function problemFor(
   sourceFile: ts.SourceFile,
 ): MarkProblem {
   const kind = problemKind(host);
+
+  if (kind === "non-function-value") {
+    return { kind, span, data: { declaration: describeHolder(host, sourceFile) } };
+  }
   if (kind !== "ineffective-mark") return { kind, span, data: {} };
 
   const site = nearestValidSite(host);
@@ -374,7 +473,58 @@ function problemKind(host: ts.Node): MarkProblemKind {
   ) {
     return "multi-declarator";
   }
+  if (canHoldAFunction(host)) return "non-function-value";
+  // The two positions where climbing to a valid site would be wrong advice
+  // rather than merely unhelpful: both are functions, and moving the mark up
+  // to the enclosing one claims something else entirely.
+  if (isCallArgument(host)) return "mark-on-call-argument";
+  if (isAssignment(host)) return "mark-on-assignment";
   return "ineffective-mark";
+}
+
+/** The declarations the rule reads an initializer off. */
+type Holder =
+  | ts.VariableStatement
+  | ts.PropertyAssignment
+  | ts.PropertyDeclaration
+  | ts.ExportAssignment;
+
+/**
+ * A declaration the rule would have bound a mark on, had the function been
+ * written there. What is wrong with it is its *value*, so it is told that
+ * rather than pointed at some other site.
+ */
+function canHoldAFunction(host: ts.Node): host is Holder {
+  return (
+    ts.isPropertyAssignment(host) ||
+    ts.isPropertyDeclaration(host) ||
+    ts.isExportAssignment(host) ||
+    ts.isVariableStatement(host)
+  );
+}
+
+/** A function literal handed straight to a call, with no declaration of its own. */
+function isCallArgument(host: ts.Node): boolean {
+  if (!ts.isFunctionExpression(host) && !ts.isArrowFunction(host)) return false;
+  const holder = holderOf(host);
+  return (
+    holder !== undefined &&
+    (ts.isCallExpression(holder) || ts.isNewExpression(holder)) &&
+    holder.arguments?.some((argument) => unwrapped(argument) === host) === true
+  );
+}
+
+/**
+ * An assignment, reached from either end: the statement a mark written above it
+ * lands on, and the function literal a mark written inline lands on.
+ */
+function isAssignment(host: ts.Node): boolean {
+  const node = ts.isExpressionStatement(host) ? host.expression : holderOf(host);
+  return (
+    node !== undefined &&
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+  );
 }
 
 /** A member of an `interface` or an object type literal: never has a body. */
@@ -447,15 +597,9 @@ function firstContainedSite(node: ts.Node): ValidSite | undefined {
 
 function describeSite(site: ValidSite, sourceFile: ts.SourceFile): string {
   if (ts.isConstructorDeclaration(site)) return "the constructor";
+  if (ts.isExportAssignment(site)) return "the default export";
 
-  const declaration = ts.isVariableStatement(site)
-    ? site.declarationList.declarations[0]
-    : site;
-  const name =
-    declaration === undefined
-      ? undefined
-      : ts.getNameOfDeclaration(declaration)?.getText(sourceFile);
-
+  const name = declaredName(site, sourceFile);
   const noun = siteNoun(site);
   return name === undefined ? `the ${noun}` : `the ${noun} \`${name}\``;
 }
@@ -464,6 +608,34 @@ function siteNoun(site: ValidSite): string {
   if (ts.isGetAccessorDeclaration(site)) return "getter";
   if (ts.isSetAccessorDeclaration(site)) return "setter";
   if (ts.isMethodDeclaration(site)) return "method";
-  if (ts.isPropertyAssignment(site)) return "property";
+  if (ts.isPropertyAssignment(site) || ts.isPropertyDeclaration(site)) {
+    return "property";
+  }
   return "function";
+}
+
+/**
+ * What the reader calls the declaration the mark is on. Nothing here is a
+ * function, so there is no noun to give it beyond the name it was declared
+ * under — and a default export has no name at all.
+ */
+function describeHolder(host: ts.Node, sourceFile: ts.SourceFile): string {
+  if (ts.isExportAssignment(host)) return "the default export";
+  const name = canHoldAFunction(host)
+    ? declaredName(host, sourceFile)
+    : undefined;
+  return name === undefined ? "this declaration" : `\`${name}\``;
+}
+
+/** The name a declaration was written under, reaching into a variable statement. */
+function declaredName(
+  node: ts.Declaration | ts.VariableStatement,
+  sourceFile: ts.SourceFile,
+): string | undefined {
+  const declaration = ts.isVariableStatement(node)
+    ? node.declarationList.declarations[0]
+    : node;
+  return declaration === undefined
+    ? undefined
+    : ts.getNameOfDeclaration(declaration)?.getText(sourceFile);
 }

@@ -79,17 +79,41 @@ something different.
 
 ## Where a mark binds
 
-`@nothrow` binds on a `function` declaration including `export default`; a
-single-declarator variable statement with a function or arrow initializer; a
-class method or constructor; an accessor, in a class or an object literal; and
-an object-literal method or function-valued property. Anywhere else is an error
-naming the nearest valid site, so a mark that binds to nothing is never a silent
-no-op you trust for years.
+`@nothrow` binds where you write it on a **declaration whose own body — or
+whose initializer, read through parentheses, `as` and `satisfies` — is exactly
+one function literal**. So it binds on a `function` declaration including every
+form of `export default`; a single-declarator variable statement; a class
+method, constructor, accessor or property field, instance, `static` and
+`accessor` alike; and an object-literal method, accessor or function-valued
+property. Anywhere else is an error, so a mark that binds to nothing is never a
+silent no-op you trust for years.
+
+```ts
+class Service {
+  /** @nothrow */
+  handle = (): void => {}; // binds — the body is right there
+}
+
+/** @nothrow */
+export default (): void => {}; // binds, and emits under the key `default`
+
+/** @nothrow */
+export const alias = handle; // error — the body is not at this declaration
+```
+
+The body has to be *at* the declaration, not merely reachable from it, because
+otherwise the claim would be written in one file and checked in another. Each
+way of missing reports itself: a declaration holding something that is not a
+function written there names the declaration; a function with no declaration at
+all — one passed straight to a call, or assigned with `o.f = () => {}` — is
+told there is nothing to bind to, and is never told to move the mark onto the
+function around it, which would be a different claim.
 
 Positions with no body reject the mark outright — `declare`/ambient
-declarations, interface members, abstract methods and overload signatures. On an
-overloaded function the mark goes on the implementation signature, which is the
-thing that throws. For an ambient declaration, assert the color in
+declarations, interface members, abstract methods and overload signatures. The
+rule already refuses them; what each adds is its own out. On an overloaded
+function the mark goes on the implementation signature, which is the thing that
+throws. For an ambient declaration, assert the color in
 `nothrow.overrides.json` instead: an in-source `@nothrow` means *verified seed*
 and nothing else.
 

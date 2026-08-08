@@ -1,0 +1,14 @@
+{
+  "description": "A function written as a call argument has no declaration to bind a mark to, and is already colored where it is written. The mark sits inside `outer`, and the message must not name it: `nearestValidSite` climbs, so naming it would say *move it onto the enclosing function* — advice that changes what is being claimed.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 4,
+      "column": 12,
+      "endLine": 4,
+      "endColumn": 20,
+      "messageId": "markOnCallArgument",
+      "message": "`@nothrow` binds to nothing on a function written as a call argument: there is no declaration here for it to bind to. The function is already colored where it is written, and the call it is passed to is held to that color, so no mark is owed here."
+    }
+  ]
+}
