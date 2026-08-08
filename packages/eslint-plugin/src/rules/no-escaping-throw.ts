@@ -5,6 +5,9 @@ import {
   type Finding,
   type FloorReason,
   type HiddenCallee,
+  type RejectionReason,
+  type Rejects,
+  type RejectionSubject,
   type TransferSite,
   type UndischargedReason,
 } from "@nothrow/core";
@@ -21,11 +24,20 @@ const createRule = ESLintUtils.RuleCreator(
  * text and never behind a docs URL: the CI log is the channel that survives
  * into code review, and acting on a floor from it alone is the whole contract.
  */
-const outs = (what: string): string =>
-  `Your outs, in precedence order: bridge this ${what} with \`try\`/\`catch\`; ` +
+const CARRIERS =
   "assert the color in `nothrow.overrides.json`; install or write an " +
   "`@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
   "`nothrow emit`.";
+
+/** The same rungs where what floored is something a *producer* colors. */
+const PRODUCER_CARRIERS =
+  "assert the producer's color in `nothrow.overrides.json`; install or write " +
+  "an `@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
+  "`nothrow emit`.";
+
+const outs = (what: string): string =>
+  `Your outs, in precedence order: bridge this ${what} with \`try\`/\`catch\`; ` +
+  CARRIERS;
 
 const OUTS = outs("call");
 
@@ -35,10 +47,33 @@ const OUTS = outs("call");
  */
 const RETURN_OUTS =
   "Your outs, in precedence order: return the iterator from a call this rule " +
-  "can trace — a direct call, or a `const` initialized by one; assert the " +
-  "producer\'s color in `nothrow.overrides.json`; install or write an " +
-  "`@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
-  "`nothrow emit`.";
+  "can trace — a direct call, or a `const` initialized by one; " +
+  PRODUCER_CARRIERS;
+
+/**
+ * The bridge for a rejection is the awaiting one. A `catch` that never awaits
+ * is not on the path a rejection takes, so naming the plain `try`/`catch` here
+ * would be naming the fake bridge as a remedy.
+ */
+const AWAIT_OUTS =
+  "Your outs, in precedence order: bridge it with `try { await … } catch`; " +
+  CARRIERS;
+
+/**
+ * A discarded promise is never awaited, so the bridge is a change of shape
+ * rather than a wrapper — and the terminal `.catch(h)` is the other legal
+ * form, which is the whole reason fire-and-forget has one at all.
+ */
+const FLOAT_OUTS =
+  "Your outs, in precedence order: `await` it inside a `try`/`catch`; end the " +
+  "chain with a `.catch(h)` whose handler is non-throwing; " +
+  CARRIERS;
+
+/** A returned promise is awaited by the caller, so the bridge is not here. */
+const RETURN_PROMISE_OUTS =
+  "Your outs, in precedence order: `await` it inside a `try`/`catch` and " +
+  "return a value instead; " +
+  PRODUCER_CARRIERS;
 
 const messages = {
   uncaughtThrow: "Uncaught `throw` escapes this `@nothrow` function.",
@@ -88,6 +123,48 @@ const messages = {
     "throw. Your outs: return an iterator from a non-throwing producer, or " +
     "make that producer non-throwing — mark it `@nothrow` and the escapes " +
     "inside it are reported too.",
+  // `@nothrow` on a promise-producing function covers the rejection too, so
+  // these are the three places the promise channel is consumed. Each says
+  // something different: an `await` turns a rejection into a throw here, a
+  // discard lets it reach nobody, and a `return` hands it on under this mark.
+  unbridgedAwait:
+    "Awaiting `{{expression}}` escapes this `@nothrow` function: {{reason}}. " +
+    AWAIT_OUTS,
+  inferredThrowingAwait:
+    "Awaiting `{{expression}}` escapes this `@nothrow` function: {{reason}}. " +
+    "Your outs: bridge it with `try { await … } catch`, or make {{culprit}} " +
+    "non-throwing — mark it `@nothrow` and the escapes inside it are reported " +
+    "too.",
+  unprovableFloat:
+    "`{{expression}}` is discarded, so nothing handles a rejection and Node " +
+    "escalates one to an uncaught exception: {{reason}}. " +
+    FLOAT_OUTS,
+  inferredThrowingFloat:
+    "`{{expression}}` is discarded, so nothing handles a rejection and Node " +
+    "escalates one to an uncaught exception: {{reason}}. Your outs: `await` " +
+    "it inside a `try`/`catch`, end the chain with a `.catch(h)` whose " +
+    "handler is non-throwing, or make {{culprit}} non-throwing — mark it " +
+    "`@nothrow` and the escapes inside it are reported too.",
+  // Its own messageId whichever way the callee got its color: what the reader
+  // has to be told first is that the `catch` they wrote cannot run, and the
+  // edit that fixes that is the same either way. It names no carrier, because
+  // a carrier could not have put the callee here — only a visibly-`async`
+  // declaration this program can see reaches it.
+  fakeBridge:
+    "`{{expression}}` is `async`, so this `try`/`catch` can never fire: an " +
+    "`async` function does not throw, it rejects, and a `catch` with no " +
+    "`await` is not on that path. The promise is discarded here and " +
+    "{{reason}}. Write `try { await … } catch` instead, or end the chain with " +
+    "a `.catch(h)` whose handler is non-throwing.",
+  unprovableReturnedPromise:
+    "This `@nothrow` function returns a promise, so the mark covers its " +
+    "rejection too: {{reason}}. " +
+    RETURN_PROMISE_OUTS,
+  inferredThrowingReturnedPromise:
+    "This `@nothrow` function returns a promise, so the mark covers its " +
+    "rejection too: {{reason}}. Your outs: `await` it inside a `try`/`catch` " +
+    "and return a value instead, or make {{culprit}} non-throwing — mark it " +
+    "`@nothrow` and the escapes inside it are reported too.",
   // Its own pair, because the first thing the reader needs told is that this
   // *is* a call: they did not write one, and the message has to say what runs.
   unbridgedHiddenTransfer:
@@ -196,6 +273,83 @@ const whyConsumptionFloored: Record<
     "and consuming an iterator hands nothing over that could discharge them",
 };
 
+/**
+ * What a rejection message is *about*. A chain's color is a join over its head
+ * and its handlers, so a reason on its own would send the reader to the wrong
+ * body: `resolves().then(dirty)` is throwing because of `dirty`, and telling
+ * them to mark `resolves` points at something already clean.
+ */
+const rejectionSubject: Record<RejectionSubject, string> = {
+  promise: "the promise",
+  producer: "the call that produced it",
+  handler: "a handler in the chain",
+};
+
+/** What to make non-throwing, for the messages that are not floors. */
+const rejectionCulprit: Record<RejectionSubject, string> = {
+  // A promise the syntax names no body for always floors, so this side of the
+  // record is only ever reached by way of the type.
+  promise: "that producer",
+  producer: "that producer",
+  handler: "that handler",
+};
+
+/**
+ * The why half of the contract for a promise, as a predicate over the subject
+ * above. `inferred` is in the record rather than beside it because the fake
+ * bridge carries one messageId for both halves: what the reader must act on
+ * there is the shape of the `catch`, not how the callee got its color.
+ *
+ * The two floors #12 §7 singles out are the `let` and everything else, and the
+ * text is where the difference has to live: one is a refinement this engine
+ * has not made yet, the other is unknowable from here.
+ */
+const whyRejects: Record<RejectionReason, string> = {
+  inferred: "has a body that was analyzed and can throw",
+  bodyless:
+    "is declared without a body — an ambient declaration, a `.d.ts`, or a " +
+    "value known only by its function type — and no mark, manifest, overlay " +
+    "or override colors it, so it is assumed to reject",
+  unmarked:
+    "has a visible body but no `@nothrow` mark, so it is throwing by " +
+    "declaration",
+  unresolvable:
+    "does not resolve to a function this engine can color, so nothing can say " +
+    "whether it rejects",
+  captured:
+    "is captured from an enclosing scope, so no argument at any call site " +
+    "could color it",
+  "mutable-binding":
+    "is reached through a `let`, whose value the engine does not yet track " +
+    "across assignments — a refinement not yet made rather than something " +
+    "unknowable from here",
+  conditioned:
+    "is non-throwing only given conditions of its own, and nothing here hands " +
+    "it an argument that could discharge them",
+  untraced:
+    "is named by no call in the syntax, and a parameter, a property, a " +
+    "non-call initializer or a stored partial chain is unknowable from here",
+  "conditioned-producer":
+    "comes from a call to one of this function\'s own parameters, and a " +
+    "condition can say that calling a parameter is clean but not that the " +
+    "promise it hands back never rejects",
+  "conditioned-handler":
+    "is reached through a parameter of this function, and a chain handler is " +
+    "not something a call site can discharge",
+};
+
+/** The why clause — who, then what is wrong with them — and what to fix. */
+function rejectionData(rejects: Rejects): {
+  readonly reason: string;
+  readonly culprit: string;
+} {
+  const { reason, subject } = rejects;
+  return {
+    reason: `${rejectionSubject[subject]} ${whyRejects[reason]}`,
+    culprit: rejectionCulprit[subject],
+  };
+}
+
 /** The site, as the reader wrote it. */
 const describeSite: Record<TransferSite, (text: string) => string> = {
   read: (text) => `Reading \`${text}\``,
@@ -246,6 +400,25 @@ type Report =
       readonly messageId:
         | "inferredThrowingConsumption"
         | "inferredThrowingReturnedIterator";
+    }
+  | {
+      readonly messageId:
+        | "unbridgedAwait"
+        | "inferredThrowingAwait"
+        | "unprovableFloat"
+        | "inferredThrowingFloat"
+        | "fakeBridge";
+      readonly data: {
+        readonly expression: string;
+        readonly reason: string;
+        readonly culprit: string;
+      };
+    }
+  | {
+      readonly messageId:
+        | "unprovableReturnedPromise"
+        | "inferredThrowingReturnedPromise";
+      readonly data: { readonly reason: string; readonly culprit: string };
     }
   | {
       readonly messageId: "unbridgedHiddenTransfer";
@@ -310,6 +483,37 @@ function reportFor(finding: Finding, cwd: string): Report {
             messageId: "unprovableReturnedIterator",
             data: { reason: whyConsumptionFloored[finding.reason] },
           };
+    case "rejected-await":
+      return {
+        messageId:
+          finding.rejects.reason === "inferred"
+            ? "inferredThrowingAwait"
+            : "unbridgedAwait",
+        data: {
+          expression: finding.expression,
+          ...rejectionData(finding.rejects),
+        },
+      };
+    case "floating-rejection":
+      return {
+        messageId: finding.fake
+          ? "fakeBridge"
+          : finding.rejects.reason === "inferred"
+            ? "inferredThrowingFloat"
+            : "unprovableFloat",
+        data: {
+          expression: finding.expression,
+          ...rejectionData(finding.rejects),
+        },
+      };
+    case "rejected-return":
+      return {
+        messageId:
+          finding.rejects.reason === "inferred"
+            ? "inferredThrowingReturnedPromise"
+            : "unprovableReturnedPromise",
+        data: rejectionData(finding.rejects),
+      };
     case "unbridged-hidden-transfer":
       return {
         messageId: "unbridgedHiddenTransfer",

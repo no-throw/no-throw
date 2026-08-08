@@ -1,0 +1,14 @@
+{
+  "description": "The fold table describes `Promise.prototype`. A thenable whose `then` has a visible body is an ordinary call, colored by the body that actually runs — folding it would assume semantics the source is right there to contradict.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 13,
+      "column": 3,
+      "endLine": 13,
+      "endColumn": 32,
+      "messageId": "inferredThrowingCall",
+      "message": "Call to `new SyncThenable().then` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `new SyncThenable().then` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

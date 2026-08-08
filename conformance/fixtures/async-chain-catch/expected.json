@@ -1,0 +1,14 @@
+{
+  "description": "Chain fold, `X.catch(b)`: non-throwing if X is, else `b`'s color. It is the one row that is not a join — `b` runs only on a rejection, so a throwing handler over a clean source colors nothing.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 31,
+      "column": 3,
+      "endLine": 31,
+      "endColumn": 31,
+      "messageId": "inferredThrowingAwait",
+      "message": "Awaiting `rejects().catch(dirty)` escapes this `@nothrow` function: a handler in the chain has a body that was analyzed and can throw. Your outs: bridge it with `try { await … } catch`, or make that handler non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

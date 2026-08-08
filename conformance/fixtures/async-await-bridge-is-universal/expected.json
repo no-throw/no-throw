@@ -1,0 +1,4 @@
+{
+  "description": "`try { await f() } catch` is the bridge that always works, so nobody has to reason about whether the callee is `async`: it neutralizes both channels of a non-`async` promise-returning function too.",
+  "diagnostics": []
+}

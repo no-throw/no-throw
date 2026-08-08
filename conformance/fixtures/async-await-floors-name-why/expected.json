@@ -1,0 +1,32 @@
+{
+  "description": "Everything but a direct call and a call-initialized `const` floors, and the message says which half it is: a `let` is a refinement not yet made, a parameter or a property is unknowable from here.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 6,
+      "column": 10,
+      "endLine": 6,
+      "endColumn": 23,
+      "messageId": "unbridgedAwait",
+      "message": "Awaiting `pending` escapes this `@nothrow` function: the promise is reached through a `let`, whose value the engine does not yet track across assignments — a refinement not yet made rather than something unknowable from here. Your outs, in precedence order: bridge it with `try { await … } catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 13,
+      "column": 10,
+      "endLine": 13,
+      "endColumn": 23,
+      "messageId": "unbridgedAwait",
+      "message": "Awaiting `pending` escapes this `@nothrow` function: the promise is named by no call in the syntax, and a parameter, a property, a non-call initializer or a stored partial chain is unknowable from here. Your outs, in precedence order: bridge it with `try { await … } catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 18,
+      "column": 10,
+      "endLine": 18,
+      "endColumn": 30,
+      "messageId": "unbridgedAwait",
+      "message": "Awaiting `source.pending` escapes this `@nothrow` function: the promise is named by no call in the syntax, and a parameter, a property, a non-call initializer or a stored partial chain is unknowable from here. Your outs, in precedence order: bridge it with `try { await … } catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}
