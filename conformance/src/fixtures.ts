@@ -60,20 +60,18 @@ function readConfig(
 }
 
 const POSITION_KEYS = ["line", "column", "endLine", "endColumn"] as const;
-const KNOWN_KEYS = new Set<string>([
+const DIAGNOSTIC_KEYS = [
   "file",
   ...POSITION_KEYS,
   "messageId",
   "message",
   "suggestions",
-]);
+];
+const SUGGESTION_KEYS = ["desc", "output"];
 
 function readDiagnostic(entry: unknown, where: string): Diagnostic {
   const record = asRecord(entry, where);
-
-  for (const key of Object.keys(record)) {
-    if (!KNOWN_KEYS.has(key)) throw new Error(`${where}: unknown key \`${key}\``);
-  }
+  rejectUnknownKeys(record, DIAGNOSTIC_KEYS, where);
 
   const message = record["message"];
   if (message !== undefined && typeof message !== "string") {
@@ -83,8 +81,8 @@ function readDiagnostic(entry: unknown, where: string): Diagnostic {
   const suggestions = record["suggestions"];
   if (suggestions !== undefined && !Array.isArray(suggestions)) {
     throw new Error(
-      `${where}: \`suggestions\`, when present, must be an array — an empty ` +
-        "one asserts the diagnostic offers no edit",
+      `${where}: \`suggestions\`, when present, must be an array — an ` +
+        "empty one asserts the diagnostic offers no edit",
     );
   }
 
@@ -108,15 +106,13 @@ function readDiagnostic(entry: unknown, where: string): Diagnostic {
 
 function readSuggestion(entry: unknown, where: string): Suggestion {
   const record = asRecord(entry, where);
-
-  for (const key of Object.keys(record)) {
-    if (key !== "desc" && key !== "output") {
-      throw new Error(`${where}: unknown key \`${key}\``);
-    }
-  }
+  rejectUnknownKeys(record, SUGGESTION_KEYS, where);
 
   const output = record["output"];
-  if (!Array.isArray(output) || output.some((line) => typeof line !== "string")) {
+  if (
+    !Array.isArray(output) ||
+    output.some((line) => typeof line !== "string")
+  ) {
     throw new Error(
       `${where}: \`output\` must be the file the edit produces, one array ` +
         "entry per line",
@@ -124,6 +120,19 @@ function readSuggestion(entry: unknown, where: string): Suggestion {
   }
 
   return { desc: readString(record, "desc", where), output: output as string[] };
+}
+
+/** A typo in an expectation is a silent pass otherwise. */
+function rejectUnknownKeys(
+  record: Record<string, unknown>,
+  known: readonly string[],
+  where: string,
+): void {
+  for (const key of Object.keys(record)) {
+    if (!known.includes(key)) {
+      throw new Error(`${where}: unknown key \`${key}\``);
+    }
+  }
 }
 
 function asRecord(value: unknown, where: string): Record<string, unknown> {

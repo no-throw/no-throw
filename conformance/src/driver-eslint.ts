@@ -9,12 +9,10 @@ import type { FixtureConfig } from "./fixtures.js";
 
 /**
  * The diagnostics whose remedy is a mechanical bridge, and so the only ones
- * that may offer an edit. The list lives here rather than in the plugin
- * because it is the spec's claim, not the implementation's: a suggestion on a
- * diagnostic whose way out is something else — an ineffective mark, a returned
- * promise the caller awaits — offers to silence it, which is the one thing a
- * suggestion must never do. A messageId this suite has not heard of is not on
- * the list, so one that starts offering edits trips this rather than
+ * that may offer an edit. Held here rather than read off the plugin because it
+ * is the spec's claim about the plugin: anywhere else, an offer is an offer to
+ * silence a true report. A messageId this suite has not heard of is not on the
+ * list, so a new one that starts offering edits trips this rather than
  * inheriting a permission nobody granted.
  */
 const BRIDGEABLE = new Set([
@@ -157,7 +155,8 @@ function toSuggestion(
   source: string,
 ): Suggestion {
   const [start, end] = suggestion.fix.range;
-  const output = source.slice(0, start) + suggestion.fix.text + source.slice(end);
+  const output =
+    source.slice(0, start) + suggestion.fix.text + source.slice(end);
   return { desc: suggestion.desc, output: output.split(/\r?\n/) };
 }
 

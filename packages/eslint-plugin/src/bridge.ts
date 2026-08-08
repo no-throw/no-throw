@@ -19,12 +19,16 @@ export interface BridgeEdit {
 }
 
 /**
- * Statements a bridge can wrap without changing what the rest of the file can
- * see. A declaration is not among them: wrapping `const value = risky()` moves
- * the binding into the `try` block and out of the scope that reads it, and
- * wrapping the whole rest of the block instead would silence every other
- * escape in it. Neither is the edit the diagnostic offered, so where the
- * remedy is not this mechanical, nothing is offered at all.
+ * Statements a bridge can wrap and still leave the rest of the file saying
+ * what it said. A declaration is not one: wrapping `const value = risky()`
+ * takes the binding out of the scope that reads it, breaking code that has
+ * nothing to do with the escape, and the only mechanical repair — wrapping
+ * through the end of the block — would silence every other escape in it.
+ *
+ * Wrapping a `return` is a different thing, though it also leaves the reader
+ * work: the bridge is complete, and what the compiler then asks for is the one
+ * thing no tool can decide, which is what this function returns instead of
+ * throwing. That is the `@nothrow` bargain being collected, not a broken edit.
  */
 const WRAPPABLE: ReadonlySet<string> = new Set<string>([
   AST_NODE_TYPES.ExpressionStatement,
@@ -54,14 +58,30 @@ export function bridgeEdit(
   // can accept blind.
   if (shape !== "wrap" && !inAsyncFunction(node)) return undefined;
 
-  if (shape === "await") {
-    return { range: [node.range[0], node.range[0]], text: "await " };
+  // A shape with no `case` stops returning on every path, which is a compile
+  // error. It has to: the way a missed shape would fail is by falling through
+  // to the plain wrap, and a wrap where an `await` was wanted is the fake
+  // bridge — a suggestion that reads as a bridge and neutralizes nothing.
+  switch (shape) {
+    case "await":
+      return { range: [node.range[0], node.range[0]], text: "await " };
+    case "wrap":
+      return wrapStatementAround(node, undefined, source);
+    case "awaiting-wrap":
+      return wrapStatementAround(node, node.range[0], source);
   }
+}
 
+function wrapStatementAround(
+  node: TSESTree.Node,
+  awaitAt: number | undefined,
+  source: string,
+): BridgeEdit | undefined {
   const statement = enclosingStatement(node);
-  if (statement === undefined || !WRAPPABLE.has(statement.type)) return undefined;
+  if (statement === undefined) return undefined;
+  if (!WRAPPABLE.has(statement.type)) return undefined;
 
-  return wrap(statement, shape === "awaiting-wrap" ? node.range[0] : undefined, source);
+  return wrap(statement, awaitAt, source);
 }
 
 function wrap(
@@ -90,10 +110,14 @@ function wrap(
   };
 }
 
+/**
+ * The indentation of the line the statement is on, which is not always what
+ * precedes the statement — `case 1: risky();` puts one after the other.
+ */
 function indentationAt(source: string, offset: number): string {
   const lineStart = source.lastIndexOf("\n", offset - 1) + 1;
-  const prefix = source.slice(lineStart, offset);
-  return prefix.trim() === "" ? prefix : "";
+  const line = source.slice(lineStart, offset);
+  return /^\s*/.exec(line)?.[0] ?? "";
 }
 
 /**
@@ -105,6 +129,11 @@ function indentationAt(source: string, offset: number): string {
  * long after this statement returns. A `try` out here would neutralize nothing
  * while looking as if it did, which is the fake bridge the rule exists to
  * report — so the plugin must not suggest one.
+ *
+ * The core makes the same judgement about the same boundary, and the two are
+ * not wired together. They cannot disagree dangerously: if the core ever comes
+ * to treat a boundary this walk refuses to cross as synchronous, the offer
+ * goes missing rather than going wrong.
  */
 function enclosingStatement(node: TSESTree.Node): TSESTree.Node | undefined {
   let current: TSESTree.Node = node;

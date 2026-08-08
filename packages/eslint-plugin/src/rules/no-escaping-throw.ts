@@ -190,7 +190,8 @@ const diagnostics = {
 const offers = {
   suggestBridge: "Bridge this with `try`/`catch`.",
   suggestAwaitBridge: "Bridge this with `try { await … } catch`.",
-  suggestAwait: "Add the missing `await`, so the `catch` is on the rejection's path.",
+  suggestAwait:
+    "Add the missing `await`, so the `catch` is on the rejection's path.",
 } as const;
 
 const messages = { ...diagnostics, ...offers } as const;
@@ -207,16 +208,19 @@ interface Bridge {
 const BRIDGE: Bridge = { shape: "wrap", messageId: "suggestBridge" };
 
 /** The `await` is written already, so wrapping produces the shape by itself. */
-const AWAITED_BRIDGE: Bridge = { shape: "wrap", messageId: "suggestAwaitBridge" };
+const BRIDGE_AN_EXISTING_AWAIT: Bridge = {
+  shape: "wrap",
+  messageId: "suggestAwaitBridge",
+};
 
 /** Nothing awaits it yet, so the edit is the one that writes the `await`. */
-const AWAITING_BRIDGE: Bridge = {
+const BRIDGE_AND_ADD_THE_AWAIT: Bridge = {
   shape: "awaiting-wrap",
   messageId: "suggestAwaitBridge",
 };
 
 /** The `try` is there and cannot fire; only the `await` is missing. */
-const MISSING_AWAIT: Bridge = { shape: "await", messageId: "suggestAwait" };
+const ADD_THE_AWAIT: Bridge = { shape: "await", messageId: "suggestAwait" };
 
 /**
  * What each diagnostic offers to do about itself. `undefined` is a decision,
@@ -240,11 +244,11 @@ const bridgeFor: Record<DiagnosticId, Bridge | undefined> = {
   iteratorThrow: BRIDGE,
   unprovableReturnedIterator: undefined,
   inferredThrowingReturnedIterator: undefined,
-  unbridgedAwait: AWAITED_BRIDGE,
-  inferredThrowingAwait: AWAITED_BRIDGE,
-  unprovableFloat: AWAITING_BRIDGE,
-  inferredThrowingFloat: AWAITING_BRIDGE,
-  fakeBridge: MISSING_AWAIT,
+  unbridgedAwait: BRIDGE_AN_EXISTING_AWAIT,
+  inferredThrowingAwait: BRIDGE_AN_EXISTING_AWAIT,
+  unprovableFloat: BRIDGE_AND_ADD_THE_AWAIT,
+  inferredThrowingFloat: BRIDGE_AND_ADD_THE_AWAIT,
+  fakeBridge: ADD_THE_AWAIT,
   unprovableReturnedPromise: undefined,
   inferredThrowingReturnedPromise: undefined,
   unbridgedHiddenTransfer: BRIDGE,

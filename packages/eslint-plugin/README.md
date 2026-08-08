@@ -24,9 +24,14 @@ reports nothing.
 
 An offer is made only where the edit is both mechanical and honest. Where the
 way out is something else — moving a mark, returning the error instead of
-throwing it — there is none. Nor is one made where the wrap would break the file
-or reach past a function boundary: wrapping `const value = risky()` would move
-the binding out of the scope that reads it, and wrapping around a callback would
-be the fake bridge these rules exist to report.
+throwing it — there is none. Nor is one made where the wrap would break code
+that has nothing to do with the escape, or would reach past a function
+boundary: wrapping `const value = risky()` moves the binding out of the scope
+that reads it, and wrapping around a callback would be the fake bridge these
+rules exist to report.
+
+Wrapping a `return` *is* offered, and it leaves you a compiler error. That is
+the point: the bridge is complete, and what is left is the one thing no tool
+can decide — what the function returns now that it does not throw.
 
 See the [root README](../../README.md).
