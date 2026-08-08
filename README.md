@@ -93,6 +93,13 @@ thing that throws. For an ambient declaration, assert the color in
 `nothrow.overrides.json` instead: an in-source `@nothrow` means *verified seed*
 and nothing else.
 
+The comment form and the spelling are checked before position, for the same
+reason. A mark is read only from a JSDoc block comment, so `// @nothrow` and
+`/* @nothrow */` are errors rather than nothing; and a tag that is the mark up
+to case and separators — `@NoThrow`, `@no-throw` — is an error naming the one
+spelling. Further out than that is a different tag and stays silent: `@nothrowx`
+is not a guess the tool is entitled to make.
+
 ## What gets inferred
 
 Marking one function does not force you to mark its call tree. An unmarked
@@ -127,7 +134,11 @@ on every call and are checked there too — including a generator's, whose
 parameter list is eager though its body is lazy.
 
 A callee with no visible body — a `.d.ts` declaration, or one the checker
-cannot resolve at all — floors to throwing, and the diagnostic says which.
+cannot resolve at all — is the carrier chain's question rather than the
+program's. A dependency that ships a `nothrow.json` beside its `package.json`
+is colored by it; one that ships tagged declarations instead has those tags
+trusted as assertions; anything the chain cannot answer floors to throwing, and
+the diagnostic says which.
 
 ## Higher-order functions
 
@@ -340,9 +351,11 @@ a parameter default — **hidden transfers** — accessors, dynamic keys, spread
 and coercion — **generators and the sync iteration protocol**, **async** —
 `await`, promise chains, floats and `for await` — **hybrid inference** for
 unmarked functions whose bodies are visible, **conditional cleanliness** for
-higher-order functions, and the `configs.recommended` preset.
-Everything with no body to read floors to throwing with a diagnostic naming
-your outs. The ES standard-library baseline ships as data in `@nothrow/core`,
+higher-order functions, the **shipped rung of the carrier chain**, which is a
+dependency's own `nothrow.json` and, absent a valid one, its surviving
+`@nothrow` tags, and the `configs.recommended` preset. Everything the chain
+cannot answer floors to throwing with a diagnostic naming your outs. The ES
+standard-library baseline ships as data in `@nothrow/core`,
 and so does the DOM baseline, but nothing consults either yet, so every
 standard-library and DOM call floors too — `new Error(…)` included, iterating
 an array or a `Map` with it, and with them the `map`/`forEach` family, whose
@@ -357,8 +370,9 @@ about seven were about the program's own code; `for…of` alone accounted for 45
 and `Array.prototype.push` for 18. Consulting the baselines is what turns that
 around.
 
-The carrier chain — manifests, overlays, overrides — and `nothrow emit` are
-not built yet. The design is locked and lives in
+The rungs above and beside the shipped one — `@nothrow/*` overlays and a local
+`nothrow.overrides.json` — and `nothrow emit`, which is what writes a manifest
+in the first place, are not built yet. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages
@@ -380,6 +394,20 @@ pnpm install && pnpm test
 `pnpm test` builds, checks that the packages are in lockstep, and runs the
 [conformance suite](conformance) — fixture projects on disk paired with the
 diagnostics they must produce. Every behavior lands there.
+
+The plugin's `eslint` peer range names the majors a consumer may install it
+against. CI enumerates that range and holds it to two things per major: the
+suite passes there, and a packed tarball installs there under
+`strict-peer-dependencies=true`. Widening the claim widens what has to pass.
+
+```bash
+pnpm run gate:peer   # install what would be published, the way a consumer does
+```
+
+The suite half needs the workspace resolved on the major under test, which
+`node scripts/eslint-peer-matrix.mjs pin 10 && pnpm install --no-frozen-lockfile`
+does. That edits the root manifest and the lockfile; `git checkout -- package.json
+pnpm-lock.yaml` puts them back.
 
 The shipped baselines are generated data, so their correctness is CI over that
 data rather than a conformance fixture. Gates guard them, all run in CI and none

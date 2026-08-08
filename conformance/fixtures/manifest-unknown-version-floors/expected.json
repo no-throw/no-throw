@@ -1,0 +1,23 @@
+{
+  "description": "A manifest whose `version` this release cannot read floors the whole package: its facts need a reader that does not exist here, and the tags beside them were written for the same future reading.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 5,
+      "column": 10,
+      "endLine": 5,
+      "endColumn": 25,
+      "messageId": "unbridgedCall",
+      "message": "Call to `safeParse` escapes this `@nothrow` function: it ships in a package whose `nothrow.json` names a `version` this release cannot read, so the whole manifest is ignored and nothing else colors it. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 10,
+      "column": 3,
+      "endLine": 10,
+      "endColumn": 9,
+      "messageId": "unbridgedCall",
+      "message": "Call to `boom` escapes this `@nothrow` function: it ships in a package whose `nothrow.json` names a `version` this release cannot read, so the whole manifest is ignored and nothing else colors it. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

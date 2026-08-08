@@ -1,0 +1,23 @@
+{
+  "description": "A conditional entry is discharged by the call-site join like any other condition: a clean argument passes, a throwing one is reported, and a depth-1 path is answered by the member the argument actually carries.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 27,
+      "column": 3,
+      "endLine": 29,
+      "endColumn": 5,
+      "messageId": "carriedConditionArgumentThrowing",
+      "message": "Call to `eachItem` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given `cb`, and the argument passed for `cb` is throwing — its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `cb`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 39,
+      "column": 3,
+      "endLine": 39,
+      "endColumn": 24,
+      "messageId": "carriedConditionArgumentThrowing",
+      "message": "Call to `saveAll` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given `repo.save`, and the argument passed for `repo.save` is throwing — its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `repo.save`."
+    }
+  ]
+}

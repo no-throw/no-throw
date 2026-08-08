@@ -1,0 +1,4 @@
+# A fixture manifest hashes its package's files byte for byte, so those bytes
+# must not depend on the platform a checkout happened on: a CRLF conversion
+# would fail every hash and turn the staleness fixtures into noise.
+conformance/fixtures/*/node_modules/** text eol=lf

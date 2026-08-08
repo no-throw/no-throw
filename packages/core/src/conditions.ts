@@ -24,11 +24,15 @@ export interface ParameterPath {
  * through the path, which the discharge diagnostic has to name — for a
  * propagated condition that is the site the owner hands the parameter on at,
  * so the parameter named and the line pointed at are always the same function.
+ *
+ * A condition a carrier states has no entry: there is no body, and the line a
+ * `.d.ts` declares the symbol on enters nothing. The diagnostic names the
+ * carrier instead.
  */
 export interface Condition {
   readonly path: ParameterPath;
   readonly owner: Bodied;
-  readonly entry: Transfer;
+  readonly entry: Transfer | undefined;
 }
 
 /**

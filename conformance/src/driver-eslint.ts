@@ -30,6 +30,8 @@ const BRIDGEABLE = new Set([
   "inferredThrowingCall",
   "conditionArgumentThrowing",
   "conditionArgumentFloored",
+  "carriedConditionArgumentThrowing",
+  "carriedConditionArgumentFloored",
   "unbridgedConsumption",
   "inferredThrowingConsumption",
   "iteratorThrow",

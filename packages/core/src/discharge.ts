@@ -12,6 +12,7 @@ import {
   memberTargets,
   resolveReceiver,
   resolveValue,
+  type Resolution,
   type Target,
 } from "./targets.js";
 
@@ -23,12 +24,14 @@ import {
  */
 export type Outcome =
   | { readonly kind: "propagate"; readonly path: ParameterPath }
+  /** The argument resolved to a body, or to a carrier's entry for one. */
+  | Extract<Target, { readonly kind: "function" | "carried" }>
   | {
-      readonly kind: "function";
-      readonly declaration: Bodied;
-      readonly marked: boolean;
-    }
-  | { readonly kind: "floor"; readonly reason: UndischargedReason };
+      readonly kind: "floor";
+      readonly reason: UndischargedReason;
+      /** The file whose hash drifted; only `stale-manifest` carries one. */
+      readonly staleFile?: string | undefined;
+    };
 
 /**
  * Resolve the argument a condition is about, at the call site the condition
@@ -39,8 +42,9 @@ export function dischargeAt(
   transfer: Transfer,
   condition: Condition,
   caller: Bodied,
-  checker: ts.TypeChecker,
+  resolution: Resolution,
 ): readonly Outcome[] {
+  const { checker } = resolution;
   const { paramIndex, members } = condition.path;
 
   const args = argumentsOf(transfer);
@@ -60,7 +64,7 @@ export function dischargeAt(
   }
 
   if (members.length === 0) {
-    const resolved = resolveValue(argument, caller, checker);
+    const resolved = resolveValue(argument, caller, resolution);
     if (resolved.kind === "mutable") {
       return [{ kind: "floor", reason: "mutable-binding" }];
     }
@@ -85,7 +89,7 @@ export function dischargeAt(
     return [{ kind: "floor", reason: "unresolvable" }];
   }
   return receiver.values.flatMap((value) =>
-    memberTargets(value, members, checker).map((target) =>
+    memberTargets(value, members, resolution).map((target) =>
       outcomeOf(target, members),
     ),
   );

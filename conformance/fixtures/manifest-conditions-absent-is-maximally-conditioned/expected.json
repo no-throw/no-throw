@@ -1,0 +1,14 @@
+{
+  "description": "An entry that records no `conditions` is read as maximally conditioned — every callable parameter, at whole-value granularity — so forgetting to record them is over-strict rather than a lie.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 15,
+      "column": 3,
+      "endLine": 17,
+      "endColumn": 5,
+      "messageId": "carriedConditionArgumentThrowing",
+      "message": "Call to `eachItem` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given `cb`, and the argument passed for `cb` is throwing — its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `cb`."
+    }
+  ]
+}
