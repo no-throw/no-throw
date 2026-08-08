@@ -17,12 +17,27 @@ fixtures/tsconfig.base.json   what a fixture is compiled as unless it says other
 fixtures/<name>/
   tsconfig.json     the project the fixture is analyzed as
   expected.json     the diagnostics it must produce
+  package.json      where the walk-up stops, for a fixture with dependencies
   src/**/*.ts       the code
+  node_modules/<dep>/
+    package.json    its entry points, which are how a manifest key is resolved
+    index.d.ts      what the consumer's program actually sees
+    index.js        never analyzed, only hashed
+    nothrow.json    the colors the package ships
 ```
 
 A fixture's `tsconfig.json` extends the shared base and names its own file set,
 so what a fixture overrides is what is load-bearing about it — the `lib` setting
 in particular decides which standard-library baseline applies.
+
+A fixture that exercises the resolver chain carries a **real dependency on
+disk**, committed rather than built: a `.d.ts` and a `.js` that no build step
+produces, so what the suite runs is what the repository holds. The `.js` is
+there to be hashed, because staleness lives in bodies a `.d.ts` cannot show.
+Those bytes are pinned to LF in `.gitattributes` — a checkout that converted
+line endings would fail every hash and turn the staleness fixtures into noise.
+Tampering is expressed the same way: the file simply differs from what the
+manifest recorded.
 
 Fixtures import nothing from `@nothrow/*` and contain no test-framework
 constructs. They are what a user's project looks like.

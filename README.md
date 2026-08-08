@@ -115,7 +115,11 @@ on every call and are checked there too — including a generator's, whose
 parameter list is eager though its body is lazy.
 
 A callee with no visible body — a `.d.ts` declaration, or one the checker
-cannot resolve at all — floors to throwing, and the diagnostic says which.
+cannot resolve at all — is the carrier chain's question rather than the
+program's. A dependency that ships a `nothrow.json` beside its `package.json`
+is colored by it; one that ships tagged declarations instead has those tags
+trusted as assertions; anything the chain cannot answer floors to throwing, and
+the diagnostic says which.
 
 ## Higher-order functions
 
@@ -240,9 +244,12 @@ call-shaped escape sites — a call, `new C()`, `super()`, a tagged template and
 a parameter default — **hidden transfers** — accessors, dynamic keys, spread
 and coercion — **generators and the sync iteration protocol**, **hybrid
 inference** for unmarked functions whose bodies are visible, **conditional
-cleanliness** for higher-order functions, and the `configs.recommended` preset.
-Everything with no body to read floors to throwing with a diagnostic naming
-your outs. The ES standard-library baseline ships as data in `@nothrow/core`,
+cleanliness** for higher-order functions, **async** — one color over the whole
+consumption surface — the **shipped rung of the carrier chain**, which is a
+dependency's own `nothrow.json` and, absent a valid one, its surviving
+`@nothrow` tags, and the `configs.recommended` preset. Everything the chain
+cannot answer floors to throwing with a diagnostic naming your outs. The ES
+standard-library baseline ships as data in `@nothrow/core`,
 and so does the DOM baseline, but nothing consults either yet, so every
 standard-library and DOM call floors too — `new Error(…)` included, iterating
 an array or a `Map` with it, and with them the `map`/`forEach` family, whose
@@ -250,9 +257,9 @@ conditional entries are what the call-site join will discharge — and so does
 every coercion of an object that inherits its `toString` and `valueOf` rather
 than declaring them.
 
-Async — `await`, promise chains, `for await` — the carrier chain (manifests,
-overlays, overrides) and `nothrow emit` are not built yet. The design is locked
-and lives in
+The rungs above and beside the shipped one — `@nothrow/*` overlays and a local
+`nothrow.overrides.json` — and `nothrow emit`, which is what writes a manifest
+in the first place, are not built yet. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages

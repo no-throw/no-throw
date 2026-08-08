@@ -5,6 +5,7 @@ import type {
   Rejects,
   UndischargedReason,
 } from "./colors.js";
+import { createCarrier } from "./carrier/chain.js";
 import { describePath, type Condition } from "./conditions.js";
 import { inheritedFrom } from "./declarations.js";
 import { calleeExpression, type Transfer } from "./escapes.js";
@@ -24,6 +25,8 @@ interface UnbridgedCall {
   /** The callee as written, so the message can name what to bridge. */
   readonly callee: string;
   readonly reason: FloorReason;
+  /** The file whose hash drifted; only `stale-manifest` carries one. */
+  readonly staleFile?: string | undefined;
 }
 
 /** A call whose callee was read rather than floored, and can throw. */
@@ -49,7 +52,11 @@ interface ConditionArgument {
   readonly callee: string;
   /** The path as the callee's author wrote it: `cb`, `repo.save`. */
   readonly path: string;
-  readonly entry: EntrySite;
+  /**
+   * Where the callee's body enters the path — absent where a carrier stated
+   * the condition, since there is no body that enters anything.
+   */
+  readonly entry: EntrySite | undefined;
 }
 
 /** The condition resolved to something whose body was read and can throw. */
@@ -60,6 +67,7 @@ interface ThrowingConditionArgument extends ConditionArgument {
 interface FlooredConditionArgument extends ConditionArgument {
   readonly kind: "floored-condition-argument";
   readonly reason: UndischargedReason;
+  readonly staleFile?: string | undefined;
 }
 
 /** A `for…of`, spread, destructuring, `.next()` or `yield*` that can throw. */
@@ -67,6 +75,7 @@ interface ThrowingConsumption {
   readonly kind: "throwing-consumption";
   readonly node: ts.Node;
   readonly reason: ConsumptionReason;
+  readonly staleFile?: string | undefined;
 }
 
 /** `.throw()`: the consumer throwing, with a detour through the iterator. */
@@ -80,6 +89,7 @@ interface ThrowingReturnedIterator {
   readonly kind: "throwing-returned-iterator";
   readonly node: ts.Node;
   readonly reason: ConsumptionReason;
+  readonly staleFile?: string | undefined;
 }
 
 /**
@@ -129,6 +139,7 @@ interface HiddenTransfer {
 interface UnbridgedHiddenTransfer extends HiddenTransfer {
   readonly kind: "unbridged-hidden-transfer";
   readonly reason: FloorReason;
+  readonly staleFile?: string | undefined;
 }
 
 interface InferredThrowingHiddenTransfer extends HiddenTransfer {
@@ -158,17 +169,27 @@ export type Finding =
 
 /**
  * Collect every escape in a file. The core never builds a `ts.Program`: hosts
- * hand it source files and the checker off the program they already own, which
- * is how the ESLint adapter reuses the one typescript-eslint built.
+ * hand it the one they already own, which is how the ESLint adapter reuses the
+ * program typescript-eslint built. The program rather than the checker alone,
+ * because a package's published surface is read from its entry-point files —
+ * which are files, not types.
  */
 export function analyzeSourceFile(
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker,
+  program: ts.Program,
 ): readonly Finding[] {
   const findings: Finding[] = [];
+  const checker = program.getTypeChecker();
   // The inference memo lives as long as one file's analysis. Sharing it across
   // a program is the incrementality question the dogfooding gate prices.
-  const colors = createColorResolver(checker);
+  //
+  // The carrier is built per file because the chain's first question is which
+  // package is asking: your own bodyless declarations are the authoring side,
+  // where an unverified assertion belongs in the overrides channel.
+  const colors = createColorResolver({
+    checker,
+    carrier: createCarrier(sourceFile, program),
+  });
 
   // Unmarked functions have nothing to enforce: throwing is the default, and
   // inference reads their bodies without holding them to anything. A mark that
@@ -198,6 +219,7 @@ function findingFor(escape: BodyEscape): Finding {
             node: escape.node,
             callee: calleeText(escape.node),
             reason: escape.reason,
+            staleFile: escape.staleFile,
           };
     case "argument-throwing":
       return {
@@ -208,6 +230,7 @@ function findingFor(escape: BodyEscape): Finding {
       return {
         kind: "floored-condition-argument",
         reason: escape.reason,
+        staleFile: escape.staleFile,
         ...conditionArgument(escape.node, escape.condition),
       };
     case "consumption":
@@ -215,6 +238,7 @@ function findingFor(escape: BodyEscape): Finding {
         kind: "throwing-consumption",
         node: escape.node,
         reason: escape.reason,
+        staleFile: escape.staleFile,
       };
     case "iterator-throw":
       return { kind: "iterator-throw", node: escape.node };
@@ -223,6 +247,7 @@ function findingFor(escape: BodyEscape): Finding {
         kind: "throwing-returned-iterator",
         node: escape.node,
         reason: escape.reason,
+        staleFile: escape.staleFile,
       };
     case "rejected-await":
       return {
@@ -270,6 +295,7 @@ function findingFor(escape: BodyEscape): Finding {
             text,
             target,
             reason: escape.reason,
+            staleFile: escape.staleFile,
           };
     }
   }
@@ -287,7 +313,8 @@ function conditionArgument(
   };
 }
 
-function entrySiteOf(condition: Condition): EntrySite {
+function entrySiteOf(condition: Condition): EntrySite | undefined {
+  if (condition.entry === undefined) return undefined;
   const sourceFile = condition.entry.getSourceFile();
   const { line } = sourceFile.getLineAndCharacterOfPosition(
     condition.entry.getStart(sourceFile),

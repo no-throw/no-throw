@@ -1,4 +1,7 @@
 node_modules/
+# A fixture's `node_modules` is the fixture: the resolver chain can only be
+# exercised at the seam by a dependency that is really on disk.
+!conformance/fixtures/*/node_modules/
 dist/
 *.tsbuildinfo
 .cache/
