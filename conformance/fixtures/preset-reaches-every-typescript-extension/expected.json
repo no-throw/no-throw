@@ -1,0 +1,42 @@
+{
+  "description": "The preset's scope reaches every TypeScript extension, so the same marked throw is reported once per file and no extension goes silently unchecked.",
+  "config": "recommended",
+  "diagnostics": [
+    {
+      "file": "src/helper.mts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    },
+    {
+      "file": "src/legacy.cts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    },
+    {
+      "file": "src/view.tsx",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    }
+  ]
+}

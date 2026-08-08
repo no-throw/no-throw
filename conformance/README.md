@@ -19,12 +19,18 @@ fixtures/<name>/
   expected.json     the diagnostics it must produce
   package.json      where the walk-up stops, for a fixture with dependencies
   src/**/*.ts       the code
+  *.js              the config files and scripts a project keeps at its root
   node_modules/<dep>/
     package.json    its entry points, which are how a manifest key is resolved
     index.d.ts      what the consumer's program actually sees
     index.js        never analyzed, only hashed
     nothrow.json    the colors the package ships
 ```
+
+The driver lints the fixture directory the way a user runs `eslint .`, not the
+TypeScript sources by name, so a fixture is free to carry the config files and
+build scripts a project actually has. What reaches them is then a fact the
+fixture asserts rather than one the harness arranges away.
 
 A fixture's `tsconfig.json` extends the shared base and names its own file set,
 so what a fixture overrides is what is load-bearing about it — the `lib` setting
@@ -108,8 +114,9 @@ key does not constrain the offer at all.
 
 `config` says how the fixture is wired up, and defaults to `"rules"`: the driver
 turns each `nothrow` rule on by name. `"recommended"` installs the shipped
-preset instead, so a fixture can assert what a user gets from the config they
-actually install, third-party rules in it included.
+preset instead — untouched, its own `files` scope included — so a fixture can
+assert what a user gets from the config they actually install, third-party rules
+in it and the files it declines to visit both.
 
 Two properties hold across the whole suite rather than in any one fixture, and
 the driver turns a breach of either into a loud failure:

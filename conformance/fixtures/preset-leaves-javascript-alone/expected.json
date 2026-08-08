@@ -1,0 +1,15 @@
+{
+  "description": "The preset scopes itself to the extensions it can analyze, so linting the whole project leaves `tooling.js` — root-level, outside the program, carrying the same marked throw — unvisited rather than crashing on it.",
+  "config": "recommended",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    }
+  ]
+}
