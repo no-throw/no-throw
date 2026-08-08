@@ -3,5 +3,9 @@ node_modules/
 # exercised at the seam by a dependency that is really on disk.
 !conformance/fixtures/*/node_modules/
 dist/
+# A CLI producer's `dist` is the package it publishes: the manifest emit writes
+# hashes it and the consumer resolves it, so it is fixture data rather than
+# build output, and is committed like any other.
+!conformance/cli/*/producer/dist/
 *.tsbuildinfo
 .cache/

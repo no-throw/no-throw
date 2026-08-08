@@ -41,19 +41,28 @@ export function exportSurfaceOf(
   const known = byPackage.get(home.directory);
   if (known !== undefined) return known;
 
-  const surface = buildSurface(home, program);
+  const surface = surfaceOver(home.entryPoints, program);
   byPackage.set(home.directory, surface);
   return surface;
 }
 
-function buildSurface(home: PackageHome, program: ts.Program): ExportSurface {
+/**
+ * The same walk over entry points named directly. A publisher's key has to be
+ * read off the files a consumer will resolve, which the emitter reaches from
+ * its own sources rather than from the built files a `package.json` names — so
+ * both sides compute one thing the same way.
+ */
+export function surfaceOver(
+  entryPoints: ReadonlyMap<string, readonly string[]>,
+  program: ts.Program,
+): ExportSurface {
   const checker = program.getTypeChecker();
   const keys = new Map<ts.Declaration, ExportKey>();
 
   // Sorted so that a symbol two subpaths both publish is keyed the same way
   // whatever order the `package.json` happened to list them in.
-  for (const subpath of [...home.entryPoints.keys()].sort()) {
-    for (const file of home.entryPoints.get(subpath) ?? []) {
+  for (const subpath of [...entryPoints.keys()].sort()) {
+    for (const file of entryPoints.get(subpath) ?? []) {
       const sourceFile = sourceFileAt(file, program);
       if (sourceFile === undefined) continue;
       for (const module of modulesIn(sourceFile, checker)) {

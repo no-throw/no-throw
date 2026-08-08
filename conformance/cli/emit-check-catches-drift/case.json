@@ -1,0 +1,22 @@
+{
+  "description": "`emit --check` in `prepublishOnly`: zero on a fresh manifest, non-zero on a rebuilt `.js` that changed no declaration, and non-zero on a source change. The hash is what a consumer checks, so a body-only rebuild is drift.",
+  "steps": [
+    {
+      "emit": ["--check"],
+      "expect": "refused",
+      "names": ["there is no manifest there at all"]
+    },
+    { "emit": [], "expect": "ok" },
+    { "emit": ["--check"], "expect": "ok" },
+    { "append": "dist/index.js", "text": "// rebuilt\n" },
+    {
+      "emit": ["--check"],
+      "expect": "refused",
+      "names": ["./dist/index.js", "hashes differently"]
+    },
+    { "replace": "dist/index.js", "find": "// rebuilt\n", "with": "" },
+    { "emit": ["--check"], "expect": "ok" },
+    { "replace": "src/index.ts", "find": "/** @nothrow */\n", "with": "" },
+    { "emit": ["--check"], "expect": "refused", "names": ["twice"] }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "description": "A package with no `tsconfig.json` where emit was run: nothing could be analyzed, which is a different thing from a package that cannot be published, and exits differently so a publishing script can tell them apart.",
+  "steps": [
+    {
+      "emit": [],
+      "expect": "cannot-run",
+      "names": ["no `tsconfig.json`", "--project"]
+    },
+    { "absent": "nothrow.json" }
+  ]
+}

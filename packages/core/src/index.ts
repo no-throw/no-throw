@@ -23,6 +23,13 @@ export type {
   Rejects,
   UndischargedReason,
 } from "./colors.js";
+export { emitManifest, manifestDrift } from "./emit.js";
+export type {
+  EmitOutcome,
+  EmitRefusal,
+  EmitSite,
+  ManifestDocument,
+} from "./emit.js";
 export { findMarks } from "./marks.js";
 export type { MarkProblem, MarkProblemKind, Marks, Span } from "./marks.js";
 export type { HiddenCallee, TransferSite } from "./transfers.js";
