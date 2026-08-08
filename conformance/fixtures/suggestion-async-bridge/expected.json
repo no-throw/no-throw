@@ -1,0 +1,32 @@
+{
+  "description": "The same edit, shaped by the context it lands in: what escapes here is a rejection, so the bridge that neutralizes it is `try { await … } catch` — and because the `await` is already written, the edit wraps it rather than adding one.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 7,
+      "column": 3,
+      "endLine": 7,
+      "endColumn": 18,
+      "messageId": "inferredThrowingAwait",
+      "message": "Awaiting `rejects()` escapes this `@nothrow` function: the call that produced it has a body that was analyzed and can throw. Your outs: bridge it with `try { await … } catch`, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too.",
+      "suggestions": [
+        {
+          "desc": "Bridge this with `try { await … } catch`.",
+          "output": [
+            "async function rejects(): Promise<void> {",
+            "  throw \"boom\";",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export async function awaitsRejecting(): Promise<void> {",
+            "  try {",
+            "    await rejects();",
+            "  } catch {}",
+            "}",
+            ""
+          ]
+        }
+      ]
+    }
+  ]
+}
