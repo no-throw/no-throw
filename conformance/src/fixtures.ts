@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Diagnostic } from "./diagnostics.js";
+import type { Diagnostic, Suggestion } from "./diagnostics.js";
 
 /**
  * How the fixture is wired up: `rules` turns the rules on one by one, which is
@@ -65,6 +65,7 @@ const KNOWN_KEYS = new Set<string>([
   ...POSITION_KEYS,
   "messageId",
   "message",
+  "suggestions",
 ]);
 
 function readDiagnostic(entry: unknown, where: string): Diagnostic {
@@ -79,6 +80,14 @@ function readDiagnostic(entry: unknown, where: string): Diagnostic {
     throw new Error(`${where}: \`message\`, when present, must be a string`);
   }
 
+  const suggestions = record["suggestions"];
+  if (suggestions !== undefined && !Array.isArray(suggestions)) {
+    throw new Error(
+      `${where}: \`suggestions\`, when present, must be an array — an empty ` +
+        "one asserts the diagnostic offers no edit",
+    );
+  }
+
   return {
     file: readString(record, "file", where),
     line: readPosition(record, "line", where),
@@ -87,7 +96,34 @@ function readDiagnostic(entry: unknown, where: string): Diagnostic {
     endColumn: readPosition(record, "endColumn", where),
     messageId: readString(record, "messageId", where),
     ...(message === undefined ? {} : { message }),
+    ...(suggestions === undefined
+      ? {}
+      : {
+          suggestions: suggestions.map((suggestion, index) =>
+            readSuggestion(suggestion, `${where}: suggestions[${index}]`),
+          ),
+        }),
   };
+}
+
+function readSuggestion(entry: unknown, where: string): Suggestion {
+  const record = asRecord(entry, where);
+
+  for (const key of Object.keys(record)) {
+    if (key !== "desc" && key !== "output") {
+      throw new Error(`${where}: unknown key \`${key}\``);
+    }
+  }
+
+  const output = record["output"];
+  if (!Array.isArray(output) || output.some((line) => typeof line !== "string")) {
+    throw new Error(
+      `${where}: \`output\` must be the file the edit produces, one array ` +
+        "entry per line",
+    );
+  }
+
+  return { desc: readString(record, "desc", where), output: output as string[] };
 }
 
 function asRecord(value: unknown, where: string): Record<string, unknown> {

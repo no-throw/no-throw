@@ -1,0 +1,25 @@
+{
+  "description": "An offer to edit is an offer to make the diagnostic go away, so it is only ever made where a bridge is really the remedy. A mark that binds to nothing is fixed by moving it, and a `throw` the author wrote is fixed by returning the error instead — neither offers an edit.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 2,
+      "column": 7,
+      "endLine": 2,
+      "endColumn": 15,
+      "messageId": "ineffectiveMark",
+      "message": "`@nothrow` binds to nothing here. The nearest valid site is the function `attempt` on line 1. A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method or constructor, an accessor, or an object-literal method or function-valued property.",
+      "suggestions": []
+    },
+    {
+      "file": "src/index.ts",
+      "line": 9,
+      "column": 3,
+      "endLine": 9,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function.",
+      "suggestions": []
+    }
+  ]
+}

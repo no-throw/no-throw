@@ -28,7 +28,11 @@ export function parse(text: string): unknown {
 }
 ```
 
-**CI is where the guarantee lives; the editor is feedback.**
+**CI is where the guarantee lives; the editor is feedback.** In an editor, a
+diagnostic whose remedy is the bridge offers it as a suggestion — one click
+wraps the statement in `try`/`catch`, or in `try { await … } catch` where what
+escapes is a rejection. It is never an autofix: a bridge changes what your
+program does with an error, so `--fix` must never make that choice for you.
 
 ## Wiring it up
 
