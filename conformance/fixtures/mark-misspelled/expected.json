@@ -1,5 +1,5 @@
 {
-  "description": "A tag that is the mark up to case and separators is reported as a misspelling, not read as an unrelated tag.",
+  "description": "A tag that is the mark up to case and separators is reported as a misspelling, not read as an unrelated tag, wherever in the block the parser finds it.",
   "diagnostics": [
     {
       "file": "src/index.ts",
@@ -36,6 +36,15 @@
       "endColumn": 14,
       "messageId": "misspelledMark",
       "message": "`@no_throw` is not a mark: the mark is spelled `@nothrow`, and this differs from it only in case and separators, so it is read as an unrelated tag and enforces nothing. Spell it `@nothrow`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 23,
+      "column": 4,
+      "endLine": 23,
+      "endColumn": 12,
+      "messageId": "misspelledMark",
+      "message": "`@NoThrow` is not a mark: the mark is spelled `@nothrow`, and this differs from it only in case and separators, so it is read as an unrelated tag and enforces nothing. Spell it `@nothrow`."
     }
   ]
 }

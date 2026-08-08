@@ -12,10 +12,10 @@ export interface Span {
  * member by member because each has a different out: an ambient declaration
  * belongs in the overrides file, an overload belongs on its implementation.
  *
- * The first two are near misses — a mark the parser never saw as one, because
- * of the comment it was written in or the way it was spelled. They are checked
- * before position, since a near miss on a perfectly valid site is exactly the
- * silent no-op the design rules out.
+ * The first two are near misses — a mark that never reached the binder as one,
+ * because of the comment it was written in or the way it was spelled. Both are
+ * settled before position, since a near miss on a perfectly valid site is
+ * exactly the silent no-op the design rules out.
  */
 export type MarkProblemKind =
   | "non-jsdoc-mark"
@@ -50,23 +50,35 @@ export interface Marks {
 /**
  * Bind every `@nothrow` in a file, or say why it does not bind. A mark that
  * neither binds nor is reported would be a silent no-op, which is the one
- * outcome the design rules out — so what the parser never read as a tag at all
- * is checked too, and only then where the tags that were read land.
+ * outcome the design rules out — so a tag that is nearly the mark, and a mark
+ * written in a comment JSDoc does not read, are reported too.
  */
 export function findMarks(sourceFile: ts.SourceFile): Marks {
-  const problems: MarkProblem[] = [...nearMisses(sourceFile)];
+  const problems: MarkProblem[] = [];
   // A function has one color however many times it is claimed, so a repeated
   // tag must not enforce — or emit — the same body twice.
   const bound = new Set<ts.FunctionLikeDeclaration>();
 
-  for (const { tag, host } of nothrowTags(sourceFile)) {
+  for (const { tag, host } of jsdocTags(sourceFile)) {
+    const span = spanOfTag(tag, sourceFile);
+    const name = tag.tagName.text;
+
+    if (name !== MARK) {
+      if (normalize(name) === MARK) {
+        problems.push({ kind: "misspelled-mark", span, data: { tag: name } });
+      }
+      continue;
+    }
+
     const target = bindingTarget(host);
     if (target === undefined) {
-      problems.push(problemFor(host, spanOfTag(tag, sourceFile), sourceFile));
+      problems.push(problemFor(host, span, sourceFile));
     } else {
       bound.add(target);
     }
   }
+
+  problems.push(...nonJsdocMarks(sourceFile));
 
   return { bound: [...bound], problems };
 }
@@ -101,16 +113,18 @@ function markHostOf(declaration: ts.Node): ts.Node | undefined {
 }
 
 /**
- * Every `@nothrow` in the file, paired with the construct it directly precedes.
+ * Every JSDoc tag in the file, paired with the construct it directly precedes.
+ * Every tag, not only the mark's, because a tag that is *nearly* the mark has
+ * to be caught before it is dismissed as somebody else's.
  */
-function nothrowTags(
+function jsdocTags(
   sourceFile: ts.SourceFile,
 ): { tag: ts.JSDocTag; host: ts.Node }[] {
   const found: { tag: ts.JSDocTag; host: ts.Node }[] = [];
 
   const visit = (node: ts.Node): void => {
     if (carriesJSDoc(node, sourceFile)) {
-      for (const tag of nothrowTagsOn(node)) found.push({ tag, host: node });
+      for (const tag of jsdocTagsOn(node)) found.push({ tag, host: node });
     }
     node.forEachChild(visit);
   };
@@ -119,18 +133,17 @@ function nothrowTags(
   return found;
 }
 
+function nothrowTagsOn(host: ts.Node): ts.JSDocTag[] {
+  return jsdocTagsOn(host).filter((tag) => tag.tagName.text === MARK);
+}
+
 /**
  * Attribution is the parser's lexical one — the node whose leading trivia the
  * comment sits in. `getJSDocTags`' climb to enclosing nodes is discarded, so
  * what a mark binds to is decided by `bindingTarget` and nowhere else.
  */
-function nothrowTagsOn(host: ts.Node): ts.JSDocTag[] {
-  return ts
-    .getJSDocTags(host)
-    .filter(
-      (tag) =>
-        tag.tagName.escapedText === "nothrow" && tag.parent.parent === host,
-    );
+function jsdocTagsOn(host: ts.Node): ts.JSDocTag[] {
+  return ts.getJSDocTags(host).filter((tag) => tag.parent.parent === host);
 }
 
 /**
@@ -151,43 +164,7 @@ function spanOfTag(tag: ts.JSDocTag, sourceFile: ts.SourceFile): Span {
   return { start: tag.getStart(sourceFile), end: tag.tagName.end };
 }
 
-/** How the mark is spelled, in the one form that is it. */
 const MARK = "nothrow";
-
-/** The comment forms a tag can be written in; only `jsdoc` carries a mark. */
-type CommentForm = "line" | "block" | "jsdoc";
-
-interface CommentTag {
-  readonly name: string;
-  readonly form: CommentForm;
-  readonly span: Span;
-}
-
-/**
- * Every `@nothrow` the parser never read as a mark: written in a comment form
- * JSDoc does not read, or spelled a way that makes it another tag entirely.
- * Neither binds, so without this both are silent, and a silent mark is the one
- * outcome the design rules out.
- */
-function nearMisses(sourceFile: ts.SourceFile): MarkProblem[] {
-  const problems: MarkProblem[] = [];
-
-  for (const { name, form, span } of commentTags(sourceFile)) {
-    if (normalize(name) !== MARK) continue;
-
-    if (form !== "jsdoc") {
-      problems.push({
-        kind: "non-jsdoc-mark",
-        span,
-        data: { tag: name, form },
-      });
-    } else if (name !== MARK) {
-      problems.push({ kind: "misspelled-mark", span, data: { tag: name } });
-    }
-  }
-
-  return problems;
-}
 
 /**
  * Case and separators are the noise a near miss is written in: `@No_Throw` is
@@ -198,14 +175,40 @@ function normalize(name: string): string {
   return name.toLowerCase().replace(/[-_]/g, "");
 }
 
+/** The comment forms the parser reads no tags out of at all. */
+type PlainForm = "line" | "block";
+
+interface CommentTag {
+  readonly name: string;
+  readonly form: PlainForm;
+  readonly span: Span;
+}
+
 /**
- * The leading `@tag` of every comment line in the file. Comments are read from
- * the trivia of the same nodes a real mark is attributed to, so the near-miss
- * check reaches exactly as far as the mark check does — and a near miss on a
- * position no mark binds on is reported as the misspelling it is, before
- * position is ever consulted.
+ * The marks written in a comment JSDoc never looks inside — a line comment, or
+ * a one-star block. There is no tag list to consult for these, so they are read
+ * out of the source text, and reported however they are spelled: a mark whose
+ * comment is wrong is wrong before its spelling or its position is worth
+ * discussing.
  */
-function commentTags(sourceFile: ts.SourceFile): CommentTag[] {
+function nonJsdocMarks(sourceFile: ts.SourceFile): MarkProblem[] {
+  const problems: MarkProblem[] = [];
+
+  for (const { name, form, span } of plainCommentTags(sourceFile)) {
+    if (normalize(name) === MARK) {
+      problems.push({ kind: "non-jsdoc-mark", span, data: { tag: name, form } });
+    }
+  }
+
+  return problems;
+}
+
+/**
+ * The leading `@tag` of every line of every plain comment. The trivia scanned
+ * is the trivia the parser reads JSDoc from, so a plain comment is judged in
+ * exactly the places a JSDoc one would have been.
+ */
+function plainCommentTags(sourceFile: ts.SourceFile): CommentTag[] {
   const { text } = sourceFile;
   const found: CommentTag[] = [];
   // Every node starting at the same token shares its leading trivia, and a
@@ -216,7 +219,8 @@ function commentTags(sourceFile: ts.SourceFile): CommentTag[] {
     if (!scanned.has(node.pos)) {
       scanned.add(node.pos);
       for (const range of ts.getLeadingCommentRanges(text, node.pos) ?? []) {
-        found.push(...tagsIn(text, range));
+        const form = plainForm(text, range);
+        if (form !== undefined) found.push(...tagsIn(text, range, form));
       }
     }
     node.forEachChild(visit);
@@ -226,16 +230,35 @@ function commentTags(sourceFile: ts.SourceFile): CommentTag[] {
   return found;
 }
 
-/** Margin, then the tag: `-` and `_` are in the name so a near miss spelled with one is caught whole. */
-const LEADING_TAG = /^[ \t]*\**[ \t]*@[\w$-]+/;
+/** The comment's form, or nothing at all if the parser reads its tags. */
+function plainForm(
+  text: string,
+  range: ts.CommentRange,
+): PlainForm | undefined {
+  if (range.kind === ts.SyntaxKind.SingleLineCommentTrivia) return "line";
+  // What the parser calls JSDoc: opens with `/**`, and is not the empty `/**/`.
+  const jsdoc = text.startsWith("/**", range.pos) && text[range.pos + 3] !== "/";
+  return jsdoc ? undefined : "block";
+}
+
+const MARGIN_THEN_AT = /^[ \t]*\**[ \t]*@/;
+/**
+ * `-` and `_` are name characters, matching the parser, so a near miss spelled
+ * with one is read whole rather than cut short at the separator.
+ */
+const TAG_NAME = /[\w$-]+/y;
 
 /**
  * A tag is what starts a comment line once the delimiter and the margin are
- * off — JSDoc's own rule, applied to the forms JSDoc does not read. A
- * `@nothrow` named mid-sentence is prose, and stays prose.
+ * off. JSDoc is looser — it reads one mid-sentence too — but this net is cast
+ * over prose the parser never claimed, so `// TODO: mark this @nothrow` has to
+ * stay prose.
  */
-function tagsIn(text: string, range: ts.CommentRange): CommentTag[] {
-  const form = commentForm(text, range);
+function tagsIn(
+  text: string,
+  range: ts.CommentRange,
+  form: PlainForm,
+): CommentTag[] {
   const found: CommentTag[] = [];
 
   // From past the `//` or `/*` on, every line is margin and then content.
@@ -243,14 +266,14 @@ function tagsIn(text: string, range: ts.CommentRange): CommentTag[] {
     const newline = text.indexOf("\n", start);
     const end = newline === -1 || newline >= range.end ? range.end : newline;
 
-    const written = LEADING_TAG.exec(text.slice(start, end))?.[0];
-    if (written !== undefined) {
-      const at = start + written.indexOf("@");
-      found.push({
-        name: written.slice(written.indexOf("@") + 1),
-        form,
-        span: { start: at, end: start + written.length },
-      });
+    const margin = MARGIN_THEN_AT.exec(text.slice(start, end))?.[0];
+    if (margin !== undefined) {
+      const at = start + margin.length - 1;
+      const name = tagNameAt(text, at + 1);
+      if (name !== "") {
+        const span = { start: at, end: at + 1 + name.length };
+        found.push({ name, form, span });
+      }
     }
 
     start = end + 1;
@@ -259,12 +282,9 @@ function tagsIn(text: string, range: ts.CommentRange): CommentTag[] {
   return found;
 }
 
-function commentForm(text: string, range: ts.CommentRange): CommentForm {
-  if (range.kind === ts.SyntaxKind.SingleLineCommentTrivia) return "line";
-  // What the parser calls JSDoc: opens with `/**`, and is not the empty `/**/`.
-  return text.startsWith("/**", range.pos) && text[range.pos + 3] !== "/"
-    ? "jsdoc"
-    : "block";
+function tagNameAt(text: string, position: number): string {
+  TAG_NAME.lastIndex = position;
+  return TAG_NAME.exec(text)?.[0] ?? "";
 }
 
 /** The syntactic positions a mark may occupy. */

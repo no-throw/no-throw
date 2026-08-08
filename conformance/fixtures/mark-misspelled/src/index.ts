@@ -17,3 +17,11 @@ export function hyphenated(): number {
 export function underscored(): number {
   throw new Error("boom");
 }
+
+/**
+ * Parses the input.
+ * @NoThrow
+ */
+export function afterProse(): number {
+  throw new Error("boom");
+}
