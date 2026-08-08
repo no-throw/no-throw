@@ -11,9 +11,14 @@ import {
   type TransferSite,
   type UndischargedReason,
 } from "@nothrow/core";
-import { ESLintUtils, type TSESTree } from "@typescript-eslint/utils";
+import {
+  ESLintUtils,
+  type TSESLint,
+  type TSESTree,
+} from "@typescript-eslint/utils";
 import { relative, sep } from "node:path";
 import type ts from "typescript";
+import { bridgeEdit, type BridgeShape } from "../bridge.js";
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/MidnightDesign/no-throw#${name}`,
@@ -75,7 +80,7 @@ const RETURN_PROMISE_OUTS =
   "return a value instead; " +
   PRODUCER_CARRIERS;
 
-const messages = {
+const diagnostics = {
   uncaughtThrow: "Uncaught `throw` escapes this `@nothrow` function.",
   unbridgedCall:
     "Call to `{{callee}}` escapes this `@nothrow` function: it {{reason}}. " +
@@ -176,7 +181,79 @@ const messages = {
     "the escapes inside it are reported too.",
 } as const;
 
+/**
+ * The labels an editor puts on the offered edits. They are the mechanical form
+ * of the first out each message names, which is why there is one per bridge
+ * shape and not one per diagnostic: the message above the list has already
+ * said what "this" is.
+ */
+const offers = {
+  suggestBridge: "Bridge this with `try`/`catch`.",
+  suggestAwaitBridge: "Bridge this with `try { await … } catch`.",
+  suggestAwait:
+    "Add the missing `await`, so the `catch` is on the rejection's path.",
+} as const;
+
+const messages = { ...diagnostics, ...offers } as const;
+
+type DiagnosticId = keyof typeof diagnostics;
+type OfferId = keyof typeof offers;
 type MessageId = keyof typeof messages;
+
+interface Bridge {
+  readonly shape: BridgeShape;
+  readonly messageId: OfferId;
+}
+
+const BRIDGE: Bridge = { shape: "wrap", messageId: "suggestBridge" };
+
+/** The `await` is written already, so wrapping produces the shape by itself. */
+const BRIDGE_AN_EXISTING_AWAIT: Bridge = {
+  shape: "wrap",
+  messageId: "suggestAwaitBridge",
+};
+
+/** Nothing awaits it yet, so the edit is the one that writes the `await`. */
+const BRIDGE_AND_ADD_THE_AWAIT: Bridge = {
+  shape: "awaiting-wrap",
+  messageId: "suggestAwaitBridge",
+};
+
+/** The `try` is there and cannot fire; only the `await` is missing. */
+const ADD_THE_AWAIT: Bridge = { shape: "await", messageId: "suggestAwait" };
+
+/**
+ * What each diagnostic offers to do about itself. `undefined` is a decision,
+ * not an omission: an offered edit is an offer to make the diagnostic go away,
+ * so it is made only where a mechanical bridge really is the remedy. Where the
+ * way out is something else — returning the error instead of throwing it,
+ * returning an iterator from a producer this rule can trace, awaiting a
+ * returned promise and returning a value in its place — the reader has to
+ * write it, and an edit here would be offering to silence a true report.
+ *
+ * A diagnostic with no entry is a compile error, never a silent no-offer.
+ */
+const bridgeFor: Record<DiagnosticId, Bridge | undefined> = {
+  uncaughtThrow: undefined,
+  unbridgedCall: BRIDGE,
+  inferredThrowingCall: BRIDGE,
+  conditionArgumentThrowing: BRIDGE,
+  conditionArgumentFloored: BRIDGE,
+  unbridgedConsumption: BRIDGE,
+  inferredThrowingConsumption: BRIDGE,
+  iteratorThrow: BRIDGE,
+  unprovableReturnedIterator: undefined,
+  inferredThrowingReturnedIterator: undefined,
+  unbridgedAwait: BRIDGE_AN_EXISTING_AWAIT,
+  inferredThrowingAwait: BRIDGE_AN_EXISTING_AWAIT,
+  unprovableFloat: BRIDGE_AND_ADD_THE_AWAIT,
+  inferredThrowingFloat: BRIDGE_AND_ADD_THE_AWAIT,
+  fakeBridge: ADD_THE_AWAIT,
+  unprovableReturnedPromise: undefined,
+  inferredThrowingReturnedPromise: undefined,
+  unbridgedHiddenTransfer: BRIDGE,
+  inferredThrowingHiddenTransfer: BRIDGE,
+};
 
 /**
  * The why half of the two-clause floor contract, as a predicate: the call
@@ -548,6 +625,31 @@ function entryText(entry: EntrySite, cwd: string): string {
   return `${path}:${entry.line}`;
 }
 
+/**
+ * The offer, where there is one to make. It is never a `fix`: wrapping a call
+ * in a bridge changes what the program does with an error, and a tool may not
+ * make that choice on the reader's behalf — `--fix` would rewrite a whole
+ * codebase into one that swallows everything and reports nothing.
+ */
+function offerFor(
+  messageId: DiagnosticId,
+  node: TSESTree.Node | undefined,
+  source: string,
+): TSESLint.ReportSuggestionArray<MessageId> | undefined {
+  const bridge = bridgeFor[messageId];
+  if (bridge === undefined || node === undefined) return undefined;
+
+  const edit = bridgeEdit(node, bridge.shape, source);
+  if (edit === undefined) return undefined;
+
+  return [
+    {
+      messageId: bridge.messageId,
+      fix: (fixer) => fixer.replaceTextRange(edit.range, edit.text),
+    },
+  ];
+}
+
 export const noEscapingThrow = createRule<[], MessageId>({
   name: "no-escaping-throw",
   meta: {
@@ -555,6 +657,7 @@ export const noEscapingThrow = createRule<[], MessageId>({
     docs: {
       description: "Enforce that no throw escapes a function marked `@nothrow`.",
     },
+    hasSuggestions: true,
     messages,
     schema: [],
   },
@@ -570,12 +673,17 @@ export const noEscapingThrow = createRule<[], MessageId>({
         const sourceFile = services.esTreeNodeToTSNodeMap.get(
           node,
         ) as ts.SourceFile;
+        const source = context.sourceCode.getText();
 
         for (const finding of analyzeSourceFile(sourceFile, checker)) {
           const reportAt = services.tsNodeToESTreeNodeMap.get(finding.node);
+          const report = reportFor(finding, context.cwd);
+          const suggest = offerFor(report.messageId, reportAt, source);
+
           context.report({
             node: reportAt ?? node,
-            ...reportFor(finding, context.cwd),
+            ...report,
+            ...(suggest === undefined ? {} : { suggest }),
           });
         }
       },

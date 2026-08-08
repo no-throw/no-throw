@@ -1,0 +1,32 @@
+{
+  "description": "A discarded promise is the one place the edit has to write the `await` itself: wrapping the statement alone would leave the rejection off the `catch`'s path, so the shaping is the plugin's, not the source's.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 7,
+      "column": 3,
+      "endLine": 7,
+      "endColumn": 12,
+      "messageId": "inferredThrowingFloat",
+      "message": "`rejects()` is discarded, so nothing handles a rejection and Node escalates one to an uncaught exception: the call that produced it has a body that was analyzed and can throw. Your outs: `await` it inside a `try`/`catch`, end the chain with a `.catch(h)` whose handler is non-throwing, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too.",
+      "suggestions": [
+        {
+          "desc": "Bridge this with `try { await … } catch`.",
+          "output": [
+            "async function rejects(): Promise<void> {",
+            "  throw \"boom\";",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export async function discardsRejecting(): Promise<void> {",
+            "  try {",
+            "    await rejects();",
+            "  } catch {}",
+            "}",
+            ""
+          ]
+        }
+      ]
+    }
+  ]
+}

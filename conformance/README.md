@@ -60,15 +60,55 @@ ESLint. `message` is optional, and asserting it is mandatory wherever the spec
 makes the text normative — a floor diagnostic must name why it floored and what
 your outs are, and that contract lives in the text.
 
+`suggestions` is optional too, and says what the diagnostic offers to do about
+itself, in the order offered:
+
+```json
+{
+  "messageId": "unbridgedCall",
+  "suggestions": [
+    {
+      "desc": "Bridge this with `try`/`catch`.",
+      "output": [
+        "/** @nothrow */",
+        "export function usesRisky(): void {",
+        "  try {",
+        "    risky();",
+        "  } catch {}",
+        "}",
+        ""
+      ]
+    }
+  ]
+}
+```
+
+`output` is the whole file the edit produces, one array entry per line — a
+suggestion is only correct in place, and a bridge around the wrong statement, or
+around a callback that runs later, is the exact mistake these rules report. The
+line endings a checkout happens to have are not part of it. An empty
+`suggestions` asserts there is no offer, which is how a fixture pins that a
+remedy the reader has to write by hand is not offered as an edit; omitting the
+key does not constrain the offer at all.
+
 `config` says how the fixture is wired up, and defaults to `"rules"`: the driver
 turns each `nothrow` rule on by name. `"recommended"` installs the shipped
 preset instead, so a fixture can assert what a user gets from the config they
 actually install, third-party rules in it included.
 
-Two things the format cannot express yet, both of which the driver turns into a
-loud failure rather than a silent drop: an autofix, which no rule may ever offer
-because wrapping a call in a bridge changes behavior, and a suggestion from a
-`nothrow` rule, which they will offer once there is a bridge edit to suggest.
+Two properties hold across the whole suite rather than in any one fixture, and
+the driver turns a breach of either into a loud failure:
+
+- **No message anywhere carries an autofix.** No rule may ever offer one —
+  wrapping a call in a bridge changes behavior — and the check stays
+  whole-config on purpose, because `--fix` applies every rule the preset turns
+  on and a third party's fixer would be editing under our name.
+- **Only a diagnostic whose remedy is a mechanical bridge may offer an edit.**
+  The driver holds that list, because it is the spec's claim and not the
+  plugin's: an offer on anything else is an offer to silence a true report. A
+  `messageId` the suite has not heard of is not on the list, so a new one that
+  starts offering edits trips this rather than inheriting the permission.
+
 Suggestions from rules the preset merely turns on are ignored — pinning a
 dependency's suggestion text here would assert nothing about us.
 
