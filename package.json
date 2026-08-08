@@ -13,6 +13,7 @@
     "build": "tsc -b",
     "clean": "tsc -b --clean",
     "check:lockstep": "node scripts/check-lockstep.mjs",
+    "pack:local": "node scripts/pack-local.mjs",
     "conformance": "node conformance/dist/run.js",
     "test": "pnpm run build && pnpm run check:lockstep && pnpm run conformance",
     "baseline:generate": "pnpm --filter @nothrow/es-baseline-tools run generate",

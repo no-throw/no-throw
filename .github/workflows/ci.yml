@@ -102,3 +102,29 @@ jobs:
 
       - name: Drift gate reports an injected diff
         run: pnpm run dom:gate:drift -- --self-check
+
+  local-install:
+    name: Local install recipe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Until the scope is published, a local tarball is the only way into a
+      # consumer project, and the recipe that makes one work is not obvious.
+      # This runs that recipe into a throwaway project outside the workspace and
+      # lints with it — the alternative is folklore that rots between releases.
+      #
+      # `-- --self-check` belongs to a maintainer, not to CI: it requires the
+      # install to fail without the overrides block, so it would turn red on the
+      # day the scope is published rather than on the day something breaks.
+      - name: Packed tarballs install into a foreign project
+        run: pnpm run pack:local -- --check

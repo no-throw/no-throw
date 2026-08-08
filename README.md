@@ -265,6 +265,39 @@ Three packages in the `@nothrow` npm scope, versioned in lockstep.
 | [`@nothrow/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
 | [`@nothrow/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
 
+## Trying it before it ships
+
+Nothing is on npm yet, so a consumer project installs from local tarballs.
+`pnpm pack` rewrites the workspace protocol between our own packages into a
+registry spec that resolves nowhere, so the tarballs alone are not enough — the
+consumer also needs a `pnpm.overrides` entry pointing that spec back at the
+sibling tarball.
+
+```bash
+pnpm run pack:local
+```
+
+That builds, packs all three packages into `local-packs/`, and prints the
+overrides block and the `pnpm add` lines to paste into the consumer. Install
+nothing beyond those: the plugin's peers are the target repo's own toolchain,
+and pinning them would test against versions that repo does not use.
+
+```bash
+pnpm run pack:local -- --check
+```
+
+runs that recipe into a throwaway project outside the workspace, lints a marked
+throw there with the wiring above, and then opens every other packed tarball —
+so the recipe is verified rather than remembered. This one runs in CI.
+
+```bash
+pnpm run pack:local -- --self-check
+```
+
+drops the overrides block and requires the install to fail, which is what makes
+the check worth running. It is a maintainer's command rather than a CI step:
+the day the scope is published, it is supposed to stop passing.
+
 ## Working on it
 
 ```bash
