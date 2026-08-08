@@ -134,6 +134,6 @@ export function normalize(path: string): string {
   return process.platform === "win32" ? resolved.toLowerCase() : resolved;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

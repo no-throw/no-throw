@@ -18,12 +18,16 @@ fixtures/<name>/
   tsconfig.json     the project the fixture is analyzed as
   expected.json     the diagnostics it must produce
   package.json      where the walk-up stops, for a fixture with dependencies
+  nothrow.overrides.json   what the project asserts for itself
   src/**/*.ts       the code
   node_modules/<dep>/
     package.json    its entry points, which are how a manifest key is resolved
     index.d.ts      what the consumer's program actually sees
     index.js        never analyzed, only hashed
     nothrow.json    the colors the package ships
+  node_modules/@nothrow/<overlay>/
+    package.json    a name deliberately unlike its target's, since nothing reads it
+    nothrow.json    the same shape, naming its target in `package`
 ```
 
 A fixture's `tsconfig.json` extends the shared base and names its own file set,

@@ -1,6 +1,9 @@
 import ts from "typescript";
 import { hasDeclaredMark } from "../marks.js";
-import { manifestAt, type ManifestEntry } from "./manifest.js";
+import type { ColorTable, ColorTables, ManifestEntry } from "./document.js";
+import { manifestAt } from "./manifest.js";
+import { overlaysFor } from "./overlays.js";
+import { overridesIn } from "./overrides.js";
 import { packageHomeOf, sameHome, type PackageHome } from "./packages.js";
 import { exportSurfaceOf, type ExportKey } from "./surface.js";
 
@@ -49,8 +52,8 @@ export type CarrierRung = (query: CarrierQuery) => CarrierAnswer | undefined;
  * comes through here, and precedence *is* the order of the rungs — there is no
  * separate precedence engine to keep in step with them.
  *
- * v1 composes one rung, the shipped one. Overrides and overlays go in front of
- * it and the baseline behind it, each a `CarrierRung` and nothing else.
+ * The baseline goes behind the three composed here, as one more `CarrierRung`
+ * and nothing else.
  */
 export interface Carrier {
   answerFor(declaration: ts.Declaration): CarrierAnswer | undefined;
@@ -91,6 +94,48 @@ export function createCarrier(
 }
 
 /**
+ * What the project itself asserts. The top of the chain, and the rung that
+ * makes the floor's outs a promise rather than a suggestion: whatever nobody
+ * else has colored, you can color here, and nothing outranks you.
+ */
+const overridden: CarrierRung = (query) =>
+  answerFrom(tableFor(overridesIn(query.asking), query.home), query.key);
+
+/**
+ * What somebody else published about the package. Matched by the overlay's
+ * manifest `package` field against the npm name of the package the declaration
+ * ships in — the overlay's own name is never read.
+ */
+const overlaid: CarrierRung = (query) =>
+  answerFrom(tableFor(overlaysFor(query.asking), query.home), query.key);
+
+/** The table a rung holds for the package this declaration ships in. */
+function tableFor(
+  tables: ColorTables,
+  home: PackageHome | undefined,
+): ColorTable | undefined {
+  return home?.name === undefined ? undefined : tables.get(home.name);
+}
+
+/**
+ * One key, in one rung's table. A rung that has no table for the package, or a
+ * declaration the package's surface does not publish, passes — which is what
+ * makes first-match-wins hold per key rather than per package.
+ */
+function answerFrom(
+  table: ColorTable | undefined,
+  key: ExportKey | undefined,
+): CarrierAnswer | undefined {
+  if (table === undefined || key === undefined) return undefined;
+
+  const entry = table.entryFor(key.subpath, key.symbolPath);
+  if (entry === undefined) return undefined;
+  return entry.kind === "unusable"
+    ? { kind: "floor", reason: "unusable-entry" }
+    : { kind: "entry", entry: entry.entry };
+}
+
+/**
  * What the package itself ships: a valid manifest, else its surviving tags.
  *
  * The rung is about *somebody else's* package. Your own bodyless declarations
@@ -115,15 +160,8 @@ const shipped: CarrierRung = (query) => {
   // resurrect through a surviving comment exactly the lying mark emit refused
   // to write down.
   if (state.kind === "valid") {
-    const entry =
-      key === undefined
-        ? undefined
-        : state.entryFor(key.subpath, key.symbolPath);
-    if (entry !== undefined) {
-      return entry.kind === "unusable"
-        ? { kind: "floor", reason: "unusable-entry" }
-        : { kind: "entry", entry: entry.entry };
-    }
+    const answer = answerFrom(state.table, key);
+    if (answer !== undefined) return answer;
     // A tag the manifest does not name is superseded rather than absent, and
     // the reader is owed the difference: what is missing is the entry.
     return hasDeclaredMark(query.declaration)
@@ -144,4 +182,4 @@ const shipped: CarrierRung = (query) => {
 };
 
 /** The chain, in precedence order. First answer wins, per key. */
-const RUNGS: readonly CarrierRung[] = [shipped];
+const RUNGS: readonly CarrierRung[] = [overridden, overlaid, shipped];
