@@ -51,7 +51,9 @@ export function lookupBaselineEntry(
 const owners = new Map<BaselineSource, ReadonlySet<string>>();
 
 /**
- * Whether the baseline enumerates the type a member is written on.
+ * Whether the baseline enumerates the type a member is written on. The lib
+ * target picks the file to ask; the answer is that file's, across every target
+ * in it, because an interface merged across lib versions is one type.
  *
  * The generators walk what a global reaches — a prototype interface, a
  * constructor object — and nothing else, so `Error` is enumerated and

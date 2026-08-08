@@ -18,3 +18,8 @@ export function listenInsideTry(target: EventTarget): void {
 export function defer(target: EventTarget, handler: () => void): void {
   target.addEventListener("click", handler);
 }
+
+/** @nothrow */
+export function deferRisky(target: EventTarget): void {
+  defer(target, risky);
+}

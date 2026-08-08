@@ -46,17 +46,26 @@ export function baselineEnumerates(declaration: ts.Declaration): boolean {
   const libTarget = libTargetOfFileName(declaration.getSourceFile().fileName);
   if (libTarget === undefined) return false;
   const owner = ownerOf(declaration);
-  return owner !== undefined && baselineCoversOwner(libTarget, owner);
+  return owner !== undefined && baselineCoversOwner(libTarget, owner.name);
 }
 
-/** The type a member is written on, named the way the keys name it. */
-function ownerOf(declaration: ts.Declaration): string | undefined {
+/**
+ * The type a member is written on, and how the keys join the two. An interface
+ * is the instance side and joins with `#`; a `declare var`'s type literal is a
+ * constructor object — the DOM libs' spelling of one — and joins with `.`.
+ */
+function ownerOf(
+  declaration: ts.Declaration,
+): { name: string; join: (owner: string, member: string) => string } | undefined {
   const owner = declaration.parent;
-  if (ts.isInterfaceDeclaration(owner)) return owner.name.text;
+  if (ts.isInterfaceDeclaration(owner)) {
+    return { name: owner.name.text, join: memberKey };
+  }
   if (!ts.isTypeLiteralNode(owner)) return undefined;
+
   const variable = owner.parent;
   return ts.isVariableDeclaration(variable) && ts.isIdentifier(variable.name)
-    ? variable.name.text
+    ? { name: variable.name.text, join: staticMemberKey }
     : undefined;
 }
 
@@ -67,35 +76,18 @@ function ownerOf(declaration: ts.Declaration): string | undefined {
  * literal holds the static side — and the member's own name.
  */
 function baselineKeyOf(declaration: ts.Declaration): string | undefined {
+  const owner = ownerOf(declaration);
+  if (owner === undefined) {
+    // `declare function parseInt(…)`, `declare function setTimeout(…)`: a
+    // global with no owner at all.
+    return ts.isFunctionDeclaration(declaration) &&
+      declaration.name !== undefined
+      ? declaration.name.text
+      : undefined;
+  }
+
   const name = memberNameOf(declaration);
-  const owner = declaration.parent;
-
-  if (ts.isInterfaceDeclaration(owner)) {
-    return name === undefined
-      ? undefined
-      : memberKey(owner.name.text, name);
-  }
-
-  // `declare var Element: { prototype: Element; new(): Element }` — the DOM
-  // libs' spelling of a constructor object, where the variable's name is the
-  // only thing a resolver can read.
-  if (ts.isTypeLiteralNode(owner)) {
-    const variable = owner.parent;
-    if (
-      name === undefined ||
-      !ts.isVariableDeclaration(variable) ||
-      !ts.isIdentifier(variable.name)
-    ) {
-      return undefined;
-    }
-    return staticMemberKey(variable.name.text, name);
-  }
-
-  // `declare function parseInt(…)`, `declare function setTimeout(…)`: a global
-  // with no owner at all.
-  return ts.isFunctionDeclaration(declaration) && declaration.name !== undefined
-    ? declaration.name.text
-    : undefined;
+  return name === undefined ? undefined : owner.join(owner.name, name);
 }
 
 /** `push`, `@@iterator`, `()` for a call signature, `new` for a construct one. */

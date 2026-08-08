@@ -220,7 +220,7 @@ function accessorTargets(
   for (const declaration of symbol.declarations ?? []) {
     const answer = accessorAnswerFor(declaration, resolution);
     if (answer !== "declaration") {
-      targets.push(...factTargets(symbol, half, answer));
+      targets.push(...statedTargets(symbol, half, answer));
       continue;
     }
 
@@ -275,8 +275,8 @@ function isUnstatedLibProperty(declaration: ts.Declaration): boolean {
   );
 }
 
-/** The halves a site consults, colored by the fact rather than by a body. */
-function factTargets(
+/** The halves a site consults, colored by what the chain stated about them. */
+function statedTargets(
   symbol: ts.Symbol,
   half: Half,
   fact: AccessorFact | "floors",
@@ -407,7 +407,7 @@ function ownEnumerableTargets(
       if (!mayBeOwn(declaration)) return [];
 
       const answer = accessorAnswerFor(declaration, resolution);
-      if (answer !== "declaration") return factTargets(symbol, "get", answer);
+      if (answer !== "declaration") return statedTargets(symbol, "get", answer);
       return ts.isGetAccessorDeclaration(declaration)
         ? [
             {
