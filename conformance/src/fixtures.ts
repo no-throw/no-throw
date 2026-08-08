@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { Diagnostic, Suggestion } from "./diagnostics.js";
+import { asRecord, readString, rejectUnknownKeys } from "./json.js";
 
 /**
  * How the fixture is wired up: `rules` turns the rules on one by one, which is
@@ -125,38 +126,6 @@ function readSuggestion(entry: unknown, where: string): Suggestion {
   }
 
   return { desc: readString(record, "desc", where), output: output as string[] };
-}
-
-/** A typo in an expectation is a silent pass otherwise. */
-function rejectUnknownKeys(
-  record: Record<string, unknown>,
-  known: readonly string[],
-  where: string,
-): void {
-  for (const key of Object.keys(record)) {
-    if (!known.includes(key)) {
-      throw new Error(`${where}: unknown key \`${key}\``);
-    }
-  }
-}
-
-function asRecord(value: unknown, where: string): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`${where}: expected a JSON object`);
-  }
-  return value as Record<string, unknown>;
-}
-
-function readString(
-  record: Record<string, unknown>,
-  key: string,
-  where: string,
-): string {
-  const value = record[key];
-  if (typeof value !== "string" || value === "") {
-    throw new Error(`${where}: \`${key}\` must be a non-empty string`);
-  }
-  return value;
 }
 
 function readPosition(

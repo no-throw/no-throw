@@ -23,8 +23,8 @@ export interface CommandResult {
   readonly err: string;
 }
 
-/** Nothing could be analyzed: a bad project, not a bad package. */
-const CANNOT_RUN = 2;
+/** Nothing could be analyzed: a bad invocation or project, not a bad package. */
+export const CANNOT_RUN = 2;
 /** The package was read, and what it says cannot be published as it stands. */
 const REFUSED = 1;
 
@@ -57,7 +57,11 @@ export function runEmit(options: EmitOptions): CommandResult {
 
   if (!options.check) {
     writeFileSync(outcome.path, outcome.text);
-    return { code: 0, out: `nothrow: wrote ${path}, ${summary(outcome.document)}.\n`, err: "" };
+    return {
+      code: 0,
+      out: `nothrow: wrote ${path}, ${summary(outcome.document)}.\n`,
+      err: "",
+    };
   }
 
   const drift = driftOf(outcome.path, outcome.document);
@@ -127,7 +131,8 @@ function refusalReport(
   return [
     ...lines,
     "",
-    `Nothing was written: ${count(refusals.length, "mark")} cannot be published as it stands.`,
+    `Nothing was written: ${count(refusals.length, "mark")} cannot be ` +
+      "published as it stands.",
     "",
   ].join("\n");
 }

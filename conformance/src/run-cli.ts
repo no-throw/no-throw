@@ -12,12 +12,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  byPosition,
-  compare,
-  formatDiagnostic,
-  type Diagnostic,
-} from "./diagnostics.js";
-import { loadCliCases, type CliCase, type Step } from "./cli-cases.js";
+  EXIT_CODES,
+  loadCliCases,
+  type CliCase,
+  type Step,
+} from "./cli-cases.js";
+import { compare, section, type Diagnostic } from "./diagnostics.js";
 import { runFixture } from "./driver-eslint.js";
 import { loadFixture } from "./fixtures.js";
 
@@ -36,9 +36,8 @@ const failures: string[] = [];
 
 for (const testCase of cases) {
   const report = await runCase(testCase);
-  console.log(
-    `${report.length === 0 ? "PASS" : "FAIL"}  ${testCase.name} — ${testCase.description}`,
-  );
+  const verdict = report.length === 0 ? "PASS" : "FAIL";
+  console.log(`${verdict}  ${testCase.name} — ${testCase.description}`);
   for (const line of report) console.log(`        ${line}`);
   if (report.length > 0) failures.push(testCase.name);
 }
@@ -112,12 +111,13 @@ function emitStep(
   });
 
   const output = `${run.stdout}${run.stderr}`;
-  const refused = run.status !== 0;
   const report: string[] = [];
 
-  if (refused !== (step.expect === "refused")) {
+  const expected = EXIT_CODES[step.expect];
+  if (run.status !== expected) {
     report.push(
-      `\`nothrow emit ${step.args.join(" ")}\` exited ${run.status}, and this step expects ${step.expect}`,
+      `\`nothrow emit ${step.args.join(" ")}\` exited ${run.status}, and ` +
+        `${step.expect} is ${expected}`,
     );
   }
   for (const name of step.names) {
@@ -146,7 +146,8 @@ function entriesStep(
       const actual = manifest.exports?.[subpath]?.[key];
       if (canonical(actual) !== canonical(expected)) {
         report.push(
-          `\`${subpath}\` → \`${key}\` is ${canonical(actual)}, expected ${canonical(expected)}`,
+          `\`${subpath}\` → \`${key}\` is ${canonical(actual)}, ` +
+            `expected ${canonical(expected)}`,
         );
       }
     }
@@ -206,17 +207,13 @@ async function consumerStep(
   ];
 }
 
-function section(title: string, diagnostics: readonly Diagnostic[]): string[] {
-  if (diagnostics.length === 0) return [];
-  return [
-    `${title}:`,
-    ...[...diagnostics]
-      .sort(byPosition)
-      .map((diagnostic) => `  ${formatDiagnostic(diagnostic)}`),
-  ];
-}
-
-/** JSON with its keys in one order, so two entries compare by their facts. */
+/**
+ * JSON with its keys in one order, so two entries compare by their facts.
+ *
+ * The engine has one of these too, for `--check`. Deliberately not shared: a
+ * suite that compared with the implementation's own comparator could not
+ * report a bug in it.
+ */
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (typeof value === "object" && value !== null) {

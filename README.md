@@ -351,7 +351,8 @@ the working directory unless `--project` names another one, and writes
 where a consumer's walk-up finds it. What goes in are the marks the engine
 verifies, keyed by the name a consumer imports; what comes with them are the
 facts the `.d.ts` cannot carry — `async`, the paths a conditional mark is clean
-given, and SRI hashes of the files you are about to publish.
+given, and SRI hashes of everything the build produced from that source, which
+is every body a color was read off.
 
 **Emit refuses what it cannot verify.** A mark whose body escapes, a mark that
 binds to nothing, a mark on an accessor — each exits non-zero naming the mark,
@@ -393,8 +394,8 @@ unmarked functions whose bodies are visible, **conditional cleanliness** for
 higher-order functions, the **shipped rung of the carrier chain**, which is a
 dependency's own `nothrow.json` and, absent a valid one, its surviving
 `@nothrow` tags, **`nothrow emit` and `emit --check`**, and the
-`configs.recommended` preset. Everything the chain
-cannot answer floors to throwing with a diagnostic naming your outs. The ES
+`configs.recommended` preset. Everything the chain cannot answer floors to
+throwing with a diagnostic naming your outs. The ES
 standard-library baseline ships as data in `@nothrow/core`,
 and so does the DOM baseline, but nothing consults either yet, so every
 standard-library and DOM call floors too — `new Error(…)` included, iterating

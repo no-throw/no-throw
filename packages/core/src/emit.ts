@@ -166,10 +166,16 @@ export function manifestDrift(
   if (!isRecord(onDisk)) return "it is not a JSON object";
 
   if (onDisk["version"] !== fresh.version) {
-    return `\`version\` is ${JSON.stringify(onDisk["version"])}, and emit writes ${fresh.version}`;
+    return (
+      `\`version\` is ${JSON.stringify(onDisk["version"])}, ` +
+      `and emit writes ${fresh.version}`
+    );
   }
   if (onDisk["package"] !== fresh.package) {
-    return `\`package\` is ${JSON.stringify(onDisk["package"])}, and emit writes ${JSON.stringify(fresh.package)}`;
+    return (
+      `\`package\` is ${JSON.stringify(onDisk["package"])}, ` +
+      `and emit writes ${JSON.stringify(fresh.package)}`
+    );
   }
 
   const exportsDiff = exportsDrift(onDisk["exports"], fresh.exports);
@@ -197,14 +203,17 @@ function exportsDrift(
     for (const key of union(Object.keys(there), Object.keys(here))) {
       const before = there[key];
       const now = here[key];
+      const at = `\`${subpath}\` → \`${key}\``;
       if (before === undefined) {
-        return `emit writes \`${subpath}\` → \`${key}\`, and the manifest does not have it`;
+        return `emit writes ${at}, and the manifest does not have it`;
       }
       if (now === undefined) {
-        return `the manifest has \`${subpath}\` → \`${key}\`, and emit no longer writes it`;
+        return `the manifest has ${at}, and emit no longer writes it`;
       }
       if (canonical(before) !== canonical(now)) {
-        return `\`${subpath}\` → \`${key}\` is ${canonical(before)}, and emit writes ${canonical(now)}`;
+        return (
+          `${at} is ${canonical(before)}, and emit writes ${canonical(now)}`
+        );
       }
     }
   }
@@ -261,9 +270,10 @@ function collectEntries(
       // color, so a lie inside the package reaches the entries that are.
       const escapes = colors.escapesIn(seed);
       const key = keyOf(seed, surface);
+      const at = siteOf(sourceFile, seed.getStart(sourceFile));
 
       if (escapes.length > 0) {
-        refusals.push(unverifiedRefusal(seed, escapes, sourceFile));
+        refusals.push(unverifiedRefusal(seed, escapes, at));
         continue;
       }
       if (key === undefined) continue;
@@ -272,7 +282,7 @@ function collectEntries(
         ts.isGetAccessorDeclaration(seed) ||
         ts.isSetAccessorDeclaration(seed)
       ) {
-        refusals.push(accessorRefusal(seed, key, sourceFile));
+        refusals.push(accessorRefusal(key, at));
         continue;
       }
 
@@ -283,7 +293,7 @@ function collectEntries(
 
       const already = bySymbol.get(key.symbolPath);
       if (already !== undefined && canonical(already) !== canonical(entry)) {
-        refusals.push(conflictRefusal(seed, key, sourceFile));
+        refusals.push(conflictRefusal(key, at));
         continue;
       }
       bySymbol.set(key.symbolPath, entry);
@@ -372,10 +382,16 @@ type PublishedFiles =
   | { readonly kind: "missing"; readonly file: string };
 
 /**
- * The files the build puts on disk for the package's sources — its JavaScript
- * and its declarations, which is the whole of what a consumer resolves. Drift
- * lives in `.js` bodies, invisible at declaration granularity, so hashing the
- * declarations alone would validate happily while shipped behavior changed.
+ * What this build puts on disk for the package's sources: its JavaScript and
+ * its declarations both, because drift lives in `.js` bodies and is invisible
+ * at declaration granularity — hashing the declarations alone would validate
+ * happily while shipped behavior changed.
+ *
+ * Files this build does not produce are not hashed, and need not be: an entry
+ * is only ever written for a symbol reached from a source file in this
+ * program, so every body a color was read off is in here. What a second build
+ * step ships alongside carries no entries, and a valid manifest supersedes
+ * tags package-wide, so those symbols floor rather than going stale.
  */
 function publishedFiles(
   sources: readonly ts.SourceFile[],
@@ -443,26 +459,21 @@ function entryPointSources(
 function unverifiedRefusal(
   seed: ts.FunctionLikeDeclaration,
   escapes: readonly BodyEscape[],
-  sourceFile: ts.SourceFile,
+  at: EmitSite,
 ): EmitRefusal {
   return {
     message:
       `${describe(seed)} is marked \`@nothrow\`, and its body escapes. A ` +
       "published manifest is true by construction, so emit refuses a color " +
       "the engine cannot verify: bridge the escapes below, or drop the mark.",
-    at: siteOf(sourceFile, seed.getStart(sourceFile)),
-    sites: escapes.map((escape) => {
-      const node = escape.node;
-      return siteOf(node.getSourceFile(), node.getStart(), whatEscapes(escape));
-    }),
+    at,
+    sites: escapes.map(({ kind, node }) =>
+      siteOf(node.getSourceFile(), node.getStart(), ESCAPES[kind]),
+    ),
   };
 }
 
-function accessorRefusal(
-  seed: ts.FunctionLikeDeclaration,
-  key: ExportKey,
-  sourceFile: ts.SourceFile,
-): EmitRefusal {
+function accessorRefusal(key: ExportKey, at: EmitSite): EmitRefusal {
   return {
     message:
       `\`${key.symbolPath}\` is marked \`@nothrow\` on an accessor, and a ` +
@@ -470,22 +481,24 @@ function accessorRefusal(
       "shape `nothrow emit` never writes. Declaration emit preserves `get` " +
       "and `set`, so consumers already see the accessor; its color belongs " +
       "in their `nothrow.overrides.json`, or in an `@nothrow/*` overlay.",
-    at: siteOf(sourceFile, seed.getStart(sourceFile)),
+    at,
     sites: [],
   };
 }
 
-function conflictRefusal(
-  seed: ts.FunctionLikeDeclaration,
-  key: ExportKey,
-  sourceFile: ts.SourceFile,
-): EmitRefusal {
+/**
+ * Two marks under one key. Not a shape an author writes directly — a mark
+ * binds to an implementation, and overloads share one — but declaration
+ * merging can put two bodies behind one published name, and dropping one of
+ * two disagreeing colors silently is the one thing emit must not do.
+ */
+function conflictRefusal(key: ExportKey, at: EmitSite): EmitRefusal {
   return {
     message:
       `\`${key.symbolPath}\` is published once and marked twice, with ` +
       "colors that disagree. One entry covers one symbol, so there is no " +
       "manifest that says both.",
-    at: siteOf(sourceFile, seed.getStart(sourceFile)),
+    at,
     sites: [],
   };
 }
@@ -499,10 +512,12 @@ const UNBOUND: Record<MarkProblemKind, string> = {
   "multi-declarator":
     "a variable statement declaring more than one variable would leave which " +
     "one is marked a guess",
-  "ambient-declaration": "an ambient declaration has no body to verify it against",
+  "ambient-declaration":
+    "an ambient declaration has no body to verify it against",
   "interface-member": "an interface member has no body to verify it against",
   "abstract-method": "an abstract method has no body to verify it against",
-  "overload-signature": "an overload signature has no body to verify it against",
+  "overload-signature":
+    "an overload signature has no body to verify it against",
 };
 
 function unboundRefusal(
@@ -520,32 +535,27 @@ function unboundRefusal(
   };
 }
 
-/** The escape in a few words. What it is in full is the rule's to say. */
-function whatEscapes(escape: BodyEscape): string {
-  switch (escape.kind) {
-    case "throw":
-      return "an uncaught `throw`";
-    case "callee":
-      return "a call that can throw";
-    case "argument-throwing":
-    case "argument-floored":
-      return "an argument that does not discharge the callee's condition";
-    case "consumption":
-      return "consuming an iterator that can throw";
-    case "iterator-throw":
-      return "`.throw()` on an iterator";
-    case "returned-iterator":
-      return "an iterator handed out that can throw when consumed";
-    case "rejected-await":
-      return "an `await` on a promise that can reject";
-    case "float":
-      return "a discarded promise that can reject";
-    case "rejected-return":
-      return "a returned promise that can reject";
-    case "hidden-transfer":
-      return "a property access or coercion that runs a body which can throw";
-  }
-}
+/**
+ * The escape in a few words. What it is in full — why it floored, and the outs
+ * — is the rule's to say; here the reader has already been told which mark is
+ * refused and needs only the places to look.
+ */
+const ESCAPES: Record<BodyEscape["kind"], string> = {
+  throw: "an uncaught `throw`",
+  callee: "a call that can throw",
+  "argument-throwing":
+    "an argument that does not discharge the callee's condition",
+  "argument-floored":
+    "an argument that does not discharge the callee's condition",
+  consumption: "consuming an iterator that can throw",
+  "iterator-throw": "`.throw()` on an iterator",
+  "returned-iterator": "an iterator handed out that can throw when consumed",
+  "rejected-await": "an `await` on a promise that can reject",
+  float: "a discarded promise that can reject",
+  "rejected-return": "a returned promise that can reject",
+  "hidden-transfer":
+    "a property access or coercion that runs a body which can throw",
+};
 
 /** What the message calls the marked function. */
 function describe(seed: ts.FunctionLikeDeclaration): string {

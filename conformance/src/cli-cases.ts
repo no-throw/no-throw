@@ -1,13 +1,27 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  asRecord,
+  readString,
+  readStrings,
+  readText,
+  rejectUnknownKeys,
+} from "./json.js";
 
 /**
- * What a run of `nothrow emit` has to do. `ok` is a zero exit; `refused` is a
- * non-zero one, which covers both halves of emit's contract — a mark it cannot
- * verify, and a manifest that has drifted — because the publisher's script
- * cannot tell them apart either.
+ * What a run of `nothrow emit` has to do, as the exit code a publisher's
+ * script sees. `refused` covers both halves of emit's contract — a mark it
+ * cannot verify, and a manifest that has drifted — because both say the
+ * package is not publishable as it stands; `cannot-run` is the different
+ * thing, and is asserted apart so that a broken project cannot pass for one.
  */
-export type Verdict = "ok" | "refused";
+export type Verdict = "ok" | "refused" | "cannot-run";
+
+export const EXIT_CODES: Record<Verdict, number> = {
+  ok: 0,
+  refused: 1,
+  "cannot-run": 2,
+};
 
 /**
  * One thing the case does to the producer, or asserts about it. Steps run in
@@ -92,10 +106,11 @@ const STEP_KEYS: Record<string, readonly string[]> = {
 
 function readStep(entry: unknown, where: string): Step {
   const record = asRecord(entry, where);
-  const kind = Object.keys(STEP_KEYS).find((key) => key in record);
+  const kinds = Object.keys(STEP_KEYS);
+  const kind = kinds.find((key) => key in record);
   if (kind === undefined) {
     throw new Error(
-      `${where}: no step here — expected one of ${Object.keys(STEP_KEYS).join(", ")}`,
+      `${where}: no step here — expected one of ${kinds.join(", ")}`,
     );
   }
   rejectUnknownKeys(record, STEP_KEYS[kind] ?? [], where);
@@ -123,7 +138,7 @@ function readStep(entry: unknown, where: string): Step {
         kind,
         file: readString(record, "replace", where),
         find: readString(record, "find", where),
-        with: readString(record, "with", where),
+        with: readText(record, "with", where),
       };
     default:
       return { kind: "consumer", directory: readString(record, "consumer", where) };
@@ -144,52 +159,11 @@ function readEntries(
 
 function readVerdict(record: Record<string, unknown>, where: string): Verdict {
   const value = record["expect"];
-  if (value !== "ok" && value !== "refused") {
-    throw new Error(`${where}: \`expect\` must be "ok" or "refused"`);
+  if (typeof value !== "string" || !(value in EXIT_CODES)) {
+    throw new Error(
+      `${where}: \`expect\` must be one of ${Object.keys(EXIT_CODES).join(", ")}`,
+    );
   }
-  return value;
+  return value as Verdict;
 }
 
-/** A typo in a case is a silent pass otherwise. */
-function rejectUnknownKeys(
-  record: Record<string, unknown>,
-  known: readonly string[],
-  where: string,
-): void {
-  for (const key of Object.keys(record)) {
-    if (!known.includes(key)) {
-      throw new Error(`${where}: unknown key \`${key}\``);
-    }
-  }
-}
-
-function asRecord(value: unknown, where: string): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`${where}: expected a JSON object`);
-  }
-  return value as Record<string, unknown>;
-}
-
-function readString(
-  record: Record<string, unknown>,
-  key: string,
-  where: string,
-): string {
-  const value = record[key];
-  if (typeof value !== "string") {
-    throw new Error(`${where}: \`${key}\` must be a string`);
-  }
-  return value;
-}
-
-function readStrings(
-  record: Record<string, unknown>,
-  key: string,
-  where: string,
-): readonly string[] {
-  const value = record[key];
-  if (!Array.isArray(value) || value.some((each) => typeof each !== "string")) {
-    throw new Error(`${where}: \`${key}\` must be an array of strings`);
-  }
-  return value as string[];
-}

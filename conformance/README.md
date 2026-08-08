@@ -179,12 +179,13 @@ cli/<name>/
 }
 ```
 
-`emit` runs the binary and holds its exit code to `ok` or `refused`; `names`
-asserts what the output has to say, which is where the diagnostic contract for
-a refusal lives. `append` and `replace` are the changes `--check` has to
-notice — a rebuild that changed no declaration, and an edit to the source.
-`entries` asserts the facts of an emitted entry, because the wire format is the
-spec's and not the emitter's.
+`emit` runs the binary and holds its exit code to `ok`, `refused` or
+`cannot-run` — the last apart from the others, so a broken project cannot pass
+for a package that is merely unpublishable. `names` asserts what the output has
+to say, which is where the diagnostic contract for a refusal lives. `append`
+and `replace` are the changes `--check` has to notice — a rebuild that changed
+no declaration, and an edit to the source. `entries` asserts the facts of an
+emitted entry, because the wire format is the spec's and not the emitter's.
 
 `consumer` is the one that matters: it installs the producer, emitted manifest
 and all, into the consumer's `node_modules` and runs that project through the
@@ -193,8 +194,10 @@ by the reader that actually reads it, rather than by a snapshot of the bytes.
 
 A producer strips comments, so the manifest is the only carrier left — which is
 what emit exists for. That the emitted file validates against
-`nothrow.schema.json` needs no step: emit checks its own output against the
-published schema and refuses to write one that does not.
+`nothrow.schema.json` needs no step of its own: emit checks its own output
+against the published schema and refuses to write one that does not, and the
+consumer step checks it from the other side, since the reader evaluates that
+same schema and an invalid manifest reaches the consumer as a floor.
 
 ```bash
 pnpm run build && pnpm run conformance:cli

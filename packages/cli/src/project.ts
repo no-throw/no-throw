@@ -30,7 +30,9 @@ export function openProject(
   if (configPath === undefined) {
     return {
       kind: "error",
-      message: `no \`tsconfig.json\` at \`${projectArgument ?? cwd}\`. Name one with \`--project\`.`,
+      message:
+        `no \`tsconfig.json\` at \`${projectArgument ?? cwd}\`. ` +
+        "Name one with `--project`.",
     };
   }
 
