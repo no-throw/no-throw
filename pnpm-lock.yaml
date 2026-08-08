@@ -17,7 +17,7 @@ importers:
 
   conformance:
     dependencies:
-      '@nothrow/eslint-plugin':
+      '@no-throw/eslint-plugin':
         specifier: workspace:*
         version: link:../packages/eslint-plugin
       '@typescript-eslint/typescript-estree':
@@ -57,7 +57,7 @@ importers:
 
   packages/eslint-plugin:
     dependencies:
-      '@nothrow/core':
+      '@no-throw/core':
         specifier: workspace:*
         version: link:../core
       '@typescript-eslint/utils':
@@ -79,7 +79,7 @@ importers:
 
   tools/dom-baseline:
     dependencies:
-      '@nothrow/core':
+      '@no-throw/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@webref/idl':
@@ -104,7 +104,7 @@ importers:
 
   tools/es-baseline:
     dependencies:
-      '@nothrow/core':
+      '@no-throw/core':
         specifier: workspace:*
         version: link:../../packages/core
       typescript:

@@ -1,4 +1,4 @@
-import nothrow from "@nothrow/eslint-plugin";
+import nothrow from "@no-throw/eslint-plugin";
 import { createProgram } from "@typescript-eslint/typescript-estree";
 import { ESLint, type Linter } from "eslint";
 import { readFileSync } from "node:fs";

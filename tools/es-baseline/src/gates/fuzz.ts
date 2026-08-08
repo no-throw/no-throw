@@ -1,4 +1,4 @@
-import type { LibMember, LibParam, LibProgram } from "@nothrow/core/baseline";
+import type { LibMember, LibParam, LibProgram } from "@no-throw/core/baseline";
 import type ts from "typescript";
 
 import { resolveHolder, runtimeKey } from "../accessors.js";

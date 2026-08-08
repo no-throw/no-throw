@@ -1,11 +1,11 @@
 {
-  "name": "@nothrow/conformance",
+  "name": "@no-throw/conformance",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "The conformance suite: fixture projects on disk and the driver that runs them.",
   "dependencies": {
-    "@nothrow/eslint-plugin": "workspace:*",
+    "@no-throw/eslint-plugin": "workspace:*",
     "@typescript-eslint/typescript-estree": "^8.18.0",
     "eslint": "^9.17.0",
     "typescript": "^5.7.2",

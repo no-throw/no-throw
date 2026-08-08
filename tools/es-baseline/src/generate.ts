@@ -9,7 +9,7 @@ import {
   type BaselineData,
   type BaselineEntry,
   type LibMember,
-} from "@nothrow/core/baseline";
+} from "@no-throw/core/baseline";
 import ts from "typescript";
 
 import { accessorFactFor } from "./accessors.js";

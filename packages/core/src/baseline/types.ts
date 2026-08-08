@@ -1,5 +1,5 @@
 /**
- * The shipped standard-library baseline: engine data in `@nothrow/core`, keyed
+ * The shipped standard-library baseline: engine data in `@no-throw/core`, keyed
  * by lib target. It is not an overlay — overlay discovery matches a manifest's
  * `package` field against an npm package, and `lib.es5.d.ts` has none.
  *

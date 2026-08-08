@@ -1,13 +1,13 @@
-# `@nothrow/es-baseline-tools`
+# `@no-throw/es-baseline-tools`
 
 Maintainer-side tooling. Not published, not a `nothrow` subcommand. It generates
-the ES baseline shipped as engine data in `@nothrow/core`, and hosts the two CI
+the ES baseline shipped as engine data in `@no-throw/core`, and hosts the two CI
 gates that keep that data maintainable.
 
 ## Generating
 
 ```sh
-pnpm --filter @nothrow/es-baseline-tools run fetch-spec   # ECMA-262, cached, ~7.6 MB
+pnpm --filter @no-throw/es-baseline-tools run fetch-spec   # ECMA-262, cached, ~7.6 MB
 pnpm run baseline:generate
 ```
 
@@ -47,7 +47,7 @@ pnpm run gate:fuzz               # every shipped clean claim, attacked
 pnpm run gate:fuzz -- --self-check
 pnpm run gate:drift              # symbol-set diff against the recorded set
 pnpm run gate:drift -- --self-check
-pnpm --filter @nothrow/es-baseline-tools run gate:drift -- --against /path/to/other/typescript.js
+pnpm --filter @no-throw/es-baseline-tools run gate:drift -- --against /path/to/other/typescript.js
 ```
 
 **The hostile fuzz gate.** Every proposed-clean entry — conditional ones

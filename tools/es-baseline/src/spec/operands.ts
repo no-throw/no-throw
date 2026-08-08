@@ -1,4 +1,4 @@
-import type { PathSegment } from "@nothrow/core/baseline";
+import type { PathSegment } from "@no-throw/core/baseline";
 
 import { argumentsOf, splitArguments } from "./parse.js";
 

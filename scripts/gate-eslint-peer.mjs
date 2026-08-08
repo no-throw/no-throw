@@ -42,7 +42,7 @@ function pack(packageDirectory, destination) {
 function install(major, tarballs) {
   const directory = mkdtempSync(join(tmpdir(), "nothrow-peer-"));
 
-  // `@nothrow/core` is a sibling at a version no registry has yet, so the
+  // `@no-throw/core` is a sibling at a version no registry has yet, so the
   // consumer has to be told where it is. Overriding it leaves the `eslint` peer
   // this gate is about resolved the way a real install would resolve it.
   const manifest = {
@@ -50,12 +50,12 @@ function install(major, tarballs) {
     version: "0.0.0",
     private: true,
     dependencies: {
-      "@nothrow/eslint-plugin": `file:${tarballs.plugin}`,
+      "@no-throw/eslint-plugin": `file:${tarballs.plugin}`,
       "@typescript-eslint/eslint-plugin": "^8.18.0",
       eslint: `^${major}.0.0`,
       typescript: "^5.7.2",
     },
-    pnpm: { overrides: { "@nothrow/core": `file:${tarballs.core}` } },
+    pnpm: { overrides: { "@no-throw/core": `file:${tarballs.core}` } },
   };
   writeFileSync(
     join(directory, "package.json"),
@@ -116,7 +116,7 @@ function run() {
         `ESLint ${excluded} is outside the declared range and a consumer installed on it anyway: this gate cannot fail.`,
       );
     }
-    if (!output.includes("@nothrow/eslint-plugin")) {
+    if (!output.includes("@no-throw/eslint-plugin")) {
       throw new Error(
         `ESLint ${excluded} was refused, but not over our peer, so the gate would pass for the wrong reason:\n${output}`,
       );

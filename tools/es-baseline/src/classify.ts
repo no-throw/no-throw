@@ -1,10 +1,10 @@
-import { formatConditionPath } from "@nothrow/core/baseline";
+import { formatConditionPath } from "@no-throw/core/baseline";
 import type {
   Color,
   ConditionPath,
   LibMember,
   TypeDomains,
-} from "@nothrow/core/baseline";
+} from "@no-throw/core/baseline";
 import type ts from "typescript";
 
 import { DIALS, type DialValue, type Dials } from "./dials.js";

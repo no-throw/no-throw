@@ -1,4 +1,4 @@
-import type { LibProgram } from "@nothrow/core/baseline";
+import type { LibProgram } from "@no-throw/core/baseline";
 import type ts from "typescript";
 
 import type { DomEnvironment } from "./environment.js";

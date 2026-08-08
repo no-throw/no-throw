@@ -1,4 +1,4 @@
-# `@nothrow/cli`
+# `@no-throw/cli`
 
 The `nothrow` binary. It will host `nothrow emit`, which lowers verified marks
 into a `nothrow.json` manifest, and `nothrow emit --check`, which fails when the

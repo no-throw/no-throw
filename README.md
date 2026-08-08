@@ -41,7 +41,7 @@ project:
 
 ```js
 // eslint.config.js
-import nothrow from "@nothrow/eslint-plugin";
+import nothrow from "@no-throw/eslint-plugin";
 import tseslint from "typescript-eslint";
 
 export default [
@@ -347,7 +347,7 @@ higher-order functions, the **shipped rung of the carrier chain**, which is a
 dependency's own `nothrow.json` and, absent a valid one, its surviving
 `@nothrow` tags, and the `configs.recommended` preset. Everything the chain
 cannot answer floors to throwing with a diagnostic naming your outs. The ES
-standard-library baseline ships as data in `@nothrow/core`,
+standard-library baseline ships as data in `@no-throw/core`,
 and so does the DOM baseline, but nothing consults either yet, so every
 standard-library and DOM call floors too — `new Error(…)` included, iterating
 an array or a `Map` with it, and with them the `map`/`forEach` family, whose
@@ -362,20 +362,20 @@ about seven were about the program's own code; `for…of` alone accounted for 45
 and `Array.prototype.push` for 18. Consulting the baselines is what turns that
 around.
 
-The rungs above and beside the shipped one — `@nothrow/*` overlays and a local
+The rungs above and beside the shipped one — `@no-throw/*` overlays and a local
 `nothrow.overrides.json` — and `nothrow emit`, which is what writes a manifest
 in the first place, are not built yet. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages
 
-Three packages in the `@nothrow` npm scope, versioned in lockstep.
+Three packages in the `@no-throw` npm scope, versioned in lockstep.
 
 | package | what it is |
 | --- | --- |
-| [`@nothrow/core`](packages/core) | the engine — color resolution and the escape-site walk |
-| [`@nothrow/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
-| [`@nothrow/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
+| [`@no-throw/core`](packages/core) | the engine — color resolution and the escape-site walk |
+| [`@no-throw/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
+| [`@no-throw/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
 
 ## Working on it
 

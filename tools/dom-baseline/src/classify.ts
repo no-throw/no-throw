@@ -1,4 +1,4 @@
-import type { Color, DomMember, TypeDomains } from "@nothrow/core/baseline";
+import type { Color, DomMember, TypeDomains } from "@no-throw/core/baseline";
 import type ts from "typescript";
 
 import type { IdlArg, IdlRow } from "./idl/corpus.js";

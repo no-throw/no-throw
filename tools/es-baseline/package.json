@@ -1,9 +1,9 @@
 {
-  "name": "@nothrow/es-baseline-tools",
+  "name": "@no-throw/es-baseline-tools",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Maintainer-side tooling: generates the ES baseline shipped in @nothrow/core, and the two CI gates that keep it maintainable.",
+  "description": "Maintainer-side tooling: generates the ES baseline shipped in @no-throw/core, and the two CI gates that keep it maintainable.",
   "scripts": {
     "fetch-spec": "node dist/bin/fetch-spec.js",
     "generate": "node dist/bin/generate.js",
@@ -11,7 +11,7 @@
     "gate:drift": "node dist/bin/gate-drift.js"
   },
   "dependencies": {
-    "@nothrow/core": "workspace:*",
+    "@no-throw/core": "workspace:*",
     "typescript": "^5.7.2"
   },
   "devDependencies": {

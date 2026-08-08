@@ -1,5 +1,5 @@
 {
-  "name": "@nothrow/core",
+  "name": "@no-throw/core",
   "version": "0.1.0",
   "type": "module",
   "description": "The no-throw analysis engine: color resolution and the escape-site walk.",

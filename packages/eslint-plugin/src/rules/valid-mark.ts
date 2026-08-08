@@ -1,4 +1,4 @@
-import { findMarks, type MarkProblemKind } from "@nothrow/core";
+import { findMarks, type MarkProblemKind } from "@no-throw/core";
 import { ESLintUtils, type TSESTree } from "@typescript-eslint/utils";
 import type ts from "typescript";
 import { locOf } from "../loc.js";

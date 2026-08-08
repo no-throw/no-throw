@@ -1,4 +1,4 @@
-import type { Span } from "@nothrow/core";
+import type { Span } from "@no-throw/core";
 import type { TSESTree } from "@typescript-eslint/utils";
 import type ts from "typescript";
 
