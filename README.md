@@ -42,7 +42,7 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    files: ["src/**/*.ts"],
+    files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: { projectService: true },
@@ -51,6 +51,14 @@ export default [
   nothrow.configs.recommended,
 ];
 ```
+
+The preset carries that same `files` scope itself, so it sits at the end of the
+array unscoped and `eslint .` is safe: the `eslint.config.js` you just wrote is
+never handed to a type-aware rule. Keep the parser block in agreement with it.
+TypeScript the preset reaches but the parser does not falls to ESLint's default
+parser and crashes the same way; TypeScript the parser reaches that no
+`tsconfig.json` includes is a parse error, which is `projectService`'s business
+to settle and not ours.
 
 `configs.recommended` is the whole contract, all at `error`:
 

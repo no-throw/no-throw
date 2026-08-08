@@ -7,6 +7,16 @@ import type { Diagnostic } from "./diagnostics.js";
 import type { FixtureConfig } from "./fixtures.js";
 
 /**
+ * Every TypeScript extension the preset claims. The harness has to reach at
+ * least as far as the thing it installs, or a fixture file the preset visits
+ * would arrive at a type-aware rule with ESLint's default parser and no
+ * program — the harness reproducing the very defect a fixture is there to
+ * catch. Written out rather than read off the preset, because a user writes
+ * this glob by hand too.
+ */
+const TYPESCRIPT_FILES = ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"];
+
+/**
  * The v1 driver: run a fixture project through the real plugin, over the real
  * typescript-eslint parser, and hand back the diagnostics it produced. It knows
  * nothing about the engine — only what a consumer's ESLint would see.
@@ -22,7 +32,7 @@ export async function runFixture(
   // twice, so the run pins one whole TypeScript program per fixture and
   // exhausts the heap partway through. This program dies with the call.
   const language: Linter.Config = {
-    files: ["**/*.ts"],
+    files: TYPESCRIPT_FILES,
     languageOptions: {
       parser: tseslint.parser as Linter.Parser,
       parserOptions: {
@@ -36,7 +46,7 @@ export async function runFixture(
   // describe the same object through incompatible context types, and neither
   // package widens for the other.
   const rules: Linter.Config = {
-    files: ["**/*.ts"],
+    files: TYPESCRIPT_FILES,
     plugins: { nothrow: nothrow as unknown as ESLint.Plugin },
     rules: {
       "nothrow/no-escaping-throw": "error",
@@ -44,12 +54,9 @@ export async function runFixture(
     },
   };
 
-  // The preset is what a user installs, so it is asserted as shipped: the
-  // fixture adds a file filter and nothing else.
-  const preset: Linter.Config = {
-    files: ["**/*.ts"],
-    ...(nothrow.configs.recommended as unknown as Linter.Config),
-  };
+  // The preset is what a user installs, so it goes in untouched — which files
+  // it reaches is one of the things a fixture gets to assert.
+  const preset = nothrow.configs.recommended as unknown as Linter.Config;
 
   const config: Linter.Config[] = [
     language,
@@ -62,7 +69,10 @@ export async function runFixture(
     overrideConfig: config,
   });
 
-  const results = await eslint.lintFiles(["src/**/*.ts"]);
+  // `eslint .` is what a user runs, and it is the invocation that finds a
+  // config reaching files it cannot analyze: naming the TypeScript sources here
+  // would scope that class of defect out of the suite entirely.
+  const results = await eslint.lintFiles(["."]);
   const diagnostics: Diagnostic[] = [];
 
   for (const result of results) {
