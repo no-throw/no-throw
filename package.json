@@ -15,6 +15,7 @@
     "check:lockstep": "node scripts/check-lockstep.mjs",
     "conformance": "node conformance/dist/run.js",
     "test": "pnpm run build && pnpm run check:lockstep && pnpm run conformance",
+    "gate:peer": "node scripts/gate-eslint-peer.mjs",
     "baseline:generate": "pnpm --filter @nothrow/es-baseline-tools run generate",
     "gate:fuzz": "pnpm --filter @nothrow/es-baseline-tools run gate:fuzz",
     "gate:drift": "pnpm --filter @nothrow/es-baseline-tools run gate:drift",

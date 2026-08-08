@@ -275,6 +275,20 @@ pnpm install && pnpm test
 [conformance suite](conformance) — fixture projects on disk paired with the
 diagnostics they must produce. Every behavior lands there.
 
+The plugin's `eslint` peer range names the majors a consumer may install it
+against. CI enumerates that range and holds it to two things per major: the
+suite passes there, and a packed tarball installs there under
+`strict-peer-dependencies=true`. Widening the claim widens what has to pass.
+
+```bash
+pnpm run gate:peer   # install what would be published, the way a consumer does
+```
+
+The suite half needs the workspace resolved on the major under test, which
+`node scripts/eslint-peer-matrix.mjs pin 10 && pnpm install --no-frozen-lockfile`
+does. That edits the root manifest and the lockfile; `git checkout -- package.json
+pnpm-lock.yaml` puts them back.
+
 The shipped baselines are generated data, so their correctness is CI over that
 data rather than a conformance fixture. Gates guard them, all run in CI and none
 needing the specs they were generated from:
