@@ -176,7 +176,7 @@ export function count(): number {
 ```
 
 Which call produced the iterator is read off the syntax: a direct call, or a
-`const` initialized by one — the same rule `await` will use. Anything else — a
+`const` initialized by one — the same rule `await` uses. Anything else — a
 `let`, a parameter, a property — floors, and the message says which problem it
 is. That is also what makes a plain function markable as an iterator producer:
 `return inner()` is provable, `return someIterator` is not.
@@ -192,6 +192,93 @@ of it: a throw cannot be laundered through one.
 Iteration over anything else resolves through `[Symbol.iterator]` and the
 `next` it hands back, so an in-program iterable is colored by its own bodies.
 Builtin iterables are the baseline's to answer and floor until it is wired up.
+
+## Async
+
+`@nothrow` on a promise-producing function — `async` or not — asserts the
+whole consumption surface: the call never sync-throws **and** the promise it
+hands back never rejects. TypeScript never computes reject-ness, so it rides
+our color and nothing else, which is what makes this one mark rather than two.
+
+```ts
+async function fetchUser(): Promise<User> {
+  throw "boom";
+}
+
+/** @nothrow */
+export async function greeting(): Promise<string> {
+  const user = await fetchUser(); // Awaiting `fetchUser()` escapes this
+  return user.name;               // `@nothrow` function: the call that produced
+}                                 // it has a body that was analyzed and can …
+```
+
+Which call produced an awaited promise is the generators' rule again — a direct
+call, or a `const` initialized by one, so starting early and awaiting later
+works. Anything else floors with the floor's usual outs, and the message keeps
+the two cases apart: a `let` is a refinement not yet made, while a parameter or
+a property is unknowable from here.
+
+**The bridge is `try { await … } catch`**, and it is the one that always works,
+so nobody has to reason about whether the callee is `async`: where the call *is*
+the awaited expression, the `await` answers for both channels. Drop the `await`
+and it is no bridge at all — on a visibly-`async` callee the `catch` can never
+fire, which gets a diagnostic of its own rather than a silent green.
+
+```ts
+/** @nothrow */
+export function pretendsToBridge(): void {
+  try {
+    fetchUser(); // `fetchUser()` is `async`, so this `try`/`catch` can never
+  } catch {      // fire: an `async` function does not throw, it rejects, and a
+    return;      // `catch` with no `await` is not on that path. …
+  }
+}
+```
+
+**A discarded promise is an escape.** A visibly-`async` callee cannot
+sync-throw, so its bare call is not a sync escape — but dropping a throwing
+promise in statement position is one, `void` included, because Node escalates
+the unhandled rejection while the caller sees a clean return. A terminal
+`.catch(h)` with a non-throwing handler is the sanctioned fire-and-forget, and
+a rethrowing handler is simply a throwing `h`:
+
+```ts
+/** @nothrow */
+export function fireAndForget(): void {
+  sendTelemetry().catch(log); // clean — `log` is non-throwing
+}
+```
+
+Chains fold by the normative table, with handlers read as ordinary functions: an
+inline arrow inferred, a reference resolved, an opaque one flooring the link.
+
+| link | non-throwing when |
+| --- | --- |
+| `f()` | `f` is |
+| `X.then(a)` | `X` and `a` are |
+| `X.then(a, b)` | `a` and `b` are — `b` discharges `X`'s rejection |
+| `X.catch(b)` | `X` is, else `b` is — `b` runs only on a rejection |
+| `X.finally(c)` | `X` and `c` are — `finally` discharges nothing |
+
+The fold is syntactic, so a stored partial chain and a dynamic method name
+floor. And it describes `Promise.prototype`: a thenable whose `then` has a
+visible body is an ordinary call, colored by the body that actually runs, since
+folding it would assume semantics the source is right there to contradict.
+
+Handing a promise on is covered too — `return <expr>` folds what that expression
+would reject with into the marked function's own promise, implicit arrow bodies
+included, so a one-line wrapper cannot launder a rejection.
+
+`for await` resolves through `[Symbol.asyncIterator]`, falling back to the
+synchronous member the way the language does, with the same one-color surface as
+`for…of`. An `async function*` is exempt from the sync-throw carve-out for the
+generators' reason: its body is lazy but its parameter list is eager, so it can
+sync-throw where a plain `async` function cannot.
+
+A condition does not stretch here either. `@nothrow` given `produce` says
+calling `produce` is clean, not that the promise it hands back never rejects;
+and a chain handler reached through a parameter is not something a call site can
+discharge. Both floor.
 
 ## Calls you did not write
 
@@ -238,9 +325,10 @@ This is early, and **nothing is published to npm yet**. What works today: the
 mark and its binding rules, the body walk, the `try`/`catch` bridge, the
 call-shaped escape sites — a call, `new C()`, `super()`, a tagged template and
 a parameter default — **hidden transfers** — accessors, dynamic keys, spread
-and coercion — **generators and the sync iteration protocol**, **hybrid
-inference** for unmarked functions whose bodies are visible, **conditional
-cleanliness** for higher-order functions, and the `configs.recommended` preset.
+and coercion — **generators and the sync iteration protocol**, **async** —
+`await`, promise chains, floats and `for await` — **hybrid inference** for
+unmarked functions whose bodies are visible, **conditional cleanliness** for
+higher-order functions, and the `configs.recommended` preset.
 Everything with no body to read floors to throwing with a diagnostic naming
 your outs. The ES standard-library baseline ships as data in `@nothrow/core`,
 and so does the DOM baseline, but nothing consults either yet, so every
@@ -250,9 +338,15 @@ conditional entries are what the call-site join will discharge — and so does
 every coercion of an object that inherits its `toString` and `valueOf` rather
 than declaring them.
 
-Async — `await`, promise chains, `for await` — the carrier chain (manifests,
-overlays, overrides) and `nothrow emit` are not built yet. The design is locked
-and lives in
+That caveat, not the analysis, is most of what you will see today, and the
+ratio is worth knowing before you try it. Marking five pure functions over
+in-memory `Map`s — no I/O — in a real project produced 128 errors, of which
+about seven were about the program's own code; `for…of` alone accounted for 45
+and `Array.prototype.push` for 18. Consulting the baselines is what turns that
+around.
+
+The carrier chain — manifests, overlays, overrides — and `nothrow emit` are
+not built yet. The design is locked and lives in
 [the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
 
 ## Packages
