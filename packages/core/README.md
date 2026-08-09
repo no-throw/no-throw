@@ -1,10 +1,8 @@
 # `@no-throw/core`
 
-The `no-throw` analysis engine. It owns color resolution, the SCC fixpoint, the
-escape-site walk, the resolver chain and the shipped baseline, and it knows
-nothing about ESLint.
+The `no-throw` analysis engine: color resolution, the SCC fixpoint, the
+escape-site walk, the resolver chain and the shipped baseline. It knows nothing
+about ESLint, and hosts pass in the checker off the `ts.Program` they already
+built.
 
-Hosts pass in source files and the checker off the `ts.Program` they already
-built; the core never builds one.
-
-See the [root README](../../README.md).
+The documentation is [the root README](../../README.md).
