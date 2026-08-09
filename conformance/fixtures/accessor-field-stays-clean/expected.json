@@ -1,0 +1,4 @@
+{
+  "description": "The lib-accessor fact does not reach an `accessor` field: the get/set pair the keyword generates reads and writes a private slot, so it is clean by construction and owes no entry. Reading one is data, not a call site.",
+  "diagnostics": []
+}

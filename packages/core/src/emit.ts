@@ -19,7 +19,7 @@ import {
   type ExportSurface,
 } from "./carrier/surface.js";
 import type { Condition } from "./conditions.js";
-import { findMarks, type MarkProblemKind } from "./marks.js";
+import { findMarks, seedDeclaration, type MarkProblemKind } from "./marks.js";
 import { isVisiblyAsync } from "./promises.js";
 import { createColorResolver, type BodyEscape } from "./resolve-color.js";
 
@@ -77,7 +77,7 @@ export type EmitOutcome =
  *
  * The host builds the program; everything else is the engine's, because what
  * a mark comes to is the same question the enforcement walk asks and there
- * must not be a second answer to it. Marks are found by the binding whitelist,
+ * must not be a second answer to it. Marks are found by the binding rule,
  * verified by the color resolver, and keyed by the export surface the package
  * publishes — the same three pieces the consumer's side of the wire uses,
  * turned around.
@@ -344,20 +344,17 @@ function entryFor(
 
 /**
  * Where the package's surface reaches a seed. A mark on an arrow binds to the
- * arrow, and what a consumer names is the `const` it initializes, so the key
- * is looked up for the declaration the surface actually walked.
+ * arrow, and what a consumer names is the declaration it initializes — a
+ * `const`, a class field, a default export — so the key is looked up for the
+ * declaration the surface actually walked, through the same type-only wrappers
+ * the binder read the initializer past.
  */
 function keyOf(
   seed: ts.FunctionLikeDeclaration,
   surface: ExportSurface,
 ): ExportKey | undefined {
-  const direct = surface.keyOf(seed);
-  if (direct !== undefined) return direct;
-
-  const { parent } = seed;
-  return ts.isVariableDeclaration(parent) || ts.isPropertyAssignment(parent)
-    ? surface.keyOf(parent)
-    : undefined;
+  const declaration = seedDeclaration(seed);
+  return declaration === undefined ? undefined : surface.keyOf(declaration);
 }
 
 /** The package's own source: what a mark can be written in and verified against. */
@@ -510,6 +507,11 @@ const UNBOUND: Record<MarkProblemKind, string> = {
   "multi-declarator":
     "a variable statement declaring more than one variable would leave which " +
     "one is marked a guess",
+  "non-function-value":
+    "this declaration's value is not a function written at it",
+  "mark-on-call-argument":
+    "a function written as a call argument has no declaration to bind to",
+  "mark-on-assignment": "an assignment is not a declaration",
   "ambient-declaration":
     "an ambient declaration has no body to verify it against",
   "interface-member": "an interface member has no body to verify it against",

@@ -1,0 +1,41 @@
+{
+  "description": "A declaration that could carry a mark, holding something that is not a function written there. The body must be *at* the declaration: peeling an identifier would let the claim be written in one file and checked in another, so an alias binds nothing and the message names the declaration rather than a site to move to.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 4,
+      "column": 5,
+      "endLine": 4,
+      "endColumn": 13,
+      "messageId": "nonFunctionValue",
+      "message": "`@nothrow` binds to nothing on `f`: a mark is a claim about a body, and the value here is not a function written at this declaration. Mark the function where its body is written, or — if that body is not yours — assert its color in `nothrow.overrides.json`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 7,
+      "column": 5,
+      "endLine": 7,
+      "endColumn": 13,
+      "messageId": "nonFunctionValue",
+      "message": "`@nothrow` binds to nothing on the default export: a mark is a claim about a body, and the value here is not a function written at this declaration. Mark the function where its body is written, or — if that body is not yours — assert its color in `nothrow.overrides.json`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 11,
+      "column": 7,
+      "endLine": 11,
+      "endColumn": 15,
+      "messageId": "nonFunctionValue",
+      "message": "`@nothrow` binds to nothing on `handle`: a mark is a claim about a body, and the value here is not a function written at this declaration. Mark the function where its body is written, or — if that body is not yours — assert its color in `nothrow.overrides.json`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 16,
+      "column": 7,
+      "endLine": 16,
+      "endColumn": 15,
+      "messageId": "nonFunctionValue",
+      "message": "`@nothrow` binds to nothing on `total`: a mark is a claim about a body, and the value here is not a function written at this declaration. Mark the function where its body is written, or — if that body is not yours — assert its color in `nothrow.overrides.json`."
+    }
+  ]
+}
