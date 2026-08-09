@@ -376,18 +376,30 @@ function carriedTarget(
 }
 
 /**
- * The body `new` on a constructor-position expression enters, as a target. The
+ * The bodies `new` on a constructor-position expression enters, as targets. The
  * implicit `constructor(...args) { super(...args) }` a class does not declare
  * has no syntax for the walk to find, so its edge is asked for by name.
+ *
+ * A join rather than one answer, because with no argument list written there is
+ * no overload resolution either: a base known only by its construct signatures
+ * — `declare var Error: ErrorConstructor` is the one every project meets — has
+ * every one of them within reach of the arguments the implicit constructor
+ * forwards, so every one of them answers.
  */
-export function constructedTarget(
+export function constructedTargets(
   expression: ts.Expression,
   resolution: Resolution,
-): DeclaredTarget {
-  return declaredTarget(
-    constructedBodyAt(expression, resolution.checker),
-    resolution,
-  );
+): readonly DeclaredTarget[] {
+  const { checker } = resolution;
+  const body = constructedBodyAt(expression, checker);
+  if (body !== undefined) return [declarationTarget(body, resolution)];
+
+  const signatures = bodylessConstructSignatures(expression, checker);
+  return signatures.length === 0
+    ? [floor("unresolvable")]
+    : signatures.map((declaration) =>
+        declarationTarget(declaration, resolution),
+      );
 }
 
 /**
@@ -417,7 +429,10 @@ function targetOf(
   }
   if (calleeExpression(transfer).kind === ts.SyntaxKind.SuperKeyword) {
     const base = inheritedFrom(transfer);
-    return base === undefined ? undefined : constructedBodyAt(base, checker);
+    return (
+      (base === undefined ? undefined : constructedBodyAt(base, checker)) ??
+      constructSignatureOf(transfer, checker)
+    );
   }
 
   const declaration = checker.getResolvedSignature(transfer)?.declaration;
@@ -449,12 +464,41 @@ function constructedBodyAt(
  * resolved. Only a bodyless one is taken: a bodied signature the class lookup
  * missed means the expression was not one class, and reading a single branch of
  * it would be a guess.
+ *
+ * `super(...)` is the same construction under another spelling, and reaches the
+ * same base the same way. Nothing about the base being named by `extends` makes
+ * it any more resolvable than a `new` on it, so the two ask this one question.
  */
 function constructSignatureOf(
-  construction: ts.NewExpression,
+  construction: Transfer,
   checker: ts.TypeChecker,
 ): ts.SignatureDeclaration | undefined {
-  const declaration = checker.getResolvedSignature(construction)?.declaration;
+  return bodylessSignature(
+    checker.getResolvedSignature(construction)?.declaration,
+  );
+}
+
+/**
+ * Every construct signature of a type that has no body behind it. What answers
+ * where no argument list picked one — the implicit `super()`.
+ */
+function bodylessConstructSignatures(
+  expression: ts.Expression,
+  checker: ts.TypeChecker,
+): readonly ts.SignatureDeclaration[] {
+  return checker
+    .getTypeAtLocation(expression)
+    .getConstructSignatures()
+    .flatMap(({ declaration }) => {
+      const bodyless = bodylessSignature(declaration);
+      return bodyless === undefined ? [] : [bodyless];
+    });
+}
+
+/** The declaration, where it is a signature with no body, and nothing else. */
+function bodylessSignature(
+  declaration: ts.Declaration | undefined,
+): ts.SignatureDeclaration | undefined {
   return declaration !== undefined &&
     ts.isFunctionLike(declaration) &&
     bodyOf(declaration) === undefined
