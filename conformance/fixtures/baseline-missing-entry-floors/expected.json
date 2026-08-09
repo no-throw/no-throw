@@ -1,14 +1,14 @@
 {
-  "description": "The drift guarantee, asserted as behavior: a lib member with no baseline entry floors. `Proxy` has none — the gate could not construct a receiver to probe it — so `new Proxy(…)` is reported, and a TypeScript release landing ahead of a `@no-throw/core` release floors its newcomers the same way.",
+  "description": "The drift guarantee, asserted as behavior: a lib member with no baseline entry floors. `Boolean`'s call signature has none — its bare type parameter cannot be modeled conformantly, so the gate never probed it and an unprobed clean claim ships floored — and a TypeScript release landing ahead of a `@no-throw/core` release floors its newcomers the same way.",
   "diagnostics": [
     {
       "file": "src/index.ts",
       "line": 3,
       "column": 10,
       "endLine": 3,
-      "endColumn": 36,
+      "endColumn": 24,
       "messageId": "unbridgedCall",
-      "message": "Call to `Proxy` escapes this `@nothrow` function: it is declared without a body — an ambient declaration, a `.d.ts`, or a value known only by its function type — and no mark, manifest, overlay, override or baseline entry colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Call to `Boolean` escapes this `@nothrow` function: it is declared without a body — an ambient declaration, a `.d.ts`, or a value known only by its function type — and no mark, manifest, overlay, override or baseline entry colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

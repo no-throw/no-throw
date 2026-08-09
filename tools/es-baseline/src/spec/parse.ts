@@ -107,6 +107,12 @@ export interface Step {
    * so without the chain such a site is unclassifiable prose.
    */
   readonly context: string;
+  /**
+   * The enclosing steps' text, outermost first: the conditions this step runs
+   * under. `context` folds these into one string for classification; a caller
+   * that has to know *what was already established* needs them apart.
+   */
+  readonly guards: readonly string[];
   readonly index: number;
 }
 
@@ -157,6 +163,7 @@ export function algorithmSteps(ownHtml: string): readonly Step[] {
       html,
       text: raw.text,
       context: ancestry.length === 0 ? raw.text : `${ancestry.join(" ")} ${raw.text}`,
+      guards: ancestry,
       index: steps.length,
     });
   }

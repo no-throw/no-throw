@@ -53,7 +53,7 @@ Where no path can be formed the hazard falls back to `hazard`, unchanged.
 target, so "might this be a Proxy?" has no static answer for *any* object, and
 flooring on it would color nothing. It is trust base, already ruled.
 
-Two consequences of that ruling are load-bearing in the generator and worth
+Three consequences of that ruling are load-bearing in the generator and worth
 stating plainly:
 
 - Internal methods (`[[Get]]`, `[[GetOwnProperty]]`, …) are dynamically
@@ -62,6 +62,13 @@ stating plainly:
   as trap behavior. The abstract operations that merely call them — `GetV`,
   `RegExpExec`, `OrdinaryHasInstance` — are **not** in that set: they have
   throws of their own that have nothing to do with a trap.
+- `ValidateNonRevokedProxy` is in that set, and is the only operation in it that
+  is not an internal method. It takes a Proxy exotic object and its one throw is
+  that the Proxy was revoked, so reaching it means the chain went through a
+  Proxy just as surely as reaching a trap does — and a revoked Proxy comes from
+  `Proxy.revocable` and nowhere else, which is the same construct the ruling
+  already covers. It is what `Array.isArray` and every `new C()` reach through
+  `GetFunctionRealm`.
 - An array carrying a throwing index accessor is not in the hostile pool.
   Installing one takes `Object.defineProperty`, which the same ruling names in
   the trust base.

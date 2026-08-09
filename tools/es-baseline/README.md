@@ -21,7 +21,12 @@ The pipeline:
    abrupt markers resolve abstract-operation indirection transitively. Each
    operation carries its **whole** set of root causes, not one witness: one
    witness can report the cause the declared type discharges and hide the one it
-   does not, which is unsound rather than merely imprecise.
+   does not, which is unsound rather than merely imprecise. Lifting reads the
+   **guard** the call sits under, for one fact only: a step under `If x is an
+   Object` cannot produce a cause about `x` being nullish or not an Object.
+   That one guard is `ToPrimitive`'s, which every coercion goes through, and
+   without it `ToString` of a declared `string` looks like it reaches
+   `ToObject` on a couple of hundred members.
 2. **Operand tracing** — a root cause is about the *callee's* parameter *i*, so
    lifting it into a caller re-resolves the expression passed at *i*,
    recursively, until the chain ends at a builtin's declared parameter or its
@@ -53,9 +58,18 @@ pnpm --filter @no-throw/es-baseline-tools run gate:drift -- --against /path/to/o
 **The hostile fuzz gate.** Every proposed-clean entry — conditional ones
 included — faces a type-conformant but hostile refutation attempt. The pool is
 detached and shrunk buffers, a throwing-`Symbol.species` subclass, and
-`Object.create(null)`; `Proxy` is excluded because it is trust base. Bare type
-parameters are refused, because an unrecorded constraint manufactures false
-counterexamples — **refuse to fuzz what you cannot model conformantly.**
+`Object.create(null)`; `Proxy` is excluded because it is trust base. A construct
+signature is entered with `new` on two NewTargets — the constructor and a
+subclass, since `class MyError extends Error {}` reaches the entry through its
+implicit `super()` — and a call signature as a bare call. Bare type parameters
+are refused, because an unrecorded constraint manufactures false
+counterexamples — **refuse to fuzz what you cannot model conformantly.** An
+object type the pool has no entry for is built out of the properties it
+declares rather than refused, which is how `new Error(msg, options)` is
+reachable at all; a property that cannot be modeled, or that is symbol-keyed,
+refuses the whole value. A nominal type whose runtime wants internal slots this
+cannot forge is not silently mismodeled either — it refutes, and a refutation
+with no recorded counterexample fails the run.
 
 Sensitivity sits near 80%, so **a green gate is not evidence of cleanliness,
 only the absence of a refutation.** The gate's job is to fail. `--self-check`

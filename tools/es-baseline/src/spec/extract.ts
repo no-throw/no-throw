@@ -67,12 +67,23 @@ const OPERATION_TYPES = new Set([
   "internal method",
 ]);
 
+/**
+ * One `?`-marked call an operation makes, with what the steps enclosing it have
+ * already settled about the values it passes.
+ */
+interface AbruptCall {
+  readonly name: string;
+  readonly args: readonly string[];
+  /** Names an enclosing guard has established are Objects. */
+  readonly objects: ReadonlySet<string>;
+}
+
 interface Operation {
   readonly name: string;
   readonly params: readonly string[];
   readonly trace: OperandTrace;
   readonly ownThrows: readonly { condition: string; error: string }[];
-  readonly calls: readonly { name: string; args: readonly string[] }[];
+  readonly calls: readonly AbruptCall[];
 }
 
 function paramsOf(title: string): readonly string[] {
@@ -84,13 +95,85 @@ function paramsOf(title: string): readonly string[] {
 
 function abruptCalls(
   step: Step,
-): readonly { name: string; args: readonly string[] }[] {
+  reassigned: ReadonlySet<string>,
+): readonly AbruptCall[] {
+  const objects = objectsEstablishedBy(step.guards, reassigned);
   return callSites(step.html)
     .filter((site) => site.mark === "?")
     .map((site) => ({
       name: site.name,
       args: splitArguments(argumentsOf(step.text, site.name)),
+      objects,
     }));
+}
+
+/**
+ * ECMA-262 writes the object half of a coercion as a guard rather than as a
+ * type — `ToPrimitive`'s `If input is an Object, then` is the one every
+ * coercion goes through — and the steps under it are entered for nothing else.
+ * Lifting a cause out of there without the guard is what makes `ToString` of a
+ * declared `string` look like it can reach `ToObject`, on a couple of hundred
+ * members.
+ *
+ * Negation is not matched, deliberately: `If x is not an Object` establishes
+ * this for its `Else` branch and the `Else` is a sibling step, so the fact is
+ * simply not read there.
+ */
+const ESTABLISHES_OBJECT = /\bIf (\w+) is an Object\b/g;
+
+/**
+ * `Set x to …`, which is how ECMA-262 spells rebinding. A guard is matched to a
+ * call by *name*, so a name the algorithm ever rebinds cannot carry a fact from
+ * the guard down to the call — the value there may no longer be the one that
+ * was tested. Any rebinding anywhere in the operation disqualifies the name,
+ * rather than only the ones between the two steps: dropping a cause is the
+ * unsafe direction, and step order is not a control-flow graph.
+ */
+const REBINDS = /^Set (\w+) to\b/;
+
+function reassignedNames(steps: readonly Step[]): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const step of steps) {
+    const name = REBINDS.exec(step.text)?.[1];
+    if (name !== undefined) names.add(name);
+  }
+  return names;
+}
+
+function objectsEstablishedBy(
+  guards: readonly string[],
+  reassigned: ReadonlySet<string>,
+): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const guard of guards) {
+    for (const match of guard.matchAll(ESTABLISHES_OBJECT)) {
+      const name = match[1];
+      if (name !== undefined && !reassigned.has(name)) names.add(name);
+    }
+  }
+  return names;
+}
+
+/** A throw condition that fires only on something that is not an Object. */
+const NEEDS_A_NON_OBJECT =
+  /is either undefined or null|RequireObjectCoercible|is not an Object\b/;
+
+/**
+ * Whether a guard the call sits under makes this cause unreachable. One fact
+ * and one shape only, about the whole value: a guard saying `input` is an
+ * Object rules out `input` being nullish or not an Object, and says nothing at
+ * all about a property of it or about any other value the callee touches.
+ */
+function ruledOutByGuard(call: AbruptCall, cause: Hazard): boolean {
+  if (call.objects.size === 0) return false;
+  const { operand } = cause;
+  if (operand.root !== "param" || operand.segments.length > 0) return false;
+  const passed = call.args[operand.index]?.trim();
+  return (
+    passed !== undefined &&
+    call.objects.has(passed) &&
+    NEEDS_A_NON_OBJECT.test(cause.condition)
+  );
 }
 
 export function extractSpec(html: string): SpecCorpus {
@@ -144,6 +227,7 @@ export function extractSpec(html: string): SpecCorpus {
     );
     const hazards: Hazard[] = [];
     const unresolved: string[] = [];
+    const reassigned = reassignedNames(steps);
 
     for (const step of steps) {
       const explicit = THROW_SITE.exec(step.html);
@@ -156,13 +240,14 @@ export function extractSpec(html: string): SpecCorpus {
           operand: trace.subjectOf(step.context),
         });
       }
-      for (const call of abruptCalls(step)) {
+      for (const call of abruptCalls(step, reassigned)) {
         const calleeCauses = causes.get(call.name);
         if (calleeCauses === undefined) {
           if (!operations.has(call.name)) unresolved.push(call.name);
           continue;
         }
         for (const cause of calleeCauses.values()) {
+          if (ruledOutByGuard(call, cause)) continue;
           hazards.push({
             error: cause.error,
             condition: cause.condition,
@@ -215,14 +300,15 @@ function buildOperation(name: string, clause: Clause): Operation {
   const steps = algorithmSteps(clause.ownHtml);
   const params = paramsOf(clause.title);
   const ownThrows: { condition: string; error: string }[] = [];
-  const calls: { name: string; args: readonly string[] }[] = [];
+  const calls: AbruptCall[] = [];
+  const reassigned = reassignedNames(steps);
 
   for (const step of steps) {
     const explicit = THROW_SITE.exec(step.html);
     if (explicit !== null) {
       ownThrows.push({ condition: step.context, error: explicit[1] ?? "TypeError" });
     }
-    calls.push(...abruptCalls(step));
+    calls.push(...abruptCalls(step, reassigned));
   }
   // Prose-only operations state their throw in a paragraph, not an algorithm.
   if (
@@ -287,6 +373,7 @@ function resolveCauses(
       for (const call of operation.calls) {
         for (const cause of (causes.get(call.name) ?? new Map()).values()) {
           if (mine.has(cause.condition)) continue;
+          if (ruledOutByGuard(call, cause)) continue;
           mine.set(cause.condition, {
             error: cause.error,
             condition: cause.condition,
