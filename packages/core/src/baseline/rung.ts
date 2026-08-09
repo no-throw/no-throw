@@ -3,7 +3,7 @@ import ts from "typescript";
 import type { CarrierAnswer, CarrierRung } from "../carrier/chain.js";
 import { baselineCoversOwner, lookupBaselineEntry } from "./data.js";
 import {
-  libTargetOfFileName,
+  libDeclarationsOf,
   memberKey,
   staticMemberKey,
   symbolMemberName,
@@ -15,24 +15,35 @@ import {
  * somebody has an opinion about is answered by that opinion first.
  *
  * Activation needs no `lib` setting to read: a declaration is baseline material
- * exactly when it was written in a `lib.*.d.ts` the program loaded, so a project
- * without `dom` in its `lib` resolves nothing there and gets no DOM colors. The
- * same reading keeps `@types/node` out — it is a real npm package, served by the
+ * exactly when the libs the program loaded declare it, so a project without
+ * `dom` in its `lib` resolves nothing there and gets no DOM colors. The same
+ * reading keeps `@types/node` out — it is a real npm package, served by the
  * overlay channel, and its files are not lib files.
+ *
+ * The libs are asked wherever they declare the member, not only where overload
+ * resolution landed: a project augmenting `interface Array<T>` still calls the
+ * builtin `push`, and an answer that turned on which of the two declarations
+ * matched would be an answer about the project's file layout.
  *
  * A member with no entry is not answered here at all, which is the drift
  * guarantee stated as behavior: a TypeScript release landing ahead of a
  * `@no-throw/core` release floors its newcomers by construction.
  */
 export const baselineRung: CarrierRung = (query): CarrierAnswer | undefined => {
-  const { declaration } = query;
-  const libTarget = libTargetOfFileName(declaration.getSourceFile().fileName);
-  if (libTarget === undefined) return undefined;
+  const entries = libDeclarationsOf(query.declaration, query.checker).flatMap(
+    ({ declaration, libTarget }) => {
+      const key = baselineKeyOf(declaration);
+      if (key === undefined) return [];
+      const entry = lookupBaselineEntry(libTarget, key);
+      return entry === undefined ? [] : [entry];
+    },
+  );
 
-  const key = baselineKeyOf(declaration);
-  if (key === undefined) return undefined;
-
-  const entry = lookupBaselineEntry(libTarget, key);
+  // One member, several lib versions of its declaration, and nothing says they
+  // were classified alike. Where they differ the doctrine picks: the throwing
+  // reading is the one that cannot be a lie.
+  const entry =
+    entries.find(({ color }) => color === "throwing") ?? entries[0];
   return entry === undefined ? undefined : { kind: "entry", entry };
 };
 
@@ -42,11 +53,14 @@ export const baselineRung: CarrierRung = (query): CarrierAnswer | undefined => {
  * turns on this: inside the enumeration it is a floor, outside it the
  * declaration answers like any other hand-written one.
  */
-export function baselineEnumerates(declaration: ts.Declaration): boolean {
-  const libTarget = libTargetOfFileName(declaration.getSourceFile().fileName);
-  if (libTarget === undefined) return false;
-  const owner = ownerOf(declaration);
-  return owner !== undefined && baselineCoversOwner(libTarget, owner.name);
+export function baselineEnumerates(
+  declaration: ts.Declaration,
+  checker: ts.TypeChecker,
+): boolean {
+  return libDeclarationsOf(declaration, checker).some((declared) => {
+    const owner = ownerOf(declared.declaration);
+    return owner !== undefined && baselineCoversOwner(declared.libTarget, owner.name);
+  });
 }
 
 /**
