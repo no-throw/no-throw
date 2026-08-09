@@ -3,6 +3,19 @@ import type ts from "typescript";
 
 import { constructTypedArray, isTypedArrayName } from "../typed-arrays.js";
 
+/** Every kind of value there is, for a position that promises nothing. */
+const UNCONSTRAINED: readonly unknown[] = [
+  undefined,
+  null,
+  0,
+  "",
+  {},
+  [],
+  Symbol("s"),
+  1n,
+  (): number => 1,
+];
+
 /**
  * Values for a declared type, driven off the `ts.Type` rather than off the
  * text of a type node. Refusing is a first-class answer: **refuse to fuzz what
@@ -17,6 +30,7 @@ import { constructTypedArray, isTypedArrayName } from "../typed-arrays.js";
 export class Arbitrary {
   readonly #ts: typeof ts;
   readonly #checker: ts.TypeChecker;
+  readonly #building = new Set<ts.Type>();
 
   constructor({ ts: tsApi, checker }: LibProgram) {
     this.#ts = tsApi;
@@ -34,11 +48,15 @@ export class Arbitrary {
       return parts.flatMap((part) => part ?? []).slice(0, 8);
     }
 
-    // A bare type parameter's constraint is the only thing that says what is
-    // conformant; without one there is nothing to conform to.
+    // A type parameter's constraint says what is conformant. Without one the
+    // *caller* chooses the instantiation, so every value conforms under some
+    // choice: `Map#get(key: K)` takes a symbol at `Map<symbol, V>`, and the
+    // receiver pool's `new Map()` is no instantiation in particular.
     if (declared.isTypeParameter()) {
       const constraint = this.#checker.getBaseConstraintOfType(declared);
-      return constraint === undefined ? undefined : this.valuesFor(constraint);
+      return constraint === undefined
+        ? UNCONSTRAINED
+        : this.valuesFor(constraint);
     }
 
     if (type.isStringLiteral()) return [type.value];
@@ -63,7 +81,7 @@ export class Arbitrary {
     }
     if ((type.flags & TypeFlags.Null) !== 0) return [null];
     if ((type.flags & (TypeFlags.Any | TypeFlags.Unknown)) !== 0) {
-      return [undefined, null, 0, "", {}, [], Symbol("s"), 1n, () => 1];
+      return UNCONSTRAINED;
     }
     if ((type.flags & TypeFlags.NonPrimitive) !== 0) {
       return [{}, Object.freeze({}), [], Object.create(null)];
@@ -79,17 +97,27 @@ export class Arbitrary {
     if (type.getConstructSignatures().length > 0) return [class Sample {}];
 
     const name = type.getSymbol()?.getName();
-    if (name === undefined) return undefined;
 
-    // `{}` — an anonymous object type with nothing in it accepts any
-    // non-nullish value, which is exactly what `Object.keys`'s second overload
-    // declares.
-    if (
-      name === "__type" &&
-      type.getProperties().length === 0 &&
-      this.#checker.getIndexInfosOfType(type).length === 0
-    ) {
-      return [{}, [], 1, "a", Object.freeze({}), Object.create(null)];
+    if (name === "__type" && type.getProperties().length === 0) {
+      const indexes = this.#checker.getIndexInfosOfType(type);
+      // `{}` — an anonymous object type with nothing in it accepts any
+      // non-nullish value, which is exactly what `Object.keys`'s second
+      // overload declares.
+      if (indexes.length === 0) {
+        return [{}, [], 1, "a", Object.freeze({}), Object.create(null)];
+      }
+      // `{ [s: string]: T }` — an index signature says what a key holds when
+      // it is present and never that any key is present, so an object with no
+      // keys conforms to every one of them. Populating one key as well is what
+      // makes this a probe of the iteration rather than of the empty case:
+      // `Object.entries` and `Object.values` are declared this way.
+      const held = this.#indexValue(indexes);
+      return [
+        {},
+        Object.freeze({}),
+        Object.create(null),
+        ...(held === undefined ? [] : [{ key: held }]),
+      ];
     }
 
     // An empty collection conforms to *any* element type, so it probes members
@@ -141,11 +169,61 @@ export class Arbitrary {
       case "Function":
         return [(): number => 1];
       default: {
-        if (!isTypedArrayName(name)) return undefined;
-        const fresh = constructTypedArray(name, 4);
-        return fresh === undefined ? undefined : [fresh];
+        if (name !== undefined && isTypedArrayName(name)) {
+          const fresh = constructTypedArray(name, 4);
+          return fresh === undefined ? undefined : [fresh];
+        }
+        return this.#fromProperties(type);
       }
     }
+  }
+
+  /**
+   * The last resort: build the object out of its own declaration. Every
+   * required property has to be modelable, since an object missing one does
+   * not conform; the optional ones are left off, which is what makes `{}` the
+   * value for a bag of options like `ErrorOptions`.
+   *
+   * A *required* property that is callable refuses the whole type. `() => 1`
+   * conforms to a signature's arity and to nothing else, and a member that
+   * drives what it is handed — `ReadonlySetLike.keys` has to return an iterator
+   * — would refute on the model rather than on the entry. An optional one is
+   * simply left off, which is why `ProxyHandler` builds and `ReadonlySetLike`
+   * does not.
+   */
+  #fromProperties(type: ts.Type): readonly unknown[] | undefined {
+    // A type that contains itself has no finite value to build.
+    if (this.#building.has(type)) return undefined;
+    this.#building.add(type);
+    try {
+      const built: Record<string, unknown> = {};
+      for (const property of type.getProperties()) {
+        if ((property.flags & this.#ts.SymbolFlags.Optional) !== 0) continue;
+        const declared = this.#checker.getTypeOfSymbol(property);
+        if (this.#modelsAsFunction(declared)) return undefined;
+        const values = this.valuesFor(declared);
+        if (values === undefined || values.length === 0) return undefined;
+        built[property.getName()] = values[0];
+      }
+      return [built];
+    } finally {
+      this.#building.delete(type);
+    }
+  }
+
+  /** Whether the pool for this type would be a bare function. */
+  #modelsAsFunction(type: ts.Type): boolean {
+    const parts = type.isUnion() ? type.types : [type];
+    return parts.some((part) => part.getCallSignatures().length > 0);
+  }
+
+  /** One value an index signature admits, where any of them is modelable. */
+  #indexValue(indexes: readonly ts.IndexInfo[]): unknown {
+    for (const index of indexes) {
+      const values = this.valuesFor(index.type);
+      if (values !== undefined && values.length > 0) return values[0];
+    }
+    return undefined;
   }
 
   /** A short array of the element type, when the element type is modelable. */

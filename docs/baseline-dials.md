@@ -53,7 +53,7 @@ Where no path can be formed the hazard falls back to `hazard`, unchanged.
 target, so "might this be a Proxy?" has no static answer for *any* object, and
 flooring on it would color nothing. It is trust base, already ruled.
 
-Two consequences of that ruling are load-bearing in the generator and worth
+Three consequences of that ruling are load-bearing in the generator and worth
 stating plainly:
 
 - Internal methods (`[[Get]]`, `[[GetOwnProperty]]`, …) are dynamically
@@ -65,6 +65,11 @@ stating plainly:
 - An array carrying a throwing index accessor is not in the hostile pool.
   Installing one takes `Object.defineProperty`, which the same ruling names in
   the trust base.
+- A **revoked** Proxy is the same ruling a second time: it is type-identical to
+  the proxy it was, and nothing in the type system tells them apart. So
+  `ValidateNonRevokedProxy` reads as trap behavior wherever it is reached — and
+  it is reached with no internal method in the chain, through
+  `GetFunctionRealm`, which is how every `new C()` in the library inherits it.
 
 ## What the doctrine costs
 

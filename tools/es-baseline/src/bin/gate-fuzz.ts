@@ -5,7 +5,7 @@ import {
 } from "@no-throw/core/baseline";
 import ts from "typescript";
 
-import { formatCounterexample } from "../gates/fuzz.js";
+import { formatCounterexample, formatUnrefuted } from "../gates/fuzz.js";
 import { claimsOf, runFuzzGate, type Claim } from "../gates/run.js";
 
 /**
@@ -49,6 +49,7 @@ if (!selfCheck) {
   console.log(
     `sensitivity:           ${reproduced}/${attempted} (${percent}%) — a green gate is the absence of a refutation, not evidence of cleanliness`,
   );
+  for (const line of formatUnrefuted(report.unrefuted)) console.log(line);
 }
 
 if (selfCheck) {

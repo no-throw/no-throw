@@ -221,6 +221,12 @@ export class TypeDomains {
         if ((constituent.flags & (TypeFlags.Any | TypeFlags.Unknown)) !== 0) {
           return false;
         }
+        // An unconstrained type parameter carries none of the flags a
+        // predicate tests, so one phrased as an *absence* — `isNonNullish` —
+        // would read it as holding. The caller picks the instantiation:
+        // `Object.getOwnPropertyDescriptors<T>(o: T)` is `T = undefined` for
+        // anyone who passes `undefined`, and that throws.
+        if (constituent.isTypeParameter()) return false;
         if (!predicate(constituent)) return false;
       }
     }
@@ -233,9 +239,9 @@ export class TypeDomains {
   }
 
   /**
-   * A bare type parameter is whatever its constraint says and nothing more —
-   * reading it as its default `unknown` is the safe direction and falls out of
-   * `#all`'s any/unknown rejection.
+   * A bare type parameter is whatever its constraint says and nothing more. One
+   * with no constraint has nothing to resolve to and is left as itself, which
+   * is why `#all` has to reject it by name.
    */
   #apparent(type: ts.Type): ts.Type {
     if (type.isTypeParameter()) {

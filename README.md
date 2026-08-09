@@ -732,19 +732,26 @@ your outs, and every out it names is a rung you can really reach for.
 The baselines apply per lib target, so a project with no `dom` in its `lib`
 gets no DOM colors, and a member with no entry floors — which is how a
 TypeScript release landing ahead of a `@no-throw/core` release stays safe. What
-that buys: `Object.keys`, `s.trim()`, `for…of` over an array or a `Map`,
-`bytes[i]` on a `Uint8Array`, coercing an object that inherits its `toString`,
-spreading a DOM element and `el.id` are all green, and `users.forEach(cb)` is
-judged on the `cb` you actually passed. What still costs a bridge is what
-really throws: `JSON.parse`, `decodeURIComponent`, `document.createElement`.
+that buys: `Object.keys`, `Object.entries`, `s.trim()`, `s.slice(1, -1)`,
+`map.get(k)`, `set.has(x)`, `for…of` over an array or a `Map`, `bytes[i]` on a
+`Uint8Array`, coercing an object that inherits its `toString`, spreading a DOM
+element and `el.id` are all green, and `users.forEach(cb)` is judged on the `cb`
+you actually passed. What still costs a bridge is what really throws:
+`JSON.parse`, `decodeURIComponent`, `document.createElement`.
 
-Two things are worth knowing before you try it. `Array.prototype.map`,
+Three things are worth knowing before you try it. `Array.prototype.map`,
 `filter`, `slice` and `push` ship **throwing**, because `ArraySpeciesCreate`
 and `Set` on a frozen array are reachable without lying to the type system and
 [the dial sign-off](docs/baseline-dials.md) rules those a hazard; the
 `forEach`/`every`/`some`/`find` family is where the **conditional entries** are.
-And writing through an unnarrowable key — `xs[i] = v` — floors, because the
-join reaches every accessor the receiver has.
+`new Map()` and `new Set()` ship throwing while `new Error(msg)` is green.
+Every hazard those two have is about the iterable you pass — driving its
+iterator, and reading `set`/`add` back off the object to add entries with — and
+ECMA-262 returns before all of it when the argument is absent. An entry is a
+fact about the function and not about the arity you called it with, so passing
+nothing cannot buy a color the function does not have. And writing through an
+unnarrowable key — `xs[i] = v` — floors, because the join reaches every accessor
+the receiver has.
 
 ## Packages
 

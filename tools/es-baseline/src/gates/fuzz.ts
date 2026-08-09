@@ -79,7 +79,11 @@ export class HostileFuzzer {
           break outer;
         }
         try {
-          const result = Reflect.apply(target, receiver, spread(args, restFrom));
+          const applied = spread(args, restFrom);
+          const result =
+            member.kind === "construct"
+              ? Reflect.construct(target, applied)
+              : Reflect.apply(target, receiver, applied);
           // A rejected promise is the member's own color, not a sync throw.
           if (isThenable(result)) result.then(noop, noop);
         } catch (error) {
@@ -132,6 +136,12 @@ export class HostileFuzzer {
   }
 
   #target(member: LibMember): unknown {
+    // A call or construct signature *is* the global: `new` and `()` are the
+    // inventory's names for it, not keys on a holder, so the runtime path is
+    // the only thing that resolves to the function.
+    if (member.kind === "call" || member.kind === "construct") {
+      return resolveHolder(member.runtimePath);
+    }
     const holder = resolveHolder(member.holderPath);
     const key = runtimeKey(member.name);
     if (holder === undefined || key === undefined) return undefined;
@@ -237,6 +247,27 @@ function counterexample(
 /** One line a maintainer can act on: what threw, on what, with what. */
 export function formatCounterexample(found: Counterexample): string {
   return `${found.key.padEnd(38)} ${found.probe} ${found.error}: ${found.message} [receiver ${found.receiver}, args ${JSON.stringify(found.args)}]`;
+}
+
+/**
+ * The precision report, whole. Every entry is named rather than sampled: a cap
+ * would read as "these are all of them" while hiding the rest, and nothing else
+ * looks in this direction at all.
+ */
+export function formatUnrefuted(results: readonly ProbeResult[]): readonly string[] {
+  if (results.length === 0) {
+    return ["", "precision: every throwing entry the gate could probe was reproduced."];
+  }
+  return [
+    "",
+    `precision — ${results.length} throwing entr${results.length === 1 ? "y" : "ies"} the gate probed and could not make throw. Not a refutation; a list of places the baseline may be stricter than JavaScript:`,
+    ...[...results]
+      .sort((left, right) => left.key.localeCompare(right.key))
+      .map(
+        (result) =>
+          `  ${result.key.padEnd(42)} ${result.calls} calls${result.truncated ? " (probed to the budget, not exhaustively)" : ""}`,
+      ),
+  ];
 }
 
 function skip(key: string, probe: "call" | "get", reason: string): ProbeResult {
