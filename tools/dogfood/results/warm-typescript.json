@@ -1,0 +1,469 @@
+{
+  "target": "typescript",
+  "commit": "b465fdbfe175304d9b977da137b2c178ae1091d3",
+  "warmFile": "src/compiler/utilities.ts",
+  "seedsAsked": 400,
+  "seedsPlaced": 323,
+  "seedsInWarmFile": 40,
+  "iterations": 5,
+  "versions": {
+    "eslint": "10.1.0",
+    "typescript": "6.0.2",
+    "typescript-eslint": "8.57.2"
+  },
+  "cycleEdits": [
+    {
+      "name": "split",
+      "description": "`isEntityNameExpression` stops calling `isPropertyAccessEntityNameExpression` and inlines the test instead. The back edge is gone, so the two-member group becomes two singletons.",
+      "file": "src/compiler/utilities.ts"
+    },
+    {
+      "name": "merge",
+      "description": "`isEntityNameExpression` gains a call to `isBindableStaticNameExpression`, which already reaches it. One added edge closes the path, so its group and the assignment-declaration group become one.",
+      "file": "src/compiler/utilities.ts"
+    }
+  ],
+  "samples": [
+    {
+      "edit": "first",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 4781.4663,
+      "errors": 0
+    },
+    {
+      "edit": "first",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 1593.6232,
+      "errors": 37
+    },
+    {
+      "edit": "first",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 535.8905000000004,
+      "errors": 60
+    },
+    {
+      "edit": "touch",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 782.4161000000004,
+      "errors": 0
+    },
+    {
+      "edit": "touch",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 915.9840999999997,
+      "errors": 37
+    },
+    {
+      "edit": "touch",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 799.7250999999997,
+      "errors": 60
+    },
+    {
+      "edit": "touch",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 669.5407000000014,
+      "errors": 0
+    },
+    {
+      "edit": "touch",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 831.7164000000012,
+      "errors": 37
+    },
+    {
+      "edit": "touch",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 688.4174999999996,
+      "errors": 60
+    },
+    {
+      "edit": "touch",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 591.5687000000016,
+      "errors": 0
+    },
+    {
+      "edit": "touch",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 768.4933000000001,
+      "errors": 37
+    },
+    {
+      "edit": "touch",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 691.394400000001,
+      "errors": 60
+    },
+    {
+      "edit": "touch",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 593.2736000000004,
+      "errors": 0
+    },
+    {
+      "edit": "touch",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 771.8719999999994,
+      "errors": 37
+    },
+    {
+      "edit": "touch",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 695.5568999999996,
+      "errors": 60
+    },
+    {
+      "edit": "touch",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 640.5344999999979,
+      "errors": 0
+    },
+    {
+      "edit": "touch",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 837.5023999999976,
+      "errors": 37
+    },
+    {
+      "edit": "touch",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 778.3672999999981,
+      "errors": 60
+    },
+    {
+      "edit": "body",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 672.5419999999976,
+      "errors": 0
+    },
+    {
+      "edit": "body",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 1165.3161,
+      "errors": 37
+    },
+    {
+      "edit": "body",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 715.9923000000017,
+      "errors": 60
+    },
+    {
+      "edit": "body",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 620.0558000000019,
+      "errors": 0
+    },
+    {
+      "edit": "body",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 807.7626999999993,
+      "errors": 37
+    },
+    {
+      "edit": "body",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 749.6519000000008,
+      "errors": 60
+    },
+    {
+      "edit": "body",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 608.4682999999968,
+      "errors": 0
+    },
+    {
+      "edit": "body",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 792.7821000000004,
+      "errors": 37
+    },
+    {
+      "edit": "body",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 697.8294000000024,
+      "errors": 60
+    },
+    {
+      "edit": "body",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 597.5501000000004,
+      "errors": 0
+    },
+    {
+      "edit": "body",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 792.2374999999993,
+      "errors": 37
+    },
+    {
+      "edit": "body",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 709.3493000000017,
+      "errors": 60
+    },
+    {
+      "edit": "body",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 608.9552000000003,
+      "errors": 0
+    },
+    {
+      "edit": "body",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 801.6843000000008,
+      "errors": 37
+    },
+    {
+      "edit": "body",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 722.5319000000018,
+      "errors": 60
+    },
+    {
+      "edit": "split",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 625.6519000000008,
+      "errors": 0
+    },
+    {
+      "edit": "split",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 818.2005999999965,
+      "errors": 37
+    },
+    {
+      "edit": "split",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 733.2247999999963,
+      "errors": 60
+    },
+    {
+      "edit": "split",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 638.3247000000047,
+      "errors": 0
+    },
+    {
+      "edit": "split",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 834.8029000000024,
+      "errors": 37
+    },
+    {
+      "edit": "split",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 748.6952999999994,
+      "errors": 60
+    },
+    {
+      "edit": "split",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 655.6898999999976,
+      "errors": 0
+    },
+    {
+      "edit": "split",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 856.4631999999983,
+      "errors": 37
+    },
+    {
+      "edit": "split",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 768.1604999999981,
+      "errors": 60
+    },
+    {
+      "edit": "split",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 668.7566000000006,
+      "errors": 0
+    },
+    {
+      "edit": "split",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 865.6365000000005,
+      "errors": 37
+    },
+    {
+      "edit": "split",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 769.9575000000041,
+      "errors": 60
+    },
+    {
+      "edit": "split",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 677.6272000000026,
+      "errors": 0
+    },
+    {
+      "edit": "split",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 1158.7595000000001,
+      "errors": 37
+    },
+    {
+      "edit": "split",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 671.1029000000053,
+      "errors": 60
+    },
+    {
+      "edit": "merge",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 568.3470000000016,
+      "errors": 0
+    },
+    {
+      "edit": "merge",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 731.7738000000027,
+      "errors": 37
+    },
+    {
+      "edit": "merge",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 664.033500000005,
+      "errors": 60
+    },
+    {
+      "edit": "merge",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 571.3429999999935,
+      "errors": 0
+    },
+    {
+      "edit": "merge",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 747.2227000000057,
+      "errors": 37
+    },
+    {
+      "edit": "merge",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 676.627800000002,
+      "errors": 60
+    },
+    {
+      "edit": "merge",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 586.3277000000016,
+      "errors": 0
+    },
+    {
+      "edit": "merge",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 760.8692999999985,
+      "errors": 37
+    },
+    {
+      "edit": "merge",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 698.4147999999986,
+      "errors": 60
+    },
+    {
+      "edit": "merge",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 599.6294000000053,
+      "errors": 0
+    },
+    {
+      "edit": "merge",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 814.7511000000013,
+      "errors": 37
+    },
+    {
+      "edit": "merge",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 713.8199000000022,
+      "errors": 60
+    },
+    {
+      "edit": "merge",
+      "arm": "baseline",
+      "policy": "hybrid",
+      "ms": 618.7021000000022,
+      "errors": 0
+    },
+    {
+      "edit": "merge",
+      "arm": "preset-compat",
+      "policy": "hybrid",
+      "ms": 798.2584999999963,
+      "errors": 37
+    },
+    {
+      "edit": "merge",
+      "arm": "preset-compat",
+      "policy": "declare",
+      "ms": 719.8071000000054,
+      "errors": 60
+    }
+  ]
+}

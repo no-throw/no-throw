@@ -5,7 +5,7 @@ import {
   section,
   type Diagnostic,
 } from "./diagnostics.js";
-import { runFixture } from "./driver-eslint.js";
+import { presetArgumentReport, runFixture } from "./driver-eslint.js";
 import { loadFixtures, type Fixture } from "./fixtures.js";
 
 /** What one pass makes of one fixture: the lines explaining why it failed. */
@@ -16,6 +16,8 @@ type Check = (
 
 const fixturesRoot = fileURLToPath(new URL("../fixtures/", import.meta.url));
 const fixtures = loadFixtures(fixturesRoot);
+
+checkPresetArgument();
 
 const hybrid = await pass(
   "Hybrid inference — the shipped configuration, against `expected.json`.",
@@ -40,6 +42,21 @@ if (total(declareOnly) <= total(hybrid)) {
       "rip-out lever did not take effect and its superset property proved " +
       "nothing.",
   );
+  process.exitCode = 1;
+}
+
+function checkPresetArgument(): void {
+  const { checked, problems } = presetArgumentReport();
+
+  if (problems.length === 0) {
+    console.log(
+      `\nPreset OK: ${checked} wrong arguments refused by name, and typescript-eslint's own plugin accepted.`,
+    );
+    return;
+  }
+
+  console.log("\nThe preset's argument check is not holding:\n");
+  for (const problem of problems) console.log(`        ${problem}`);
   process.exitCode = 1;
 }
 
