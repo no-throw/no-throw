@@ -64,6 +64,9 @@ jobs:
 
       - run: pnpm run check:lockstep
 
+      - name: The README quotes the diagnostics it teaches
+        run: pnpm run check:docs
+
       - run: pnpm run conformance
 
       # The CLI half of the same suite: `nothrow emit` as a process over

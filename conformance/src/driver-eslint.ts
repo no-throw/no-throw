@@ -83,8 +83,12 @@ export async function runFixture(
   };
 
   // The preset is what a user installs, so it goes in untouched — which files
-  // it reaches is one of the things a fixture gets to assert.
-  const preset = nothrow.configs.recommended as unknown as Linter.Config;
+  // it reaches is one of the things a fixture gets to assert. It is handed the
+  // same typescript-eslint plugin object this driver's parser comes from,
+  // which is exactly what a consumer does.
+  const preset = nothrow.configs.recommended(
+    tseslint.plugin,
+  ) as unknown as Linter.Config;
 
   const config: Linter.Config[] = [
     language,
@@ -155,6 +159,63 @@ export async function runFixture(
   }
 
   return diagnostics;
+}
+
+/**
+ * The preset registers the plugin object it is handed, which is what keeps
+ * ESLint's identity check from ever seeing two `@typescript-eslint`s. That only
+ * pays if a wrong argument is refused at the site the reader typed, since the
+ * alternative is the startup crash the shape exists to remove — and it must be
+ * refused loudly, because a preset that quietly degraded to "name the rule,
+ * register nothing" would mean two different things by arity.
+ *
+ * It lives beside the driver rather than in a fixture for the reason the driver
+ * itself exists: what is asserted is a config a reader writes by hand, in the
+ * linter this driver knows about, and it exists before any project is on disk.
+ */
+export function presetArgumentReport(): {
+  readonly checked: number;
+  readonly problems: readonly string[];
+} {
+  const refused = [
+    ["no argument", undefined],
+    ["the `typescript-eslint` umbrella", tseslint],
+    ["a plugin without the float rule", { rules: {} }],
+    ["a non-object", 42],
+  ] as const;
+
+  const problems: string[] = [];
+
+  for (const [what, argument] of refused) {
+    // Wrong on purpose: the point is what happens when a reader is.
+    const refusal = refusalMessage(argument);
+    if (refusal === undefined) {
+      problems.push(`the preset accepted ${what}`);
+    } else if (!refusal.includes("tseslint.plugin")) {
+      problems.push(
+        `the preset refused ${what} without naming \`tseslint.plugin\`: ${refusal}`,
+      );
+    }
+  }
+
+  const accepted = refusalMessage(tseslint.plugin);
+  if (accepted !== undefined) {
+    problems.push(
+      `the preset refused typescript-eslint's own plugin object: ${accepted}`,
+    );
+  }
+
+  return { checked: refused.length, problems };
+}
+
+/** What the preset said about this argument, or nothing if it took it. */
+function refusalMessage(argument: unknown): string | undefined {
+  try {
+    (nothrow.configs.recommended as (value: unknown) => unknown)(argument);
+    return undefined;
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
 }
 
 /**

@@ -1,0 +1,4 @@
+{
+  "description": "The documented async `safely()` recipe verifies unaided too, and the `await` inside the `try` is what makes it a bridge rather than a fake one — a rejecting callback is caught, and a caller may hand the result straight on.",
+  "diagnostics": []
+}

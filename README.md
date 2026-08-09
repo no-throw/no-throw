@@ -28,16 +28,44 @@ export function parse(text: string): unknown {
 }
 ```
 
+**The guarantee is *no expected error escapes* — not VM-level totality.** Bugs,
+OOM and stack overflow still throw, exactly as `panic!` still panics. What a
+mark promises is that the errors your program *expects* — a parse failure, a
+validation failure, a missing key — leave the function as returned values
+rather than on a channel the language does not check. How they are represented
+is entirely the function's own business: `Result`, a tuple, a union, `null`.
+`no-throw` never sees it. [What the guarantee rests
+on](#what-the-guarantee-rests-on) states the edges in full.
+
 **CI is where the guarantee lives; the editor is feedback.** In an editor, a
 diagnostic whose remedy is the bridge offers it as a suggestion — one click
 wraps the statement in `try`/`catch`, or in `try { await … } catch` where what
 escapes is a rejection. It is never an autofix: a bridge changes what your
 program does with an error, so `--fix` must never make that choice for you.
 
-## Wiring it up
+## The adoption ladder
 
-The rules are type-aware, so they need typescript-eslint's parser and a
-project:
+Four rungs, in the order you climb them. The first two are the whole tool; the
+third is what you reach for the first time a dependency has no colors; the
+fourth is for people who publish.
+
+1. [Install the preset.](#1-install-the-preset)
+2. [Mark a seed, and bridge until green.](#2-mark-a-seed-and-bridge-until-green)
+3. [Handle a dependency floor.](#3-handle-a-dependency-floor)
+4. [Publishing: ship a manifest.](#4-publishing-ship-a-manifest)
+
+### 1. Install the preset
+
+```bash
+pnpm add -D @no-throw/eslint-plugin
+```
+
+That will not resolve yet — [nothing is published](#status). Everything below is
+what the suite runs against today.
+
+The rules are type-aware, so typescript-eslint is already a prerequisite: they
+need its parser and a project. The preset takes typescript-eslint's **plugin
+object**, because it turns on a rule from it:
 
 ```js
 // eslint.config.js
@@ -52,11 +80,21 @@ export default [
       parserOptions: { projectService: true },
     },
   },
-  nothrow.configs.recommended,
+  nothrow.configs.recommended(tseslint.plugin),
 ];
 ```
 
-The preset carries that same `files` scope itself, so it sits at the end of the
+That is one call, not a sequence: the preset may sit before or after your own
+typescript-eslint config, because flat config merges `plugins` across every
+config matching a file and resolves rule names on the merged result. If you
+install the individual packages rather than the `typescript-eslint` umbrella,
+pass `@typescript-eslint/eslint-plugin` itself — the argument is a plugin, and
+the umbrella carries one rather than being one. Pass the wrong object and the
+preset says so by name before ESLint starts, which is the point of taking it:
+handing the preset *your* copy is what keeps ESLint from ever seeing two
+different plugins registered under `@typescript-eslint` and refusing to start.
+
+The preset carries the same `files` scope itself, so it sits at the end of the
 array unscoped and `eslint .` is safe: the `eslint.config.js` you just wrote is
 never handed to a type-aware rule. Keep the parser block in agreement with it.
 TypeScript the preset reaches but the parser does not falls to ESLint's default
@@ -68,14 +106,299 @@ to settle and not ours.
 
 | rule | what it holds you to |
 | --- | --- |
-| `nothrow/no-escaping-throw` | the entire invariant — no throw escapes a marked function |
-| `nothrow/valid-mark` | every `@nothrow` you write binds to a function |
+| [`nothrow/no-escaping-throw`](#no-escaping-throw) | the entire invariant — no throw escapes a marked function |
+| [`nothrow/valid-mark`](#valid-mark) | every `@nothrow` you write binds to a function |
 | `@typescript-eslint/no-floating-promises` | a promise is awaited or handled |
 
-`@typescript-eslint/eslint-plugin` is a peer dependency of the plugin itself,
-not only of the preset — typed linting already requires it. Neither `nothrow`
-rule takes options; there is no configuration in which the guarantee means
-something different.
+Everything is `error` because a warning enforces nothing, and CI is where the
+guarantee lives.
+
+The third one is somebody else's rule, and it is here so that the config you
+actually install covers the **float** hole rather than leaving it to a second
+thing you have to remember. A promise dropped in statement position by a
+*throwing* callee is ours and reported — the invariant would not be
+self-contained otherwise. A dropped promise that is perfectly clean is no escape
+at all, so nothing of ours has an opinion on it, and it is still a bug worth
+catching. That is hygiene past the invariant, which is why it is a separate
+rule and why turning it off weakens no guarantee.
+
+#### `no-escaping-throw`
+
+One rule carries the **entire** invariant. An uncaught `throw`, an unbridged
+call, a discarded throwing promise and a fake bridge are all this rule, told
+apart by `messageId` and **never individually disableable**.
+
+That is deliberate. The one-color guarantee is atomic: a configuration that
+turns off "unbridged call" while leaving "uncaught throw" on looks sound in a
+config file and enforces half a guarantee in the codebase. There is no
+arrangement of these rules in which `@nothrow` means less than it says.
+
+#### `valid-mark`
+
+Annotation hygiene, and separable for exactly that reason: "your mark is dead"
+is not the guarantee. It reports a `@nothrow` that binds to nothing — see
+[where a mark binds](#where-a-mark-binds) — so a mark you trusted for years is
+never a silent no-op.
+
+Neither rule takes options, and there will be none. Overlays are always
+discovered, the overrides file is always `nothrow.overrides.json` at your
+project root, inference is always on. There is no configuration in which the
+guarantee means something different.
+
+### 2. Mark a seed, and bridge until green
+
+A **seed** is a function you marked. Pick one — a leaf, ideally — and mark it:
+
+```ts
+/** @nothrow */
+export function readConfig(text: string): Config | null {
+  return JSON.parse(text) as Config; // reported here
+}
+```
+
+The mark is enforced against the body, so this errors at the call. Bridge it,
+and the throw becomes a returned value — which one is yours to choose:
+
+```ts
+/** @nothrow */
+export function readConfig(text: string): Config | null {
+  try {
+    return JSON.parse(text) as Config;
+  } catch {
+    return null;
+  }
+}
+```
+
+That is the whole loop: mark, read the diagnostics, bridge until green. Nothing
+else in the codebase changes color, and nothing else starts erroring.
+
+In particular **you do not have to mark the call tree**. An unmarked function
+whose body is visible is inferred, so `readConfig` calling your own `normalize`
+is judged on what `normalize` actually does — and if `normalize` can throw, the
+report lands at the call in `readConfig`, not inside `normalize`, which never
+promised anything. [What gets inferred](#what-gets-inferred) is the detail.
+
+The bridge is a `try` with a `catch`. A `try`/`finally` bridges nothing, a
+`catch` that rethrows bridges nothing, and a bridge stops at a nested function
+boundary — an arrow inside the `try` runs when its holder calls it, not inside
+your `try`. Where what escapes is a rejection rather than a throw, the bridge is
+`try { await … } catch`; see [Async](#async).
+
+### 3. Handle a dependency floor
+
+Sooner or later a call has no body to read and nobody has colored it. That
+**floors** — the sound default is that it throws — and the diagnostic says so
+and names your **outs**:
+
+```text
+Call to `decode` escapes this `@nothrow` function: it is declared without a
+body — an ambient declaration, a `.d.ts`, or a value known only by its function
+type — and no mark, manifest, overlay, override or baseline entry colors it, so
+it is assumed to throw. Your outs, in precedence order: bridge this call with
+`try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an
+`@no-throw/*` overlay; or, if you own the package, ship a manifest with
+`nothrow emit`.
+```
+
+The outs are in the message rather than behind a docs URL, because the CI log
+is the channel that survives into code review, and acting on a floor from that
+log alone is the whole contract. Take them in order:
+
+**Bridge it.** If the call really can throw, this is not a floor to work around
+— it is a true report, and the bridge is the answer.
+
+**Assert the color in `nothrow.overrides.json`.** If you know it cannot throw,
+say so, in one file at your project root. Nothing outranks it, so you are never
+blocked on somebody else shipping a fix:
+
+```json
+{
+  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "flaky": {
+      "exports": {
+        ".": { "safeParse": { "color": "non-throwing", "conditions": [] } }
+      }
+    }
+  }
+}
+```
+
+**Install or write an `@no-throw/*` overlay.** An **overlay** is that same
+assertion for one package, published so everyone else gets it too: a
+`nothrow.json` with a `package` field naming its target, in a package under the
+`@no-throw` scope. Every installed one is discovered automatically, the way
+`@types` arrive. It is matched by that `package` field and never by its own npm
+name — `@no-throw/lodash` is a convention, not a lookup — so an overlay for a
+scoped target needs no escape from npm's flat scopes. The resolver is
+version-blind in v1.
+
+**Ship a manifest**, if the package is yours. That is [rung
+four](#4-publishing-ship-a-manifest).
+
+Those are the four **carriers** that can answer for a bodyless declaration, and
+they are asked in that order, **per key** — a carrier that knows one export
+leaves the rest to the ones below it:
+
+| carrier | what it is | who writes it |
+| --- | --- | --- |
+| `nothrow.overrides.json` | one file at your project root | you |
+| an `@no-throw/*` overlay | an installed package of colors | anyone |
+| what the package ships | its own `nothrow.json`, else its surviving `@nothrow` tags | its author |
+| the **baseline** | colors for TypeScript's own libs, keyed by lib target | us |
+
+Under all four is the floor: unanswered means throwing. The guarantee never
+rests on silence.
+
+Both the overrides file and an overlay are held to [a published
+schema](packages/core/schema) — the same file the engine validates them
+against, so what your editor accepts and what the tool honors cannot drift
+apart. Both may key **interface members** and state **accessor facts**, so
+`declare const _: LoDashStatic` is colorable — neither of which `nothrow emit`
+will ever write for a package whose source it verified.
+
+A package's own manifest is verified against SRI hashes of the files it was
+written for. A mismatch floors **that manifest**, names the file that drifted,
+and lets the package's surviving `@nothrow` tags resume as its carrier; an
+overlay and an override are about a package rather than in it, so neither is
+touched.
+
+### 4. Publishing: ship a manifest
+
+Your marks are verified against your source, and a consumer never sees your
+source: `removeComments` strips the tags, and declaration emit erases `async`.
+`nothrow emit` writes down what survives that.
+
+```bash
+nothrow emit           # lower verified marks into nothrow.json
+nothrow emit --check   # fail if the manifest has drifted from the source
+```
+
+Run it after your build, from the package root — it reads `tsconfig.json` in
+the working directory unless `--project` names another one, and writes
+`nothrow.json` beside the first `package.json` above the project, which is
+where a consumer's walk-up finds it. What goes in are the marks the engine
+verifies, keyed by the name a consumer imports; what comes with them are the
+facts the `.d.ts` cannot carry — `async`, the paths a **conditional mark** is
+clean given, and SRI hashes of everything the build produced from that source,
+which is every body a color was read off.
+
+**Emit refuses what it cannot verify.** A mark whose body escapes, a mark that
+binds to nothing, a mark on an accessor — each exits non-zero naming the mark,
+and nothing is written. A published manifest is therefore true by construction
+rather than by discipline, which is what lets a consumer trust it over your
+declarations.
+
+The accessor case is a deliberate asymmetry. A manifest can state an **accessor
+fact**, and hand-written overlays need to; emit never does, because declaration
+emit preserves `get` and `set` — if you own the source, the accessor is already
+in your `.d.ts`, and what a consumer needs is a color you cannot verify for both
+halves at once. The same holds for interface members.
+
+Wire **check mode** into the script that publishes, so a manifest cannot go out
+stale:
+
+```json
+{
+  "scripts": {
+    "build": "tsc && nothrow emit",
+    "prepublishOnly": "nothrow emit --check"
+  }
+}
+```
+
+It recomputes the manifest and compares. A rebuilt `.js` with identical
+declarations is drift like any other, because the hash is what your consumers
+check. Exit codes are `0` wrote or matched, `1` refused or drifted, `2` could
+not run.
+
+If you ship `.ts` source or URL imports, you need no manifest at all: your tags
+are honored and verified directly, because module resolution reaching source
+means nothing is opaque.
+
+## The `safely()` recipe
+
+The wrapper everyone writes. It is a recipe rather than a package, and it
+verifies with no help from the engine:
+
+```ts
+export type Result<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly error: unknown };
+
+/** @nothrow */
+export function safely<T>(fn: () => T): Result<T> {
+  try {
+    return { ok: true, value: fn() };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+
+/** @nothrow */
+export async function safelyAsync<T>(
+  fn: () => Promise<T>,
+): Promise<Result<T>> {
+  try {
+    return { ok: true, value: await fn() };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+```
+
+Note the `await` in the async one. Without it the `catch` is a **fake bridge**:
+an `async` callee does not throw, it rejects, and a `catch` with nothing awaited
+is not on that path. The rule reports that, which is why the recipe is written
+out here rather than left to be guessed at.
+
+`fn` floors to throwing inside the body, is entered inside a `try`, and is
+therefore neutralized there — so `safely` is unconditionally clean and the
+engine needs **zero special-casing** to say so. Nothing here is wrapper
+detection; it is the ordinary bridge rule, applied to a parameter.
+
+**It is not a package on purpose.** Shipping one would have to pick the error
+representation — `Result`, a tuple, a union, `null` — which is the one thing
+this tool leaves to you, and it would be the ecosystem's only runtime
+dependency, against the zero-footprint ethos that keeps the mark a comment. Copy
+it, name the error type whatever your codebase already calls it, and own it.
+
+## What the guarantee rests on
+
+The mark's promise is bounded, and the bounds are worth knowing before you
+adopt.
+
+**The trust base is one sentence:**
+
+> The guarantee is relative to the type system's model of the program. Where
+> code lies to the checker — a `Proxy`, an `as` assertion,
+> `Object.defineProperty`, a wrong ambient declaration — `no-throw` inherits the
+> lie.
+
+That is not a list of holes we chose to leave; it is the boundary of what
+static types can say. A `Proxy` is type-identical to its target, so "might this
+be a Proxy?" has no static answer for *any* object, and flooring on it would
+color nothing. It is the same boundary you already accept when you trust a
+dependency's `.d.ts` about its types.
+
+**Two holes are in-model, and both are named**, because a hole you can name is
+one you can work around:
+
+- **Stack overflow from unbounded recursion.** A function that recurses forever
+  throws a `RangeError` no color predicts. It sits with OOM: a resource
+  exhaustion, not an expected error.
+- **A promise stored and never awaited.** A promise dropped in statement
+  position is a float and is reported. One put in a field and read back later is
+  not, because nothing at the storing site is an escape.
+  `no-floating-promises` — which the preset turns on beside our rules — has the
+  same blind spot exactly, so the two together do not close it.
+
+**Module evaluation is out of scope, and that is a scope statement rather than
+a hole.** Import side effects, top-level `await`, `static {}` blocks,
+decorators and `extends` expressions all run before any function does. A
+function's color is about the function.
 
 ## Where a mark binds
 
@@ -158,65 +481,15 @@ on every call and are checked there too — including a generator's, whose
 parameter list is eager though its body is lazy.
 
 A callee with no visible body — a `.d.ts` declaration, or one the checker
-cannot resolve at all — is the carrier chain's question rather than the
-program's, and [the next section](#coloring-code-you-do-not-own) is that chain.
-Anything it cannot answer floors to throwing, and the diagnostic says which.
-
-## Coloring code you do not own
-
-Four carriers can answer for a bodyless declaration. They are asked in this
-order, **per key** — a rung that knows one export leaves the rest to the rungs
-below it:
-
-| rung | what it is | who writes it |
-| --- | --- | --- |
-| `nothrow.overrides.json` | one file at your project root | you |
-| an `@no-throw/*` overlay | an installed package of colors | anyone |
-| what the package ships | its own `nothrow.json`, else its surviving `@nothrow` tags | its author |
-| the baseline | colors for TypeScript's own libs, keyed by lib target | us |
-
-Under all four is the floor: unanswered means throwing.
-
-**You are never blocked.** Whatever nobody else has colored, you can color
-yourself, and nothing outranks you:
-
-```json
-{
-  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
-  "version": 1,
-  "packages": {
-    "flaky": {
-      "exports": {
-        ".": { "safeParse": { "color": "non-throwing", "conditions": [] } }
-      }
-    }
-  }
-}
-```
-
-An **overlay** is that same shape for one package, published so everyone else
-gets it too: a `nothrow.json` with a `package` field naming its target, in a
-package under the `@no-throw` scope. It is matched by that field and never by
-its own npm name — `@no-throw/lodash` is a convention, not a lookup — so an
-overlay for a scoped target needs no escape from npm's flat scopes. The
-resolver is version-blind in v1.
-
-Both are held to [a published schema](packages/core/schema) — the same file the
-engine validates them against, so what your editor accepts and what the tool
-honors cannot drift apart. Both may key **interface members** and state
-**accessor facts**, so `declare const _: LoDashStatic` is colorable — neither
-of which `nothrow emit` will ever write for a package whose source it verified.
-
-A package's own manifest is verified against SRI hashes of the files it was
-written for. A mismatch floors **that manifest** and names the file that
-drifted; an overlay and an override are about a package rather than in it, so
-neither is touched.
+cannot resolve at all — is the carriers' question rather than the program's,
+and [rung three](#3-handle-a-dependency-floor) is where that chain lives.
 
 ## Higher-order functions
 
 A function that calls one of its own parameters is not throwing — it is
-non-throwing **given** that parameter. The condition is read off the body, not
-declared, so there is no annotation to keep in sync:
+non-throwing **given** that parameter. That is a **conditional mark**, and the
+condition is read off the body rather than declared, so there is no annotation
+to keep in sync:
 
 ```ts
 /** @nothrow */
@@ -230,21 +503,21 @@ myEach(users, (u) => JSON.parse(u.raw)); // reported here, at the call
 
 Only parameters the body actually *enters* are conditioned. One you merely hand
 onward is not, so a registry stays unconditionally clean; one you enter inside a
-`try`/`catch` is neutralized there, which is why a `safely()`-style wrapper —
-enter the callback inside `try`, return the error as a value — verifies with no
-help from the engine.
+`try`/`catch` is neutralized there, which is why [`safely()`](#the-safely-recipe)
+verifies unaided.
 
-Conditions are paths, not positions: a body calling `repo.save(item)`
-conditions `repo.save`, so refactoring a callback into an object parameter does
-not make your function unmarkable. And when the argument you pass is itself one
-of *your* parameters, the condition propagates up to you instead of discharging
-— which is how a chain of helpers stays markable all the way down.
+Conditions are **condition paths** — access chains over your own parameters,
+not positions. A body calling `repo.save(item)` conditions `repo.save`, so
+refactoring a callback into an object parameter does not make your function
+unmarkable. And when the argument you pass is itself one of *your* parameters,
+the condition **propagates** up to you instead of discharging — which is how a
+chain of helpers stays markable all the way down.
 
 A condition is a precondition, exactly like a parameter type: it is discharged
-at every call, so no caller ever holds a promise it cannot cash. Where the
-argument cannot be resolved — a `let`, a function captured by a factory — the
-call floors, and the diagnostic names the parameter, where the body enters it,
-and your outs.
+at every call by a **call-site join** of the argument's color, so no caller ever
+holds a promise it cannot cash. Where the argument cannot be resolved — a `let`,
+a function captured by a factory — the call floors, and the diagnostic names the
+parameter, where the body enters it, and your outs.
 
 ## Generators
 
@@ -252,9 +525,9 @@ A generator's call and its iterator carry one color between them, and `@nothrow`
 covers both: the call is clean **and** consuming what it hands back is clean.
 
 Calling a generator runs no body, so a bare call is not an escape however the
-body ends — the escape is wherever the body actually runs. `for…of`, spread,
-array destructuring, `.next()`, `.return()` and `yield*` are those places, and
-each is reported and bridged there.
+body ends — the escape is wherever the body actually runs. Those are the
+**consumption sites**: `for…of`, spread, array destructuring, `.next()`,
+`.return()` and `yield*`, and each is reported and bridged there.
 
 ```ts
 function* lines(): Generator<string> {
@@ -316,8 +589,9 @@ a property is unknowable from here.
 **The bridge is `try { await … } catch`**, and it is the one that always works,
 so nobody has to reason about whether the callee is `async`: where the call *is*
 the awaited expression, the `await` answers for both channels. Drop the `await`
-and it is no bridge at all — on a visibly-`async` callee the `catch` can never
-fire, which gets a diagnostic of its own rather than a silent green.
+and it is no bridge at all but a **fake bridge** — on a visibly-`async` callee
+the `catch` can never fire, which gets a diagnostic of its own rather than a
+silent green.
 
 ```ts
 /** @nothrow */
@@ -331,8 +605,8 @@ export function pretendsToBridge(): void {
 ```
 
 **A discarded promise is an escape.** A visibly-`async` callee cannot
-sync-throw, so its bare call is not a sync escape — but dropping a throwing
-promise in statement position is one, `void` included, because Node escalates
+sync-throw, so its bare call is not a sync escape — but a **float**, a promise
+dropped in statement position, is one, `void` included, because Node escalates
 the unhandled rejection while the caller sees a clean return. A terminal
 `.catch(h)` with a non-throwing handler is the sanctioned fire-and-forget, and
 a rethrowing handler is simply a throwing `h`:
@@ -378,7 +652,7 @@ discharge. Both floor.
 ## Calls you did not write
 
 Some expressions run a body with no callee anywhere in the syntax. They are
-call sites all the same, and the static type is what finds them.
+**escape sites** all the same, and the static type is what finds them.
 
 ```ts
 class Config {
@@ -414,53 +688,29 @@ is the overwhelmingly common case. A type declaring its own `toString`,
 `valueOf` or `Symbol.toPrimitive` takes that member's color, and `any` or
 `unknown` floors.
 
-## Publishing a package
+## Suggestions, never fixes
 
-Your marks are verified against your source, and a consumer never sees your
-source: `removeComments` strips the tags, and declaration emit erases `async`.
-`nothrow emit` writes down what survives that.
+A diagnostic whose remedy is a mechanical bridge carries an ESLint suggestion
+offering it, shaped by where it lands: `try`/`catch` around the statement, or
+`try { await … } catch` where what escapes is a rejection — and, for a `catch`
+that cannot fire because nothing is awaited, the missing `await` alone.
 
-```bash
-nothrow emit           # lower verified marks into nothrow.json
-nothrow emit --check   # fail if the manifest has drifted from the source
-```
+Nothing is ever an ESLint **fix**. Wrapping a call in a bridge changes what the
+program does with an error, so the edit is always yours to accept; `--fix` would
+otherwise rewrite a codebase into one that swallows everything and reports
+nothing.
 
-Run it after your build, from the package root — it reads `tsconfig.json` in
-the working directory unless `--project` names another one, and writes
-`nothrow.json` beside the first `package.json` above the project, which is
-where a consumer's walk-up finds it. What goes in are the marks the engine
-verifies, keyed by the name a consumer imports; what comes with them are the
-facts the `.d.ts` cannot carry — `async`, the paths a conditional mark is clean
-given, and SRI hashes of everything the build produced from that source, which
-is every body a color was read off.
+An offer is made only where the edit is both mechanical and honest. Where the
+way out is something else — moving a mark, returning the error instead of
+throwing it — there is none. Nor is one made where the wrap would break code
+that has nothing to do with the escape, or would reach past a function
+boundary: wrapping `const value = risky()` moves the binding out of the scope
+that reads it, and wrapping around a callback would be the fake bridge these
+rules exist to report.
 
-**Emit refuses what it cannot verify.** A mark whose body escapes, a mark that
-binds to nothing, a mark on an accessor — each exits non-zero naming the mark,
-and nothing is written. A published manifest is therefore true by construction
-rather than by discipline, which is what lets a consumer trust it over your
-declarations.
-
-The accessor case is a deliberate asymmetry. A manifest can state an accessor's
-color, and hand-written overlays need to; emit never does, because declaration
-emit preserves `get` and `set` — if you own the source, the accessor is already
-in your `.d.ts`, and what a consumer needs is a color you cannot verify for
-both halves at once. The same holds for interface members.
-
-Wire `--check` into the script that publishes, so a manifest cannot go out
-stale:
-
-```json
-{
-  "scripts": {
-    "prepublishOnly": "tsc && nothrow emit --check"
-  }
-}
-```
-
-It recomputes the manifest and compares. A rebuilt `.js` with identical
-declarations is drift like any other, because the hash is what your consumers
-check. Exit codes are `0` wrote or matched, `1` refused or drifted, `2` could
-not run.
+Wrapping a `return` *is* offered, and it leaves you a compiler error. That is
+the point: the bridge is complete, and what is left is the one thing no tool
+can decide — what the function returns now that it does not throw.
 
 ## Status
 
@@ -492,7 +742,7 @@ Two things are worth knowing before you try it. `Array.prototype.map`,
 `filter`, `slice` and `push` ship **throwing**, because `ArraySpeciesCreate`
 and `Set` on a frozen array are reachable without lying to the type system and
 [the dial sign-off](docs/baseline-dials.md) rules those a hazard; the
-`forEach`/`every`/`some`/`find` family is where the conditional entries are.
+`forEach`/`every`/`some`/`find` family is where the **conditional entries** are.
 And writing through an unnarrowable key — `xs[i] = v` — floors, because the
 join reaches every accessor the receiver has.
 
@@ -514,6 +764,13 @@ so `import ts from "typescript"` still resolves and everything on it is
 `undefined`. Left unbounded, that is a peer a consumer satisfies at install and
 a `TypeError` at the first rule run — a worse place to find out. TypeScript 6 is
 the last release carrying the API, and the suite runs there too.
+
+The plugin takes no peer on typescript-eslint. It never resolves the package —
+the preset is handed your plugin object instead — so an entry there would be a
+compatibility claim nothing checks, and the common install is the umbrella
+`typescript-eslint`, a different package name a peer on the plugin would never
+have matched anyway. What the preset needs is stated where it can be enforced:
+in the argument.
 
 ## Working on it
 
