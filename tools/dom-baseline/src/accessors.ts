@@ -1,4 +1,4 @@
-import type { AccessorFact, Color, DomMember } from "@nothrow/core/baseline";
+import type { AccessorFact, Color, DomMember } from "@no-throw/core/baseline";
 
 import type { JoinedMember } from "./join.js";
 import type { Proposal } from "./classify.js";

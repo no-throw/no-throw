@@ -41,7 +41,7 @@ project:
 
 ```js
 // eslint.config.js
-import nothrow from "@nothrow/eslint-plugin";
+import nothrow from "@no-throw/eslint-plugin";
 import tseslint from "typescript-eslint";
 
 export default [
@@ -79,17 +79,41 @@ something different.
 
 ## Where a mark binds
 
-`@nothrow` binds on a `function` declaration including `export default`; a
-single-declarator variable statement with a function or arrow initializer; a
-class method or constructor; an accessor, in a class or an object literal; and
-an object-literal method or function-valued property. Anywhere else is an error
-naming the nearest valid site, so a mark that binds to nothing is never a silent
-no-op you trust for years.
+`@nothrow` binds where you write it on a **declaration whose own body — or
+whose initializer, read through parentheses, `as` and `satisfies` — is exactly
+one function literal**. So it binds on a `function` declaration including every
+form of `export default`; a single-declarator variable statement; a class
+method, constructor, accessor or property field, instance, `static` and
+`accessor` alike; and an object-literal method, accessor or function-valued
+property. Anywhere else is an error, so a mark that binds to nothing is never a
+silent no-op you trust for years.
+
+```ts
+class Service {
+  /** @nothrow */
+  handle = (): void => {}; // binds — the body is right there
+}
+
+/** @nothrow */
+export default (): void => {}; // binds, and emits under the key `default`
+
+/** @nothrow */
+export const alias = handle; // error — the body is not at this declaration
+```
+
+The body has to be *at* the declaration, not merely reachable from it, because
+otherwise the claim would be written in one file and checked in another. Each
+way of missing reports itself: a declaration holding something that is not a
+function written there names the declaration; a function with no declaration at
+all — one passed straight to a call, or assigned with `o.f = () => {}` — is
+told there is nothing to bind to, and is never told to move the mark onto the
+function around it, which would be a different claim.
 
 Positions with no body reject the mark outright — `declare`/ambient
-declarations, interface members, abstract methods and overload signatures. On an
-overloaded function the mark goes on the implementation signature, which is the
-thing that throws. For an ambient declaration, assert the color in
+declarations, interface members, abstract methods and overload signatures. The
+rule already refuses them; what each adds is its own out. On an overloaded
+function the mark goes on the implementation signature, which is the thing that
+throws. For an ambient declaration, assert the color in
 `nothrow.overrides.json` instead: an in-source `@nothrow` means *verified seed*
 and nothing else.
 
@@ -147,7 +171,7 @@ below it:
 | rung | what it is | who writes it |
 | --- | --- | --- |
 | `nothrow.overrides.json` | one file at your project root | you |
-| an `@nothrow/*` overlay | an installed package of colors | anyone |
+| an `@no-throw/*` overlay | an installed package of colors | anyone |
 | what the package ships | its own `nothrow.json`, else its surviving `@nothrow` tags | its author |
 | the baseline | colors for TypeScript's own libs, keyed by lib target | us |
 
@@ -172,8 +196,8 @@ yourself, and nothing outranks you:
 
 An **overlay** is that same shape for one package, published so everyone else
 gets it too: a `nothrow.json` with a `package` field naming its target, in a
-package under the `@nothrow` scope. It is matched by that field and never by
-its own npm name — `@nothrow/lodash` is a convention, not a lookup — so an
+package under the `@no-throw` scope. It is matched by that field and never by
+its own npm name — `@no-throw/lodash` is a convention, not a lookup — so an
 overlay for a scoped target needs no escape from npm's flat scopes. The
 resolver is version-blind in v1.
 
@@ -448,7 +472,7 @@ and coercion — **generators and the sync iteration protocol**, **async** —
 `await`, promise chains, floats and `for await` — **hybrid inference** for
 unmarked functions whose bodies are visible, **conditional cleanliness** for
 higher-order functions, **the whole carrier chain** — a local
-`nothrow.overrides.json`, installed `@nothrow/*` overlays, what a dependency
+`nothrow.overrides.json`, installed `@no-throw/*` overlays, what a dependency
 ships, which is its own `nothrow.json` or, absent a valid one, its surviving
 `@nothrow` tags, and the **shipped standard-library and DOM baselines** —
 **`nothrow emit` and `emit --check`**, and the `configs.recommended` preset.
@@ -457,7 +481,7 @@ your outs, and every out it names is a rung you can really reach for.
 
 The baselines apply per lib target, so a project with no `dom` in its `lib`
 gets no DOM colors, and a member with no entry floors — which is how a
-TypeScript release landing ahead of a `@nothrow/core` release stays safe. What
+TypeScript release landing ahead of a `@no-throw/core` release stays safe. What
 that buys: `Object.keys`, `s.trim()`, `for…of` over an array or a `Map`,
 `bytes[i]` on a `Uint8Array`, coercing an object that inherits its `toString`,
 spreading a DOM element and `el.id` are all green, and `users.forEach(cb)` is
@@ -474,13 +498,22 @@ join reaches every accessor the receiver has.
 
 ## Packages
 
-Three packages in the `@nothrow` npm scope, versioned in lockstep.
+Three packages in the `@no-throw` npm scope, versioned in lockstep.
 
 | package | what it is |
 | --- | --- |
-| [`@nothrow/core`](packages/core) | the engine — color resolution and the escape-site walk |
-| [`@nothrow/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
-| [`@nothrow/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
+| [`@no-throw/core`](packages/core) | the engine — color resolution and the escape-site walk |
+| [`@no-throw/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
+| [`@no-throw/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
+
+The engine reads your program through the TypeScript compiler API in process,
+and all three packages carry that API across their own surface, so all three
+take `typescript` as a peer dependency at `>=5.0.0 <7.0.0`. The ceiling is not
+caution: TypeScript 7 ships the compiler as a Go binary and no programmatic API,
+so `import ts from "typescript"` still resolves and everything on it is
+`undefined`. Left unbounded, that is a peer a consumer satisfies at install and
+a `TypeError` at the first rule run — a worse place to find out. TypeScript 6 is
+the last release carrying the API, and the suite runs there too.
 
 ## Working on it
 
@@ -494,18 +527,29 @@ diagnostics they must produce. Every behavior lands there, the CLI's included:
 `nothrow emit` is exercised as a process over producer packages, and what it
 writes is read back by a separate consumer project through the ordinary driver.
 
-The plugin's `eslint` peer range names the majors a consumer may install it
-against. CI enumerates that range and holds it to two things per major: the
-suite passes there, and a packed tarball installs there under
-`strict-peer-dependencies=true`. Widening the claim widens what has to pass.
+Two peer ranges name what a consumer may install these packages against: the
+plugin's `eslint`, and the `typescript` all three share. CI enumerates each
+range and holds it to two things per major — the suite passes there, and a
+packed tarball installs there under `strict-peer-dependencies=true`. Widening a
+claim widens what has to pass.
 
 ```bash
-pnpm run gate:peer   # install what would be published, the way a consumer does
+pnpm run gate:peer:eslint      # install what would be published, the way a consumer does
+pnpm run gate:peer:typescript
 ```
+
+Both take `-- --self-check`. What makes one install evidence about three
+packages is that the range is read from the manifests before anything is
+installed: a package that reaches for the compiler and declares no peer, or
+declares a different one from its siblings, stops the read rather than
+appearing in a claim nothing checks. A consumer installing two of these gets
+the intersection of what they declare, so that intersection has to be a range
+somebody wrote down.
 
 The suite half needs the workspace resolved on the major under test, which
 `node scripts/eslint-peer-matrix.mjs pin 10 && pnpm install --no-frozen-lockfile`
-does. That edits the root manifest and the lockfile; `git checkout -- package.json
+does — `typescript-peer-matrix.mjs` takes the same three commands for the other
+range. That edits the root manifest and the lockfile; `git checkout -- package.json
 pnpm-lock.yaml` puts them back.
 
 The shipped baselines are generated data, so their correctness is CI over that

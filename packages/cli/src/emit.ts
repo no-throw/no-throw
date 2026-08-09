@@ -4,7 +4,7 @@ import {
   type EmitRefusal,
   type EmitSite,
   type ManifestDocument,
-} from "@nothrow/core";
+} from "@no-throw/core";
 import { readFileSync, writeFileSync } from "node:fs";
 import { relative, sep } from "node:path";
 import { openProject } from "./project.js";

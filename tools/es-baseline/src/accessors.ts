@@ -1,4 +1,4 @@
-import type { AccessorFact, Color, LibMember, TypeDomains } from "@nothrow/core/baseline";
+import type { AccessorFact, Color, LibMember, TypeDomains } from "@no-throw/core/baseline";
 
 import { classifyAgainstSpec, specFor } from "./classify.js";
 import type { Dials } from "./dials.js";

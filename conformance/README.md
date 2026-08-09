@@ -26,7 +26,7 @@ fixtures/<name>/
     index.d.ts      what the consumer's program actually sees
     index.js        never analyzed, only hashed
     nothrow.json    the colors the package ships
-  node_modules/@nothrow/<overlay>/
+  node_modules/@no-throw/<overlay>/
     package.json    a name deliberately unlike its target's, since nothing reads it
     nothrow.json    the same shape, naming its target in `package`
 ```
@@ -49,7 +49,7 @@ line endings would fail every hash and turn the staleness fixtures into noise.
 Tampering is expressed the same way: the file simply differs from what the
 manifest recorded.
 
-Fixtures import nothing from `@nothrow/*` and contain no test-framework
+Fixtures import nothing from `@no-throw/*` and contain no test-framework
 constructs. They are what a user's project looks like.
 
 The baseline colors `lib.*.d.ts`, so a fixture about something else can use the
@@ -142,7 +142,7 @@ dependency's suggestion text here would assert nothing about us.
 ## The driver is thin, and swappable
 
 `src/driver-eslint.ts` runs a fixture through the real
-`@nothrow/eslint-plugin`, over the real typescript-eslint parser, and returns
+`@no-throw/eslint-plugin`, over the real typescript-eslint parser, and returns
 the diagnostics. It is the only part of the suite that knows a linter exists:
 driving the same fixtures through a standalone checker means writing a second
 driver, not touching a fixture.

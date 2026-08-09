@@ -133,7 +133,7 @@ export function loadSpecIndex(): readonly SpecTarget[] {
     return JSON.parse(readFileSync(INDEX_FILE, "utf8")) as readonly SpecTarget[];
   } catch {
     throw new Error(
-      `No cached spec index at ${fileURLToPath(INDEX_FILE)}. Run \`pnpm --filter @nothrow/dom-baseline-tools run fetch-specs\` first.`,
+      `No cached spec index at ${fileURLToPath(INDEX_FILE)}. Run \`pnpm --filter @no-throw/dom-baseline-tools run fetch-specs\` first.`,
     );
   }
 }
@@ -145,7 +145,7 @@ export function* loadCachedSpecs(): Generator<CachedSpec> {
     files = readdirSync(dir).filter((name) => name.endsWith(".html")).sort();
   } catch {
     throw new Error(
-      `No cached specs at ${dir}. Run \`pnpm --filter @nothrow/dom-baseline-tools run fetch-specs\` first.`,
+      `No cached specs at ${dir}. Run \`pnpm --filter @no-throw/dom-baseline-tools run fetch-specs\` first.`,
     );
   }
   for (const name of files) {

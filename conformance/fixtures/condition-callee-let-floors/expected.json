@@ -8,7 +8,7 @@
       "endLine": 5,
       "endColumn": 6,
       "messageId": "unbridgedCall",
-      "message": "Call to `g` escapes this `@nothrow` function: it is reached through a `let`, whose value the engine does not yet track across assignments, so which function runs here is not settled. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Call to `g` escapes this `@nothrow` function: it is reached through a `let`, whose value the engine does not yet track across assignments, so which function runs here is not settled. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

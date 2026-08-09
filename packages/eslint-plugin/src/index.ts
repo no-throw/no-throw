@@ -4,7 +4,7 @@ import { noEscapingThrow } from "./rules/no-escaping-throw.js";
 import { validMark } from "./rules/valid-mark.js";
 
 const plugin = {
-  meta: { name: "@nothrow/eslint-plugin" },
+  meta: { name: "@no-throw/eslint-plugin" },
   rules: {
     "no-escaping-throw": noEscapingThrow,
     "valid-mark": validMark,

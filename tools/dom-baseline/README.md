@@ -1,7 +1,7 @@
-# `@nothrow/dom-baseline-tools`
+# `@no-throw/dom-baseline-tools`
 
 Maintainer-side tooling. Not published, not a `nothrow` subcommand. It generates
-the DOM baseline shipped as engine data in `@nothrow/core` under the `dom` lib
+the DOM baseline shipped as engine data in `@no-throw/core` under the `dom` lib
 key, and hosts the three CI gates that keep that data maintainable.
 
 It is a port of the ES pipeline, and the shape is the same — extract, classify
@@ -12,8 +12,8 @@ prose.
 ## Generating
 
 ```sh
-pnpm --filter @nothrow/dom-baseline-tools run fetch-specs   # ~420 MB, cached
-pnpm --filter @nothrow/dom-baseline-tools run fetch-gecko   # ~1.4 MB, cached
+pnpm --filter @no-throw/dom-baseline-tools run fetch-specs   # ~420 MB, cached
+pnpm --filter @no-throw/dom-baseline-tools run fetch-gecko   # ~1.4 MB, cached
 pnpm run dom:generate
 ```
 

@@ -10,71 +10,25 @@
 //
 //   node scripts/gate-eslint-peer.mjs
 //   node scripts/gate-eslint-peer.mjs --self-check
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { installConsumer, pack } from "./consumer-install.mjs";
 import { declaredMajors } from "./eslint-peer-range.mjs";
 
-const repoRoot = fileURLToPath(new URL("../", import.meta.url));
-
-// On Windows `pnpm` may be a `.cmd`, which Node refuses to spawn without a
-// shell, and a shell wants its arguments quoted — the temp directories below can
-// sit under a path with a space in it.
-function pnpm(args, options) {
-  return process.platform === "win32"
-    ? execFileSync("pnpm", args.map((argument) => `"${argument}"`), {
-        ...options,
-        shell: true,
-      })
-    : execFileSync("pnpm", args, options);
-}
-
-function pack(packageDirectory, destination) {
-  const output = pnpm(["pack", "--pack-destination", destination], {
-    cwd: join(repoRoot, packageDirectory),
-    encoding: "utf8",
-  });
-  return output.trim().split("\n").at(-1).trim();
-}
-
 function install(major, tarballs) {
-  const directory = mkdtempSync(join(tmpdir(), "nothrow-peer-"));
-
-  // `@nothrow/core` is a sibling at a version no registry has yet, so the
-  // consumer has to be told where it is. Overriding it leaves the `eslint` peer
-  // this gate is about resolved the way a real install would resolve it.
-  const manifest = {
-    name: "nothrow-peer-gate-consumer",
-    version: "0.0.0",
-    private: true,
+  return installConsumer({
     dependencies: {
-      "@nothrow/eslint-plugin": `file:${tarballs.plugin}`,
+      "@no-throw/eslint-plugin": `file:${tarballs.plugin}`,
       "@typescript-eslint/eslint-plugin": "^8.18.0",
       eslint: `^${major}.0.0`,
       typescript: "^5.7.2",
     },
-    pnpm: { overrides: { "@nothrow/core": `file:${tarballs.core}` } },
-  };
-  writeFileSync(
-    join(directory, "package.json"),
-    `${JSON.stringify(manifest, null, 2)}\n`,
-  );
-  writeFileSync(join(directory, ".npmrc"), "strict-peer-dependencies=true\n");
-
-  try {
-    pnpm(["install", "--ignore-scripts"], {
-      cwd: directory,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    return { refused: false, output: "" };
-  } catch (error) {
-    return { refused: true, output: `${error.stdout ?? ""}${error.stderr ?? ""}` };
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
+    // `@no-throw/core` is a sibling at a version no registry has yet, so the
+    // consumer has to be told where it is. Overriding it leaves the `eslint`
+    // peer this gate is about resolved the way a real install would resolve it.
+    overrides: { "@no-throw/core": `file:${tarballs.core}` },
+  });
 }
 
 function run() {
@@ -116,7 +70,7 @@ function run() {
         `ESLint ${excluded} is outside the declared range and a consumer installed on it anyway: this gate cannot fail.`,
       );
     }
-    if (!output.includes("@nothrow/eslint-plugin")) {
+    if (!output.includes("@no-throw/eslint-plugin")) {
       throw new Error(
         `ESLint ${excluded} was refused, but not over our peer, so the gate would pass for the wrong reason:\n${output}`,
       );

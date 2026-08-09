@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { memberKey, staticMemberKey } from "@nothrow/core/baseline";
+import { memberKey, staticMemberKey } from "@no-throw/core/baseline";
 
 /**
  * Gecko's `.webidl` annotates operations and attributes it can throw from with

@@ -1,0 +1,14 @@
+{
+  "description": "An assignment is not a declaration, and a call to `target.handle` resolves through the declaration of `handle` rather than through what was last assigned to it — so the assigned function is never consulted. Written inside `outer`, and the message names no site to move to for the same reason the call-argument one does not.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 4,
+      "column": 7,
+      "endLine": 4,
+      "endColumn": 15,
+      "messageId": "markOnAssignment",
+      "message": "`@nothrow` binds to nothing on an assignment: an assignment is not a declaration, and a call through a member resolves to the member's declaration rather than to whatever was last assigned to it. Mark that declaration, or assert its color in `nothrow.overrides.json`."
+    }
+  ]
+}

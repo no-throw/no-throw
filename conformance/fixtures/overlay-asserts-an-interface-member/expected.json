@@ -8,7 +8,7 @@
       "endLine": 10,
       "endColumn": 15,
       "messageId": "unbridgedCall",
-      "message": "Call to `_.detonate` escapes this `@nothrow` function: it is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, an override, or the standard-library baseline — so calling it can throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Call to `_.detonate` escapes this `@nothrow` function: it is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, an override, or the standard-library baseline — so calling it can throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     },
     {
       "file": "src/index.ts",
@@ -17,7 +17,7 @@
       "endLine": 15,
       "endColumn": 19,
       "messageId": "unbridgedHiddenTransfer",
-      "message": "Reading `_.version` escapes this `@nothrow` function: it runs the getter `version`, which is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, an override, or the standard-library baseline — so calling it can throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Reading `_.version` escapes this `@nothrow` function: it runs the getter `version`, which is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, an override, or the standard-library baseline — so calling it can throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

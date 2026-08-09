@@ -1,4 +1,4 @@
-import type { DomMember, LibParam, LibProgram } from "@nothrow/core/baseline";
+import type { DomMember, LibParam, LibProgram } from "@no-throw/core/baseline";
 
 import { Arbitrary } from "./arbitrary.js";
 import { createDomEnvironment, receiverFor, type DomEnvironment } from "./environment.js";

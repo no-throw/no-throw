@@ -8,7 +8,7 @@
       "endLine": 16,
       "endColumn": 21,
       "messageId": "conditionArgumentFloored",
-      "message": "Call to `runAll` escapes this `@nothrow` function: it is non-throwing given `cb`, and the argument passed for it is itself non-throwing only given conditions of its own, which no argument at this call site can discharge. `runAll` enters `cb` at src/index.ts:11. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Call to `runAll` escapes this `@nothrow` function: it is non-throwing given `cb`, and the argument passed for it is itself non-throwing only given conditions of its own, which no argument at this call site can discharge. `runAll` enters `cb` at src/index.ts:11. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

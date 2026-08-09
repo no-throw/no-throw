@@ -8,7 +8,7 @@
       "endLine": 15,
       "endColumn": 16,
       "messageId": "unbridgedAwait",
-      "message": "Awaiting `partial` escapes this `@nothrow` function: the promise is named by no call in the syntax, and a parameter, a property, a non-call initializer or a stored partial chain is unknowable from here. Your outs, in precedence order: bridge it with `try { await … } catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Awaiting `partial` escapes this `@nothrow` function: the promise is named by no call in the syntax, and a parameter, a property, a non-call initializer or a stored partial chain is unknowable from here. Your outs, in precedence order: bridge it with `try { await … } catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     },
     {
       "file": "src/index.ts",
@@ -17,7 +17,7 @@
       "endLine": 20,
       "endColumn": 32,
       "messageId": "unbridgedAwait",
-      "message": "Awaiting `rejects()[method](keep)` escapes this `@nothrow` function: the call that produced it is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, an override, or the standard-library baseline — so the promise it hands back can reject. Your outs, in precedence order: bridge it with `try { await … } catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Awaiting `rejects()[method](keep)` escapes this `@nothrow` function: the call that produced it is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, an override, or the standard-library baseline — so the promise it hands back can reject. Your outs, in precedence order: bridge it with `try { await … } catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

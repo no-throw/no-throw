@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { collectLibMembers, createLibProgram } from "@nothrow/core/baseline";
+import { collectLibMembers, createLibProgram } from "@no-throw/core/baseline";
 import type ts from "typescript";
 
 /**

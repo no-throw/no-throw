@@ -1,4 +1,4 @@
-# `@nothrow/core`
+# `@no-throw/core`
 
 The `no-throw` analysis engine. It owns color resolution, the SCC fixpoint, the
 escape-site walk, the resolver chain and the shipped baseline, and it knows

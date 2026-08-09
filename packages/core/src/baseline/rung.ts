@@ -22,7 +22,7 @@ import {
  *
  * A member with no entry is not answered here at all, which is the drift
  * guarantee stated as behavior: a TypeScript release landing ahead of a
- * `@nothrow/core` release floors its newcomers by construction.
+ * `@no-throw/core` release floors its newcomers by construction.
  */
 export const baselineRung: CarrierRung = (query): CarrierAnswer | undefined => {
   const { declaration } = query;

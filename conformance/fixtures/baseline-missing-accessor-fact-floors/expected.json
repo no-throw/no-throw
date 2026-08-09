@@ -8,7 +8,7 @@
       "endLine": 8,
       "endColumn": 21,
       "messageId": "unbridgedHiddenTransfer",
-      "message": "Reading `error.stack` escapes this `@nothrow` function: it runs the getter `stack`, which is declared as a plain property in a `lib.*.d.ts` that the shipped standard-library baseline states no accessor fact for, and the libs declare real getters as properties, so silence cannot be read as data. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Reading `error.stack` escapes this `@nothrow` function: it runs the getter `stack`, which is declared as a plain property in a `lib.*.d.ts` that the shipped standard-library baseline states no accessor fact for, and the libs declare real getters as properties, so silence cannot be read as data. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }
