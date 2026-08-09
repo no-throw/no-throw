@@ -38,6 +38,13 @@ export type CarrierAnswer =
  */
 export interface CarrierQuery {
   readonly declaration: ts.Declaration;
+  /**
+   * What the program knows about the declaration beyond where it was written.
+   * A rung needs it wherever one declaration is not the whole member — a lib
+   * type the project augments has two, and which one arrives here is overload
+   * resolution's business rather than a fact about the member.
+   */
+  readonly checker: ts.TypeChecker;
   /** The package the declaration ships in. */
   readonly home: PackageHome | undefined;
   /** The package the file being analyzed ships in. */
@@ -63,6 +70,7 @@ export function createCarrier(
 ): Carrier {
   const asking = packageHomeOf(sourceFile.fileName);
   const answers = new Map<ts.Declaration, CarrierAnswer | undefined>();
+  const checker = program.getTypeChecker();
 
   return {
     answerFor(declaration) {
@@ -71,6 +79,7 @@ export function createCarrier(
       const home = packageHomeOf(declaration.getSourceFile().fileName);
       const query: CarrierQuery = {
         declaration,
+        checker,
         home,
         asking,
         key:
