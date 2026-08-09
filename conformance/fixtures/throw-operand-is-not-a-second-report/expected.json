@@ -1,0 +1,32 @@
+{
+  "description": "One `throw`, one report. What builds the value a `throw` hands out cannot be answered for on its own — bridging `new MyError(…)` leaves the `throw` it feeds exactly where it was, and removing the `throw` takes its operand with it — so the escapes inside one are subsumed by the `uncaughtThrow` that already names the problem, whether the operand is a construction whose body was read or a call that floors. `returnsBuilt` is the control: the same call outside a `throw` is reported, so this is a subsumption rather than a hole.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 11,
+      "column": 3,
+      "endLine": 11,
+      "endColumn": 27,
+      "messageId": "uncaughtThrow",
+      "suggestions": []
+    },
+    {
+      "file": "src/index.ts",
+      "line": 16,
+      "column": 3,
+      "endLine": 16,
+      "endColumn": 21,
+      "messageId": "uncaughtThrow",
+      "suggestions": []
+    },
+    {
+      "file": "src/index.ts",
+      "line": 21,
+      "column": 10,
+      "endLine": 21,
+      "endColumn": 21,
+      "messageId": "unbridgedCall",
+      "message": "Call to `build` escapes this `@nothrow` function: it is declared without a body — an ambient declaration, a `.d.ts`, or a value known only by its function type — and no mark, manifest, overlay, override or baseline entry colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

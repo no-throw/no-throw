@@ -252,12 +252,91 @@ leaves the rest to the ones below it:
 Under all four is the floor: unanswered means throwing. The guarantee never
 rests on silence.
 
+**A floor over the standard library names two outs, not four.** The top three
+carriers are keyed by npm package name — `packages: { <name>: … }` in the
+overrides file, the `package` field in an overlay, the manifest a package ships
+— and no key in that grammar reaches `String.prototype.slice`. Nobody owns
+TypeScript's `lib.*.d.ts` either. So the baseline is the only carrier that can
+answer for a lib member, and the message says so rather than sending you at
+three doors that do not open:
+
+```text
+Call to `JSON.parse` escapes this `@nothrow` function: it is colored `throwing`
+by the shipped standard-library baseline, so calling it can throw. Your outs:
+bridge this call with `try`/`catch`; or, if it cannot throw, report it against
+the shipped standard-library baseline at
+https://github.com/MidnightDesign/no-throw/issues — the other three carriers are
+keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts`
+member.
+```
+
+The second out is us because the baseline is the one rung you cannot write. Two
+tables ship, by two generators over two specifications, and the message names
+the one that owes the answer: `Element#innerHTML` sends you to the DOM baseline,
+not the standard-library one. A lib member a baseline is *silent* about says
+that instead — it is a floor by absence rather than a color anyone stated — and
+[offers no edit](#suggestions-never-fixes).
+
 Both the overrides file and an overlay are held to [a published
 schema](packages/core/schema) — the same file the engine validates them
 against, so what your editor accepts and what the tool honors cannot drift
-apart. Both may key **interface members** and state **accessor facts**, so
-`declare const _: LoDashStatic` is colorable — neither of which `nothrow emit`
-will ever write for a package whose source it verified.
+apart. Both may key **interface members** and state **accessor facts** — neither
+of which `nothrow emit` will ever write for a package whose source it verified.
+
+#### What a key looks like
+
+A key is a subpath and a **JSDoc namepath**: the name a consumer imports, then
+`#` for an instance member and `.` for a static or namespace one. That grammar
+is what makes the lodash shape colorable, since `declare const _: LoDashStatic`
+publishes no function you could name — the members live on the interface:
+
+```ts
+// node_modules/lodashish/index.d.ts
+export interface LoDashStatic {
+  chunk<T>(array: readonly T[], size: number): T[][];
+  detonate(): void;
+  version: string;
+}
+
+export declare const _: LoDashStatic;
+```
+
+```json
+{
+  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.schema.json",
+  "version": 1,
+  "package": "lodashish",
+  "exports": {
+    ".": {
+      "LoDashStatic#chunk": { "color": "non-throwing", "conditions": [] },
+      "LoDashStatic#detonate": { "color": "throwing" },
+      "LoDashStatic#version": { "accessor": { "get": "throwing", "set": "throwing" } }
+    }
+  }
+}
+```
+
+Key the **interface**, not the `const` — `_#chunk` names nothing. A default
+export is keyed `default`, and its members hang off that: `default#handle`,
+`default.make`. The forms in full:
+
+| key | what it names |
+| --- | --- |
+| `safeParse` | a published function |
+| `default` | the default export |
+| `Wrapper#size` | an instance member of a published class or interface |
+| `Service.make` | a static member, or a member of a published namespace |
+
+The walk that assigns keys starts at the package's entry points and follows
+what they publish, so a name no entry point reaches has no key, and a member
+whose name is not a plain identifier has none either.
+
+One shape has no namepath worth writing down yet, and it is worth knowing
+because the obvious guess colors nothing. Where a member's *type* carries the
+call signature — `red: Formatter`, with `Formatter` an interface declaring
+`(input: string): string` — a call resolves to that signature rather than to
+the property, so `Colors#red` is a key for something nobody enters. Bridge
+those, or assert the color on something the grammar names.
 
 A package's own manifest is verified against SRI hashes of the files it was
 written for. A mismatch floors **that manifest**, names the file that drifted,
@@ -708,6 +787,13 @@ boundary: wrapping `const value = risky()` moves the binding out of the scope
 that reads it, and wrapping around a callback would be the fake bridge these
 rules exist to report.
 
+Nor is one made where **nobody proved the throw**. An offer endorses the bridge
+it writes, and a `lib.*.d.ts` member the baseline says nothing about is throwing
+by this tool's assumption — one you cannot change from where you are reading it.
+`JSON.parse` keeps its offer, because a baseline entry colored `throwing` is
+evidence somebody wrote down; `new Proxy(…)`, which has no entry at all, does
+not. Both messages still name the bridge first. Only one presses it.
+
 Wrapping a `return` *is* offered, and it leaves you a compiler error. That is
 the point: the bridge is complete, and what is left is the one thing no tool
 can decide — what the function returns now that it does not throw.
@@ -727,7 +813,9 @@ ships, which is its own `nothrow.json` or, absent a valid one, its surviving
 `@nothrow` tags, and the **shipped standard-library and DOM baselines** —
 **`nothrow emit` and `emit --check`**, and the `configs.recommended` preset.
 Everything the chain cannot answer floors to throwing with a diagnostic naming
-your outs, and every out it names is a rung you can really reach for.
+your outs, and every out it names is a rung you can really reach for — which is
+why a floor over a `lib.*.d.ts` member names [two of them rather than
+four](#3-handle-a-dependency-floor).
 
 The baselines apply per lib target, so a project with no `dom` in its `lib`
 gets no DOM colors, and a member with no entry floors — which is how a
@@ -777,6 +865,17 @@ in the argument.
 ```bash
 pnpm install && pnpm test
 ```
+
+On Windows, clone with long paths enabled — the conformance fixtures are named
+as sentences and nest a `node_modules` under several of them, which is enough to
+cross `MAX_PATH` from a deep working directory:
+
+```bash
+git -c core.longpaths=true clone https://github.com/MidnightDesign/no-throw.git
+```
+
+`git config --global core.longpaths true` sets it once for every repository,
+which is the better fix if you work on Windows at all.
 
 `pnpm test` builds, checks that the packages are in lockstep, and runs the
 [conformance suite](conformance) — fixture projects on disk paired with the

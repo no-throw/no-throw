@@ -2,6 +2,7 @@ import ts from "typescript";
 import type {
   ConsumptionReason,
   FloorReason,
+  FloorSource,
   Rejects,
   RejectionReason,
   RejectionSubject,
@@ -69,6 +70,8 @@ export type BodyEscape =
       readonly reason: ThrowingReason;
       /** The file whose hash drifted; only `stale-manifest` carries one. */
       readonly staleFile?: string | undefined;
+      /** Absent where the callee is not a standard-library declaration. */
+      readonly source?: FloorSource | undefined;
     }
   /** A condition whose argument was read and can throw — a true positive. */
   | {
@@ -82,6 +85,7 @@ export type BodyEscape =
       readonly condition: Condition;
       readonly reason: UndischargedReason;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     }
   /** A `for…of`, spread, destructuring, `.next()` or `yield*`. */
   | {
@@ -89,6 +93,7 @@ export type BodyEscape =
       readonly node: ts.Node;
       readonly reason: ConsumptionReason;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     }
   /** `.throw()`: the consumer throwing, with a detour through the iterator. */
   | { readonly kind: "iterator-throw"; readonly node: ts.Node }
@@ -98,6 +103,7 @@ export type BodyEscape =
       readonly node: ts.Expression;
       readonly reason: ConsumptionReason;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     }
   /**
    * A rejection reaching the body: at an `await`, at a statement-position
@@ -127,6 +133,7 @@ export type BodyEscape =
       readonly target: HiddenCallee | undefined;
       readonly reason: ThrowingReason;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     };
 
 /**
@@ -215,6 +222,7 @@ type Consumed =
       readonly kind: "floor";
       readonly reason: ConsumptionReason;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     };
 
 const CONSUMED_CLEAN: Consumed = { kind: "clean" };
@@ -237,6 +245,7 @@ type Rejection =
       readonly reason: RejectionReason;
       readonly subject: RejectionSubject;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     }
   | { readonly kind: "join"; readonly parts: readonly Rejection[] }
   | {
@@ -308,9 +317,17 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
    * read — the fact is all of it — and a lib member with no fact has neither.
    */
   function hiddenColor(color: TransferColor): DeclaredTarget {
-    if (color.kind === "floor") return { kind: "floor", reason: color.reason };
+    if (color.kind === "floor") {
+      return { kind: "floor", reason: color.reason, source: color.source };
+    }
     if (color.kind === "carried") {
-      return { kind: "carried", color: color.color, async: false, conditions: [] };
+      return {
+        kind: "carried",
+        color: color.color,
+        async: false,
+        conditions: [],
+        source: color.source,
+      };
     }
     return declaredTarget(color.declaration, resolution);
   }
@@ -619,6 +636,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
             node: escape.site.node,
             reason: consumed.reason,
             staleFile: consumed.staleFile,
+            source: consumed.source,
           });
         }
         continue;
@@ -679,6 +697,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
           node: site,
           reason: target.reason,
           staleFile: target.staleFile,
+          source: target.source,
         });
       }
       return;
@@ -691,7 +710,12 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     if (target.kind === "carried") {
       if (target.color === "throwing") {
         if (!target.async && !awaitedDirectly(site)) {
-          found.push({ kind: "callee", node: site, reason: "carried-throwing" });
+          found.push({
+            kind: "callee",
+            node: site,
+            reason: "carried-throwing",
+            source: target.source,
+          });
         }
         return;
       }
@@ -740,6 +764,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
         target: named,
         reason: reason.reason,
         staleFile: reason.staleFile,
+        source: reason.source,
       });
       return;
     }
@@ -748,14 +773,26 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   function hiddenReason(
     target: DeclaredTarget,
     throwingOf: (callee: ColorNode) => boolean,
-  ): { reason: ThrowingReason; staleFile?: string | undefined } | undefined {
+  ):
+    | {
+        reason: ThrowingReason;
+        staleFile?: string | undefined;
+        source?: FloorSource | undefined;
+      }
+    | undefined {
     if (target.kind === "floor") {
-      return { reason: target.reason, staleFile: target.staleFile };
+      return {
+        reason: target.reason,
+        staleFile: target.staleFile,
+        source: target.source,
+      };
     }
 
     if (target.kind === "carried") {
       const reason = carriedReason(target);
-      return reason === undefined ? undefined : { reason };
+      return reason === undefined
+        ? undefined
+        : { reason, source: target.source };
     }
 
     const floored = flooredCallee(target, throwingOf);
@@ -788,23 +825,27 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     const floored = (
       reason: UndischargedReason,
       staleFile?: string | undefined,
+      source?: FloorSource | undefined,
     ): BodyEscape => ({
       kind: "argument-floored",
       node: site,
       condition,
       reason,
       staleFile,
+      source,
     });
 
     if (outcome.kind === "propagate") return undefined;
     if (outcome.kind === "floor") {
-      return floored(outcome.reason, outcome.staleFile);
+      return floored(outcome.reason, outcome.staleFile, outcome.source);
     }
 
     // An argument the carrier colors is answered by what it says.
     if (outcome.kind === "carried") {
       const reason = carriedReason(outcome);
-      return reason === undefined ? undefined : floored(reason);
+      return reason === undefined
+        ? undefined
+        : floored(reason, undefined, outcome.source);
     }
 
     if (!outcome.marked) {
@@ -939,13 +980,15 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       return floorConsumed("conditioned-producer");
     }
     if (target.kind === "floor") {
-      return floorConsumed(target.reason, target.staleFile);
+      return floorConsumed(target.reason, target.staleFile, target.source);
     }
     // One color, full surface: a carrier calling the producer non-throwing is
     // saying consuming what it hands back is clean too.
     if (target.kind === "carried") {
       const reason = carriedReason(target);
-      return reason === undefined ? CONSUMED_CLEAN : floorConsumed(reason);
+      return reason === undefined
+        ? CONSUMED_CLEAN
+        : floorConsumed(reason, undefined, target.source);
     }
     if (target.marked) return CONSUMED_CLEAN;
     if (policy === "declare") return floorConsumed("unmarked");
@@ -992,10 +1035,20 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   function consumedReason(
     consumed: readonly Consumed[],
     throwingOf: (callee: ColorNode) => boolean,
-  ): { reason: ConsumptionReason; staleFile?: string | undefined } | undefined {
+  ):
+    | {
+        reason: ConsumptionReason;
+        staleFile?: string | undefined;
+        source?: FloorSource | undefined;
+      }
+    | undefined {
     for (const part of consumed) {
       if (part.kind === "floor") {
-        return { reason: part.reason, staleFile: part.staleFile };
+        return {
+          reason: part.reason,
+          staleFile: part.staleFile,
+          source: part.source,
+        };
       }
     }
     return consumed.some(
@@ -1111,13 +1164,18 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
         : floorRejection("conditioned-handler", "handler");
     }
     if (target.kind === "floor") {
-      return floorRejection(target.reason, subject, target.staleFile);
+      return floorRejection(
+        target.reason,
+        subject,
+        target.staleFile,
+        target.source,
+      );
     }
     if (target.kind === "carried") {
       const reason = carriedReason(target);
       return reason === undefined
         ? REJECTION_CLEAN
-        : floorRejection(reason, subject);
+        : floorRejection(reason, subject, undefined, target.source);
     }
     if (target.marked) return REJECTION_CLEAN;
     if (policy === "declare") return floorRejection("unmarked", subject);
@@ -1153,6 +1211,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
           reason: rejection.reason,
           subject: rejection.subject,
           staleFile: rejection.staleFile,
+          source: rejection.source,
         };
       case "color":
         return throwingOf(rejection.node)
@@ -1309,10 +1368,10 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       // A mark covers both surfaces, so enforcement reads the whole body
       // however lazily a call reaches it, and asks after the iterator the body
       // hands out on top of that.
-      return [
+      return subsumedByThrow([
         ...bodyEscapes(body, "all", throwingOf),
         ...returnedIterators(body, throwingOf),
-      ];
+      ]);
     },
     conditionsIn: settledConditions,
   };
@@ -1341,6 +1400,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
           node: expression,
           reason: consumed.reason,
           staleFile: consumed.staleFile,
+          source: consumed.source,
         });
       }
     }
@@ -1348,19 +1408,58 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   }
 }
 
+/**
+ * One `throw`, one report. What builds the value a `throw` hands out cannot be
+ * answered for on its own: bridging `new MyError(…)` leaves the `throw` it feeds
+ * exactly where it was, and removing the `throw` takes its operand with it. So
+ * the escapes inside one are subsumed by the `uncaughtThrow` that already names
+ * the problem, rather than reported beside it with an out that is not one.
+ *
+ * Filtered here rather than in the walk, which inference reads: a body's color
+ * is what it does, and dropping an edge to tidy a message would be answering a
+ * different question in the two places.
+ */
+function subsumedByThrow(
+  escapes: readonly BodyEscape[],
+): readonly BodyEscape[] {
+  const thrown = escapes.flatMap((escape) =>
+    escape.kind === "throw" ? [escape.node.expression] : [],
+  );
+  if (thrown.length === 0) return escapes;
+
+  return escapes.filter(
+    (escape) =>
+      escape.kind === "throw" ||
+      !thrown.some((operand) => contains(operand, escape.node)),
+  );
+}
+
+function contains(ancestor: ts.Node, node: ts.Node): boolean {
+  for (
+    let current: ts.Node | undefined = node;
+    current !== undefined;
+    current = current.parent
+  ) {
+    if (current === ancestor) return true;
+  }
+  return false;
+}
+
 function floorConsumed(
   reason: ConsumptionReason,
   staleFile?: string | undefined,
+  source?: FloorSource | undefined,
 ): Consumed {
-  return { kind: "floor", reason, staleFile };
+  return { kind: "floor", reason, staleFile, source };
 }
 
 function floorRejection(
   reason: RejectionReason,
   subject: RejectionSubject,
   staleFile?: string | undefined,
+  source?: FloorSource | undefined,
 ): Rejection {
-  return { kind: "floor", reason, subject, staleFile };
+  return { kind: "floor", reason, subject, staleFile, source };
 }
 
 /** A join of one is that one: a tree with no branch reads better in a message. */

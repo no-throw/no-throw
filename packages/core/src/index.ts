@@ -1,11 +1,13 @@
 export { analyzeSourceFile } from "./analyze.js";
 export type { EntrySite, Finding } from "./analyze.js";
 export { lookupBaselineEntry } from "./baseline/data.js";
+export type { BaselineSource } from "./baseline/data.js";
 export {
   libTargetOfFileName,
   memberKey,
   symbolMemberName,
 } from "./baseline/keys.js";
+export { PACKAGE_SOURCE } from "./baseline/rung.js";
 export { formatConditionPath, parseConditionPath } from "./baseline/paths.js";
 export type { ParsedConditionPath, PathSegment } from "./baseline/paths.js";
 export type {
@@ -18,6 +20,7 @@ export type {
 export type {
   ConsumptionReason,
   FloorReason,
+  FloorSource,
   RejectionReason,
   RejectionSubject,
   Rejects,

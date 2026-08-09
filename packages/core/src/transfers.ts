@@ -1,8 +1,8 @@
 import ts from "typescript";
 import { libTargetOfFileName, memberKey } from "./baseline/keys.js";
-import { baselineEnumerates } from "./baseline/rung.js";
+import { baselineEnumerates, floorSourceOf } from "./baseline/rung.js";
 import type { AccessorFact, Color } from "./baseline/types.js";
-import type { FloorReason } from "./colors.js";
+import type { FloorReason, FloorSource } from "./colors.js";
 import type {
   AccessExpression,
   DestructuringElement,
@@ -40,8 +40,18 @@ export type TransferColor =
       /** The body to read a color off, or absent when there is none. */
       readonly declaration: ts.SignatureDeclaration | undefined;
     }
-  | { readonly kind: "carried"; readonly color: Color }
-  | { readonly kind: "floor"; readonly reason: FloorReason };
+  | {
+      readonly kind: "carried";
+      readonly color: Color;
+      /** Absent where the declaration is not a standard-library one. */
+      readonly source?: FloorSource | undefined;
+    }
+  | {
+      readonly kind: "floor";
+      readonly reason: FloorReason;
+      /** Absent where the declaration is not a standard-library one. */
+      readonly source?: FloorSource | undefined;
+    };
 
 export interface TransferTarget {
   /** Absent when the type cannot even name what runs. */
@@ -220,7 +230,7 @@ function accessorTargets(
   for (const declaration of symbol.declarations ?? []) {
     const answer = accessorAnswerFor(declaration, resolution);
     if (answer !== "declaration") {
-      targets.push(...statedTargets(symbol, half, answer));
+      targets.push(...statedTargets(symbol, half, answer, declaration));
       continue;
     }
 
@@ -280,14 +290,23 @@ function statedTargets(
   symbol: ts.Symbol,
   half: Half,
   fact: AccessorFact | "floors",
+  declaration: ts.Declaration,
 ): readonly TransferTarget[] {
   if (fact === false) return [];
 
   const targets: TransferTarget[] = [];
   const colorOf = (which: "get" | "set"): TransferColor =>
     fact === "floors"
-      ? { kind: "floor", reason: "no-accessor-fact" }
-      : { kind: "carried", color: fact[which] };
+      ? {
+          kind: "floor",
+          reason: "no-accessor-fact",
+          source: floorSourceOf(declaration, "unstated"),
+        }
+      : {
+          kind: "carried",
+          color: fact[which],
+          source: floorSourceOf(declaration, "stated"),
+        };
 
   if (half !== "set") {
     targets.push({
@@ -407,7 +426,9 @@ function ownEnumerableTargets(
       if (!mayBeOwn(declaration)) return [];
 
       const answer = accessorAnswerFor(declaration, resolution);
-      if (answer !== "declaration") return statedTargets(symbol, "get", answer);
+      if (answer !== "declaration") {
+        return statedTargets(symbol, "get", answer, declaration);
+      }
       return ts.isGetAccessorDeclaration(declaration)
         ? [
             {

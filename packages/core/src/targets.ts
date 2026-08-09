@@ -1,8 +1,9 @@
 import ts from "typescript";
+import { floorSourceOf } from "./baseline/rung.js";
 import type { Color } from "./baseline/types.js";
 import type { Carrier } from "./carrier/chain.js";
 import { carriedFacts } from "./carrier/entries.js";
-import type { FloorReason } from "./colors.js";
+import type { FloorReason, FloorSource } from "./colors.js";
 import {
   parameterRoot,
   pathOf,
@@ -62,12 +63,16 @@ export type Target =
       readonly async: boolean;
       /** Empty on a throwing entry: nothing to discharge. */
       readonly conditions: readonly Condition[];
+      /** Absent where the declaration is not a standard-library one. */
+      readonly source?: FloorSource | undefined;
     }
   | {
       readonly kind: "floor";
       readonly reason: FloorReason;
       /** The file whose hash drifted; only `stale-manifest` carries one. */
       readonly staleFile?: string | undefined;
+      /** Absent where the declaration is not a standard-library one. */
+      readonly source?: FloorSource | undefined;
     };
 
 /**
@@ -319,7 +324,10 @@ function memberTarget(
   }
   // A property holding a function type names no parameter list a condition
   // could be a path over, so nothing keyed on it could be discharged here.
-  return floor(ts.isPropertySignature(declaration) ? "bodyless" : "unresolvable");
+  return floor(
+    ts.isPropertySignature(declaration) ? "bodyless" : "unresolvable",
+    floorSourceOf(declaration, "unstated"),
+  );
 }
 
 function initializerOf(declaration: ts.Declaration): ts.Expression | undefined {
@@ -356,22 +364,32 @@ function carriedTarget(
   declaration: ts.SignatureDeclaration | ts.ClassLikeDeclaration,
   resolution: Resolution,
 ): DeclaredTarget {
+  // Every floor below is the chain declining to state a color, whatever its
+  // reason for declining, so all of them read `stated` the same way.
+  const unstated = floorSourceOf(declaration, "unstated");
+
   const answer = resolution.carrier.answerFor(declaration);
-  if (answer === undefined) return floor("bodyless");
+  if (answer === undefined) return floor("bodyless", unstated);
   if (answer.kind === "floor") {
-    return { kind: "floor", reason: answer.reason, staleFile: answer.staleFile };
+    return {
+      kind: "floor",
+      reason: answer.reason,
+      staleFile: answer.staleFile,
+      source: unstated,
+    };
   }
   // An entry that carries only an accessor fact says nothing about calling it,
   // and an unanswered question is the ordinary floor.
-  if (answer.entry.color === undefined) return floor("bodyless");
+  if (answer.entry.color === undefined) return floor("bodyless", unstated);
 
   const facts = carriedFacts(declaration, answer.entry, resolution.checker);
-  if (facts === undefined) return floor("unusable-entry");
+  if (facts === undefined) return floor("unusable-entry", unstated);
   return {
     kind: "carried",
     color: facts.color,
     async: facts.async,
     conditions: facts.color === "throwing" ? [] : facts.conditions,
+    source: floorSourceOf(declaration, "stated"),
   };
 }
 
@@ -483,6 +501,9 @@ function functionTarget(declaration: Bodied): DeclaredTarget {
   };
 }
 
-function floor(reason: FloorReason): DeclaredTarget {
-  return { kind: "floor", reason };
+function floor(
+  reason: FloorReason,
+  source?: FloorSource | undefined,
+): DeclaredTarget {
+  return { kind: "floor", reason, source };
 }
