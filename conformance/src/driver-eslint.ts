@@ -90,10 +90,21 @@ export async function runFixture(
     tseslint.plugin,
   ) as unknown as Linter.Config;
 
-  const config: Linter.Config[] = [
-    language,
-    fixtureConfig === "recommended" ? preset : rules,
-  ];
+  // What every project with typed lint in CI already has, and so the shape the
+  // preset has to survive being dropped next to: flat config refuses a plugin
+  // name registered twice with two different objects, so the preset taking the
+  // consumer's own object is the whole reason this loads at all.
+  const existing: Linter.Config = {
+    files: TYPESCRIPT_FILES,
+    plugins: { "@typescript-eslint": tseslint.plugin as ESLint.Plugin },
+  };
+
+  const config: Linter.Config[] =
+    fixtureConfig === "recommended"
+      ? [language, preset]
+      : fixtureConfig === "recommended-beside-typescript-eslint"
+        ? [language, existing, preset]
+        : [language, rules];
 
   const eslint = new ESLint({
     cwd: directory,

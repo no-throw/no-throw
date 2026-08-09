@@ -6,9 +6,21 @@ import { asRecord, readString, rejectUnknownKeys } from "./json.js";
 /**
  * How the fixture is wired up: `rules` turns the rules on one by one, which is
  * what most fixtures want; `recommended` installs the shipped preset, so a
- * fixture can assert what a user gets from the config they actually install.
+ * fixture can assert what a user gets from the config they actually install;
+ * `recommended-beside-typescript-eslint` puts the preset into a config that has
+ * already registered `@typescript-eslint`, which is what the audience the
+ * preset is for actually has.
  */
-export type FixtureConfig = "rules" | "recommended";
+export type FixtureConfig =
+  | "rules"
+  | "recommended"
+  | "recommended-beside-typescript-eslint";
+
+const CONFIGS: readonly FixtureConfig[] = [
+  "rules",
+  "recommended",
+  "recommended-beside-typescript-eslint",
+];
 
 export interface Fixture {
   readonly name: string;
@@ -59,10 +71,12 @@ function readConfig(
 ): FixtureConfig {
   const value = root["config"];
   if (value === undefined) return "rules";
-  if (value !== "rules" && value !== "recommended") {
-    throw new Error(`${path}: \`config\` must be "rules" or "recommended"`);
+  if (!CONFIGS.includes(value as FixtureConfig)) {
+    throw new Error(
+      `${path}: \`config\` must be one of ${CONFIGS.map((name) => `"${name}"`).join(", ")}`,
+    );
   }
-  return value;
+  return value as FixtureConfig;
 }
 
 const POSITION_KEYS = ["line", "column", "endLine", "endColumn"] as const;
