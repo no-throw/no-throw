@@ -3,12 +3,12 @@
   "diagnostics": [
     {
       "file": "src/index.ts",
-      "line": 8,
+      "line": 10,
       "column": 3,
-      "endLine": 8,
-      "endColumn": 37,
+      "endLine": 10,
+      "endColumn": 25,
       "messageId": "conditionArgumentFloored",
-      "message": "Call to `myEach` escapes this `@nothrow` function: it is non-throwing given `cb`, and the argument passed for it is declared without a body — an ambient declaration, a `.d.ts`, or an interface member — and no mark, manifest, overlay or override colors it. `myEach` enters `cb` at src/index.ts:3. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Call to `myEach` escapes this `@nothrow` function: it is non-throwing given `cb`, and the argument passed for it is declared without a body — an ambient declaration, a `.d.ts`, or an interface member — and no mark, manifest, overlay, override or baseline entry colors it. `myEach` enters `cb` at src/index.ts:5. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

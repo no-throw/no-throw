@@ -91,10 +91,85 @@ jobs:
       # answer: it resolves its ESLint through an override, and an override
       # rewrites peer ranges, so no conflict survives to be reported.
       - name: Peer gate
-        run: pnpm run gate:peer
+        run: pnpm run gate:peer:eslint
 
       - name: Peer gate can fail
-        run: pnpm run gate:peer -- --self-check
+        run: pnpm run gate:peer:eslint -- --self-check
+
+  # The `typescript` peer range is the same shape of claim, held the same two
+  # ways. Its upper bound is the load-bearing half: TypeScript 7 ships no
+  # programmatic compiler API, so an unbounded range would satisfy at install and
+  # crash at the first rule run.
+  typescript-majors:
+    name: TypeScript peer range
+    runs-on: ubuntu-latest
+    outputs:
+      majors: ${{ steps.read.outputs.majors }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - id: read
+        run: |
+          majors=$(node scripts/typescript-peer-matrix.mjs majors)
+          echo "majors=$majors" >> "$GITHUB_OUTPUT"
+
+  typescript-conformance:
+    name: Conformance suite (TypeScript ${{ matrix.typescript }})
+    needs: typescript-majors
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        typescript: ${{ fromJSON(needs.typescript-majors.outputs.majors) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: node scripts/typescript-peer-matrix.mjs pin ${{ matrix.typescript }}
+
+      - run: pnpm install --no-frozen-lockfile
+
+      - name: The pin took
+        run: node scripts/typescript-peer-matrix.mjs verify ${{ matrix.typescript }}
+
+      - run: pnpm run build
+
+      - run: pnpm run conformance
+
+      - run: pnpm run conformance:cli
+
+  typescript-peer:
+    name: TypeScript peer gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run build
+
+      - name: Peer gate
+        run: pnpm run gate:peer:typescript
+
+      - name: Peer gate can fail
+        run: pnpm run gate:peer:typescript -- --self-check
 
   baseline:
     name: Baseline gates

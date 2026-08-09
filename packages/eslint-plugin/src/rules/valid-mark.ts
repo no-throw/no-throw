@@ -1,4 +1,4 @@
-import { findMarks, type MarkProblemKind } from "@nothrow/core";
+import { findMarks, type MarkProblemKind } from "@no-throw/core";
 import { ESLintUtils, type TSESTree } from "@typescript-eslint/utils";
 import type ts from "typescript";
 import { locOf } from "../loc.js";
@@ -7,18 +7,32 @@ const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/MidnightDesign/no-throw#${name}`,
 );
 
-const WHITELIST =
-  "A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method or constructor, an accessor, or an object-literal method or function-valued property.";
+/**
+ * The rule itself, stated rather than enumerated: a list of positions is what
+ * produces messages saying a mark binds to nothing at a body sitting right
+ * there.
+ */
+const RULE =
+  "A mark binds on a declaration whose own body — or whose initializer, read through parentheses, `as` and `satisfies` — is exactly one function literal.";
 
 const messages = {
   nonJsdocMark:
     "`@{{tag}}` in a {{form}} comment is not a mark: a mark is read only from a JSDoc block comment, so this one enforces nothing. Write it as `/** @nothrow */`.",
   misspelledMark:
     "`@{{tag}}` is not a mark: the mark is spelled `@nothrow`, and this differs from it only in case and separators, so it is read as an unrelated tag and enforces nothing. Spell it `@nothrow`.",
-  ineffectiveMark: `\`@nothrow\` binds to nothing here. The nearest valid site is {{site}} on line {{line}}. ${WHITELIST}`,
-  ineffectiveMarkNoSite: `\`@nothrow\` binds to nothing here, and there is no valid site near it to move it to. ${WHITELIST}`,
+  ineffectiveMark: `\`@nothrow\` binds to nothing here. The nearest valid site is {{site}} on line {{line}}. ${RULE}`,
+  ineffectiveMarkNoSite: `\`@nothrow\` binds to nothing here, and there is no valid site near it to move it to. ${RULE}`,
   multiDeclarator:
     "`@nothrow` binds to nothing on a variable statement declaring more than one variable: which one it marks would be a guess. Give the marked function a declaration of its own.",
+  nonFunctionValue:
+    "`@nothrow` binds to nothing on {{declaration}}: a mark is a claim about a body, and the value here is not a function written at this declaration. Mark the function where its body is written, or — if that body is not yours — assert its color in `nothrow.overrides.json`.",
+  // Neither of the next two may name a nearest valid site: `nearestValidSite`
+  // climbs, so inside any function it would say *move it onto the enclosing
+  // function* — advice that changes what is being claimed.
+  markOnCallArgument:
+    "`@nothrow` binds to nothing on a function written as a call argument: there is no declaration here for it to bind to. The function is already colored where it is written, and the call it is passed to is held to that color, so no mark is owed here.",
+  markOnAssignment:
+    "`@nothrow` binds to nothing on an assignment: an assignment is not a declaration, and a call through a member resolves to the member's declaration rather than to whatever was last assigned to it. Mark that declaration, or assert its color in `nothrow.overrides.json`.",
   ambientDeclaration:
     "`@nothrow` binds to nothing on an ambient declaration: there is no body to verify it against, and an in-source mark is always verified. Assert the color in `nothrow.overrides.json` instead.",
   interfaceMember:
@@ -38,6 +52,9 @@ const messageIdByKind: Record<MarkProblemKind, MessageId> = {
   "ineffective-mark": "ineffectiveMark",
   "ineffective-mark-no-site": "ineffectiveMarkNoSite",
   "multi-declarator": "multiDeclarator",
+  "non-function-value": "nonFunctionValue",
+  "mark-on-call-argument": "markOnCallArgument",
+  "mark-on-assignment": "markOnAssignment",
   "ambient-declaration": "ambientDeclaration",
   "interface-member": "interfaceMember",
   "abstract-method": "abstractMethod",

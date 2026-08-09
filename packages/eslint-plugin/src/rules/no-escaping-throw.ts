@@ -10,7 +10,7 @@ import {
   type RejectionSubject,
   type TransferSite,
   type UndischargedReason,
-} from "@nothrow/core";
+} from "@no-throw/core";
 import {
   ESLintUtils,
   type TSESLint,
@@ -31,13 +31,13 @@ const createRule = ESLintUtils.RuleCreator(
  */
 const CARRIERS =
   "assert the color in `nothrow.overrides.json`; install or write an " +
-  "`@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
+  "`@no-throw/*` overlay; or, if you own the package, ship a manifest with " +
   "`nothrow emit`.";
 
 /** The same rungs where what floored is something a *producer* colors. */
 const PRODUCER_CARRIERS =
   "assert the producer's color in `nothrow.overrides.json`; install or write " +
-  "an `@nothrow/*` overlay; or, if you own the package, ship a manifest with " +
+  "an `@no-throw/*` overlay; or, if you own the package, ship a manifest with " +
   "`nothrow emit`.";
 
 const outs = (what: string): string =>
@@ -278,7 +278,8 @@ const bridgeFor: Record<DiagnosticId, Bridge | undefined> = {
  */
 const CARRIED_THROWING =
   "is colored `throwing` by the carrier that answers for it — a shipped " +
-  "manifest, an overlay or an override — so calling it can throw";
+  "manifest, an overlay, an override, or the standard-library baseline — so " +
+  "calling it can throw";
 
 const UNREADABLE_MANIFEST =
   "ships in a package whose `nothrow.json` names a `version` this release " +
@@ -288,6 +289,17 @@ const SUPERSEDED_TAG =
   "carries a `@nothrow` tag that its package's own `nothrow.json` supersedes " +
   "— a valid manifest answers for the whole package — and that manifest has " +
   "no entry for it";
+
+/**
+ * #29 §4's control, as a sentence. The libs declare real getters as plain
+ * properties, and an enumeration of which ones exists — that is precisely why
+ * they are not trust base — so a member the baseline says nothing about is a
+ * question with no answer rather than a property with no getter.
+ */
+const NO_ACCESSOR_FACT =
+  "is declared as a plain property in a `lib.*.d.ts` that the shipped " +
+  "standard-library baseline states no accessor fact for, and the libs declare " +
+  "real getters as properties, so silence cannot be read as data";
 
 const UNUSABLE_ENTRY =
   "is claimed by a carrier entry this release cannot use — a shape outside " +
@@ -310,8 +322,8 @@ type StaticFloorReason = Exclude<FloorReason, "stale-manifest">;
 const whyFloored: Record<StaticFloorReason, string> = {
   bodyless:
     "is declared without a body — an ambient declaration, a `.d.ts`, or a " +
-    "value known only by its function type — and no mark, manifest, overlay " +
-    "or override colors it, so it is assumed to throw",
+    "value known only by its function type — and no mark, manifest, overlay, " +
+    "override or baseline entry colors it, so it is assumed to throw",
   unmarked:
     "has a visible body but no `@nothrow` mark, so it is throwing by " +
     "declaration",
@@ -330,6 +342,7 @@ const whyFloored: Record<StaticFloorReason, string> = {
     "it through a type rather than handing it anything, so there is no " +
     "argument here that could discharge them",
   "carried-throwing": CARRIED_THROWING,
+  "no-accessor-fact": NO_ACCESSOR_FACT,
   "unreadable-manifest": UNREADABLE_MANIFEST,
   "superseded-tag": SUPERSEDED_TAG,
   "unusable-entry": UNUSABLE_ENTRY,
@@ -353,7 +366,7 @@ const whyUndischarged: Record<
   bodyless:
     "the argument passed for it is declared without a body — an ambient " +
     "declaration, a `.d.ts`, or an interface member — and no mark, manifest, " +
-    "overlay or override colors it",
+    "overlay, override or baseline entry colors it",
   unmarked:
     "the argument passed for it has a visible body but no `@nothrow` mark, so " +
     "it is throwing by declaration",
@@ -375,6 +388,7 @@ const whyUndischarged: Record<
     "carrying it up to this function would make a path deeper than the engine " +
     "follows",
   "carried-throwing": `the argument passed for it ${CARRIED_THROWING}`,
+  "no-accessor-fact": `the argument passed for it ${NO_ACCESSOR_FACT}`,
   "unreadable-manifest": `the argument passed for it ${UNREADABLE_MANIFEST}`,
   "superseded-tag": `the argument passed for it ${SUPERSEDED_TAG}`,
   "unusable-entry": `the argument passed for it ${UNUSABLE_ENTRY}`,
@@ -401,7 +415,8 @@ const whyConsumptionFloored: Record<
   bodyless:
     "what consuming it runs is declared without a body — an ambient or " +
     "`.d.ts` declaration, the standard library\'s iteration protocol among " +
-    "them — and no mark, manifest, overlay or override colors it, so it is " +
+    "them — and no mark, manifest, overlay, override or baseline entry colors " +
+    "it, so it is " +
     "assumed to throw",
   unmarked:
     "what consuming it runs has a visible body but no `@nothrow` mark, so it " +
@@ -426,6 +441,7 @@ const whyConsumptionFloored: Record<
     "what consuming it runs is non-throwing only given conditions of its own, " +
     "and consuming an iterator hands nothing over that could discharge them",
   "carried-throwing": `what consuming it runs ${CARRIED_THROWING}`,
+  "no-accessor-fact": `what consuming it runs ${NO_ACCESSOR_FACT}`,
   "unreadable-manifest": `what consuming it runs ${UNREADABLE_MANIFEST}`,
   "superseded-tag": `what consuming it runs ${SUPERSEDED_TAG}`,
   "unusable-entry": `what consuming it runs ${UNUSABLE_ENTRY}`,
@@ -475,8 +491,8 @@ const whyRejects: Record<Exclude<RejectionReason, "stale-manifest">, string> = {
   inferred: "has a body that was analyzed and can throw",
   bodyless:
     "is declared without a body — an ambient declaration, a `.d.ts`, or a " +
-    "value known only by its function type — and no mark, manifest, overlay " +
-    "or override colors it, so it is assumed to reject",
+    "value known only by its function type — and no mark, manifest, overlay, " +
+    "override or baseline entry colors it, so it is assumed to reject",
   unmarked:
     "has a visible body but no `@nothrow` mark, so it is throwing by " +
     "declaration",
@@ -505,8 +521,9 @@ const whyRejects: Record<Exclude<RejectionReason, "stale-manifest">, string> = {
     "not something a call site can discharge",
   "carried-throwing":
     "is colored `throwing` by the carrier that answers for it — a shipped " +
-    "manifest, an overlay or an override — so the promise it hands back can " +
-    "reject",
+    "manifest, an overlay, an override, or the standard-library baseline — so " +
+    "the promise it hands back can reject",
+  "no-accessor-fact": NO_ACCESSOR_FACT,
   "unreadable-manifest": UNREADABLE_MANIFEST,
   "superseded-tag": SUPERSEDED_TAG,
   "unusable-entry": UNUSABLE_ENTRY,

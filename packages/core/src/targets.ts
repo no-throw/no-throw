@@ -105,11 +105,41 @@ export function calleeTargets(
   resolution: Resolution,
 ): readonly Target[] {
   const resolved = resolveValue(calleeExpression(transfer), body, resolution);
-  if (resolved.kind === "targets") return resolved.targets;
   // The signature is the function *type*, which is what a reassignable binding
   // resolves to and is one of the values it can hold, not the one that runs.
   if (resolved.kind === "mutable") return [floor("mutable-binding")];
-  return [transferTarget(transfer, resolution)];
+  if (resolved.kind !== "targets") return [transferTarget(transfer, resolution)];
+
+  const stated = resolved.targets.some((target) => target.kind === "condition")
+    ? statedTarget(transfer, resolution)
+    : undefined;
+  return stated === undefined ? resolved.targets : [...resolved.targets, stated];
+}
+
+/**
+ * What a carrier says about the member a path names, where one says anything.
+ *
+ * `users.map(cb)` is two facts at once: the body enters a member of its own
+ * parameter, which is a condition its caller discharges, *and* the static type
+ * names `Array#map`, which the baseline colors and conditions on the callback
+ * written right here. Taking only the first loses the second, and the second is
+ * the whole of stories 32–33 — the same call judged on the callback actually
+ * passed. Both are reported, so this can only ever tighten: the condition still
+ * covers whatever function really turns up at the path.
+ *
+ * Nothing is stated for a member no carrier answers for — `repo.save` on an
+ * interface you wrote is exactly the shape #23's paths exist for, and floors
+ * here would make every one of them unusable.
+ */
+function statedTarget(
+  transfer: Transfer,
+  resolution: Resolution,
+): Target | undefined {
+  const declaration = targetOf(transfer, resolution.checker);
+  if (declaration === undefined || hasVisibleBody(declaration)) return undefined;
+  return resolution.carrier.answerFor(declaration) === undefined
+    ? undefined
+    : carriedTarget(declaration, resolution);
 }
 
 /**

@@ -45,7 +45,15 @@ export type FloorReason =
    * shape outside the schema, or a condition path with no engine form. The
    * fact it was stating is the one that would have made it clean.
    */
-  | "unusable-entry";
+  | "unusable-entry"
+  /**
+   * A `lib.*.d.ts` member the baseline states no accessor fact for. The libs
+   * declare real getters as plain properties, so the declaration is no oracle
+   * there — and unlike a third-party `.d.ts`, an enumeration of them exists,
+   * which is why they are not trust base. Absence therefore floors instead of
+   * being read as "it is only a property".
+   */
+  | "no-accessor-fact";
 
 /**
  * Why a callee is throwing. `inferred` is the one answer that is not a floor:

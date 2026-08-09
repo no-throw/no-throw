@@ -1,0 +1,4 @@
+{
+  "description": "Coercing an object that declares no conversion member of its own is answered by the baseline: what runs is `Object.prototype.valueOf` and `Object.prototype.toString`, and both are colored clean.",
+  "diagnostics": []
+}

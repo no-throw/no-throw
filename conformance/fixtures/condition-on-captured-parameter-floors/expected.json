@@ -8,7 +8,7 @@
       "endLine": 4,
       "endColumn": 53,
       "messageId": "unbridgedCall",
-      "message": "Call to `cb` escapes this `@nothrow` function: it is captured from an enclosing scope rather than reached through a parameter of this function, so no argument at any call site could discharge a condition on it. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Call to `cb` escapes this `@nothrow` function: it is captured from an enclosing scope rather than reached through a parameter of this function, so no argument at any call site could discharge a condition on it. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

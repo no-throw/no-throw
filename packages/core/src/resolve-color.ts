@@ -52,6 +52,7 @@ import {
 import {
   hiddenTransfersOf,
   type HiddenCallee,
+  type TransferColor,
   type TransferSite,
 } from "./transfers.js";
 
@@ -296,20 +297,23 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
         text: transfer.text,
         targets: transfer.targets.map((entry) => ({
           named: entry.target,
-          // An accessor fact colors a half of a member the declaration says is
-          // data, so there is no body behind it to read — the fact is all of it.
-          target:
-            entry.carried === undefined
-              ? declaredTarget(entry.declaration, resolution)
-              : {
-                  kind: "carried" as const,
-                  color: entry.carried,
-                  async: false,
-                  conditions: [],
-                },
+          target: hiddenColor(entry.color),
         })),
       })),
   );
+
+  /**
+   * What colors one half of one hidden site. An accessor fact colors a half of
+   * a member the declaration says is data, so there is no body behind it to
+   * read — the fact is all of it — and a lib member with no fact has neither.
+   */
+  function hiddenColor(color: TransferColor): DeclaredTarget {
+    if (color.kind === "floor") return { kind: "floor", reason: color.reason };
+    if (color.kind === "carried") {
+      return { kind: "carried", color: color.color, async: false, conditions: [] };
+    }
+    return declaredTarget(color.declaration, resolution);
+  }
 
   function hiddenIn(body: Bodied, phase: Phase): readonly HiddenSite[] {
     return escapesOf(body, phase).flatMap((escape) => hiddenAt(escape));

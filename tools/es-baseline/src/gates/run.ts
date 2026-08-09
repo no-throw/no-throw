@@ -1,4 +1,4 @@
-import type { BaselineData, LibMember, LibProgram } from "@nothrow/core/baseline";
+import type { BaselineData, LibMember, LibProgram } from "@no-throw/core/baseline";
 
 import { HostileFuzzer, type Counterexample, type ProbeResult } from "./fuzz.js";
 

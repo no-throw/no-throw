@@ -38,6 +38,31 @@ for (const { path, json } of manifests) {
   }
 }
 
+// A peer range is a claim, and a consumer installing two of these packages gets
+// the intersection of what they claim. Two packages naming the same peer
+// differently makes that intersection the real contract while neither manifest
+// states it. The `typescript` gate refuses to read a range its packages disagree
+// about, but that is one peer and it costs a network install to find out; this
+// is every shared peer, in `pnpm test`, before anything is fetched.
+const peerRanges = new Map();
+for (const { json } of manifests) {
+  for (const [name, range] of Object.entries(json.peerDependencies ?? {})) {
+    if (internal.has(name)) continue;
+    if (!peerRanges.has(name)) peerRanges.set(name, new Map());
+    peerRanges.get(name).set(json.name, range);
+  }
+}
+
+for (const [name, byPackage] of peerRanges) {
+  if (new Set(byPackage.values()).size === 1) continue;
+  const listed = [...byPackage]
+    .map(([packageName, range]) => `  ${packageName}: "${range}"`)
+    .join("\n");
+  problems.push(
+    `The packages disagree about the \`${name}\` peer range:\n${listed}`,
+  );
+}
+
 if (problems.length > 0) {
   console.error(problems.join("\n"));
   process.exit(1);

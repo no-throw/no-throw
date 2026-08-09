@@ -26,7 +26,7 @@ fixtures/<name>/
     index.d.ts      what the consumer's program actually sees
     index.js        never analyzed, only hashed
     nothrow.json    the colors the package ships
-  node_modules/@nothrow/<overlay>/
+  node_modules/@no-throw/<overlay>/
     package.json    a name deliberately unlike its target's, since nothing reads it
     nothrow.json    the same shape, naming its target in `package`
 ```
@@ -49,16 +49,17 @@ line endings would fail every hash and turn the staleness fixtures into noise.
 Tampering is expressed the same way: the file simply differs from what the
 manifest recorded.
 
-Fixtures import nothing from `@nothrow/*` and contain no test-framework
+Fixtures import nothing from `@no-throw/*` and contain no test-framework
 constructs. They are what a user's project looks like.
 
-Until the standard-library baseline lands, every call into `lib.*.d.ts` floors,
-`new Error(…)` among them — so a fixture that wants to be green about something
-else keeps clear of `.trim()` and friends and throws a bare value, and one that
-wants a floor reaches for `JSON.parse`. Iterating a builtin is the same story:
-`for…of` over an array or a `Map` resolves to `lib.es2015.iterable.d.ts` and
-floors, so a fixture about something else walks an array by index, and one
-about iteration iterates a generator or an in-program iterable.
+The baseline colors `lib.*.d.ts`, so a fixture about something else can use the
+standard library as a user would: `JSON.parse` floors because it really throws,
+`s.trim()` and `for…of` over an array are green. Two shapes still cost a
+diagnostic and are worth avoiding in a fixture that is about something else —
+writing through an unnarrowable key (`xs[i] = v`, whose join reaches every
+accessor the receiver has) and the `map`/`filter`/`push` family, which ships
+throwing. A fixture that wants a bodyless floor rather than a carried one
+declares its own `declare function`, since nothing colors that.
 
 `expected.json`:
 
@@ -141,7 +142,7 @@ dependency's suggestion text here would assert nothing about us.
 ## The driver is thin, and swappable
 
 `src/driver-eslint.ts` runs a fixture through the real
-`@nothrow/eslint-plugin`, over the real typescript-eslint parser, and returns
+`@no-throw/eslint-plugin`, over the real typescript-eslint parser, and returns
 the diagnostics. It is the only part of the suite that knows a linter exists:
 driving the same fixtures through a standalone checker means writing a second
 driver, not touching a fixture.

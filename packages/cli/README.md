@@ -1,4 +1,4 @@
-# `@nothrow/cli`
+# `@no-throw/cli`
 
 The `nothrow` binary.
 
@@ -14,7 +14,7 @@ walk-up finds it.
 
 Exit codes: `0` wrote or matched, `1` refused or drifted, `2` could not run.
 
-The CLI builds a `ts.Program` and hands it to `@nothrow/core`. It contains no
+The CLI builds a `ts.Program` and hands it to `@no-throw/core`. It contains no
 analysis: which marks bind, whether a body escapes, and what a function is
 clean *given* are the engine's answers, and a second implementation of them
 here would be a second guarantee.

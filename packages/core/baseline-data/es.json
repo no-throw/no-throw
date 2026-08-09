@@ -8,6 +8,11 @@
     "DisposableStack#disposed",
     "ErrorConstructor#isError",
     "FinalizationRegistry#@@toStringTag",
+    "Float16Array#@@toStringTag",
+    "Float16Array#buffer",
+    "Float16Array#byteLength",
+    "Float16Array#byteOffset",
+    "Float16Array#length",
     "Map#delete",
     "Map#get",
     "Map#has",
@@ -1603,7 +1608,7 @@
       },
       "Int8Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int8Array.prototype [ %Symbol.toStringTag% ]",
@@ -1611,7 +1616,7 @@
       },
       "Uint8Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8Array.prototype [ %Symbol.toStringTag% ]",
@@ -1619,7 +1624,7 @@
       },
       "Uint8ClampedArray#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8ClampedArray.prototype [ %Symbol.toStringTag% ]",
@@ -1627,7 +1632,7 @@
       },
       "Int16Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int16Array.prototype [ %Symbol.toStringTag% ]",
@@ -1635,7 +1640,7 @@
       },
       "Uint16Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint16Array.prototype [ %Symbol.toStringTag% ]",
@@ -1643,7 +1648,7 @@
       },
       "Int32Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int32Array.prototype [ %Symbol.toStringTag% ]",
@@ -1651,7 +1656,7 @@
       },
       "Uint32Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint32Array.prototype [ %Symbol.toStringTag% ]",
@@ -1659,7 +1664,7 @@
       },
       "Float32Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float32Array.prototype [ %Symbol.toStringTag% ]",
@@ -1667,7 +1672,7 @@
       },
       "Float64Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float64Array.prototype [ %Symbol.toStringTag% ]",
@@ -2138,7 +2143,7 @@
       },
       "BigInt64Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigInt64Array.prototype.buffer",
@@ -2146,7 +2151,7 @@
       },
       "BigInt64Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigInt64Array.prototype.byteLength",
@@ -2154,7 +2159,7 @@
       },
       "BigInt64Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigInt64Array.prototype.byteOffset",
@@ -2240,7 +2245,7 @@
       },
       "BigInt64Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigInt64Array.prototype.length",
@@ -2331,7 +2336,7 @@
       },
       "BigInt64Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigInt64Array.prototype [ %Symbol.toStringTag% ]",
@@ -2372,7 +2377,7 @@
       },
       "BigUint64Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigUint64Array.prototype.buffer",
@@ -2380,7 +2385,7 @@
       },
       "BigUint64Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigUint64Array.prototype.byteLength",
@@ -2388,7 +2393,7 @@
       },
       "BigUint64Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigUint64Array.prototype.byteOffset",
@@ -2474,7 +2479,7 @@
       },
       "BigUint64Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigUint64Array.prototype.length",
@@ -2565,7 +2570,7 @@
       },
       "BigUint64Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigUint64Array.prototype [ %Symbol.toStringTag% ]",
@@ -5341,7 +5346,7 @@
       },
       "Int8Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int8Array.prototype.buffer",
@@ -5349,7 +5354,7 @@
       },
       "Int8Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int8Array.prototype.byteLength",
@@ -5357,7 +5362,7 @@
       },
       "Int8Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int8Array.prototype.byteOffset",
@@ -5425,7 +5430,7 @@
       },
       "Int8Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int8Array.prototype.length",
@@ -5537,7 +5542,7 @@
       },
       "Uint8Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8Array.prototype.buffer",
@@ -5545,7 +5550,7 @@
       },
       "Uint8Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8Array.prototype.byteLength",
@@ -5553,7 +5558,7 @@
       },
       "Uint8Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8Array.prototype.byteOffset",
@@ -5621,7 +5626,7 @@
       },
       "Uint8Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8Array.prototype.length",
@@ -5733,7 +5738,7 @@
       },
       "Uint8ClampedArray#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8ClampedArray.prototype.buffer",
@@ -5741,7 +5746,7 @@
       },
       "Uint8ClampedArray#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8ClampedArray.prototype.byteLength",
@@ -5749,7 +5754,7 @@
       },
       "Uint8ClampedArray#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8ClampedArray.prototype.byteOffset",
@@ -5817,7 +5822,7 @@
       },
       "Uint8ClampedArray#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8ClampedArray.prototype.length",
@@ -5929,7 +5934,7 @@
       },
       "Int16Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int16Array.prototype.buffer",
@@ -5937,7 +5942,7 @@
       },
       "Int16Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int16Array.prototype.byteLength",
@@ -5945,7 +5950,7 @@
       },
       "Int16Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int16Array.prototype.byteOffset",
@@ -6013,7 +6018,7 @@
       },
       "Int16Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int16Array.prototype.length",
@@ -6125,7 +6130,7 @@
       },
       "Uint16Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint16Array.prototype.buffer",
@@ -6133,7 +6138,7 @@
       },
       "Uint16Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint16Array.prototype.byteLength",
@@ -6141,7 +6146,7 @@
       },
       "Uint16Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint16Array.prototype.byteOffset",
@@ -6209,7 +6214,7 @@
       },
       "Uint16Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint16Array.prototype.length",
@@ -6321,7 +6326,7 @@
       },
       "Int32Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int32Array.prototype.buffer",
@@ -6329,7 +6334,7 @@
       },
       "Int32Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int32Array.prototype.byteLength",
@@ -6337,7 +6342,7 @@
       },
       "Int32Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int32Array.prototype.byteOffset",
@@ -6405,7 +6410,7 @@
       },
       "Int32Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int32Array.prototype.length",
@@ -6517,7 +6522,7 @@
       },
       "Uint32Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint32Array.prototype.buffer",
@@ -6525,7 +6530,7 @@
       },
       "Uint32Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint32Array.prototype.byteLength",
@@ -6533,7 +6538,7 @@
       },
       "Uint32Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint32Array.prototype.byteOffset",
@@ -6601,7 +6606,7 @@
       },
       "Uint32Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint32Array.prototype.length",
@@ -6713,7 +6718,7 @@
       },
       "Float32Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float32Array.prototype.buffer",
@@ -6721,7 +6726,7 @@
       },
       "Float32Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float32Array.prototype.byteLength",
@@ -6729,7 +6734,7 @@
       },
       "Float32Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float32Array.prototype.byteOffset",
@@ -6797,7 +6802,7 @@
       },
       "Float32Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float32Array.prototype.length",
@@ -6909,7 +6914,7 @@
       },
       "Float64Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float64Array.prototype.buffer",
@@ -6917,7 +6922,7 @@
       },
       "Float64Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float64Array.prototype.byteLength",
@@ -6925,7 +6930,7 @@
       },
       "Float64Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float64Array.prototype.byteOffset",
@@ -6993,7 +6998,7 @@
       },
       "Float64Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float64Array.prototype.length",
@@ -7301,6 +7306,30 @@
       }
     },
     "esnext.float16": {
+      "Float16Array#buffer": {
+        "accessor": {
+          "get": "throwing",
+          "set": "throwing"
+        },
+        "spec": "Float16Array.prototype.buffer",
+        "runtime": "Float16Array.prototype.buffer"
+      },
+      "Float16Array#byteLength": {
+        "accessor": {
+          "get": "throwing",
+          "set": "throwing"
+        },
+        "spec": "Float16Array.prototype.byteLength",
+        "runtime": "Float16Array.prototype.byteLength"
+      },
+      "Float16Array#byteOffset": {
+        "accessor": {
+          "get": "throwing",
+          "set": "throwing"
+        },
+        "spec": "Float16Array.prototype.byteOffset",
+        "runtime": "Float16Array.prototype.byteOffset"
+      },
       "Float16Array#at": {
         "color": "throwing",
         "spec": "Float16Array.prototype.at",
@@ -7370,6 +7399,14 @@
         "color": "throwing",
         "spec": "Float16Array.prototype.lastIndexOf",
         "runtime": "Float16Array.prototype.lastIndexOf"
+      },
+      "Float16Array#length": {
+        "accessor": {
+          "get": "throwing",
+          "set": "throwing"
+        },
+        "spec": "Float16Array.prototype.length",
+        "runtime": "Float16Array.prototype.length"
       },
       "Float16Array#map": {
         "color": "throwing",
@@ -7460,6 +7497,14 @@
         "color": "throwing",
         "spec": "Float16Array.prototype.values",
         "runtime": "Float16Array.prototype.values"
+      },
+      "Float16Array#@@toStringTag": {
+        "accessor": {
+          "get": "throwing",
+          "set": "throwing"
+        },
+        "spec": "Float16Array.prototype [ %Symbol.toStringTag% ]",
+        "runtime": "Float16Array.prototype[Symbol.toStringTag]"
       },
       "Float16ArrayConstructor#new": {
         "color": "throwing",

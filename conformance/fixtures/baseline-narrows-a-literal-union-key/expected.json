@@ -1,0 +1,14 @@
+{
+  "description": "A literal-union key narrows to exactly those members: `id`/`className` are both clean getters, so the read is green, while swapping one for `innerHTML` reports and names the getter that is throwing.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 8,
+      "column": 10,
+      "endLine": 8,
+      "endColumn": 22,
+      "messageId": "unbridgedHiddenTransfer",
+      "message": "Reading `element[key]` escapes this `@nothrow` function: it runs the getter `innerHTML`, which is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, an override, or the standard-library baseline — so calling it can throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

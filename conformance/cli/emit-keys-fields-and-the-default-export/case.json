@@ -1,0 +1,16 @@
+{
+  "description": "The transport hole #53 found, closed end to end: a default-exported arrow and arrow-valued fields are public surface no mark could reach before, so a package built out of them could carry nothing at all. Emit keys them `default`, `Service#handle` and `Service.make`, and a separate project resolves all three through the `.d.ts`, where each has become a property whose type is a bare function type.",
+  "steps": [
+    { "emit": [], "expect": "ok" },
+    {
+      "entries": {
+        ".": {
+          "default": { "color": "non-throwing", "conditions": [] },
+          "Service#handle": { "color": "non-throwing", "conditions": [] },
+          "Service.make": { "color": "non-throwing", "conditions": [] }
+        }
+      }
+    },
+    { "consumer": "consumer" }
+  ]
+}

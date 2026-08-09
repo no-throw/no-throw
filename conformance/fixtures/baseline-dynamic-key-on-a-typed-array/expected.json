@@ -1,0 +1,4 @@
+{
+  "description": "An unnarrowable key joins every accessor the receiver has, and `bytes[i]` comes out clean *correctly* rather than by exception: `%TypedArray%`'s four getters are real, and all four are clean because a detached buffer yields 0 instead of throwing.",
+  "diagnostics": []
+}
