@@ -1,0 +1,7 @@
+{
+  "description": "The same refusal for a file that parses and does not describe what it claims to, and it names where: a fault in the envelope is the whole file, as against a fault inside an entry, which floors that entry and leaves the rest of the file standing.",
+  "diagnostics": [],
+  "refuses": [
+    "`nothrow.overrides.json` cannot be read — it does not validate against `nothrow.overrides.schema.json` at `packages` — so nothing in it is being honored."
+  ]
+}

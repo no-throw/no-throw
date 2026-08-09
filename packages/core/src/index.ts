@@ -15,6 +15,17 @@ export type {
   Color,
   ConditionPath,
 } from "./baseline/types.js";
+export { OverridesError } from "./carrier/overrides.js";
+export { packageHomeOf } from "./carrier/packages.js";
+export type { PackageHome } from "./carrier/packages.js";
+export { checkCarriers, reachesNothing } from "./check.js";
+export type {
+  CarrierProblem,
+  CheckedCarrier,
+  CheckedEntry,
+  CheckOutcome,
+  EntryKey,
+} from "./check.js";
 export type {
   ConsumptionReason,
   FloorReason,

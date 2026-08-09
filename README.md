@@ -265,6 +265,71 @@ and lets the package's surviving `@nothrow` tags resume as its carrier; an
 overlay and an override are about a package rather than in it, so neither is
 touched.
 
+#### What a key is
+
+The second half of a key is the name **a consumer writes**, read off the
+package's published surface rather than off the file a symbol happens to be
+declared in. `export { a as b }` is keyed `b`; a class's members are
+`Class#member` and its statics `Class.static`; a default export is `default`.
+
+A CommonJS package — `declare const pc: Colors` behind `export =` — is the one
+shape where that is not the name in its `.d.ts`. The module *is* the exported
+value, so what its type carries are its published names: `pc.red` is keyed
+`red`, exactly as `export const red` would have been, and not `Colors#red`.
+
+If a key does not resolve, nothing says so at the call — a wrong key and no key
+produce the same floor. That is what [`nothrow
+check`](#checking-your-carriers) is for.
+
+#### Checking your carriers
+
+```bash
+nothrow check [--project <path>]
+```
+
+It reads the same two things the resolver does — your `nothrow.overrides.json`
+and every `@no-throw/*` overlay you have installed — and holds every entry in
+them against the same export surface the resolver keys against. Entries that
+reach a published symbol are counted; entries that reach nothing are named, with
+what the package *does* publish at that subpath:
+
+```console
+$ nothrow check
+nothrow.overrides.json
+  picocolors → "." → `Colors#red`
+    `picocolors` publishes no symbol at this key, so this entry colors nothing.
+    What it publishes at ".": `red`, `bgBlack`, `bgBlackBright`, and 41 more
+
+2 entries checked. 1 reaches nothing.
+```
+
+An entry naming a package this project does not hold is reported apart and does
+not fail the run: it is inert rather than wrong. Exit codes are `0` every entry
+reached, `1` something reached nothing or a carrier is not being honored, `2`
+could not run.
+
+A carrier is matched by the package a declaration **ships in**, never by the one
+that re-exported it — so an entry written under a barrel package reaches nothing
+however right its key looks, and `check` names the package to key it under
+instead.
+
+A **malformed or schema-invalid `nothrow.overrides.json` is refused outright**,
+and nothing is analyzed until it is fixed or removed. Every other carrier
+answers for somebody else's package and may fall through to the rung below when
+it cannot be read; this one is yours, and falling through would discard what you
+wrote without saying so:
+
+```text
+`nothrow.overrides.json` cannot be read — it could not be read as a JSON object — so nothing in it is
+being honored. An overrides file that is quietly ignored is the silent no-op the
+rest of this design exists to rule out, so nothing is analyzed until it is fixed
+or removed
+```
+
+A `version` this release cannot read is the one exception: reading forward is
+what the field is for, so the rungs below simply answer instead, and `nothrow
+check` is where you learn it happened.
+
 ### 4. Publishing: ship a manifest
 
 Your marks are verified against your source, and a consumer never sees your
@@ -754,7 +819,7 @@ Three packages in the `@no-throw` npm scope, versioned in lockstep.
 | --- | --- |
 | [`@no-throw/core`](packages/core) | the engine — color resolution and the escape-site walk |
 | [`@no-throw/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
-| [`@no-throw/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
+| [`@no-throw/cli`](packages/cli) | the `nothrow` binary; hosts `emit` and `check` |
 
 The engine reads your program through the TypeScript compiler API in process,
 and all three packages carry that API across their own surface, so all three

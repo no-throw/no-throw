@@ -80,12 +80,15 @@ async function pass(
       const actual = await runFixture(fixture.directory, fixture.config);
       // Only a fixture that ran has a result a later pass can be held to.
       reported.set(fixture.name, actual);
-      report = check(fixture, actual);
+      report =
+        fixture.refuses.length > 0
+          ? [
+              "this fixture asserts the run refuses, naming " +
+                `${fixture.refuses.map((text) => JSON.stringify(text)).join(", ")}, and it completed`,
+            ]
+          : check(fixture, actual);
     } catch (error) {
-      report = [
-        "the driver could not run this fixture:",
-        `  ${error instanceof Error ? error.message : String(error)}`,
-      ];
+      report = refusalReport(fixture, error);
     }
 
     console.log(
@@ -106,6 +109,30 @@ async function pass(
   }
 
   return reported;
+}
+
+/**
+ * What a run that died has to say. A fixture that asserts a refusal is passing
+ * exactly when the refusal names what it says it names; for every other
+ * fixture, a run that did not finish is a failure however it read.
+ */
+function refusalReport(fixture: Fixture, error: unknown): readonly string[] {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (fixture.refuses.length === 0) {
+    return ["the driver could not run this fixture:", `  ${message}`];
+  }
+
+  const unnamed = fixture.refuses.filter((text) => !message.includes(text));
+  return unnamed.length === 0
+    ? []
+    : [
+        ...unnamed.map(
+          (text) => `the refusal never names ${JSON.stringify(text)}`,
+        ),
+        "what it said:",
+        `  ${message}`,
+      ];
 }
 
 function total(reported: Map<string, readonly Diagnostic[]>): number {

@@ -33,10 +33,25 @@ export interface ColorTable {
 export type ColorTables = ReadonlyMap<string, ColorTable>;
 
 /**
+ * Why a file that was there came to nothing. Which of the two happened is the
+ * one thing a reader cannot recover from the outcome, and "the file is there
+ * and is being ignored" is what every carrier owes its author.
+ */
+export type DocumentRefusal =
+  /** Unreadable, unparseable, or parsing to something that is not an object. */
+  | { readonly kind: "not-an-object" }
+  /** Where the envelope departs from the schema. */
+  | { readonly kind: "invalid"; readonly issues: readonly SchemaIssue[] };
+
+/**
  * A colors document, read and validated. The three states are the ones every
- * carrier file shares: it says nothing, it says something, or it says its facts
- * need a reader this release does not have. What each caller *does* with
- * "unreadable" differs, so the reading stops here and the rungs decide.
+ * carrier file shares: it says something, it says its facts need a reader this
+ * release does not have, or it does not describe what it claims to. What each
+ * caller *does* with the last two differs, so the reading stops here and the
+ * rungs decide.
+ *
+ * There is no state for a file that is not there: every caller looks first, and
+ * a document nobody wrote is not a document that came to nothing.
  */
 export type ColorDocument =
   | {
@@ -49,10 +64,8 @@ export type ColorDocument =
        */
       readonly tableAt: (names: readonly string[]) => ColorTable;
     }
-  | { readonly kind: "unreadable" }
-  | { readonly kind: "absent" };
-
-const ABSENT: ColorDocument = { kind: "absent" };
+  | { readonly kind: "unreadable"; readonly version: unknown }
+  | { readonly kind: "refused"; readonly refusal: DocumentRefusal };
 
 /** The wire version this release understands. */
 const VERSION = 1;
@@ -82,16 +95,21 @@ export function readColorDocument(
   location: TablePath,
 ): ColorDocument {
   const value = readJson(path);
-  if (value === undefined) return ABSENT;
+  if (value === undefined) {
+    return { kind: "refused", refusal: { kind: "not-an-object" } };
+  }
 
   const issues = validate(schema, value, imported);
   // A fault inside an entry floors that entry; anything shallower is a file
   // that does not describe what it claims to, and nothing is taken from it.
-  if (issues.some((issue) => !isEntryFault(issue.path, location))) {
-    return ABSENT;
+  const envelope = issues.filter((issue) => !isEntryFault(issue.path, location));
+  if (envelope.length > 0) {
+    return { kind: "refused", refusal: { kind: "invalid", issues: envelope } };
   }
 
-  if (value["version"] !== VERSION) return { kind: "unreadable" };
+  if (value["version"] !== VERSION) {
+    return { kind: "unreadable", version: value["version"] };
+  }
 
   const tables = new Map<string, ColorTable>();
 

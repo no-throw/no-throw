@@ -16,6 +16,13 @@ export interface Fixture {
   readonly description: string;
   readonly config: FixtureConfig;
   readonly expected: readonly Diagnostic[];
+  /**
+   * Text a refusal has to name. Non-empty means the run must not complete at
+   * all: a carrier file the project wrote and the engine cannot honor stops
+   * everything rather than being reported per file, and "the lint died saying
+   * this" is as much an observable behavior as a diagnostic is.
+   */
+  readonly refuses: readonly string[];
 }
 
 export function loadFixtures(fixturesRoot: string): Fixture[] {
@@ -36,6 +43,7 @@ export function loadFixture(directory: string): Fixture {
   const path = join(directory, "expected.json");
   const raw: unknown = JSON.parse(readFileSync(path, "utf8"));
   const root = asRecord(raw, path);
+  rejectUnknownKeys(root, FIXTURE_KEYS, path);
 
   const diagnostics = root["diagnostics"];
   if (!Array.isArray(diagnostics)) {
@@ -50,7 +58,27 @@ export function loadFixture(directory: string): Fixture {
     expected: diagnostics.map((entry, index) =>
       readDiagnostic(entry, `${path}: diagnostics[${index}]`),
     ),
+    refuses: readRefusals(root, path),
   };
+}
+
+function readRefusals(
+  root: Record<string, unknown>,
+  path: string,
+): readonly string[] {
+  const value = root["refuses"];
+  if (value === undefined) return [];
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.some((each) => typeof each !== "string")
+  ) {
+    throw new Error(
+      `${path}: \`refuses\`, when present, must be a non-empty array of ` +
+        "strings the refusal has to name",
+    );
+  }
+  return value as string[];
 }
 
 function readConfig(
@@ -66,6 +94,7 @@ function readConfig(
 }
 
 const POSITION_KEYS = ["line", "column", "endLine", "endColumn"] as const;
+const FIXTURE_KEYS = ["description", "config", "diagnostics", "refuses"];
 const DIAGNOSTIC_KEYS = [
   "file",
   ...POSITION_KEYS,

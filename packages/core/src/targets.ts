@@ -137,9 +137,10 @@ function statedTarget(
 ): Target | undefined {
   const declaration = targetOf(transfer, resolution.checker);
   if (declaration === undefined || hasVisibleBody(declaration)) return undefined;
-  return resolution.carrier.answerFor(declaration) === undefined
+  const keyedBy = keyDeclarationFor(declaration, transfer, resolution);
+  return resolution.carrier.answerFor(keyedBy) === undefined
     ? undefined
-    : carriedTarget(declaration, resolution);
+    : carriedTarget(declaration, resolution, keyedBy);
 }
 
 /**
@@ -344,19 +345,77 @@ function transferTarget(transfer: Transfer, resolution: Resolution): Target {
   if (target === undefined) return floor("unresolvable");
   return hasVisibleBody(target)
     ? functionTarget(target)
-    : carriedTarget(target, resolution);
+    : carriedTarget(
+        target,
+        resolution,
+        keyDeclarationFor(target, transfer, resolution),
+      );
+}
+
+/**
+ * Which declaration a carrier is asked about, where that is not the one whose
+ * parameter list runs.
+ *
+ * A binding typed with a *named* function type — `red: Formatter`, the shape
+ * much of npm's declarations take — resolves to the function type written in
+ * the alias, and that node is shared by every binding the alias types. It
+ * cannot carry a key: keying it would color `green` with whatever was said
+ * about `red`. What a consumer names is the binding, so the binding is what the
+ * chain is asked about, and the signature still supplies the facts.
+ *
+ * Only asked where the signature itself keys nothing, so a declaration the
+ * surface already reaches is never re-keyed through the site that reached it.
+ * And only of a callee written as a name: `new` resolves to a class rather than
+ * to a signature, and `super` names nothing at all.
+ */
+function keyDeclarationFor(
+  declaration: ts.Declaration,
+  transfer: Transfer,
+  resolution: Resolution,
+): ts.Declaration {
+  if (
+    ts.isNewExpression(transfer) ||
+    resolution.carrier.answerFor(declaration) !== undefined
+  ) {
+    return declaration;
+  }
+
+  const callee = calleeExpression(transfer);
+  if (
+    !ts.isIdentifier(callee) &&
+    !ts.isPropertyAccessExpression(callee) &&
+    !ts.isElementAccessExpression(callee)
+  ) {
+    return declaration;
+  }
+
+  // Through the import, because what the consumer named is the package's
+  // declaration and the specifier is only how it got here.
+  const { checker } = resolution;
+  const named = checker.getSymbolAtLocation(callee);
+  if (named === undefined) return declaration;
+  const resolved =
+    (named.flags & ts.SymbolFlags.Alias) === 0
+      ? named
+      : checker.getAliasedSymbol(named);
+
+  return resolved.declarations?.[0] ?? declaration;
 }
 
 /**
  * What the carrier chain makes of a declaration with no body to read. Module
  * resolution has already decided this is the chain's question rather than the
  * program's: source resolves to a visible body and never arrives here.
+ *
+ * The key and the facts can come from two declarations: what a consumer names
+ * is not always what holds the parameter list a condition is a path over.
  */
 function carriedTarget(
   declaration: ts.SignatureDeclaration | ts.ClassLikeDeclaration,
   resolution: Resolution,
+  keyedBy: ts.Declaration = declaration,
 ): DeclaredTarget {
-  const answer = resolution.carrier.answerFor(declaration);
+  const answer = resolution.carrier.answerFor(keyedBy);
   if (answer === undefined) return floor("bodyless");
   if (answer.kind === "floor") {
     return { kind: "floor", reason: answer.reason, staleFile: answer.staleFile };

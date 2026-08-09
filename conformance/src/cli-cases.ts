@@ -9,11 +9,11 @@ import {
 } from "./json.js";
 
 /**
- * What a run of `nothrow emit` has to do, as the exit code a publisher's
- * script sees. `refused` covers both halves of emit's contract — a mark it
- * cannot verify, and a manifest that has drifted — because both say the
- * package is not publishable as it stands; `cannot-run` is the different
- * thing, and is asserted apart so that a broken project cannot pass for one.
+ * What a run of the binary has to do, as the exit code a script sees.
+ * `refused` covers everything the tool read and will not stand behind — a mark
+ * emit cannot verify, a manifest that has drifted, a carrier entry that colors
+ * nothing; `cannot-run` is the different thing, and is asserted apart so that a
+ * broken project cannot pass for one.
  */
 export type Verdict = "ok" | "refused" | "cannot-run";
 
@@ -35,6 +35,18 @@ export type Step =
       readonly args: readonly string[];
       readonly expect: Verdict;
       /** Text the output must contain — what the diagnostic has to name. */
+      readonly names: readonly string[];
+    }
+  /**
+   * Run `nothrow check` in a project of the case's own, rather than in the
+   * producer: what it reads is what a *consumer* wrote and installed, so the
+   * directory is named rather than assumed.
+   */
+  | {
+      readonly kind: "check";
+      readonly args: readonly string[];
+      readonly directory: string;
+      readonly expect: Verdict;
       readonly names: readonly string[];
     }
   /** Assert facts about the emitted manifest, entry by entry. */
@@ -97,6 +109,7 @@ function loadCase(root: string, name: string): CliCase {
 
 const STEP_KEYS: Record<string, readonly string[]> = {
   emit: ["emit", "expect", "names"],
+  check: ["check", "in", "expect", "names"],
   entries: ["entries"],
   absent: ["absent"],
   append: ["append", "text"],
@@ -120,6 +133,14 @@ function readStep(entry: unknown, where: string): Step {
       return {
         kind,
         args: readStrings(record, "emit", where),
+        expect: readVerdict(record, where),
+        names: "names" in record ? readStrings(record, "names", where) : [],
+      };
+    case "check":
+      return {
+        kind,
+        args: readStrings(record, "check", where),
+        directory: readString(record, "in", where),
         expect: readVerdict(record, where),
         names: "names" in record ? readStrings(record, "names", where) : [],
       };

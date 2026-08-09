@@ -1,0 +1,7 @@
+{
+  "description": "The project wrote an overrides file and this release cannot read it, so nothing is analyzed. Every other rung answers for somebody else's package and may fall through to the one below; this one is yours, and falling through would discard what you wrote without saying so — the silent no-op `valid-mark` exists a rung up to prevent.",
+  "diagnostics": [],
+  "refuses": [
+    "`nothrow.overrides.json` cannot be read — it could not be read as a JSON object — so nothing in it is being honored. An overrides file that is quietly ignored is the silent no-op the rest of this design exists to rule out, so nothing is analyzed until it is fixed or removed"
+  ]
+}
