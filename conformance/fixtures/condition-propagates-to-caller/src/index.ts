@@ -8,8 +8,8 @@ export function myMapKeys<T>(xs: readonly T[], key: (t: T) => string): string[] 
 }
 
 function myMap<T, U>(xs: readonly T[], f: (t: T) => U): U[] {
-  const out: U[] = [];
-  for (let i = 0; i < xs.length; i += 1) out[out.length] = f(xs[i]);
+  let out: U[] = [];
+  for (let i = 0; i < xs.length; i += 1) out = [...out, f(xs[i])];
   return out;
 }
 

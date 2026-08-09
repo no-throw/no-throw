@@ -10,8 +10,8 @@ export function myEach<T>(xs: readonly T[], cb: (t: T) => void): void {
 /** @nothrow */
 export function collect(users: readonly User[]): void {
   myEach(users, (u) => {
-    seen[seen.length] = u.name;
+    seen.last = u.name;
   });
 }
 
-const seen: string[] = [];
+const seen = { last: "" };

@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { baselineRung } from "../baseline/rung.js";
 import { hasDeclaredMark } from "../marks.js";
 import type { ColorTable, ColorTables, ManifestEntry } from "./document.js";
 import { manifestAt } from "./manifest.js";
@@ -51,9 +52,6 @@ export type CarrierRung = (query: CarrierQuery) => CarrierAnswer | undefined;
  * The opaque-resolution seam. Everything the engine cannot read a body for
  * comes through here, and precedence *is* the order of the rungs — there is no
  * separate precedence engine to keep in step with them.
- *
- * The baseline goes behind the three composed here, as one more `CarrierRung`
- * and nothing else.
  */
 export interface Carrier {
   answerFor(declaration: ts.Declaration): CarrierAnswer | undefined;
@@ -182,4 +180,9 @@ const shipped: CarrierRung = (query) => {
 };
 
 /** The chain, in precedence order. First answer wins, per key. */
-const RUNGS: readonly CarrierRung[] = [overridden, overlaid, shipped];
+const RUNGS: readonly CarrierRung[] = [
+  overridden,
+  overlaid,
+  shipped,
+  baselineRung,
+];
