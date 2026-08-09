@@ -73,6 +73,17 @@ jobs:
       # producer packages, and a consumer project reading what it wrote.
       - run: pnpm run conformance:cli
 
+      # §H makes diagnostic text normative, so a reworded message is a spec
+      # change. This is what makes that a build failure rather than a discovery.
+      - name: Every §H clause has an asserting fixture
+        run: pnpm run audit:diagnostics
+
+      # What a consumer downloads, rather than the `files` field it came from:
+      # a tarball missing the baseline data installs cleanly and floors
+      # everything, which nothing resolving the workspace can see.
+      - name: The tarballs carry what they claim
+        run: pnpm run check:packed
+
   eslint-peer:
     name: ESLint peer gate
     runs-on: ubuntu-latest

@@ -21,7 +21,7 @@ import type ts from "typescript";
 import { bridgeEdit, type BridgeShape } from "../bridge.js";
 
 const createRule = ESLintUtils.RuleCreator(
-  (name) => `https://github.com/MidnightDesign/no-throw#${name}`,
+  (name) => `https://github.com/no-throw/no-throw#${name}`,
 );
 
 /**

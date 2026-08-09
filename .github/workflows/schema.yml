@@ -1,0 +1,76 @@
+# The schemas' canonical home. `nothrow.json` and `nothrow.overrides.json` are
+# a sanctioned hand-written path (#17), so they get the editor validation any
+# other JSON format gets — which needs the schema served at a stable URL, not
+# just committed. GitHub Pages is that URL; SchemaStore points at it.
+name: Schema
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/core/schema/**
+      - .github/workflows/schema.yml
+  workflow_dispatch:
+
+# One deployment at a time, and a queued one is not worth running: only the
+# newest tree is ever the published schema.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish the schemas
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # The version in the path is the wire format's, not the packages': a
+      # manifest states `"version": 1`, an unknown one floors the whole file,
+      # and a v2 schema served at a v1 URL would tell an editor a v1 manifest
+      # is wrong. `schema/` without the version is the current major, which is
+      # what a hand-written file gets by following the README.
+      - name: Lay the site out
+        run: |
+          mkdir -p site/schema/v1
+          cp packages/core/schema/*.json site/schema/v1/
+          cp packages/core/schema/*.json site/schema/
+
+      # A `$id` that does not match where the file is served breaks `$ref`
+      # resolution for every validator that fetches it, and the overrides
+      # schema `$ref`s the manifest one by absolute URL.
+      - name: Each schema is served where its `$id` says it is
+        run: node scripts/check-schema-urls.mjs site
+
+      - name: Somewhere to land
+        run: |
+          cat > site/index.html <<'HTML'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>no-throw schemas</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <h1>no-throw schemas</h1>
+          <p>JSON Schemas for the manifest and overrides files.
+             The project lives at <a href="https://github.com/no-throw/no-throw">github.com/no-throw/no-throw</a>.</p>
+          <ul>
+            <li><a href="schema/v1/nothrow.schema.json"><code>schema/v1/nothrow.schema.json</code></a> — <code>nothrow.json</code></li>
+            <li><a href="schema/v1/nothrow.overrides.schema.json"><code>schema/v1/nothrow.overrides.schema.json</code></a> — <code>nothrow.overrides.json</code></li>
+          </ul>
+          <p>The version in the path is the manifest wire format's. <code>schema/</code>
+             without it always serves the current major.</p>
+          HTML
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
