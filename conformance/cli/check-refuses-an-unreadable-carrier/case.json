@@ -1,0 +1,14 @@
+{
+  "description": "The other state, and the one that is a failure: a file the project wrote and this release cannot read. The rule refuses the whole run over it; `check` says the same thing without needing a file to lint, and exits non-zero so a CI step catches it.",
+  "steps": [
+    {
+      "check": [],
+      "in": "project",
+      "expect": "refused",
+      "names": [
+        "could not be read as a JSON object",
+        "Nothing was checked: a carrier above is not being honored."
+      ]
+    }
+  ]
+}

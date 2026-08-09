@@ -1,0 +1,46 @@
+{
+  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "flaky": {
+      "exports": {
+        ".": {
+          "safeParse": {
+            "color": "non-throwing",
+            "conditions": []
+          },
+          "Flaky#safeParse": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        },
+        "./deep": {
+          "safeParse": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    },
+    "uninstalled": {
+      "exports": {
+        ".": {
+          "whatever": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    },
+    "facade": {
+      "exports": {
+        ".": {
+          "safeParse": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    }
+  }
+}
