@@ -28,6 +28,7 @@ const TYPESCRIPT_FILES = ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"];
 const BRIDGEABLE = new Set([
   "unbridgedCall",
   "inferredThrowingCall",
+  "inferredThrowingConstruction",
   "conditionArgumentThrowing",
   "conditionArgumentFloored",
   "carriedConditionArgumentThrowing",

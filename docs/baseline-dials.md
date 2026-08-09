@@ -62,14 +62,16 @@ stating plainly:
   as trap behavior. The abstract operations that merely call them — `GetV`,
   `RegExpExec`, `OrdinaryHasInstance` — are **not** in that set: they have
   throws of their own that have nothing to do with a trap.
+- `ValidateNonRevokedProxy` is in that set, and is the only operation in it that
+  is not an internal method. It takes a Proxy exotic object and its one throw is
+  that the Proxy was revoked, so reaching it means the chain went through a
+  Proxy just as surely as reaching a trap does — and a revoked Proxy comes from
+  `Proxy.revocable` and nowhere else, which is the same construct the ruling
+  already covers. It is what `Array.isArray` and every `new C()` reach through
+  `GetFunctionRealm`.
 - An array carrying a throwing index accessor is not in the hostile pool.
   Installing one takes `Object.defineProperty`, which the same ruling names in
   the trust base.
-- A **revoked** Proxy is the same ruling a second time: it is type-identical to
-  the proxy it was, and nothing in the type system tells them apart. So
-  `ValidateNonRevokedProxy` reads as trap behavior wherever it is reached — and
-  it is reached with no internal method in the chain, through
-  `GetFunctionRealm`, which is how every `new C()` in the library inherits it.
 
 ## What the doctrine costs
 

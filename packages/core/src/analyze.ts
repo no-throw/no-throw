@@ -37,6 +37,18 @@ interface InferredThrowingCall {
 }
 
 /**
+ * The same, where what was read is a class that declares no constructor. Its
+ * own kind because the out differs and the usual one is a dead end: there is no
+ * declaration for a mark to bind to, so the reader has to write the constructor
+ * before they can claim anything about it.
+ */
+interface InferredThrowingConstruction {
+  readonly kind: "inferred-throwing-construction";
+  readonly node: ts.Node;
+  readonly callee: string;
+}
+
+/**
  * Where a body enters a condition path. Naming it is half of what a
  * discharge-failure diagnostic owes the reader: the parameter alone does not
  * say which line to look at.
@@ -156,6 +168,7 @@ export type Finding =
   | UncaughtThrow
   | UnbridgedCall
   | InferredThrowingCall
+  | InferredThrowingConstruction
   | ThrowingConditionArgument
   | FlooredConditionArgument
   | ThrowingConsumption
@@ -210,7 +223,10 @@ function findingFor(escape: BodyEscape): Finding {
     case "callee":
       return escape.reason === "inferred"
         ? {
-            kind: "inferred-throwing-call",
+            kind:
+              escape.constructorless === true
+                ? "inferred-throwing-construction"
+                : "inferred-throwing-call",
             node: escape.node,
             callee: calleeText(escape.node),
           }

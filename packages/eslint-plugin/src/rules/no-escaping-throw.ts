@@ -21,7 +21,7 @@ import type ts from "typescript";
 import { bridgeEdit, type BridgeShape } from "../bridge.js";
 
 const createRule = ESLintUtils.RuleCreator(
-  (name) => `https://github.com/MidnightDesign/no-throw#${name}`,
+  (name) => `https://github.com/no-throw/no-throw#${name}`,
 );
 
 /**
@@ -92,6 +92,17 @@ const diagnostics = {
     "analyzed and can throw. Your outs: bridge this call with `try`/`catch`, " +
     "or make `{{callee}}` non-throwing — mark it `@nothrow` and the escapes " +
     "inside it are reported too.",
+  // A class declaring no constructor has nothing a mark binds to, so the out
+  // above would be a dead end: `valid-mark` refuses a mark on the class, and
+  // there is no method near it to move one to. What the reader has to write
+  // first is the constructor.
+  inferredThrowingConstruction:
+    "Construction of `{{callee}}` escapes this `@nothrow` function: what runs " +
+    "— its field initializers and the `super()` it does not write — was " +
+    "analyzed and can throw. Your outs: bridge this construction with " +
+    "`try`/`catch`, or make `{{callee}}` non-throwing by declaring a " +
+    "constructor and marking that `@nothrow`, since a mark on a class binds " +
+    "to nothing.",
   // A conditioned callee is clean given a path over its own parameters, so a
   // failure names the path, where the callee's body enters it, and the outs.
   conditionArgumentThrowing:
@@ -250,6 +261,7 @@ const bridgeFor: Record<DiagnosticId, Bridge | undefined> = {
   uncaughtThrow: undefined,
   unbridgedCall: BRIDGE,
   inferredThrowingCall: BRIDGE,
+  inferredThrowingConstruction: BRIDGE,
   conditionArgumentThrowing: BRIDGE,
   conditionArgumentFloored: BRIDGE,
   carriedConditionArgumentThrowing: BRIDGE,
@@ -567,7 +579,9 @@ type Report =
       readonly data: { readonly callee: string; readonly reason: string };
     }
   | {
-      readonly messageId: "inferredThrowingCall";
+      readonly messageId:
+        | "inferredThrowingCall"
+        | "inferredThrowingConstruction";
       readonly data: { readonly callee: string };
     }
   | {
@@ -656,6 +670,11 @@ function reportFor(finding: Finding, cwd: string): Report {
     case "inferred-throwing-call":
       return {
         messageId: "inferredThrowingCall",
+        data: { callee: finding.callee },
+      };
+    case "inferred-throwing-construction":
+      return {
+        messageId: "inferredThrowingConstruction",
         data: { callee: finding.callee },
       };
     case "throwing-condition-argument":

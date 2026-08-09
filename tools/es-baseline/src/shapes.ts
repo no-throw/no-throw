@@ -153,11 +153,6 @@ export interface Shape {
   readonly domain: Domain | undefined;
   readonly rootOp: string;
   readonly condition: string;
-  /**
-   * The chain reached this throw through a step ECMA-262 only takes for an
-   * Object, so the site is about an object however its own prose reads.
-   */
-  readonly objectEntered: boolean;
 }
 
 /**
@@ -170,79 +165,42 @@ export interface Shape {
  * its target, so "might this be a Proxy?" has no static answer for any object
  * and flooring on it would color nothing.
  *
- * Only the internal methods themselves qualify. The abstract operations that
- * *call* them — `GetV` coerces first, `RegExpExec` checks a user-supplied
- * `exec`'s result, `OrdinaryHasInstance` checks `C.prototype` — have throws of
+ * Only the internal methods themselves qualify, and one operation that is
+ * definitionally about a Proxy: `ValidateNonRevokedProxy` takes a Proxy exotic
+ * object and its single throw is that the Proxy was revoked, so a chain
+ * reaching it went through one just as surely as a trap does. The abstract
+ * operations that merely *call* internal methods do not qualify — `GetV`
+ * coerces first, `RegExpExec` checks a user-supplied `exec`'s result,
+ * `OrdinaryHasInstance` checks `C.prototype` — because they have throws of
  * their own that are nothing to do with a trap, and swallowing those is
  * unsound. Their trap-derived causes still carry an internal method in the
  * chain, so nothing is lost by naming this set narrowly.
  */
-const TRAP_DISPATCH = /^\[\[\w+\]\]$/;
-
-/**
- * `ValidateNonRevokedProxy` takes a Proxy and nothing else — every call site
- * guards on "is a Proxy exotic object" before reaching it — and a revoked
- * Proxy is the ruling above applied a second time: it is type-identical to the
- * proxy it was, with nothing in the type system to tell them apart.
- *
- * It needs naming here rather than falling out of `TRAP_DISPATCH` because
- * `GetFunctionRealm` calls it with no internal method in the chain, which is
- * how *every* `new C()` in the library inherits it.
- */
-const PROXY_ONLY = /^ValidateNonRevokedProxy$/;
-
-/**
- * `ToPrimitive` runs its entire conversion protocol — `GetMethod`, `GetV`,
- * `OrdinaryToPrimitive`, and the internal methods under them — inside `If
- * input is an Object`. Nothing past that step is about a primitive, whichever
- * operation the throw is finally written in.
- *
- * This is where inlining a callee's causes is at its least precise: it carries
- * the cause up without the guard that led to the call. This one guard is worth
- * reading because every numeric and string coercion in the library goes
- * through it — and without it, `ToObject`'s "undefined or null" throw lands on
- * every parameter whose declared type admits `undefined`, which is every
- * optional parameter there is.
- */
-const OBJECT_ENTERED = /^(ToPrimitive|OrdinaryToPrimitive)$/;
+const PROXY_DISPATCH = /^(\[\[\w+\]\]|ValidateNonRevokedProxy)$/;
 
 export function shapeOf(hazard: Hazard): Shape {
   const { rootOp, condition } = hazard;
-  // The step that entered the object branch has to be *above* the throw: a
-  // guard does not discharge the operation it is written in.
-  const objectEntered = hazard.via
-    .slice(0, -1)
-    .some((op) => OBJECT_ENTERED.test(op));
-  const shape = (id: ShapeId, domain: Domain | undefined): Shape => ({
-    id,
-    domain,
-    rootOp,
-    condition,
-    objectEntered,
-  });
 
-  if (
-    [...hazard.via, rootOp].some(
-      (op) => TRAP_DISPATCH.test(op) || PROXY_ONLY.test(op),
-    )
-  ) {
-    return shape("proxy", undefined);
+  if ([...hazard.via, rootOp].some((op) => PROXY_DISPATCH.test(op))) {
+    return { id: "proxy", domain: undefined, rootOp, condition };
   }
 
   for (const rule of RULES) {
     const subject = rule.on === "root" ? rootOp : condition;
-    if (rule.test.test(subject)) return shape(rule.id, rule.domain);
+    if (rule.test.test(subject)) {
+      return { id: rule.id, domain: rule.domain, rootOp, condition };
+    }
     // An op-name rule also fires when the condition prose names the operation.
     if (rule.on === "root" && rule.test.test(condition)) {
-      return shape(rule.id, rule.domain);
+      return { id: rule.id, domain: rule.domain, rootOp, condition };
     }
   }
   // A condition-keyed rule may still describe the operation a bare explicit
   // throw sits in.
   for (const rule of RULES) {
     if (rule.on !== "root" && rule.test.test(rootOp)) {
-      return shape(rule.id, rule.domain);
+      return { id: rule.id, domain: rule.domain, rootOp, condition };
     }
   }
-  return shape("unknown", undefined);
+  return { id: "unknown", domain: undefined, rootOp, condition };
 }

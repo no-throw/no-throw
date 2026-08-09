@@ -5,6 +5,12 @@
   "type": "module",
   "description": "Statically enforce that no throw escapes a function marked @nothrow.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/no-throw/no-throw.git"
+  },
+  "homepage": "https://github.com/no-throw/no-throw#readme",
+  "bugs": "https://github.com/no-throw/no-throw/issues",
   "packageManager": "pnpm@9.12.3",
   "engines": {
     "node": ">=20.11"
@@ -14,9 +20,12 @@
     "clean": "tsc -b --clean",
     "check:lockstep": "node scripts/check-lockstep.mjs",
     "check:docs": "node scripts/check-docs.mjs",
+    "audit:diagnostics": "node scripts/audit-diagnostics.mjs",
+    "check:packed": "node scripts/check-packed.mjs",
+    "release": "node scripts/release.mjs",
     "conformance": "node conformance/dist/run.js",
     "conformance:cli": "node conformance/dist/run-cli.js",
-    "test": "pnpm run build && pnpm run check:lockstep && pnpm run check:docs && pnpm run conformance && pnpm run conformance:cli",
+    "test": "pnpm run build && pnpm run check:lockstep && pnpm run check:docs && pnpm run conformance && pnpm run conformance:cli && pnpm run audit:diagnostics",
     "gate:peer:eslint": "node scripts/gate-eslint-peer.mjs",
     "gate:peer:typescript": "node scripts/gate-typescript-peer.mjs",
     "baseline:generate": "pnpm --filter @no-throw/es-baseline-tools run generate",

@@ -219,21 +219,11 @@ function classifySite(
     return verdict("type-reachable", rule, { dial });
   };
 
-  // Two ways a site can need an object: its own shape names one, or the chain
-  // only reaches it once ECMA-262 has established there is one.
-  if (operand.primitive) {
-    if (OBJECT_SHAPED.has(shape.id)) {
-      return verdict(
-        "type-excluded",
-        `${shape.id} needs an object; ${operand.describe} carries no user code`,
-      );
-    }
-    if (shape.objectEntered) {
-      return verdict(
-        "type-excluded",
-        `reached through a step taken only for an Object; ${operand.describe} is never one`,
-      );
-    }
+  if (operand.primitive && OBJECT_SHAPED.has(shape.id)) {
+    return verdict(
+      "type-excluded",
+      `${shape.id} needs an object; ${operand.describe} carries no user code`,
+    );
   }
 
   switch (shape.id) {
