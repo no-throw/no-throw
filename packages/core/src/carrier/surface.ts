@@ -1,11 +1,16 @@
 import ts from "typescript";
+import { keySegment } from "../segments.js";
 import { normalize, type PackageHome } from "./packages.js";
 
 /** Where a package's published surface reaches a declaration. */
 export interface ExportKey {
   /** The npm export subpath it is reached through. */
   readonly subpath: string;
-  /** A strict JSDoc-namepath subset: `name`, `Class#member`, `Class.static`. */
+  /**
+   * A strict JSDoc-namepath subset: `name`, `Class#member`, `Class.static`,
+   * plus the two segments for members with no name of their own —
+   * `Formatter#()` and `Wrapper#new()`.
+   */
   readonly symbolPath: string;
 }
 
@@ -132,15 +137,19 @@ function record(
   if (depth >= MAX_DEPTH) return;
 
   for (const [name, member] of resolved.members ?? []) {
-    if (isWritable(name)) {
-      record(keys, checker, subpath, `${symbolPath}#${name}`, member, depth + 1);
+    const segment = keySegment(name);
+    if (segment !== undefined) {
+      const path = `${symbolPath}#${segment}`;
+      record(keys, checker, subpath, path, member, depth + 1);
     }
   }
   // A class's statics and a namespace's contents are the same table, and both
   // are reached with a dot.
   for (const [name, member] of resolved.exports ?? []) {
-    if (isWritable(name)) {
-      record(keys, checker, subpath, `${symbolPath}.${name}`, member, depth + 1);
+    const segment = keySegment(name);
+    if (segment !== undefined) {
+      const path = `${symbolPath}.${segment}`;
+      record(keys, checker, subpath, path, member, depth + 1);
     }
   }
 }
@@ -150,13 +159,6 @@ function aliasedSymbol(symbol: ts.Symbol, checker: ts.TypeChecker): ts.Symbol {
     ? symbol
     : checker.getAliasedSymbol(symbol);
 }
-
-/** A member the key grammar can hold: no computed names, no symbol members. */
-function isWritable(name: ts.__String): name is ts.__String & string {
-  return typeof name === "string" && SEGMENT.test(name);
-}
-
-const SEGMENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/u;
 
 /**
  * The modules a file publishes. A file with top-level `export`s is one; a

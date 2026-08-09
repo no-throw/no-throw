@@ -60,16 +60,19 @@ export function returnedExpressions(
 }
 
 /**
- * The constructor a class implements, if it implements one. An overload
- * signature is not it: the implementation is what runs.
+ * The constructor a class declares, if it declares one. An overload signature
+ * is not it where an implementation exists: the implementation is what runs.
+ *
+ * Where none exists the declaration is taken anyway, because a `.d.ts` has
+ * nothing else — and it is the node a carrier answers for. Emit keys a marked
+ * constructor `Wrapper#new()`, so a read that fell back to the class here would
+ * ask the manifest for `Wrapper` and never find the entry the package shipped.
  */
 function declaredConstructor(
   classLike: ts.ClassLikeDeclaration,
 ): ts.ConstructorDeclaration | undefined {
-  return classLike.members.find(
-    (member): member is ts.ConstructorDeclaration =>
-      ts.isConstructorDeclaration(member) && member.body !== undefined,
-  );
+  const declared = classLike.members.filter(ts.isConstructorDeclaration);
+  return declared.find((member) => member.body !== undefined) ?? declared[0];
 }
 
 /**

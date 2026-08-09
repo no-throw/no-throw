@@ -1,0 +1,20 @@
+{
+  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "picoish": {
+      "exports": {
+        ".": {
+          "Formatter#()": {
+            "color": "non-throwing",
+            "conditions": []
+          },
+          "Colors#parse": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    }
+  }
+}

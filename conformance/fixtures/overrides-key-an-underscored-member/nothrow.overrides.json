@@ -1,0 +1,20 @@
+{
+  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "underscored": {
+      "exports": {
+        ".": {
+          "Api#__decode": {
+            "color": "non-throwing",
+            "conditions": []
+          },
+          "Api#___decode": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    }
+  }
+}
