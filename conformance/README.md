@@ -119,9 +119,19 @@ key does not constrain the offer at all.
 
 `config` says how the fixture is wired up, and defaults to `"rules"`: the driver
 turns each `nothrow` rule on by name. `"recommended"` installs the shipped
-preset instead — untouched, its own `files` scope included — so a fixture can
-assert what a user gets from the config they actually install, third-party rules
-in it and the files it declines to visit both.
+preset instead — untouched, its own `files` scope included, and handed the same
+typescript-eslint plugin object a consumer hands it — so a fixture can assert
+what a user gets from the config they actually install, third-party rules in it
+and the files it declines to visit both.
+
+What the preset does with a *wrong* argument is checked once, before any
+fixture: it must refuse an absent one, the `typescript-eslint` umbrella, a
+plugin without the float rule and something that is not an object at all, each
+time naming `tseslint.plugin`. That check lives beside the driver rather than in
+a fixture for the reason the driver exists — it is about the config a reader
+writes by hand, in the linter the driver knows about, and it exists before any
+project is on disk. A preset that quietly accepted the wrong object would put
+back the startup crash taking an argument exists to remove.
 
 Two properties hold across the whole suite rather than in any one fixture, and
 the driver turns a breach of either into a loud failure:
