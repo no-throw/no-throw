@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "$id": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
   "title": "no-throw overrides",
   "description": "Colors packages you did not write, from a project you do. `nothrow.overrides.json` sits at your project root, beside its `package.json`, and outranks every other carrier — it is the rung nobody else has to act for you. Each value is the manifest shape minus `files` and `package`: hashes are about a package's own bytes, and the package these colors are about is the key.",
   "type": "object",
@@ -23,7 +23,7 @@
       "required": ["exports"],
       "properties": {
         "exports": {
-          "$ref": "https://midnightdesign.github.io/no-throw/nothrow.schema.json#/$defs/exports"
+          "$ref": "https://no-throw.github.io/no-throw/schema/v1/nothrow.schema.json#/$defs/exports"
         }
       }
     }

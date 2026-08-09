@@ -4,7 +4,7 @@ import type ts from "typescript";
 import { locOf } from "../loc.js";
 
 const createRule = ESLintUtils.RuleCreator(
-  (name) => `https://github.com/MidnightDesign/no-throw#${name}`,
+  (name) => `https://github.com/no-throw/no-throw#${name}`,
 );
 
 /**

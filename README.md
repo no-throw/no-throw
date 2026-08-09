@@ -214,7 +214,7 @@ blocked on somebody else shipping a fix:
 
 ```json
 {
-  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
   "version": 1,
   "packages": {
     "flaky": {
@@ -783,6 +783,25 @@ pnpm install && pnpm test
 diagnostics they must produce. Every behavior lands there, the CLI's included:
 `nothrow emit` is exercised as a process over producer packages, and what it
 writes is read back by a separate consumer project through the ordinary driver.
+
+It also runs the **diagnostics audit**, which is where the message contract
+lives:
+
+```bash
+pnpm run audit:diagnostics
+```
+
+Diagnostic text is normative — the outs a floor names are the whole adoption
+cost of this rule, and they only survive if something holds them. The audit
+reads the message catalog off the built plugin and the assertions off the
+fixtures, and fails when a normative message has no fixture asserting its text,
+when a floor names its outs out of precedence order, or when a message that must
+not name a nearest valid site starts naming one. A clause with no artifact
+behind it is a failure, not a gap to note.
+
+Releases are one dispatch of the [Release workflow](.github/workflows/release.yml);
+see [docs/releasing.md](docs/releasing.md), which also records the schemas'
+canonical URLs and the SchemaStore submission.
 
 Two peer ranges name what a consumer may install these packages against: the
 plugin's `eslint`, and the `typescript` all three share. CI enumerates each
