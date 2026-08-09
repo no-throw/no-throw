@@ -26,6 +26,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     permissions:
+      # Naming any permission sets every unnamed one to `none`, so the checkout
+      # this job opens with has to be listed too — without it the failure is an
+      # opaque `Repository not found` on a repository that plainly exists.
+      contents: read
       pages: write
       id-token: write
     steps:
