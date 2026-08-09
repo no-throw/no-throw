@@ -1,0 +1,46 @@
+{
+  "target": "typescript",
+  "commit": "b465fdbfe175304d9b977da137b2c178ae1091d3",
+  "anchor": "isEntityNameExpression",
+  "before": {
+    "size": 2,
+    "members": [
+      "isPropertyAccessEntityNameExpression",
+      "isEntityNameExpression"
+    ]
+  },
+  "after": {
+    "split": {
+      "size": 1,
+      "members": [
+        "isEntityNameExpression"
+      ]
+    },
+    "merge": {
+      "size": 5,
+      "members": [
+        "isBindableStaticElementAccessExpression",
+        "isBindableStaticAccessExpression",
+        "isPropertyAccessEntityNameExpression",
+        "isEntityNameExpression",
+        "isBindableStaticNameExpression"
+      ]
+    }
+  },
+  "edits": [
+    {
+      "name": "split",
+      "description": "`isEntityNameExpression` stops calling `isPropertyAccessEntityNameExpression` and inlines the test instead. The back edge is gone, so the two-member group becomes two singletons.",
+      "file": "src/compiler/utilities.ts",
+      "find": "    return node.kind === SyntaxKind.Identifier || isPropertyAccessEntityNameExpression(node);",
+      "replace": "    return node.kind === SyntaxKind.Identifier || (isPropertyAccessExpression(node) && isIdentifier(node.name) && node.expression.kind === SyntaxKind.Identifier);"
+    },
+    {
+      "name": "merge",
+      "description": "`isEntityNameExpression` gains a call to `isBindableStaticNameExpression`, which already reaches it. One added edge closes the path, so its group and the assignment-declaration group become one.",
+      "file": "src/compiler/utilities.ts",
+      "find": "    return node.kind === SyntaxKind.Identifier || isPropertyAccessEntityNameExpression(node);",
+      "replace": "    return node.kind === SyntaxKind.Identifier || isPropertyAccessEntityNameExpression(node) || isBindableStaticNameExpression(node, /*excludeThisKeyword*/ true);"
+    }
+  ]
+}

@@ -24,7 +24,11 @@
     "dom:generate": "pnpm --filter @no-throw/dom-baseline-tools run generate",
     "dom:gate:fuzz": "pnpm --filter @no-throw/dom-baseline-tools run gate:fuzz",
     "dom:gate:deferred": "pnpm --filter @no-throw/dom-baseline-tools run gate:deferred",
-    "dom:gate:drift": "pnpm --filter @no-throw/dom-baseline-tools run gate:drift"
+    "dom:gate:drift": "pnpm --filter @no-throw/dom-baseline-tools run gate:drift",
+    "dogfood:scc": "pnpm --filter @no-throw/dogfood run scc",
+    "dogfood:cycles": "pnpm --filter @no-throw/dogfood run cycles",
+    "dogfood:cold": "pnpm --filter @no-throw/dogfood run cold",
+    "dogfood:warm": "pnpm --filter @no-throw/dogfood run warm"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

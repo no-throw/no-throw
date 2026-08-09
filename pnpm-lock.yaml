@@ -81,6 +81,25 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  tools/dogfood:
+    dependencies:
+      '@no-throw/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@no-throw/eslint-plugin':
+        specifier: workspace:*
+        version: link:../../packages/eslint-plugin
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.5
+
   tools/dom-baseline:
     dependencies:
       '@no-throw/core':
