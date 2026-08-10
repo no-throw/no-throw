@@ -1,14 +1,10 @@
 {
   "version": 1,
   "unprobed": [
-    "Array#includes",
-    "Array#indexOf",
-    "Array#lastIndexOf",
     "AsyncDisposableStack#disposeAsync",
     "AsyncDisposableStack#disposed",
     "AsyncDisposableStackConstructor#new",
     "Atomics#pause",
-    "BooleanConstructor#()",
     "DisposableStack#dispose",
     "DisposableStack#disposed",
     "DisposableStackConstructor#new",
@@ -19,23 +15,7 @@
     "Float16Array#byteLength",
     "Float16Array#byteOffset",
     "Float16Array#length",
-    "Map#delete",
-    "Map#get",
-    "Map#has",
-    "Map#set",
     "Math#f16round",
-    "ObjectConstructor#entries",
-    "ObjectConstructor#getOwnPropertyDescriptors",
-    "ObjectConstructor#values",
-    "ReadonlyArray#includes",
-    "ReadonlyArray#indexOf",
-    "ReadonlyArray#lastIndexOf",
-    "ReadonlyMap#get",
-    "ReadonlyMap#has",
-    "ReadonlySet#has",
-    "Set#add",
-    "Set#delete",
-    "Set#has",
     "SuppressedErrorConstructor#()",
     "SuppressedErrorConstructor#new",
     "WeakRef#@@toStringTag",
@@ -51,6 +31,8 @@
         "runtime": "Map.prototype.clear"
       },
       "Map#delete": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.delete",
         "runtime": "Map.prototype.delete"
@@ -65,16 +47,22 @@
         "runtime": "Map.prototype.forEach"
       },
       "Map#get": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.get",
         "runtime": "Map.prototype.get"
       },
       "Map#has": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.has",
         "runtime": "Map.prototype.has"
       },
       "Map#set": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.set",
         "runtime": "Map.prototype.set"
@@ -102,11 +90,15 @@
         "runtime": "Map.prototype.forEach"
       },
       "ReadonlyMap#get": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.get",
         "runtime": "Map.prototype.get"
       },
       "ReadonlyMap#has": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.has",
         "runtime": "Map.prototype.has"
@@ -152,6 +144,8 @@
         "runtime": "WeakMap"
       },
       "Set#add": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Set.prototype.add",
         "runtime": "Set.prototype.add"
@@ -164,6 +158,8 @@
         "runtime": "Set.prototype.clear"
       },
       "Set#delete": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Set.prototype.delete",
         "runtime": "Set.prototype.delete"
@@ -178,6 +174,8 @@
         "runtime": "Set.prototype.forEach"
       },
       "Set#has": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Set.prototype.has",
         "runtime": "Set.prototype.has"
@@ -205,6 +203,8 @@
         "runtime": "Set.prototype.forEach"
       },
       "ReadonlySet#has": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Set.prototype.has",
         "runtime": "Set.prototype.has"
@@ -1734,11 +1734,15 @@
     },
     "es2016.array.include": {
       "Array#includes": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.includes",
         "runtime": "Array.prototype.includes"
       },
       "ReadonlyArray#includes": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.includes",
         "runtime": "Array.prototype.includes"
@@ -1816,16 +1820,21 @@
     },
     "es2017.object": {
       "ObjectConstructor#values": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Object.values",
         "runtime": "Object.values"
       },
       "ObjectConstructor#entries": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Object.entries",
         "runtime": "Object.entries"
       },
       "ObjectConstructor#getOwnPropertyDescriptors": {
+        "color": "throwing",
         "accessor": false,
         "spec": "Object.getOwnPropertyDescriptors",
         "runtime": "Object.getOwnPropertyDescriptors"
@@ -4067,6 +4076,12 @@
         "spec": "Boolean",
         "runtime": "Boolean"
       },
+      "BooleanConstructor#()": {
+        "color": "non-throwing",
+        "conditions": [],
+        "spec": "Boolean",
+        "runtime": "Boolean"
+      },
       "Number#toString": {
         "color": "throwing",
         "accessor": false,
@@ -5018,11 +5033,15 @@
         "runtime": "Array.prototype.slice"
       },
       "ReadonlyArray#indexOf": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.indexOf",
         "runtime": "Array.prototype.indexOf"
       },
       "ReadonlyArray#lastIndexOf": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.lastIndexOf",
         "runtime": "Array.prototype.lastIndexOf"
@@ -5156,11 +5175,15 @@
         "runtime": "Array.prototype.unshift"
       },
       "Array#indexOf": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.indexOf",
         "runtime": "Array.prototype.indexOf"
       },
       "Array#lastIndexOf": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.lastIndexOf",
         "runtime": "Array.prototype.lastIndexOf"

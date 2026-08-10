@@ -6,6 +6,19 @@ import { constructTypedArray, isTypedArrayName } from "../typed-arrays.js";
 /** How far a structural value may nest before the type is refused instead. */
 const MAX_DEPTH = 3;
 
+/** Every kind of value there is, for a position that promises nothing. */
+const UNCONSTRAINED: readonly unknown[] = [
+  undefined,
+  null,
+  0,
+  "",
+  {},
+  [],
+  Symbol("s"),
+  1n,
+  (): number => 1,
+];
+
 /**
  * Values for a declared type, driven off the `ts.Type` rather than off the
  * text of a type node. Refusing is a first-class answer: **refuse to fuzz what
@@ -37,12 +50,14 @@ export class Arbitrary {
       return parts.flatMap((part) => part ?? []).slice(0, 8);
     }
 
-    // A bare type parameter's constraint is the only thing that says what is
-    // conformant; without one there is nothing to conform to.
+    // A type parameter's constraint says what is conformant. Without one the
+    // *caller* chooses the instantiation, so every value conforms under some
+    // choice: `Map#get(key: K)` takes a symbol at `Map<symbol, V>`, and the
+    // receiver pool's `new Map()` is no instantiation in particular.
     if (declared.isTypeParameter()) {
       const constraint = this.#checker.getBaseConstraintOfType(declared);
       return constraint === undefined
-        ? undefined
+        ? UNCONSTRAINED
         : this.valuesFor(constraint, depth);
     }
 
@@ -68,7 +83,7 @@ export class Arbitrary {
     }
     if ((type.flags & TypeFlags.Null) !== 0) return [null];
     if ((type.flags & (TypeFlags.Any | TypeFlags.Unknown)) !== 0) {
-      return [undefined, null, 0, "", {}, [], Symbol("s"), 1n, () => 1];
+      return UNCONSTRAINED;
     }
     if ((type.flags & TypeFlags.NonPrimitive) !== 0) {
       return [{}, Object.freeze({}), [], Object.create(null)];
@@ -86,15 +101,26 @@ export class Arbitrary {
     const name = type.getSymbol()?.getName();
     if (name === undefined) return this.#structuralValues(type, depth);
 
-    // `{}` — an anonymous object type with nothing in it accepts any
-    // non-nullish value, which is exactly what `Object.keys`'s second overload
-    // declares.
-    if (
-      name === "__type" &&
-      type.getProperties().length === 0 &&
-      this.#checker.getIndexInfosOfType(type).length === 0
-    ) {
-      return [{}, [], 1, "a", Object.freeze({}), Object.create(null)];
+    if (name === "__type" && type.getProperties().length === 0) {
+      const indexes = this.#checker.getIndexInfosOfType(type);
+      // `{}` — an anonymous object type with nothing in it accepts any
+      // non-nullish value, which is exactly what `Object.keys`'s second
+      // overload declares.
+      if (indexes.length === 0) {
+        return [{}, [], 1, "a", Object.freeze({}), Object.create(null)];
+      }
+      // `{ [s: string]: T }` — an index signature says what a key holds when
+      // it is present and never that any key is present, so an object with no
+      // keys conforms to every one of them. Populating one key as well is what
+      // makes this a probe of the iteration rather than of the empty case:
+      // `Object.entries` and `Object.values` are declared this way.
+      const held = this.#indexValue(indexes, depth);
+      return [
+        {},
+        Object.freeze({}),
+        Object.create(null),
+        ...(held === undefined ? [] : [{ key: held }]),
+      ];
     }
 
     // An empty collection conforms to *any* element type, so it probes members
@@ -194,6 +220,15 @@ export class Arbitrary {
     // The empty bag conforms too when nothing is required, and it is the shape
     // a caller actually writes.
     return everyPropertyOptional ? [{}, filled] : [filled];
+  }
+
+  /** One value an index signature admits, where any of them is modelable. */
+  #indexValue(indexes: readonly ts.IndexInfo[], depth: number): unknown {
+    for (const index of indexes) {
+      const values = this.valuesFor(index.type, depth + 1);
+      if (values !== undefined && values.length > 0) return values[0];
+    }
+    return undefined;
   }
 
   /** A short array of the element type, when the element type is modelable. */

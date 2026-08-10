@@ -1,4 +1,4 @@
 /** @nothrow */
-export function truthy(value: unknown): boolean {
-  return Boolean(value);
+export function target(reference: WeakRef<object>): object | undefined {
+  return reference.deref();
 }

@@ -309,6 +309,27 @@ export function formatCounterexample(found: Counterexample): string {
   return `${found.key.padEnd(38)} ${found.probe} ${found.error}: ${found.message} [receiver ${found.receiver}, args ${JSON.stringify(found.args)}]`;
 }
 
+/**
+ * The precision report, whole. Every entry is named rather than sampled: a cap
+ * would read as "these are all of them" while hiding the rest, and nothing else
+ * looks in this direction at all.
+ */
+export function formatUnrefuted(results: readonly ProbeResult[]): readonly string[] {
+  if (results.length === 0) {
+    return ["", "precision: every throwing entry the gate could probe was reproduced."];
+  }
+  return [
+    "",
+    `precision — ${results.length} throwing entr${results.length === 1 ? "y" : "ies"} the gate probed and could not make throw. Not a refutation; a list of places the baseline may be stricter than JavaScript:`,
+    ...[...results]
+      .sort((left, right) => left.key.localeCompare(right.key))
+      .map(
+        (result) =>
+          `  ${result.key.padEnd(42)} ${result.calls} calls${result.truncated ? " (probed to the budget, not exhaustively)" : ""}`,
+      ),
+  ];
+}
+
 function skip(key: string, probe: "call" | "get", reason: string): ProbeResult {
   return {
     key,
