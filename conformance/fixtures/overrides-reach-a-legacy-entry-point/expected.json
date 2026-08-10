@@ -1,5 +1,5 @@
 {
-  "description": "The shape most of npm predating `exports` ships: `main` and `typings` spelled as bare relative paths, and an overloaded function merged with a namespace behind `export =`. Only `exports` requires the `./`, so reading the legacy trio the same way found no entry point at all — the package published nothing, and every key of every spelling reached nothing. Its surface is walked from the files those fields name, so `sync` is keyed `sync` and the namespace's own members are reached with a dot.",
+  "description": "The shape most of npm predating `exports` ships: a bare `\"main\": \"out/index.js\"`, the declarations beside it, and an overloaded function merged with a namespace behind `export =`. Only `exports` requires the `./`, so reading the legacy trio the same way found no entry point at all — the package published nothing, and every key of every spelling reached nothing. Its surface is walked from the file that field names, so `sync` is keyed `sync` and the namespace's own members are reached with a dot.",
   "diagnostics": [
     {
       "file": "src/index.ts",

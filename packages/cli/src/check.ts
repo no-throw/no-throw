@@ -88,23 +88,24 @@ function entryLines(entry: CheckedEntry, cwd: string): readonly string[] {
         `    nothing of \`${entry.package}\` is in this project, so there is ` +
           "no surface to hold this against. Inert rather than wrong.",
       ];
-    // A package that publishes at no subpath at all has no list of subpaths to
-    // offer instead, and a label with nothing after it reads as a bug in the
-    // report rather than as the fact it is.
-    case "no-subpath":
+    case "no-subpath": {
+      const nothingAt = `    \`${entry.package}\` publishes nothing at ${JSON.stringify(entry.subpath)}`;
+      // A package that publishes at no subpath at all has no list of subpaths
+      // to offer instead, and a label with nothing after it reads as a bug in
+      // the report rather than as the fact it is.
       return entry.subpaths.length === 0
         ? [
             at,
-            `    \`${entry.package}\` publishes nothing at ${JSON.stringify(entry.subpath)}, ` +
-              "and nothing at any other subpath.",
+            `${nothingAt}, and nothing at any other subpath.`,
             "    The walk from its entry points reached no name a carrier " +
               "could key, so no entry under this package reaches anything.",
           ]
         : [
             at,
-            `    \`${entry.package}\` publishes nothing at ${JSON.stringify(entry.subpath)}.`,
+            `${nothingAt}.`,
             `    Its subpaths are: ${entry.subpaths.map((each) => JSON.stringify(each)).join(", ")}`,
           ];
+    }
     case "no-key":
       return [
         at,
@@ -127,7 +128,7 @@ function entryLines(entry: CheckedEntry, cwd: string): readonly string[] {
           `declared in ${display(cwd, entry.declaredIn)}, which names no package.`,
         "    A carrier is matched by the npm name of the package a " +
           "declaration ships in, so nothing keyed under any name reaches it " +
-          "until that `package.json` names one.",
+          "until a `package.json` there names one.",
       ];
   }
 }

@@ -1,3 +1,4 @@
+import { dirname } from "node:path";
 import ts from "typescript";
 import { installedOverlaysFor } from "./carrier/overlays.js";
 import {
@@ -46,6 +47,8 @@ export type CheckedEntry = EntryKey &
      * `package.json` names a package. A rung's table is matched by npm name, so
      * this one has no name to be keyed under at all — which is the difference
      * from `ships-elsewhere`, where there is a name and it is somebody else's.
+     * `declaredIn` is the directory a `package.json` naming it would go in,
+     * which is the walk's answer whether or not it found a file there.
      */
     | { readonly verdict: "unnamed-shipper"; readonly declaredIn: string }
   );
@@ -325,7 +328,13 @@ function verdictFor(
     ? {
         ...key,
         verdict: "unnamed-shipper",
-        declaredIn: shipper?.directory ?? first.getSourceFile().fileName,
+        // A walk that found no `package.json` at all and one that found a
+        // nameless file come to the same thing for a reader — there is no name
+        // here — so both are reported as the directory the file that would
+        // supply one belongs in, rather than as two shapes of message where
+        // one of them would name a `.d.ts` and call it a manifest.
+        declaredIn:
+          shipper?.directory ?? dirname(first.getSourceFile().fileName),
       }
     : { ...key, verdict: "ships-elsewhere", shipsIn: shipper.name };
 }

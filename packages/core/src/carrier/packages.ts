@@ -124,10 +124,15 @@ function entryPoints(
   // the `./`, and holding these to it drops the spelling most of npm predating
   // `exports` actually ships — `"main": "out/index.js"` — leaving the package
   // with no entry point, no surface, and no key any carrier could reach.
+  //
+  // The three are alternatives rather than a set, and in this order: they name
+  // one root, and a package whose `types` and `main` point at different modules
+  // publishes the first of them, not both at once.
   if (points.size === 0) {
     for (const field of ["types", "typings", "main"]) {
       const named = packageJson?.[field];
       if (typeof named === "string" && named.length > 0) add(".", [named]);
+      if (points.size > 0) break;
     }
   }
 
