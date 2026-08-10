@@ -1,0 +1,33 @@
+{
+  "description": "The two things that shape an edit are independent, and the fixture that says so: a discarded promise in an unbraced branch takes the `await` the shape adds and the braces the position needs, in one edit.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 7,
+      "column": 15,
+      "endLine": 7,
+      "endColumn": 24,
+      "messageId": "inferredThrowingFloat",
+      "suggestions": [
+        {
+          "desc": "Bridge this with `try { await … } catch`.",
+          "output": [
+            "async function rejects(): Promise<void> {",
+            "  throw \"boom\";",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export async function whenAsked(wanted: boolean): Promise<void> {",
+            "  if (wanted) {",
+            "    try {",
+            "      await rejects();",
+            "    } catch {}",
+            "  }",
+            "}",
+            ""
+          ]
+        }
+      ]
+    }
+  ]
+}

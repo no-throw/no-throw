@@ -858,7 +858,9 @@ is the overwhelmingly common case. A type declaring its own `toString`,
 A diagnostic whose remedy is a mechanical bridge carries an ESLint suggestion
 offering it, shaped by where it lands: `try`/`catch` around the statement, or
 `try { await … } catch` where what escapes is a rejection — and, for a `catch`
-that cannot fire because nothing is awaited, the missing `await` alone.
+that cannot fire because nothing is awaited, the missing `await` alone. A
+statement a branch or a loop holds without braces is a statement all the same,
+so the offer is made there too, and writes the braces along with the bridge.
 
 Nothing is ever an ESLint **fix**. Wrapping a call in a bridge changes what the
 program does with an error, so the edit is always yours to accept; `--fix` would
@@ -871,7 +873,10 @@ throwing it — there is none. Nor is one made where the wrap would break code
 that has nothing to do with the escape, or would reach past a function
 boundary: wrapping `const value = risky()` moves the binding out of the scope
 that reads it, and wrapping around a callback would be the fake bridge these
-rules exist to report.
+rules exist to report. Braces around the statement a label holds change what
+the label names, and on a loop — where the label is what `continue` names —
+they turn every `continue` under it into a syntax error, so a label gets no
+offer either.
 
 Nor is one made where **nobody proved the throw**. An offer endorses the bridge
 it writes, and a `lib.*.d.ts` member the baseline says nothing about is throwing
