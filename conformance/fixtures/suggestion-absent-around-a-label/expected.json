@@ -1,0 +1,23 @@
+{
+  "description": "The one statement a bridge may not brace. A label names the statement under it, so braces there change what it names — and where that statement is a loop, the label is a `continue` target, so the wrap would turn every `continue` in the body into a syntax error. Neither shape is offered, however mechanical the wrap looks.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 10,
+      "column": 30,
+      "endLine": 10,
+      "endColumn": 38,
+      "messageId": "inferredThrowingConsumption",
+      "suggestions": []
+    },
+    {
+      "file": "src/index.ts",
+      "line": 19,
+      "column": 9,
+      "endLine": 19,
+      "endColumn": 21,
+      "messageId": "unbridgedCall",
+      "suggestions": []
+    }
+  ]
+}

@@ -102,21 +102,24 @@ function wrap(
   const indent = indentationAt(source, start);
   // Braces the reader left out are braces the bridge writes, and they put the
   // `try` — and with it everything under it — one level further in.
-  const tryAt = braced ? indent : `${indent}${STEP}`;
-  const shift = braced ? STEP : `${STEP}${STEP}`;
+  const { tryIndent, deeper } = braced
+    ? { tryIndent: indent, deeper: STEP }
+    : { tryIndent: `${indent}${STEP}`, deeper: `${STEP}${STEP}` };
   // The replacement starts where the statement did, so the first line is
   // already indented by the file and only the ones after it carry their own.
   const body = region
     .split(newline)
     .map((line, index) =>
-      index === 0 ? `${indent}${shift}${line}` : `${shift}${line}`,
+      index === 0 ? `${indent}${deeper}${line}` : `${deeper}${line}`,
     )
     .join(newline);
-  const bridge = `try {${newline}${body}${newline}${tryAt}} catch {}`;
+  const bridge = `try {${newline}${body}${newline}${tryIndent}} catch {}`;
 
   return {
     range: statement.range,
-    text: braced ? bridge : `{${newline}${tryAt}${bridge}${newline}${indent}}`,
+    text: braced
+      ? bridge
+      : `{${newline}${tryIndent}${bridge}${newline}${indent}}`,
   };
 }
 
@@ -202,16 +205,18 @@ function isHeldBody(parent: TSESTree.Node, child: TSESTree.Node): boolean {
     case AST_NODE_TYPES.ForInStatement:
     // A `for…of` is an escape site in its own right, since driving the
     // iterator is what the loop *is*. That is the loop; this is the body
-    // inside it, which the walk reaches first and wraps on its own — exactly
-    // as it does when that body is written with braces.
+    // inside it, which the walk reaches first and wraps on its own.
     case AST_NODE_TYPES.ForOfStatement:
     case AST_NODE_TYPES.ForStatement:
-    case AST_NODE_TYPES.LabeledStatement:
     case AST_NODE_TYPES.WhileStatement:
       return parent.body === child;
-    // `with` is left out on purpose. TypeScript calls the statement
-    // unsupported and gives every name in its body the type `any`, so the
-    // color an offer there would endorse is one nothing read.
+    // A label holds a statement too, and is left out anyway: braces there
+    // change what the label denotes, and a label on a loop is a `continue`
+    // target, so bracing its body turns every `continue` into a syntax error.
+    //
+    // `with` is left out for a different reason. TypeScript calls the
+    // statement unsupported and gives every name in its body the type `any`,
+    // so the color an offer there would endorse is one nothing read.
     default:
       return false;
   }

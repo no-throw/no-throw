@@ -10,8 +10,3 @@ export function otherwise(value: string, done: boolean): void {
   if (done) return;
   else risky(value);
 }
-
-/** @nothrow */
-export function labeled(value: string): void {
-  step: risky(value);
-}

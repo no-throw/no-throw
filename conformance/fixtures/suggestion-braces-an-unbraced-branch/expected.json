@@ -28,11 +28,6 @@
             "  if (done) return;",
             "  else risky(value);",
             "}",
-            "",
-            "/** @nothrow */",
-            "export function labeled(value: string): void {",
-            "  step: risky(value);",
-            "}",
             ""
           ]
         }
@@ -60,48 +55,6 @@
             "export function otherwise(value: string, done: boolean): void {",
             "  if (done) return;",
             "  else {",
-            "    try {",
-            "      risky(value);",
-            "    } catch {}",
-            "  }",
-            "}",
-            "",
-            "/** @nothrow */",
-            "export function labeled(value: string): void {",
-            "  step: risky(value);",
-            "}",
-            ""
-          ]
-        }
-      ]
-    },
-    {
-      "file": "src/index.ts",
-      "line": 16,
-      "column": 9,
-      "endLine": 16,
-      "endColumn": 21,
-      "messageId": "unbridgedCall",
-      "suggestions": [
-        {
-          "desc": "Bridge this with `try`/`catch`.",
-          "output": [
-            "declare function risky(value: string): void;",
-            "",
-            "/** @nothrow */",
-            "export function whenAsked(value: string, wanted: boolean): void {",
-            "  if (wanted) risky(value);",
-            "}",
-            "",
-            "/** @nothrow */",
-            "export function otherwise(value: string, done: boolean): void {",
-            "  if (done) return;",
-            "  else risky(value);",
-            "}",
-            "",
-            "/** @nothrow */",
-            "export function labeled(value: string): void {",
-            "  step: {",
             "    try {",
             "      risky(value);",
             "    } catch {}",
