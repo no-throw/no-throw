@@ -1,0 +1,116 @@
+{
+  "description": "A branch written without braces holds a statement all the same, and the escape is on the synchronous path either way — so the bridge is offered there too, and writes the braces the reader left out. Whether a remedy is offered may not turn on a matter of style.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 5,
+      "column": 15,
+      "endLine": 5,
+      "endColumn": 27,
+      "messageId": "unbridgedCall",
+      "suggestions": [
+        {
+          "desc": "Bridge this with `try`/`catch`.",
+          "output": [
+            "declare function risky(value: string): void;",
+            "",
+            "/** @nothrow */",
+            "export function whenAsked(value: string, wanted: boolean): void {",
+            "  if (wanted) {",
+            "    try {",
+            "      risky(value);",
+            "    } catch {}",
+            "  }",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function otherwise(value: string, done: boolean): void {",
+            "  if (done) return;",
+            "  else risky(value);",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function labeled(value: string): void {",
+            "  step: risky(value);",
+            "}",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "line": 11,
+      "column": 8,
+      "endLine": 11,
+      "endColumn": 20,
+      "messageId": "unbridgedCall",
+      "suggestions": [
+        {
+          "desc": "Bridge this with `try`/`catch`.",
+          "output": [
+            "declare function risky(value: string): void;",
+            "",
+            "/** @nothrow */",
+            "export function whenAsked(value: string, wanted: boolean): void {",
+            "  if (wanted) risky(value);",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function otherwise(value: string, done: boolean): void {",
+            "  if (done) return;",
+            "  else {",
+            "    try {",
+            "      risky(value);",
+            "    } catch {}",
+            "  }",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function labeled(value: string): void {",
+            "  step: risky(value);",
+            "}",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "line": 16,
+      "column": 9,
+      "endLine": 16,
+      "endColumn": 21,
+      "messageId": "unbridgedCall",
+      "suggestions": [
+        {
+          "desc": "Bridge this with `try`/`catch`.",
+          "output": [
+            "declare function risky(value: string): void;",
+            "",
+            "/** @nothrow */",
+            "export function whenAsked(value: string, wanted: boolean): void {",
+            "  if (wanted) risky(value);",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function otherwise(value: string, done: boolean): void {",
+            "  if (done) return;",
+            "  else risky(value);",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function labeled(value: string): void {",
+            "  step: {",
+            "    try {",
+            "      risky(value);",
+            "    } catch {}",
+            "  }",
+            "}",
+            ""
+          ]
+        }
+      ]
+    }
+  ]
+}

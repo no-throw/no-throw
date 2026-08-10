@@ -858,7 +858,9 @@ is the overwhelmingly common case. A type declaring its own `toString`,
 A diagnostic whose remedy is a mechanical bridge carries an ESLint suggestion
 offering it, shaped by where it lands: `try`/`catch` around the statement, or
 `try { await … } catch` where what escapes is a rejection — and, for a `catch`
-that cannot fire because nothing is awaited, the missing `await` alone.
+that cannot fire because nothing is awaited, the missing `await` alone. A
+statement a branch or a loop holds without braces is a statement all the same,
+so the offer is made there too, and writes the braces along with the bridge.
 
 Nothing is ever an ESLint **fix**. Wrapping a call in a bridge changes what the
 program does with an error, so the edit is always yours to accept; `--fix` would
