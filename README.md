@@ -873,7 +873,10 @@ throwing it — there is none. Nor is one made where the wrap would break code
 that has nothing to do with the escape, or would reach past a function
 boundary: wrapping `const value = risky()` moves the binding out of the scope
 that reads it, and wrapping around a callback would be the fake bridge these
-rules exist to report.
+rules exist to report. Braces around the statement a label holds change what
+the label names, and on a loop — where the label is what `continue` names —
+they turn every `continue` under it into a syntax error, so a label gets no
+offer either.
 
 Nor is one made where **nobody proved the throw**. An offer endorses the bridge
 it writes, and a `lib.*.d.ts` member the baseline says nothing about is throwing
