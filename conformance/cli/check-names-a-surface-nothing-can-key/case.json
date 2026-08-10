@@ -1,0 +1,19 @@
+{
+  "description": "The two ways an entry reaches nothing and the report has no name to offer. A package whose entry point is a global script publishes at no subpath at all, so the list of subpaths to try instead is empty and has to read as a sentence rather than trail off after its colon. A declaration whose own directory names no package can be keyed under no name whatever, so naming one to key it under would be handing a placeholder over as an instruction.",
+  "steps": [
+    {
+      "check": [],
+      "in": "project",
+      "expect": "refused",
+      "names": [
+        "@types/ambient → \".\" → `AMBIENT_VERSION`",
+        "`@types/ambient` publishes nothing at \".\", and nothing at any other subpath",
+        "wrap → \".\" → `thing`",
+        "which names no package",
+        "node_modules/loose",
+        "nothing keyed under any name reaches it",
+        "2 entries checked. 2 reach nothing."
+      ]
+    }
+  ]
+}

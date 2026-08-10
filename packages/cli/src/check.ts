@@ -72,11 +72,11 @@ function reportOn(carrier: CheckedCarrier, cwd: string): readonly string[] {
   const path = display(cwd, carrier.path);
   const lines = [path === carrier.name ? path : `${carrier.name} — ${path}`];
   if (carrier.problem !== undefined) lines.push(`  ${carrier.problem.message}`);
-  for (const entry of problems) lines.push(...entryLines(entry));
+  for (const entry of problems) lines.push(...entryLines(entry, cwd));
   return lines;
 }
 
-function entryLines(entry: CheckedEntry): readonly string[] {
+function entryLines(entry: CheckedEntry, cwd: string): readonly string[] {
   const at = `  ${entry.package} → ${JSON.stringify(entry.subpath)} → \`${entry.symbolPath}\``;
 
   switch (entry.verdict) {
@@ -88,12 +88,23 @@ function entryLines(entry: CheckedEntry): readonly string[] {
         `    nothing of \`${entry.package}\` is in this project, so there is ` +
           "no surface to hold this against. Inert rather than wrong.",
       ];
+    // A package that publishes at no subpath at all has no list of subpaths to
+    // offer instead, and a label with nothing after it reads as a bug in the
+    // report rather than as the fact it is.
     case "no-subpath":
-      return [
-        at,
-        `    \`${entry.package}\` publishes nothing at ${JSON.stringify(entry.subpath)}.`,
-        `    Its subpaths are: ${entry.subpaths.map((each) => JSON.stringify(each)).join(", ")}`,
-      ];
+      return entry.subpaths.length === 0
+        ? [
+            at,
+            `    \`${entry.package}\` publishes nothing at ${JSON.stringify(entry.subpath)}, ` +
+              "and nothing at any other subpath.",
+            "    The walk from its entry points reached no name a carrier " +
+              "could key, so no entry under this package reaches anything.",
+          ]
+        : [
+            at,
+            `    \`${entry.package}\` publishes nothing at ${JSON.stringify(entry.subpath)}.`,
+            `    Its subpaths are: ${entry.subpaths.map((each) => JSON.stringify(each)).join(", ")}`,
+          ];
     case "no-key":
       return [
         at,
@@ -108,6 +119,15 @@ function entryLines(entry: CheckedEntry): readonly string[] {
           `ships in \`${entry.shipsIn}\` — which is the package a carrier is ` +
           "matched by, so this entry is never consulted.",
         `    Key it under \`${entry.shipsIn}\` instead.`,
+      ];
+    case "unnamed-shipper":
+      return [
+        at,
+        `    \`${entry.package}\` publishes this key, and what it reaches is ` +
+          `declared in ${display(cwd, entry.declaredIn)}, which names no package.`,
+        "    A carrier is matched by the npm name of the package a " +
+          "declaration ships in, so nothing keyed under any name reaches it " +
+          "until that `package.json` names one.",
       ];
   }
 }

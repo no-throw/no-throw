@@ -1,0 +1,23 @@
+{
+  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "globs": {
+      "exports": {
+        ".": {
+          "sync": {
+            "color": "non-throwing",
+            "conditions": []
+          },
+          "escapePath": {
+            "color": "non-throwing",
+            "conditions": []
+          },
+          "posix.escapePath": {
+            "color": "throwing"
+          }
+        }
+      }
+    }
+  }
+}

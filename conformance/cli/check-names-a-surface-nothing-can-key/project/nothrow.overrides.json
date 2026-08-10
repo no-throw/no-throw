@@ -1,0 +1,26 @@
+{
+  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "@types/ambient": {
+      "exports": {
+        ".": {
+          "AMBIENT_VERSION": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    },
+    "wrap": {
+      "exports": {
+        ".": {
+          "thing": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    }
+  }
+}
