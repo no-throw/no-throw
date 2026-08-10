@@ -23,13 +23,6 @@ export const EXIT_CODES: Record<Verdict, number> = {
   "cannot-run": 2,
 };
 
-/**
- * Which stream a run's whole output has to be on. A step that names one is
- * asserting the other is empty, which is the only way to hold a run to saying
- * *nothing* — text no `names` entry mentions is text no assertion reaches.
- */
-export type OutputStream = "stdout" | "stderr";
-
 /** What every step that runs the binary states about the run. */
 export interface Invocation {
   readonly args: readonly string[];
@@ -38,7 +31,6 @@ export interface Invocation {
   readonly names: readonly string[];
   /** Text the output must not contain — what it has to leave out. */
   readonly denies: readonly string[];
-  readonly on?: OutputStream;
 }
 
 /**
@@ -120,7 +112,7 @@ function loadCase(root: string, name: string): CliCase {
 }
 
 /** What a step spelling an invocation may carry beyond the argv it keys on. */
-const INVOCATION_KEYS = ["expect", "names", "denies", "on"] as const;
+const INVOCATION_KEYS = ["expect", "names", "denies"] as const;
 
 const STEP_KEYS: Record<string, readonly string[]> = {
   emit: ["emit", ...INVOCATION_KEYS],
@@ -146,15 +138,14 @@ function readStep(entry: unknown, where: string): Step {
 
   switch (kind) {
     case "emit":
-      return { kind, ...readInvocation(record, "emit", where) };
+    case "run":
+      return { kind, ...readInvocation(record, kind, where) };
     case "check":
       return {
         kind,
-        ...readInvocation(record, "check", where),
+        ...readInvocation(record, kind, where),
         directory: readString(record, "in", where),
       };
-    case "run":
-      return { kind, ...readInvocation(record, "run", where) };
     case "entries":
       return { kind, expected: readEntries(record["entries"], where) };
     case "absent":
@@ -202,22 +193,17 @@ function readEntries(
   return read;
 }
 
+/** Every invocation step keys on its own kind, so that name is both. */
 function readInvocation(
   record: Record<string, unknown>,
-  key: string,
+  kind: string,
   where: string,
 ): Invocation {
-  const on = record["on"];
-  if (on !== undefined && on !== "stdout" && on !== "stderr") {
-    throw new Error(`${where}: \`on\` must be one of stdout, stderr`);
-  }
-
   return {
-    args: readStrings(record, key, where),
+    args: readStrings(record, kind, where),
     expect: readVerdict(record, where),
     names: readOptionalStrings(record, "names", where),
     denies: readOptionalStrings(record, "denies", where),
-    ...(on === undefined ? {} : { on }),
   };
 }
 

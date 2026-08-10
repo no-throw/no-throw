@@ -124,24 +124,31 @@ function binaryStep(
 
   const output = `${run.stdout}${run.stderr}`;
   const report: string[] = [];
-  const invocation = `nothrow ${argv.join(" ")}`;
+  const command = `nothrow ${argv.join(" ")}`;
 
   const expected = EXIT_CODES[step.expect];
   if (run.status !== expected) {
     report.push(
-      `\`${invocation}\` exited ${run.status}, and ` +
-        `${step.expect} is ${expected}`,
+      `\`${command}\` exited ${run.status}, and ${step.expect} is ${expected}`,
     );
   }
-  if (step.on !== undefined) {
-    const silent = step.on === "stdout" ? run.stderr : run.stdout;
-    const other = step.on === "stdout" ? "stderr" : "stdout";
-    if (silent !== "") {
-      report.push(
-        `\`${invocation}\` was to print on ${step.on} alone, and wrote to ${other}`,
-      );
-    }
+
+  // Exit code and stream are one fact in this tool: a run that succeeded says
+  // so on stdout, and a run that did not says so on stderr. Held here for every
+  // invocation rather than per case, because it is the difference between help
+  // a reader asked for and a usage error announced at them — and `names` can
+  // only assert what output contains, never which stream carried it.
+  const stray =
+    step.expect === "ok"
+      ? { stream: "stderr", text: run.stderr }
+      : { stream: "stdout", text: run.stdout };
+  if (stray.text !== "") {
+    report.push(
+      `\`${command}\` wrote to ${stray.stream}, and a run expecting ` +
+        `${step.expect} speaks on the other one`,
+    );
   }
+
   for (const name of step.names) {
     if (!output.includes(name)) {
       report.push(`the output never names ${JSON.stringify(name)}`);

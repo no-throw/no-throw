@@ -5,7 +5,6 @@
       "check": [],
       "in": "project",
       "expect": "ok",
-      "on": "stdout",
       "names": [
         "uninstalled → \".\" → `whatever`",
         "nothing of `uninstalled` is in this project",

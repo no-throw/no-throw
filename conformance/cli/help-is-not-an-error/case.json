@@ -4,7 +4,6 @@
     {
       "run": ["--help"],
       "expect": "ok",
-      "on": "stdout",
       "names": [
         "nothrow — statically enforce that no throw escapes a @nothrow function",
         "nothrow --help"
@@ -13,25 +12,21 @@
     {
       "run": ["-h"],
       "expect": "ok",
-      "on": "stdout",
       "names": ["Usage:"]
     },
     {
       "run": ["emit", "--help"],
       "expect": "ok",
-      "on": "stdout",
       "names": ["Usage:"]
     },
     {
       "run": [],
       "expect": "cannot-run",
-      "on": "stderr",
       "names": ["nothrow: no command given."]
     },
     {
       "run": ["emmit"],
       "expect": "cannot-run",
-      "on": "stderr",
       "names": ["nothrow: `emmit` is not a command."]
     }
   ]

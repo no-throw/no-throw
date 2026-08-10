@@ -250,14 +250,15 @@ tool answers for out of its own grammar rather than out of a project, which is
 where `--help` and an unknown command live.
 
 ```json
-{ "run": ["--help"], "expect": "ok", "on": "stdout", "names": ["Usage:"] }
+{ "run": ["--help"], "expect": "ok", "names": ["Usage:"] }
 ```
 
-`on` names the stream the whole run had to print on, and so asserts the other
-one is empty. It is the only way to hold a run to saying *nothing*, since text
-no `names` entry mentions is text nothing reaches — which is what separates
-help a reader asked for from a usage error announced at them. All three
-invocation steps take it.
+No step says which stream it expected, because none has a choice: exit code and
+stream are one fact in this tool — a run that succeeded says so on stdout, and a
+run that did not says so on stderr — so `expect` decides it, and every
+invocation is held to it. That is what separates help a reader asked for from a
+usage error announced at them, and `names` could never assert it: it holds what
+output contains, never which stream carried it.
 
 `consumer` is the one that matters: it installs the producer, emitted manifest
 and all, into the consumer's `node_modules` and runs that project through the
