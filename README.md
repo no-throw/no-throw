@@ -290,8 +290,9 @@ nothrow.overrides.json
     nothing of `node:path` is in this project, so there is no surface to hold
     this against. Inert rather than wrong.
   @types/node → "." → `posix.join`
-    `@types/node` publishes nothing at ".".
-    It publishes no subpaths at all, so no key in this grammar reaches it.
+    `@types/node` publishes nothing at ".", and nothing at any other subpath.
+    The walk from its entry points reached no name a carrier could key, so no
+    entry under this package reaches anything.
 ```
 
 So the bridge is the only out that works over `node:*`, and the same holds for
