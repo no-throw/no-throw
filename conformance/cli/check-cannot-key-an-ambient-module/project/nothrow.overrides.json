@@ -2,14 +2,20 @@
   "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
   "version": 1,
   "packages": {
-    "picoish": {
+    "widget": {
       "exports": {
         ".": {
-          "Formatter#()": {
+          "build": {
             "color": "non-throwing",
             "conditions": []
-          },
-          "Colors#parse": {
+          }
+        }
+      }
+    },
+    "@types/ambientish": {
+      "exports": {
+        ".": {
+          "build": {
             "color": "non-throwing",
             "conditions": []
           }

@@ -11,6 +11,7 @@ const usage = [
   "  nothrow emit [--project <path>]           lower verified marks into nothrow.json",
   "  nothrow emit --check [--project <path>]   fail if the manifest has drifted",
   "  nothrow check [--project <path>]          name every carrier entry that reaches nothing",
+  "  nothrow --help, nothrow -h                print this",
   "",
   "`--project` names a `tsconfig.json`, or a directory holding one; it",
   "defaults to the working directory. The manifest is written beside the",
@@ -18,8 +19,10 @@ const usage = [
   "walk-up finds it, and where `check` looks for the carriers a project",
   "wrote or installed.",
   "",
-  "Exit codes: 0 wrote, matched or all reached · 1 refused, drifted or",
-  "reaching nothing · 2 could not run.",
+  "Exit codes: 0 wrote, matched or found nothing to refuse · 1 refused,",
+  "drifted or reaching nothing · 2 could not run. An entry naming a package",
+  "this project does not hold is inert rather than wrong, so `check` names",
+  "it and still exits 0.",
 ].join("\n");
 
 const result = run(process.argv.slice(2));
@@ -28,7 +31,20 @@ if (result.out !== "") process.stdout.write(result.out);
 if (result.err !== "") process.stderr.write(result.err);
 process.exit(result.code);
 
+/**
+ * `--help` is answered before the grammar is parsed, and anywhere in the argv,
+ * because it is what a reader types when they do not yet know the grammar —
+ * held to it, it would be rejected for not being the thing it is asking to be
+ * told. So it goes to stdout, where a reader can page it, and succeeds.
+ *
+ * Naming no command is the different thing and stays a usage error: nothing was
+ * asked for, and printing the usage is the tool guessing at what was meant.
+ */
 function run(argv: readonly string[]): CommandResult {
+  if (argv.includes("--help") || argv.includes("-h")) {
+    return { code: 0, out: `${usage}\n`, err: "" };
+  }
+
   const [command, ...rest] = argv;
 
   if (command !== "emit" && command !== "check") {

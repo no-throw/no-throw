@@ -24,34 +24,43 @@ export const EXIT_CODES: Record<Verdict, number> = {
 };
 
 /**
+ * Which stream a run's whole output has to be on. A step that names one is
+ * asserting the other is empty, which is the only way to hold a run to saying
+ * *nothing* — text no `names` entry mentions is text no assertion reaches.
+ */
+export type OutputStream = "stdout" | "stderr";
+
+/** What every step that runs the binary states about the run. */
+export interface Invocation {
+  readonly args: readonly string[];
+  readonly expect: Verdict;
+  /** Text the output must contain — what the diagnostic has to name. */
+  readonly names: readonly string[];
+  /** Text the output must not contain — what it has to leave out. */
+  readonly denies: readonly string[];
+  readonly on?: OutputStream;
+}
+
+/**
  * One thing the case does to the producer, or asserts about it. Steps run in
  * order against one copy of the case, so a `--check` run can be asked about a
  * file the previous step changed.
  */
 export type Step =
-  /** Run the binary, and hold its exit and its output to what is expected. */
-  | {
-      readonly kind: "emit";
-      readonly args: readonly string[];
-      readonly expect: Verdict;
-      /** Text the output must contain — what the diagnostic has to name. */
-      readonly names: readonly string[];
-      /** Text the output must not contain — what it has to leave out. */
-      readonly denies: readonly string[];
-    }
+  /** Run `nothrow emit` in the producer, with `args` after the command. */
+  | ({ readonly kind: "emit" } & Invocation)
   /**
    * Run `nothrow check` in a project of the case's own, rather than in the
    * producer: what it reads is what a *consumer* wrote and installed, so the
    * directory is named rather than assumed.
    */
-  | {
-      readonly kind: "check";
-      readonly args: readonly string[];
-      readonly directory: string;
-      readonly expect: Verdict;
-      readonly names: readonly string[];
-      readonly denies: readonly string[];
-    }
+  | ({ readonly kind: "check"; readonly directory: string } & Invocation)
+  /**
+   * Run the binary over the whole argv, command word or none. What the two
+   * above cannot reach: an invocation the tool answers for out of its own
+   * grammar rather than out of a project.
+   */
+  | ({ readonly kind: "run" } & Invocation)
   /** Assert facts about the emitted manifest, entry by entry. */
   | {
       readonly kind: "entries";
@@ -110,9 +119,13 @@ function loadCase(root: string, name: string): CliCase {
   };
 }
 
+/** What a step spelling an invocation may carry beyond the argv it keys on. */
+const INVOCATION_KEYS = ["expect", "names", "denies", "on"] as const;
+
 const STEP_KEYS: Record<string, readonly string[]> = {
-  emit: ["emit", "expect", "names", "denies"],
-  check: ["check", "in", "expect", "names", "denies"],
+  emit: ["emit", ...INVOCATION_KEYS],
+  check: ["check", "in", ...INVOCATION_KEYS],
+  run: ["run", ...INVOCATION_KEYS],
   entries: ["entries"],
   absent: ["absent"],
   append: ["append", "text"],
@@ -133,20 +146,15 @@ function readStep(entry: unknown, where: string): Step {
 
   switch (kind) {
     case "emit":
-      return {
-        kind,
-        args: readStrings(record, "emit", where),
-        expect: readVerdict(record, where),
-        ...assertions(record, where),
-      };
+      return { kind, ...readInvocation(record, "emit", where) };
     case "check":
       return {
         kind,
-        args: readStrings(record, "check", where),
+        ...readInvocation(record, "check", where),
         directory: readString(record, "in", where),
-        expect: readVerdict(record, where),
-        ...assertions(record, where),
       };
+    case "run":
+      return { kind, ...readInvocation(record, "run", where) };
     case "entries":
       return { kind, expected: readEntries(record["entries"], where) };
     case "absent":
@@ -170,19 +178,10 @@ function readStep(entry: unknown, where: string): Step {
 }
 
 /**
- * What a run of the binary has to say, and what it has to leave out. Both are
- * optional: a step that asserts only an exit code is a step about the exit code.
+ * What the step left unsaid, as nothing asserted. A step that names neither
+ * what the output has to say nor what it has to leave out is a step about the
+ * exit code.
  */
-function assertions(
-  record: Record<string, unknown>,
-  where: string,
-): { readonly names: readonly string[]; readonly denies: readonly string[] } {
-  return {
-    names: readOptionalStrings(record, "names", where),
-    denies: readOptionalStrings(record, "denies", where),
-  };
-}
-
 function readOptionalStrings(
   record: Record<string, unknown>,
   key: string,
@@ -201,6 +200,25 @@ function readEntries(
     read[subpath] = asRecord(entries, `${where}: entries[${subpath}]`);
   }
   return read;
+}
+
+function readInvocation(
+  record: Record<string, unknown>,
+  key: string,
+  where: string,
+): Invocation {
+  const on = record["on"];
+  if (on !== undefined && on !== "stdout" && on !== "stderr") {
+    throw new Error(`${where}: \`on\` must be one of stdout, stderr`);
+  }
+
+  return {
+    args: readStrings(record, key, where),
+    expect: readVerdict(record, where),
+    names: readOptionalStrings(record, "names", where),
+    denies: readOptionalStrings(record, "denies", where),
+    ...(on === undefined ? {} : { on }),
+  };
 }
 
 function readVerdict(record: Record<string, unknown>, where: string): Verdict {

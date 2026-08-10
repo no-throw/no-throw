@@ -244,6 +244,21 @@ are a consumer's.
 { "check": [], "in": "project", "expect": "refused", "names": ["reaches nothing"] }
 ```
 
+`run` is the same shape again with nothing prepended: the whole argv, command
+word or none, in the workspace root. It is what reaches the invocations the
+tool answers for out of its own grammar rather than out of a project, which is
+where `--help` and an unknown command live.
+
+```json
+{ "run": ["--help"], "expect": "ok", "on": "stdout", "names": ["Usage:"] }
+```
+
+`on` names the stream the whole run had to print on, and so asserts the other
+one is empty. It is the only way to hold a run to saying *nothing*, since text
+no `names` entry mentions is text nothing reaches — which is what separates
+help a reader asked for from a usage error announced at them. All three
+invocation steps take it.
+
 `consumer` is the one that matters: it installs the producer, emitted manifest
 and all, into the consumer's `node_modules` and runs that project through the
 **same driver every other fixture goes through**. The wire format is validated

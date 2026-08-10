@@ -15,6 +15,7 @@ import {
   EXIT_CODES,
   loadCliCases,
   type CliCase,
+  type Invocation,
   type Step,
 } from "./cli-cases.js";
 import { compare, section, type Diagnostic } from "./diagnostics.js";
@@ -84,14 +85,17 @@ async function runStep(
 ): Promise<readonly string[]> {
   switch (step.kind) {
     case "emit":
-      return binaryStep("emit", step.args, producer, step);
+      return binaryStep(["emit", ...step.args], producer, step);
     case "check":
       return binaryStep(
-        "check",
-        step.args,
+        ["check", ...step.args],
         join(workspace, step.directory),
         step,
       );
+    // The workspace root, because a case that answers out of the grammar has
+    // no producer and no project to stand in.
+    case "run":
+      return binaryStep(step.args, workspace, step);
     case "entries":
       return entriesStep(step, producer);
     case "absent":
@@ -109,25 +113,34 @@ async function runStep(
 }
 
 function binaryStep(
-  command: string,
-  args: readonly string[],
+  argv: readonly string[],
   cwd: string,
-  step: Extract<Step, { kind: "emit" | "check" }>,
+  step: Invocation,
 ): readonly string[] {
-  const run = spawnSync(process.execPath, [bin, command, ...args], {
+  const run = spawnSync(process.execPath, [bin, ...argv], {
     cwd,
     encoding: "utf8",
   });
 
   const output = `${run.stdout}${run.stderr}`;
   const report: string[] = [];
+  const invocation = `nothrow ${argv.join(" ")}`;
 
   const expected = EXIT_CODES[step.expect];
   if (run.status !== expected) {
     report.push(
-      `\`nothrow ${command} ${args.join(" ")}\` exited ${run.status}, and ` +
+      `\`${invocation}\` exited ${run.status}, and ` +
         `${step.expect} is ${expected}`,
     );
+  }
+  if (step.on !== undefined) {
+    const silent = step.on === "stdout" ? run.stderr : run.stdout;
+    const other = step.on === "stdout" ? "stderr" : "stdout";
+    if (silent !== "") {
+      report.push(
+        `\`${invocation}\` was to print on ${step.on} alone, and wrote to ${other}`,
+      );
+    }
   }
   for (const name of step.names) {
     if (!output.includes(name)) {
