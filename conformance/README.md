@@ -228,10 +228,13 @@ cli/<name>/
 `emit` runs the binary and holds its exit code to `ok`, `refused` or
 `cannot-run` — the last apart from the others, so a broken project cannot pass
 for a package that is merely unpublishable. `names` asserts what the output has
-to say, which is where the diagnostic contract for a refusal lives. `append`
-and `replace` are the changes `--check` has to notice — a rebuild that changed
-no declaration, and an edit to the source. `entries` asserts the facts of an
-emitted entry, because the wire format is the spec's and not the emitter's.
+to say, which is where the diagnostic contract for a refusal lives, and `denies`
+— the same shape — asserts what it has to leave out: a summary that counts the
+wrong thing says something true and something false in one breath, and only the
+second half of that is assertable. `append` and `replace` are the changes
+`--check` has to notice — a rebuild that changed no declaration, and an edit to
+the source. `entries` asserts the facts of an emitted entry, because the wire
+format is the spec's and not the emitter's.
 
 `check` is the same shape one directory over: it runs `nothrow check` in the
 project named by `in` rather than in the producer, since the carriers it reads

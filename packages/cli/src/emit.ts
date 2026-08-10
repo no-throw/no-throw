@@ -128,11 +128,19 @@ function refusalReport(
     ...refusal.sites.map((site) => `    ${place(options.cwd, site)}: ${site.what}`),
   ]);
 
+  // A refusal without an `at` is about the package rather than a mark — the
+  // same distinction the lines above are prefixed by. Counting all of them as
+  // marks tells a package with none that one of its marks is unpublishable, so
+  // the clause is written only for the ones that are.
+  const marks = refusals.filter((refusal) => refusal.at !== undefined).length;
+
   return [
     ...lines,
     "",
-    `Nothing was written: ${count(refusals.length, "mark")} cannot be ` +
-      "published as it stands.",
+    marks === 0
+      ? "Nothing was written."
+      : `Nothing was written: ${count(marks, "mark")} cannot be published ` +
+        "as it stands.",
     "",
   ].join("\n");
 }

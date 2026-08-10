@@ -4,7 +4,11 @@
     {
       "emit": [],
       "expect": "refused",
-      "names": ["`parse`", "an uncaught `throw`"]
+      "names": [
+        "`parse`",
+        "an uncaught `throw`",
+        "Nothing was written: 1 mark cannot be published as it stands."
+      ]
     },
     { "absent": "nothrow.json" }
   ]

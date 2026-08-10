@@ -16,7 +16,6 @@ import {
   loadCliCases,
   type CliCase,
   type Step,
-  type Verdict,
 } from "./cli-cases.js";
 import { compare, section, type Diagnostic } from "./diagnostics.js";
 import { runFixture } from "./driver-eslint.js";
@@ -113,7 +112,7 @@ function binaryStep(
   command: string,
   args: readonly string[],
   cwd: string,
-  step: { readonly expect: Verdict; readonly names: readonly string[] },
+  step: Extract<Step, { kind: "emit" | "check" }>,
 ): readonly string[] {
   const run = spawnSync(process.execPath, [bin, command, ...args], {
     cwd,
@@ -133,6 +132,14 @@ function binaryStep(
   for (const name of step.names) {
     if (!output.includes(name)) {
       report.push(`the output never names ${JSON.stringify(name)}`);
+    }
+  }
+  for (const denied of step.denies) {
+    if (output.includes(denied)) {
+      report.push(
+        `the output says ${JSON.stringify(denied)}, and this step ` +
+          "asserts it does not",
+      );
     }
   }
 
