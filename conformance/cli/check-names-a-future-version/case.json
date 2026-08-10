@@ -1,0 +1,14 @@
+{
+  "description": "The state a reader cannot tell from the file being absent: an overrides file this release cannot read leaves the rungs below it to answer, silently, by design — reading forward is what the version field is for. `check` is where that becomes visible, and it is not a failure.",
+  "steps": [
+    {
+      "check": [],
+      "in": "project",
+      "expect": "ok",
+      "names": [
+        "nothrow.overrides.json",
+        "it names `version` 2, and this release reads version 1"
+      ]
+    }
+  ]
+}

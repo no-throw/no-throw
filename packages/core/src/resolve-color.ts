@@ -42,7 +42,7 @@ import {
 } from "./promises.js";
 import {
   calleeTargets,
-  constructedTarget,
+  constructedTargets,
   declarationTarget,
   declaredTarget,
   resolveValue,
@@ -68,6 +68,12 @@ export type BodyEscape =
       readonly kind: "callee";
       readonly node: Transfer;
       readonly reason: ThrowingReason;
+      /**
+       * The body read is a class that declares no constructor of its own, so
+       * there is no declaration a mark could bind to and "mark it" is not an
+       * out. Only an inferred reason ever offers one.
+       */
+      readonly constructorless?: boolean;
       /** The file whose hash drifted; only `stale-manifest` carries one. */
       readonly staleFile?: string | undefined;
       /** Absent where the callee is not a standard-library declaration. */
@@ -438,13 +444,15 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   /**
    * A class stands for a constructor it does not declare, and the implicit
    * `constructor(...args) { super(...args) }` still runs the base's effective
-   * body. There is no `super()` in the syntax for the walk to have found.
+   * body. There is no `super()` in the syntax for the walk to have found — and
+   * so no argument list to pick an overload with, which is why a base known
+   * only by its construct signatures answers with all of them.
    */
-  function implicitSuper(body: Bodied): Target | undefined {
-    if (!ts.isClassLike(body)) return undefined;
+  const implicitSupers = memoize((body: Bodied): readonly Target[] => {
+    if (!ts.isClassLike(body)) return [];
     const base = baseClassExpression(body);
-    return base === undefined ? undefined : constructedTarget(base, resolution);
-  }
+    return base === undefined ? [] : constructedTargets(base, resolution);
+  });
 
   /**
    * The condition set, resolved over the same graph as the color. It reads no
@@ -529,9 +537,10 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     const phase = phaseOf(node);
 
     if (node.facet === "call") {
-      const followed = implicitSuper(declaration);
-      if (followed?.kind === "function" && !followed.marked) {
-        dependencies.push(nodeFor(followed.declaration, "call"));
+      for (const followed of implicitSupers(declaration)) {
+        if (followed.kind === "function" && !followed.marked) {
+          dependencies.push(nodeFor(followed.declaration, "call"));
+        }
       }
     }
 
@@ -586,14 +595,14 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     body: Bodied,
     throwingOf: (callee: ColorNode) => boolean,
   ): boolean {
-    const target = implicitSuper(body);
-    if (target === undefined) return false;
-    if (target.kind === "carried") return carriedReason(target) !== undefined;
-    if (target.kind !== "function") return true;
-    return (
-      flooredCallee(target, throwingOf) !== undefined ||
-      conditions.valueOf(target.declaration).length > 0
-    );
+    return implicitSupers(body).some((target) => {
+      if (target.kind === "carried") return carriedReason(target) !== undefined;
+      if (target.kind !== "function") return true;
+      return (
+        flooredCallee(target, throwingOf) !== undefined ||
+        conditions.valueOf(target.declaration).length > 0
+      );
+    });
   }
 
   function conditionedTargetsIn(
@@ -727,7 +736,12 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
         // the discard instead; and where the call *is* the awaited expression,
         // the `await` is already the one site for both channels.
         if (!isVisiblyAsync(target.declaration) && !awaitedDirectly(site)) {
-          found.push({ kind: "callee", node: site, reason: floored });
+          found.push({
+            kind: "callee",
+            node: site,
+            reason: floored,
+            constructorless: ts.isClassLike(target.declaration),
+          });
         }
         return;
       }

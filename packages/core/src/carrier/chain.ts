@@ -38,6 +38,13 @@ export type CarrierAnswer =
  */
 export interface CarrierQuery {
   readonly declaration: ts.Declaration;
+  /**
+   * What the program knows about the declaration beyond where it was written.
+   * A rung needs it wherever one declaration is not the whole member — a lib
+   * type the project augments has two, and which one arrives here is overload
+   * resolution's business rather than a fact about the member.
+   */
+  readonly checker: ts.TypeChecker;
   /** The package the declaration ships in. */
   readonly home: PackageHome | undefined;
   /** The package the file being analyzed ships in. */
@@ -62,7 +69,14 @@ export function createCarrier(
   program: ts.Program,
 ): Carrier {
   const asking = packageHomeOf(sourceFile.fileName);
+  // The one rung whose file belongs to the project doing the asking, so it is
+  // read once here rather than per query — and a file this release cannot
+  // honor therefore refuses before any declaration is looked up, rather than
+  // at whichever call happened to reach the chain first.
+  const rungs = [overriddenBy(overridesIn(asking)), ...RUNGS];
+
   const answers = new Map<ts.Declaration, CarrierAnswer | undefined>();
+  const checker = program.getTypeChecker();
 
   return {
     answerFor(declaration) {
@@ -71,6 +85,7 @@ export function createCarrier(
       const home = packageHomeOf(declaration.getSourceFile().fileName);
       const query: CarrierQuery = {
         declaration,
+        checker,
         home,
         asking,
         key:
@@ -80,7 +95,7 @@ export function createCarrier(
       };
 
       let answer: CarrierAnswer | undefined;
-      for (const rung of RUNGS) {
+      for (const rung of rungs) {
         answer = rung(query);
         if (answer !== undefined) break;
       }
@@ -96,8 +111,9 @@ export function createCarrier(
  * makes the floor's outs a promise rather than a suggestion: whatever nobody
  * else has colored, you can color here, and nothing outranks you.
  */
-const overridden: CarrierRung = (query) =>
-  answerFrom(tableFor(overridesIn(query.asking), query.home), query.key);
+function overriddenBy(overrides: ColorTables): CarrierRung {
+  return (query) => answerFrom(tableFor(overrides, query.home), query.key);
+}
 
 /**
  * What somebody else published about the package. Matched by the overlay's
@@ -179,10 +195,8 @@ const shipped: CarrierRung = (query) => {
     : undefined;
 };
 
-/** The chain, in precedence order. First answer wins, per key. */
-const RUNGS: readonly CarrierRung[] = [
-  overridden,
-  overlaid,
-  shipped,
-  baselineRung,
-];
+/**
+ * The chain below the overrides, in precedence order. First answer wins, per
+ * key. The overrides rung is built per carrier and sits above these.
+ */
+const RUNGS: readonly CarrierRung[] = [overlaid, shipped, baselineRung];

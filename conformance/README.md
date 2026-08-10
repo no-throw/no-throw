@@ -16,7 +16,7 @@ A fixture is a whole project, not a snippet:
 fixtures/tsconfig.base.json   what a fixture is compiled as unless it says otherwise
 fixtures/<name>/
   tsconfig.json     the project the fixture is analyzed as
-  expected.json     the diagnostics it must produce
+  expected.json     the diagnostics it must produce, or the refusal it must raise
   package.json      where the walk-up stops, for a fixture with dependencies
   nothrow.overrides.json   what the project asserts for itself
   src/**/*.ts       the code
@@ -117,6 +117,27 @@ line endings a checkout happens to have are not part of it. An empty
 remedy the reader has to write by hand is not offered as an edit; omitting the
 key does not constrain the offer at all.
 
+`refuses` is what a fixture asserts when the run must not finish at all. Some
+things the engine reads are the project's own and cannot be fallen back from —
+a malformed `nothrow.overrides.json` is the one — and those stop everything
+rather than being reported per file. Each entry is text the refusal has to
+contain, so a fixture pins the sentence and not the machine-dependent path
+trailing it:
+
+```json
+{
+  "diagnostics": [],
+  "refuses": [
+    "`nothrow.overrides.json` cannot be read — it is not JSON"
+  ]
+}
+```
+
+A refusal is normative text like any diagnostic, so `check:docs` holds a
+README quotation to a fixture's `refuses` exactly as it holds one to a
+diagnostic's `message`. A fixture with no `refuses` that fails to run is a
+failure however it read.
+
 `config` says how the fixture is wired up, and defaults to `"rules"`: the driver
 turns each `nothrow` rule on by name. `"recommended"` installs the shipped
 preset instead — untouched, its own `files` scope included, and handed the same
@@ -166,11 +187,13 @@ against what it got — enough to act on from the CI log alone.
 
 ## The CLI, at the same seam
 
-`nothrow emit` is exercised as a **process over a package on disk**, never
-through an API. A case is a directory holding a `producer` — a whole npm
-package, source and built `dist` both, committed rather than built for the same
-reason a fixture's dependency is — and, where the case has one, a `consumer`
-project of the ordinary fixture shape.
+The binary is exercised as a **process over files on disk**, never through an
+API. An `emit` case is a directory holding a `producer` — a whole npm package,
+source and built `dist` both, committed rather than built for the same reason a
+fixture's dependency is — and, where the case has one, a `consumer` project of
+the ordinary fixture shape. A `check` case holds an ordinary project instead,
+carriers and dependencies and all, because what `check` reads is what a
+*consumer* wrote rather than what a publisher built.
 
 ```
 cli/<name>/
@@ -182,6 +205,7 @@ cli/<name>/
     dist/**         what a consumer resolves, and what the manifest hashes
   consumer/         a fixture project, with the producer as a dependency
     expected.json
+  <project>/        for a `check` case: a whole project, named by the step
 ```
 
 `case.json` is a list of steps, run in order against a copy of the case:
@@ -208,6 +232,14 @@ to say, which is where the diagnostic contract for a refusal lives. `append`
 and `replace` are the changes `--check` has to notice — a rebuild that changed
 no declaration, and an edit to the source. `entries` asserts the facts of an
 emitted entry, because the wire format is the spec's and not the emitter's.
+
+`check` is the same shape one directory over: it runs `nothrow check` in the
+project named by `in` rather than in the producer, since the carriers it reads
+are a consumer's.
+
+```json
+{ "check": [], "in": "project", "expect": "refused", "names": ["reaches nothing"] }
+```
 
 `consumer` is the one that matters: it installs the producer, emitted manifest
 and all, into the consumer's `node_modules` and runs that project through the

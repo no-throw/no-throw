@@ -5,16 +5,38 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const packagesDir = fileURLToPath(new URL("../packages/", import.meta.url));
+const root = fileURLToPath(new URL("../", import.meta.url));
+const packagesDir = join(root, "packages");
 
-const manifests = readdirSync(packagesDir, { withFileTypes: true })
+const packageDirs = readdirSync(packagesDir, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
-  .map((entry) => {
-    const path = join(packagesDir, entry.name, "package.json");
-    return { path, json: JSON.parse(readFileSync(path, "utf8")) };
-  });
+  .map((entry) => join(packagesDir, entry.name));
+
+const manifests = packageDirs.map((directory) => {
+  const path = join(directory, "package.json");
+  return { path, json: JSON.parse(readFileSync(path, "utf8")) };
+});
 
 const problems = [];
+
+// npm reaches no further than the package directory, so a published package
+// carrying an MIT `license` field and no text is a claim with nothing behind
+// it. The copies are the only way to ship one; this is what keeps them from
+// becoming three different licenses.
+const license = readFileSync(join(root, "LICENSE"), "utf8");
+for (const directory of packageDirs) {
+  const path = join(directory, "LICENSE");
+  let shipped;
+  try {
+    shipped = readFileSync(path, "utf8");
+  } catch {
+    problems.push(`${path}: missing — copy the root LICENSE here`);
+    continue;
+  }
+  if (shipped !== license) {
+    problems.push(`${path}: differs from the root LICENSE`);
+  }
+}
 
 const versions = new Set(manifests.map(({ json }) => json.version));
 if (versions.size > 1) {

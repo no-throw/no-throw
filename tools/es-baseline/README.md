@@ -21,7 +21,12 @@ The pipeline:
    abrupt markers resolve abstract-operation indirection transitively. Each
    operation carries its **whole** set of root causes, not one witness: one
    witness can report the cause the declared type discharges and hide the one it
-   does not, which is unsound rather than merely imprecise.
+   does not, which is unsound rather than merely imprecise. Lifting reads the
+   **guard** the call sits under, for one fact only: a step under `If x is an
+   Object` cannot produce a cause about `x` being nullish or not an Object.
+   That one guard is `ToPrimitive`'s, which every coercion goes through, and
+   without it `ToString` of a declared `string` looks like it reaches
+   `ToObject` on a couple of hundred members.
 2. **Operand tracing** — a root cause is about the *callee's* parameter *i*, so
    lifting it into a caller re-resolves the expression passed at *i*,
    recursively, until the chain ends at a builtin's declared parameter or its
@@ -30,6 +35,8 @@ The pipeline:
 3. **Classification** — hazards key on the **shape of the throw condition**,
    never on the root operation's name. That is a soundness requirement: an
    op-name enum fails silently in the unsafe direction when a name is misfiled.
+   The chain is still read where one step covers hundreds of members: an
+   internal method or `ValidateNonRevokedProxy` means Proxy behavior.
 4. **Discharge against a live `ts.Program`** — the domains are computed from
    `ts.Type`s, which is why generation lives inside the engine rather than in a
    standalone script.
@@ -53,9 +60,23 @@ pnpm --filter @no-throw/es-baseline-tools run gate:drift -- --against /path/to/o
 **The hostile fuzz gate.** Every proposed-clean entry — conditional ones
 included — faces a type-conformant but hostile refutation attempt. The pool is
 detached and shrunk buffers, a throwing-`Symbol.species` subclass, and
-`Object.create(null)`; `Proxy` is excluded because it is trust base. Bare type
-parameters are refused, because an unrecorded constraint manufactures false
-counterexamples — **refuse to fuzz what you cannot model conformantly.**
+`Object.create(null)`; `Proxy` is excluded because it is trust base. A construct
+signature is entered with `new` on two NewTargets — the constructor and a
+subclass, since `class MyError extends Error {}` reaches the entry through its
+implicit `super()` — and a call signature as a bare call. The rule for what may
+be passed is **refuse to fuzz what you cannot model conformantly**: a
+non-conformant argument manufactures a false counterexample, and a false
+counterexample turns the gate from evidence into noise. An *unconstrained* type
+parameter is not such a case — the caller picks the instantiation, so every value
+conforms under some choice, which is what left `Map#get(key: K)` unprobed. An
+object type the pool has no entry for is built out of the properties it declares
+rather than refused, which is how `new Error(msg, options)` is reachable at all;
+a property that cannot be modeled, or that is symbol-keyed, refuses the whole
+value. An index signature says what a key holds when it is present and never
+that any key is present, so the empty object conforms to every one of them. A
+nominal type whose runtime wants internal slots this cannot forge is not
+silently mismodeled either — it refutes, and a refutation with no recorded
+counterexample fails the run.
 
 Sensitivity sits near 80%, so **a green gate is not evidence of cleanliness,
 only the absence of a refutation.** The gate's job is to fail. `--self-check`
@@ -65,6 +86,15 @@ every one of them.
 Counterexamples the extractor cannot see are recorded in
 [`src/refutations.ts`](src/refutations.ts) with their evidence, and those entries
 ship throwing. A counterexample outside that list fails the build.
+
+**The precision report.** Attacking clean claims is what soundness needs, so
+that is all the gate *fails* on — which left an entry that wrongly ships
+`throwing` unprobed, unrefuted and unreported, findable only by marking a
+function and counting the errors (#94). So the same run also names every
+throwing entry it drove with conformant arguments and never made throw. It is a
+report, never a failure: a throw the fuzzer cannot reproduce is evidence about
+the fuzzer's reach as much as about the entry, and over-throwing costs precision,
+not soundness.
 
 **The drift gate.** A symbol-set diff of `lib.*.d.ts`. Newcomers have no entry
 and therefore floor, so the gate surfaces them for classification rather than

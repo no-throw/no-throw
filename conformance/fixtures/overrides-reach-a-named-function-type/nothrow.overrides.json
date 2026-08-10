@@ -1,0 +1,23 @@
+{
+  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "paints": {
+      "exports": {
+        ".": {
+          "Colors#red": {
+            "color": "non-throwing",
+            "conditions": []
+          },
+          "Colors#boom": {
+            "color": "throwing"
+          },
+          "dye": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    }
+  }
+}

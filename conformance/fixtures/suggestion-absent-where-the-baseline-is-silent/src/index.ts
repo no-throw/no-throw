@@ -4,6 +4,6 @@ export function parse(text: string): unknown {
 }
 
 /** @nothrow */
-export function wrap(target: object, handler: ProxyHandler<object>): object {
-  return new Proxy(target, handler);
+export function read(reference: WeakRef<object>): object | undefined {
+  return reference.deref();
 }

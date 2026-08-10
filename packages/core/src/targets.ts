@@ -142,9 +142,10 @@ function statedTarget(
 ): Target | undefined {
   const declaration = targetOf(transfer, resolution.checker);
   if (declaration === undefined || hasVisibleBody(declaration)) return undefined;
-  return resolution.carrier.answerFor(declaration) === undefined
+  const keyedBy = keyDeclarationFor(declaration, transfer, resolution);
+  return resolution.carrier.answerFor(keyedBy) === undefined
     ? undefined
-    : carriedTarget(declaration, resolution);
+    : carriedTarget(declaration, resolution, keyedBy);
 }
 
 /**
@@ -326,7 +327,7 @@ function memberTarget(
   // could be a path over, so nothing keyed on it could be discharged here.
   return floor(
     ts.isPropertySignature(declaration) ? "bodyless" : "unresolvable",
-    floorSourceOf(declaration, "unstated"),
+    floorSourceOf(declaration, "unstated", resolution.checker),
   );
 }
 
@@ -352,23 +353,81 @@ function transferTarget(transfer: Transfer, resolution: Resolution): Target {
   if (target === undefined) return floor("unresolvable");
   return hasVisibleBody(target)
     ? functionTarget(target)
-    : carriedTarget(target, resolution);
+    : carriedTarget(
+        target,
+        resolution,
+        keyDeclarationFor(target, transfer, resolution),
+      );
+}
+
+/**
+ * Which declaration a carrier is asked about, where that is not the one whose
+ * parameter list runs.
+ *
+ * A binding typed with a *named* function type — `red: Formatter`, the shape
+ * much of npm's declarations take — resolves to the function type written in
+ * the alias, and that node is shared by every binding the alias types. It
+ * cannot carry a key: keying it would color `green` with whatever was said
+ * about `red`. What a consumer names is the binding, so the binding is what the
+ * chain is asked about, and the signature still supplies the facts.
+ *
+ * Only asked where the signature itself keys nothing, so a declaration the
+ * surface already reaches is never re-keyed through the site that reached it.
+ * And only of a callee written as a name: `new` resolves to a class rather than
+ * to a signature, and `super` names nothing at all.
+ */
+function keyDeclarationFor(
+  declaration: ts.Declaration,
+  transfer: Transfer,
+  resolution: Resolution,
+): ts.Declaration {
+  if (
+    ts.isNewExpression(transfer) ||
+    resolution.carrier.answerFor(declaration) !== undefined
+  ) {
+    return declaration;
+  }
+
+  const callee = calleeExpression(transfer);
+  if (
+    !ts.isIdentifier(callee) &&
+    !ts.isPropertyAccessExpression(callee) &&
+    !ts.isElementAccessExpression(callee)
+  ) {
+    return declaration;
+  }
+
+  // Through the import, because what the consumer named is the package's
+  // declaration and the specifier is only how it got here.
+  const { checker } = resolution;
+  const named = checker.getSymbolAtLocation(callee);
+  if (named === undefined) return declaration;
+  const resolved =
+    (named.flags & ts.SymbolFlags.Alias) === 0
+      ? named
+      : checker.getAliasedSymbol(named);
+
+  return resolved.declarations?.[0] ?? declaration;
 }
 
 /**
  * What the carrier chain makes of a declaration with no body to read. Module
  * resolution has already decided this is the chain's question rather than the
  * program's: source resolves to a visible body and never arrives here.
+ *
+ * The key and the facts can come from two declarations: what a consumer names
+ * is not always what holds the parameter list a condition is a path over.
  */
 function carriedTarget(
   declaration: ts.SignatureDeclaration | ts.ClassLikeDeclaration,
   resolution: Resolution,
+  keyedBy: ts.Declaration = declaration,
 ): DeclaredTarget {
   // Every floor below is the chain declining to state a color, whatever its
   // reason for declining, so all of them read `stated` the same way.
-  const unstated = floorSourceOf(declaration, "unstated");
+  const unstated = floorSourceOf(declaration, "unstated", resolution.checker);
 
-  const answer = resolution.carrier.answerFor(declaration);
+  const answer = resolution.carrier.answerFor(keyedBy);
   if (answer === undefined) return floor("bodyless", unstated);
   if (answer.kind === "floor") {
     return {
@@ -389,23 +448,35 @@ function carriedTarget(
     color: facts.color,
     async: facts.async,
     conditions: facts.color === "throwing" ? [] : facts.conditions,
-    source: floorSourceOf(declaration, "stated"),
+    source: floorSourceOf(declaration, "stated", resolution.checker),
   };
 }
 
 /**
- * The body `new` on a constructor-position expression enters, as a target. The
+ * The bodies `new` on a constructor-position expression enters, as targets. The
  * implicit `constructor(...args) { super(...args) }` a class does not declare
  * has no syntax for the walk to find, so its edge is asked for by name.
+ *
+ * A join rather than one answer, because with no argument list written there is
+ * no overload resolution either: a base known only by its construct signatures
+ * — `declare var Error: ErrorConstructor` is the one every project meets — has
+ * every one of them within reach of the arguments the implicit constructor
+ * forwards, so every one of them answers.
  */
-export function constructedTarget(
+export function constructedTargets(
   expression: ts.Expression,
   resolution: Resolution,
-): DeclaredTarget {
-  return declaredTarget(
-    constructedBodyAt(expression, resolution.checker),
-    resolution,
-  );
+): readonly DeclaredTarget[] {
+  const { checker } = resolution;
+  const body = constructedBodyAt(expression, checker);
+  if (body !== undefined) return [declarationTarget(body, resolution)];
+
+  const signatures = bodylessConstructSignatures(expression, checker);
+  return signatures.length === 0
+    ? [floor("unresolvable")]
+    : signatures.map((declaration) =>
+        declarationTarget(declaration, resolution),
+      );
 }
 
 /**
@@ -435,7 +506,10 @@ function targetOf(
   }
   if (calleeExpression(transfer).kind === ts.SyntaxKind.SuperKeyword) {
     const base = inheritedFrom(transfer);
-    return base === undefined ? undefined : constructedBodyAt(base, checker);
+    return (
+      (base === undefined ? undefined : constructedBodyAt(base, checker)) ??
+      constructSignatureOf(transfer, checker)
+    );
   }
 
   const declaration = checker.getResolvedSignature(transfer)?.declaration;
@@ -467,12 +541,41 @@ function constructedBodyAt(
  * resolved. Only a bodyless one is taken: a bodied signature the class lookup
  * missed means the expression was not one class, and reading a single branch of
  * it would be a guess.
+ *
+ * `super(...)` is the same construction under another spelling, and reaches the
+ * same base the same way. Nothing about the base being named by `extends` makes
+ * it any more resolvable than a `new` on it, so the two ask this one question.
  */
 function constructSignatureOf(
-  construction: ts.NewExpression,
+  construction: Transfer,
   checker: ts.TypeChecker,
 ): ts.SignatureDeclaration | undefined {
-  const declaration = checker.getResolvedSignature(construction)?.declaration;
+  return bodylessSignature(
+    checker.getResolvedSignature(construction)?.declaration,
+  );
+}
+
+/**
+ * Every construct signature of a type that has no body behind it. What answers
+ * where no argument list picked one — the implicit `super()`.
+ */
+function bodylessConstructSignatures(
+  expression: ts.Expression,
+  checker: ts.TypeChecker,
+): readonly ts.SignatureDeclaration[] {
+  return checker
+    .getTypeAtLocation(expression)
+    .getConstructSignatures()
+    .flatMap(({ declaration }) => {
+      const bodyless = bodylessSignature(declaration);
+      return bodyless === undefined ? [] : [bodyless];
+    });
+}
+
+/** The declaration, where it is a signature with no body, and nothing else. */
+function bodylessSignature(
+  declaration: ts.Declaration | undefined,
+): ts.SignatureDeclaration | undefined {
   return declaration !== undefined &&
     ts.isFunctionLike(declaration) &&
     bodyOf(declaration) === undefined

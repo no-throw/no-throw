@@ -1,0 +1,125 @@
+# One dispatch bumps the three packages in lockstep, runs every gate on the
+# commit it is about to tag, tags it, and publishes. The gates run after the
+# bump on purpose: what they prove is the tree that ships.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version all three packages move to, `major.minor.patch`
+        required: true
+        type: string
+      dry-run:
+        description: Run every gate and pack the tarballs, but publish nothing
+        type: boolean
+        default: false
+
+# The publish is the point of no return, so nothing else may be running against
+# the same branch when it happens.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release ${{ inputs.version }}
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      # npm provenance: the publish is signed against this workflow run, so a
+      # consumer can check that the tarball came from this repo at this commit.
+      id-token: write
+    steps:
+      # A release is only ever cut from `main`: the gates below prove the
+      # commit, and the tag has to be reachable from the branch consumers read.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Bump the three packages in lockstep
+        run: node scripts/release.mjs "${{ inputs.version }}"
+
+      # Everything below runs *after* the bump, so what the gates prove is the
+      # tree that gets tagged and packed rather than the one before it.
+      - run: pnpm run build
+
+      - run: pnpm run check:lockstep
+
+      - run: pnpm run check:docs
+
+      - run: pnpm run conformance
+
+      - run: pnpm run conformance:cli
+
+      - name: Diagnostics audit
+        run: pnpm run audit:diagnostics
+
+      - name: ESLint peer gate
+        run: pnpm run gate:peer:eslint
+
+      - name: TypeScript peer gate
+        run: pnpm run gate:peer:typescript
+
+      - name: Hostile fuzz gate
+        run: pnpm run gate:fuzz
+
+      - name: Drift gate
+        run: pnpm run gate:drift
+
+      - name: DOM hostile fuzz gate
+        run: pnpm run dom:gate:fuzz
+
+      - name: DOM deferred-invocation gate
+        run: pnpm run dom:gate:deferred
+
+      - name: DOM drift gate
+        run: pnpm run dom:gate:drift
+
+      # What a consumer will actually download, checked before anything is
+      # published: a `files` list that forgot the baseline data produces a
+      # package that installs and floors everything.
+      - name: The tarballs carry what they claim
+        run: node scripts/check-packed.mjs
+
+      - name: Commit and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release ${{ inputs.version }}"
+          git tag -a "v${{ inputs.version }}" -m "Release ${{ inputs.version }}"
+
+      - name: Push the release commit and tag
+        if: ${{ !inputs.dry-run }}
+        run: git push origin main "v${{ inputs.version }}"
+
+      # Order matters: the two adapters name `@no-throw/core` as a dependency,
+      # and pnpm rewrites `workspace:*` to this exact version as it packs. A
+      # consumer installing an adapter before core is on the registry gets an
+      # unresolvable dependency.
+      - name: Publish
+        if: ${{ !inputs.dry-run }}
+        run: |
+          pnpm --filter @no-throw/core publish --no-git-checks
+          pnpm --filter @no-throw/eslint-plugin publish --no-git-checks
+          pnpm --filter @no-throw/cli publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Release notes
+        if: ${{ !inputs.dry-run }}
+        run: gh release create "v${{ inputs.version }}" --notes-file docs/release-notes/v${{ inputs.version }}.md --title "v${{ inputs.version }}"
+        env:
+          GH_TOKEN: ${{ github.token }}

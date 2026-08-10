@@ -1,4 +1,4 @@
-import { formatCounterexample } from "../gates/fuzz.js";
+import { formatCounterexample, formatUnrefuted } from "../gates/fuzz.js";
 import { generateBaseline, writeBaseline } from "../generate.js";
 
 const report = generateBaseline();
@@ -14,6 +14,7 @@ for (const [rule, count] of reviewRules) {
 console.log(
   `gate sensitivity   ${report.gate.sensitivity.reproduced}/${report.gate.sensitivity.attempted}`,
 );
+for (const line of formatUnrefuted(report.gate.unrefuted)) console.log(line);
 
 if (report.staleRefutations.length > 0) {
   console.warn(

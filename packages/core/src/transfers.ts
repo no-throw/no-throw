@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { libTargetOfFileName, memberKey } from "./baseline/keys.js";
+import { libDeclarationsOf, memberKey } from "./baseline/keys.js";
 import { baselineEnumerates, floorSourceOf } from "./baseline/rung.js";
 import type { AccessorFact, Color } from "./baseline/types.js";
 import type { FloorReason, FloorSource } from "./colors.js";
@@ -230,7 +230,9 @@ function accessorTargets(
   for (const declaration of symbol.declarations ?? []) {
     const answer = accessorAnswerFor(declaration, resolution);
     if (answer !== "declaration") {
-      targets.push(...statedTargets(symbol, half, answer, declaration));
+      targets.push(
+        ...statedTargets(symbol, half, answer, declaration, resolution.checker),
+      );
       continue;
     }
 
@@ -268,7 +270,9 @@ function accessorAnswerFor(
   const answer = resolution.carrier.answerFor(declaration);
   const fact = answer?.kind === "entry" ? answer.entry.accessor : undefined;
   if (fact !== undefined) return fact;
-  return isUnstatedLibProperty(declaration) ? "floors" : "declaration";
+  return isUnstatedLibProperty(declaration, resolution.checker)
+    ? "floors"
+    : "declaration";
 }
 
 /**
@@ -277,11 +281,14 @@ function accessorAnswerFor(
  * property on the prototype by construction, and reading one is a read whatever
  * else the member does — and only a type the enumeration reaches was owed one.
  */
-function isUnstatedLibProperty(declaration: ts.Declaration): boolean {
+function isUnstatedLibProperty(
+  declaration: ts.Declaration,
+  checker: ts.TypeChecker,
+): boolean {
   return (
     (ts.isPropertySignature(declaration) ||
       ts.isPropertyDeclaration(declaration)) &&
-    baselineEnumerates(declaration)
+    baselineEnumerates(declaration, checker)
   );
 }
 
@@ -291,6 +298,7 @@ function statedTargets(
   half: Half,
   fact: AccessorFact | "floors",
   declaration: ts.Declaration,
+  checker: ts.TypeChecker,
 ): readonly TransferTarget[] {
   if (fact === false) return [];
 
@@ -300,12 +308,12 @@ function statedTargets(
       ? {
           kind: "floor",
           reason: "no-accessor-fact",
-          source: floorSourceOf(declaration, "unstated"),
+          source: floorSourceOf(declaration, "unstated", checker),
         }
       : {
           kind: "carried",
           color: fact[which],
-          source: floorSourceOf(declaration, "stated"),
+          source: floorSourceOf(declaration, "stated", checker),
         };
 
   if (half !== "set") {
@@ -423,11 +431,17 @@ function ownEnumerableTargets(
 ): readonly TransferTarget[] {
   return membersOf(source, resolution.checker).flatMap((symbol) =>
     (symbol.declarations ?? []).flatMap((declaration) => {
-      if (!mayBeOwn(declaration)) return [];
+      if (!mayBeOwn(declaration, resolution.checker)) return [];
 
       const answer = accessorAnswerFor(declaration, resolution);
       if (answer !== "declaration") {
-        return statedTargets(symbol, "get", answer, declaration);
+        return statedTargets(
+          symbol,
+          "get",
+          answer,
+          declaration,
+          resolution.checker,
+        );
       }
       return ts.isGetAccessorDeclaration(declaration)
         ? [
@@ -451,10 +465,11 @@ function ownEnumerableTargets(
  * declared on an interface or a type literal could describe either an object
  * literal or a class instance, and the sound reading of that is that it is own.
  */
-function mayBeOwn(declaration: ts.Declaration): boolean {
-  if (libTargetOfFileName(declaration.getSourceFile().fileName) !== undefined) {
-    return false;
-  }
+function mayBeOwn(
+  declaration: ts.Declaration,
+  checker: ts.TypeChecker,
+): boolean {
+  if (libDeclarationsOf(declaration, checker).length > 0) return false;
   return (
     !ts.isClassLike(declaration.parent) ||
     (ts.getCombinedModifierFlags(declaration) & ts.ModifierFlags.Static) !== 0
@@ -548,20 +563,18 @@ function libCalleeKey(
   call: ts.CallExpression,
   checker: ts.TypeChecker,
 ): string | undefined {
-  const declaration = checker.getResolvedSignature(call)?.declaration;
-  if (
-    declaration === undefined ||
-    libTargetOfFileName(declaration.getSourceFile().fileName) === undefined
-  ) {
-    return undefined;
-  }
+  const resolved = checker.getResolvedSignature(call)?.declaration;
+  if (resolved === undefined) return undefined;
 
-  const owner = declaration.parent;
-  if (!ts.isInterfaceDeclaration(owner)) return undefined;
-  const name = ts.isCallSignatureDeclaration(declaration)
-    ? "()"
-    : ts.getNameOfDeclaration(declaration)?.getText();
-  return name === undefined ? undefined : memberKey(owner.name.text, name);
+  for (const { declaration } of libDeclarationsOf(resolved, checker)) {
+    const owner = declaration.parent;
+    if (!ts.isInterfaceDeclaration(owner)) continue;
+    const name = ts.isCallSignatureDeclaration(declaration)
+      ? "()"
+      : ts.getNameOfDeclaration(declaration)?.getText();
+    if (name !== undefined) return memberKey(owner.name.text, name);
+  }
+  return undefined;
 }
 
 /**

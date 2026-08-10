@@ -3,6 +3,22 @@ import type ts from "typescript";
 
 import { constructTypedArray, isTypedArrayName } from "../typed-arrays.js";
 
+/** How far a structural value may nest before the type is refused instead. */
+const MAX_DEPTH = 3;
+
+/** Every kind of value there is, for a position that promises nothing. */
+const UNCONSTRAINED: readonly unknown[] = [
+  undefined,
+  null,
+  0,
+  "",
+  {},
+  [],
+  Symbol("s"),
+  1n,
+  (): number => 1,
+];
+
 /**
  * Values for a declared type, driven off the `ts.Type` rather than off the
  * text of a type node. Refusing is a first-class answer: **refuse to fuzz what
@@ -24,21 +40,25 @@ export class Arbitrary {
   }
 
   /** `undefined` means "cannot be modeled conformantly" — the caller skips. */
-  valuesFor(declared: ts.Type): readonly unknown[] | undefined {
+  valuesFor(declared: ts.Type, depth = 0): readonly unknown[] | undefined {
     const { TypeFlags } = this.#ts;
     const type = declared;
 
     if (declared.isUnion()) {
-      const parts = declared.types.map((part) => this.valuesFor(part));
+      const parts = declared.types.map((part) => this.valuesFor(part, depth));
       if (parts.some((part) => part === undefined)) return undefined;
       return parts.flatMap((part) => part ?? []).slice(0, 8);
     }
 
-    // A bare type parameter's constraint is the only thing that says what is
-    // conformant; without one there is nothing to conform to.
+    // A type parameter's constraint says what is conformant. Without one the
+    // *caller* chooses the instantiation, so every value conforms under some
+    // choice: `Map#get(key: K)` takes a symbol at `Map<symbol, V>`, and the
+    // receiver pool's `new Map()` is no instantiation in particular.
     if (declared.isTypeParameter()) {
       const constraint = this.#checker.getBaseConstraintOfType(declared);
-      return constraint === undefined ? undefined : this.valuesFor(constraint);
+      return constraint === undefined
+        ? UNCONSTRAINED
+        : this.valuesFor(constraint, depth);
     }
 
     if (type.isStringLiteral()) return [type.value];
@@ -63,33 +83,44 @@ export class Arbitrary {
     }
     if ((type.flags & TypeFlags.Null) !== 0) return [null];
     if ((type.flags & (TypeFlags.Any | TypeFlags.Unknown)) !== 0) {
-      return [undefined, null, 0, "", {}, [], Symbol("s"), 1n, () => 1];
+      return UNCONSTRAINED;
     }
     if ((type.flags & TypeFlags.NonPrimitive) !== 0) {
       return [{}, Object.freeze({}), [], Object.create(null)];
     }
 
-    return this.#objectValues(type);
+    return this.#objectValues(type, depth);
   }
 
-  #objectValues(type: ts.Type): readonly unknown[] | undefined {
+  #objectValues(type: ts.Type, depth: number): readonly unknown[] | undefined {
     if (type.getCallSignatures().length > 0) {
       return [(): number => 1, (value: unknown): unknown => value];
     }
     if (type.getConstructSignatures().length > 0) return [class Sample {}];
 
     const name = type.getSymbol()?.getName();
-    if (name === undefined) return undefined;
+    if (name === undefined) return this.#structuralValues(type, depth);
 
-    // `{}` — an anonymous object type with nothing in it accepts any
-    // non-nullish value, which is exactly what `Object.keys`'s second overload
-    // declares.
-    if (
-      name === "__type" &&
-      type.getProperties().length === 0 &&
-      this.#checker.getIndexInfosOfType(type).length === 0
-    ) {
-      return [{}, [], 1, "a", Object.freeze({}), Object.create(null)];
+    if (name === "__type" && type.getProperties().length === 0) {
+      const indexes = this.#checker.getIndexInfosOfType(type);
+      // `{}` — an anonymous object type with nothing in it accepts any
+      // non-nullish value, which is exactly what `Object.keys`'s second
+      // overload declares.
+      if (indexes.length === 0) {
+        return [{}, [], 1, "a", Object.freeze({}), Object.create(null)];
+      }
+      // `{ [s: string]: T }` — an index signature says what a key holds when
+      // it is present and never that any key is present, so an object with no
+      // keys conforms to every one of them. Populating one key as well is what
+      // makes this a probe of the iteration rather than of the empty case:
+      // `Object.entries` and `Object.values` are declared this way.
+      const held = this.#indexValue(indexes, depth);
+      return [
+        {},
+        Object.freeze({}),
+        Object.create(null),
+        ...(held === undefined ? [] : [{ key: held }]),
+      ];
     }
 
     // An empty collection conforms to *any* element type, so it probes members
@@ -141,11 +172,63 @@ export class Arbitrary {
       case "Function":
         return [(): number => 1];
       default: {
-        if (!isTypedArrayName(name)) return undefined;
+        if (!isTypedArrayName(name)) return this.#structuralValues(type, depth);
         const fresh = constructTypedArray(name, 4);
         return fresh === undefined ? undefined : [fresh];
       }
     }
+  }
+
+  /**
+   * The last resort before refusing: an object type built out of what it
+   * declares. `ErrorOptions` — the bag every `new Error(…)` carries — is the
+   * shape this exists for: it has no behavior for the list above to name, and
+   * reading its properties is reading the type rather than guessing at it.
+   *
+   * Refusing stays the answer wherever the value could not be honest. Every
+   * property must be modelable, because a bag with a hole in it is not
+   * conformant; a symbol-keyed one refuses outright, since the checker spells
+   * it `__@iterator` and an object with *that* string key is a different value
+   * altogether. What survives is type-conformant by construction — and a
+   * nominal type whose runtime wants internal slots this cannot forge does not
+   * pass silently either: it refutes, and a refutation with no recorded
+   * counterexample fails the run.
+   */
+  #structuralValues(
+    type: ts.Type,
+    depth: number,
+  ): readonly unknown[] | undefined {
+    const properties = type.getProperties();
+    if (depth >= MAX_DEPTH || properties.length === 0) return undefined;
+
+    const filled: Record<string, unknown> = {};
+    let everyPropertyOptional = true;
+    for (const property of properties) {
+      const name = property.getName();
+      if (name.startsWith("__@")) return undefined;
+      const values = this.valuesFor(
+        this.#checker.getTypeOfSymbol(property),
+        depth + 1,
+      );
+      if (values === undefined || values.length === 0) return undefined;
+      filled[name] = values[0];
+      if ((property.flags & this.#ts.SymbolFlags.Optional) === 0) {
+        everyPropertyOptional = false;
+      }
+    }
+
+    // The empty bag conforms too when nothing is required, and it is the shape
+    // a caller actually writes.
+    return everyPropertyOptional ? [{}, filled] : [filled];
+  }
+
+  /** One value an index signature admits, where any of them is modelable. */
+  #indexValue(indexes: readonly ts.IndexInfo[], depth: number): unknown {
+    for (const index of indexes) {
+      const values = this.valuesFor(index.type, depth + 1);
+      if (values !== undefined && values.length > 0) return values[0];
+    }
+    return undefined;
   }
 
   /** A short array of the element type, when the element type is modelable. */

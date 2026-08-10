@@ -1,0 +1,24 @@
+{
+  "description": "The question a call site cannot ask. An entry that colors nothing and a correct one come to the same silence at the call, so `nothrow check` holds every entry the way the chain holds it — against the same export surface, and against the package the *declaration* ships in — and names the four ways one reaches nothing: a key no symbol has, a subpath the package does not publish, a key whose symbol ships in the package that declared it rather than the one that re-exported it, and, apart from the rest because it is inert rather than wrong, a package this project does not hold.",
+  "steps": [
+    {
+      "check": [],
+      "in": "project",
+      "expect": "refused",
+      "names": [
+        "flaky → \".\" → `Flaky#safeParse`",
+        "publishes no symbol at this key",
+        "`safeParse`, `boom`",
+        "flaky → \"./deep\" → `safeParse`",
+        "`flaky` publishes nothing at \"./deep\"",
+        "Its subpaths are: \".\"",
+        "facade → \".\" → `safeParse`",
+        "ships in `flaky`",
+        "Key it under `flaky` instead.",
+        "uninstalled → \".\" → `whatever`",
+        "nothing of `uninstalled` is in this project",
+        "5 entries checked. 3 reach nothing; 1 names a package this project does not hold."
+      ]
+    }
+  ]
+}

@@ -16,6 +16,7 @@ import {
   loadCliCases,
   type CliCase,
   type Step,
+  type Verdict,
 } from "./cli-cases.js";
 import { compare, section, type Diagnostic } from "./diagnostics.js";
 import { runFixture } from "./driver-eslint.js";
@@ -29,7 +30,7 @@ const bin = fileURLToPath(
 const cases = loadCliCases(casesRoot);
 
 console.log(
-  "\n`nothrow emit` — the binary, over producer packages on disk.\n",
+  "\nThe `nothrow` binary, over producer packages and consumer projects on disk.\n",
 );
 
 const failures: string[] = [];
@@ -84,7 +85,14 @@ async function runStep(
 ): Promise<readonly string[]> {
   switch (step.kind) {
     case "emit":
-      return emitStep(step, producer);
+      return binaryStep("emit", step.args, producer, step);
+    case "check":
+      return binaryStep(
+        "check",
+        step.args,
+        join(workspace, step.directory),
+        step,
+      );
     case "entries":
       return entriesStep(step, producer);
     case "absent":
@@ -101,12 +109,14 @@ async function runStep(
   }
 }
 
-function emitStep(
-  step: Extract<Step, { kind: "emit" }>,
-  producer: string,
+function binaryStep(
+  command: string,
+  args: readonly string[],
+  cwd: string,
+  step: { readonly expect: Verdict; readonly names: readonly string[] },
 ): readonly string[] {
-  const run = spawnSync(process.execPath, [bin, "emit", ...step.args], {
-    cwd: producer,
+  const run = spawnSync(process.execPath, [bin, command, ...args], {
+    cwd,
     encoding: "utf8",
   });
 
@@ -116,7 +126,7 @@ function emitStep(
   const expected = EXIT_CODES[step.expect];
   if (run.status !== expected) {
     report.push(
-      `\`nothrow emit ${step.args.join(" ")}\` exited ${run.status}, and ` +
+      `\`nothrow ${command} ${args.join(" ")}\` exited ${run.status}, and ` +
         `${step.expect} is ${expected}`,
     );
   }
@@ -126,7 +136,9 @@ function emitStep(
     }
   }
 
-  return report.length === 0 ? [] : [...report, "what it printed:", ...quote(output)];
+  return report.length === 0
+    ? []
+    : [...report, "what it printed:", ...quote(output)];
 }
 
 function entriesStep(

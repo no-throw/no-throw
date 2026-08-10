@@ -22,6 +22,17 @@ export interface GateReport {
    * absence of a refutation.
    */
   readonly sensitivity: { readonly reproduced: number; readonly attempted: number };
+  /**
+   * The other half of that number: throwing entries the gate drove with every
+   * conformant argument it could build and never made throw. The only signal
+   * there is that an entry **over**-throws.
+   *
+   * Reported, never gated on, and the asymmetry with `counterexamples` is the
+   * point: a throw the fuzzer cannot reproduce is evidence about the fuzzer's
+   * reach as much as about the entry, and over-throwing costs precision rather
+   * than soundness.
+   */
+  readonly unrefuted: readonly ProbeResult[];
 }
 
 export function claimsOf(data: BaselineData): ReadonlyMap<string, Claim> {
@@ -80,12 +91,14 @@ export function runFuzzGate(
 
   let reproduced = 0;
   let attempted = 0;
+  const unrefuted: ProbeResult[] = [];
   for (const member of members) {
     if (!throwingKeys.has(member.key)) continue;
     const result = fuzzer.probeCall(member);
     if (!result.probed) continue;
     attempted++;
     if (result.counterexamples.length > 0) reproduced++;
+    else unrefuted.push(result);
   }
 
   return {
@@ -93,5 +106,6 @@ export function runFuzzGate(
     unprobed,
     counterexamples,
     sensitivity: { reproduced, attempted },
+    unrefuted,
   };
 }

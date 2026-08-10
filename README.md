@@ -214,7 +214,7 @@ blocked on somebody else shipping a fix:
 
 ```json
 {
-  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
   "version": 1,
   "packages": {
     "flaky": {
@@ -343,6 +343,71 @@ written for. A mismatch floors **that manifest**, names the file that drifted,
 and lets the package's surviving `@nothrow` tags resume as its carrier; an
 overlay and an override are about a package rather than in it, so neither is
 touched.
+
+#### What a key is
+
+The second half of a key is the name **a consumer writes**, read off the
+package's published surface rather than off the file a symbol happens to be
+declared in. `export { a as b }` is keyed `b`; a class's members are
+`Class#member` and its statics `Class.static`; a default export is `default`.
+
+A CommonJS package — `declare const pc: Colors` behind `export =` — is the one
+shape where that is not the name in its `.d.ts`. The module *is* the exported
+value, so what its type carries are its published names: `pc.red` is keyed
+`red`, exactly as `export const red` would have been, and not `Colors#red`.
+
+If a key does not resolve, nothing says so at the call — a wrong key and no key
+produce the same floor. That is what [`nothrow
+check`](#checking-your-carriers) is for.
+
+#### Checking your carriers
+
+```bash
+nothrow check [--project <path>]
+```
+
+It reads the same two things the resolver does — your `nothrow.overrides.json`
+and every `@no-throw/*` overlay you have installed — and holds every entry in
+them against the same export surface the resolver keys against. Entries that
+reach a published symbol are counted; entries that reach nothing are named, with
+what the package *does* publish at that subpath:
+
+```console
+$ nothrow check
+nothrow.overrides.json
+  picocolors → "." → `Colors#red`
+    `picocolors` publishes no symbol at this key, so this entry colors nothing.
+    What it publishes at ".": `red`, `bgBlack`, `bgBlackBright`, and 41 more
+
+2 entries checked. 1 reaches nothing.
+```
+
+An entry naming a package this project does not hold is reported apart and does
+not fail the run: it is inert rather than wrong. Exit codes are `0` every entry
+reached, `1` something reached nothing or a carrier is not being honored, `2`
+could not run.
+
+A carrier is matched by the package a declaration **ships in**, never by the one
+that re-exported it — so an entry written under a barrel package reaches nothing
+however right its key looks, and `check` names the package to key it under
+instead.
+
+A **malformed or schema-invalid `nothrow.overrides.json` is refused outright**,
+and nothing is analyzed until it is fixed or removed. Every other carrier
+answers for somebody else's package and may fall through to the rung below when
+it cannot be read; this one is yours, and falling through would discard what you
+wrote without saying so:
+
+```text
+`nothrow.overrides.json` cannot be read — it could not be read as a JSON object — so nothing in it is
+being honored. An overrides file that is quietly ignored is the silent no-op the
+rest of this design exists to rule out, so nothing is analyzed until it is fixed
+or removed
+```
+
+A `version` this release cannot read is the one exception: reading forward is
+what the field is for, so the rungs below simply answer instead, and `nothrow
+check` is where you learn it happened.
 
 ### 4. Publishing: ship a manifest
 
@@ -820,19 +885,26 @@ four](#3-handle-a-dependency-floor).
 The baselines apply per lib target, so a project with no `dom` in its `lib`
 gets no DOM colors, and a member with no entry floors — which is how a
 TypeScript release landing ahead of a `@no-throw/core` release stays safe. What
-that buys: `Object.keys`, `s.trim()`, `for…of` over an array or a `Map`,
-`bytes[i]` on a `Uint8Array`, coercing an object that inherits its `toString`,
-spreading a DOM element and `el.id` are all green, and `users.forEach(cb)` is
-judged on the `cb` you actually passed. What still costs a bridge is what
-really throws: `JSON.parse`, `decodeURIComponent`, `document.createElement`.
+that buys: `Object.keys`, `Object.entries`, `s.trim()`, `s.slice(1, -1)`,
+`map.get(k)`, `set.has(x)`, `for…of` over an array or a `Map`, `bytes[i]` on a
+`Uint8Array`, coercing an object that inherits its `toString`, spreading a DOM
+element and `el.id` are all green, and `users.forEach(cb)` is judged on the `cb`
+you actually passed. What still costs a bridge is what really throws:
+`JSON.parse`, `decodeURIComponent`, `document.createElement`.
 
-Two things are worth knowing before you try it. `Array.prototype.map`,
+Three things are worth knowing before you try it. `Array.prototype.map`,
 `filter`, `slice` and `push` ship **throwing**, because `ArraySpeciesCreate`
 and `Set` on a frozen array are reachable without lying to the type system and
 [the dial sign-off](docs/baseline-dials.md) rules those a hazard; the
 `forEach`/`every`/`some`/`find` family is where the **conditional entries** are.
-And writing through an unnarrowable key — `xs[i] = v` — floors, because the
-join reaches every accessor the receiver has.
+`new Map()` and `new Set()` ship throwing while `new Error(msg)` is green.
+Every hazard those two have is about the iterable you pass — driving its
+iterator, and reading `set`/`add` back off the object to add entries with — and
+ECMA-262 returns before all of it when the argument is absent. An entry is a
+fact about the function and not about the arity you called it with, so passing
+nothing cannot buy a color the function does not have. And writing through an
+unnarrowable key — `xs[i] = v` — floors, because the join reaches every accessor
+the receiver has.
 
 ## Packages
 
@@ -842,7 +914,7 @@ Three packages in the `@no-throw` npm scope, versioned in lockstep.
 | --- | --- |
 | [`@no-throw/core`](packages/core) | the engine — color resolution and the escape-site walk |
 | [`@no-throw/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
-| [`@no-throw/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
+| [`@no-throw/cli`](packages/cli) | the `nothrow` binary; hosts `emit` and `check` |
 
 The engine reads your program through the TypeScript compiler API in process,
 and all three packages carry that API across their own surface, so all three
@@ -882,6 +954,25 @@ which is the better fix if you work on Windows at all.
 diagnostics they must produce. Every behavior lands there, the CLI's included:
 `nothrow emit` is exercised as a process over producer packages, and what it
 writes is read back by a separate consumer project through the ordinary driver.
+
+It also runs the **diagnostics audit**, which is where the message contract
+lives:
+
+```bash
+pnpm run audit:diagnostics
+```
+
+Diagnostic text is normative — the outs a floor names are the whole adoption
+cost of this rule, and they only survive if something holds them. The audit
+reads the message catalog off the built plugin and the assertions off the
+fixtures, and fails when a normative message has no fixture asserting its text,
+when a floor names its outs out of precedence order, or when a message that must
+not name a nearest valid site starts naming one. A clause with no artifact
+behind it is a failure, not a gap to note.
+
+Releases are one dispatch of the [Release workflow](.github/workflows/release.yml);
+see [docs/releasing.md](docs/releasing.md), which also records the schemas'
+canonical URLs and the SchemaStore submission.
 
 Two peer ranges name what a consumer may install these packages against: the
 plugin's `eslint`, and the `typescript` all three share. CI enumerates each
