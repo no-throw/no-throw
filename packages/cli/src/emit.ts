@@ -2,9 +2,9 @@ import {
   emitManifest,
   manifestDrift,
   OverridesError,
-  type EmitRefusal,
   type EmitSite,
   type ManifestDocument,
+  type MarkRefusal,
 } from "@no-throw/core";
 import { readFileSync, writeFileSync } from "node:fs";
 import { openProject } from "./project.js";
@@ -43,6 +43,10 @@ export function runEmit(options: EmitOptions): CommandResult {
   } catch (error) {
     if (!(error instanceof OverridesError)) throw error;
     return { code: CANNOT_RUN, out: "", err: `nothrow: ${error.message}\n` };
+  }
+
+  if (outcome.kind === "blocked") {
+    return { code: REFUSED, out: "", err: blockedReport(outcome.message) };
   }
 
   if (outcome.kind === "refused") {
@@ -117,14 +121,21 @@ function count(n: number, noun: string): string {
   return `${n} ${noun}${n === 1 ? "" : "s"}`;
 }
 
+/**
+ * A stop that is the package's rather than a mark's. There is no count in it:
+ * a package emit refused before reading a mark has none to report, and the
+ * clause that named one would be saying something false.
+ */
+function blockedReport(message: string): string {
+  return `nothrow: ${message}\n\nNothing was written.\n`;
+}
+
 function refusalReport(
-  refusals: readonly EmitRefusal[],
+  refusals: readonly MarkRefusal[],
   options: EmitOptions,
 ): string {
   const lines = refusals.flatMap((refusal) => [
-    refusal.at === undefined
-      ? `nothrow: ${refusal.message}`
-      : `${place(options.cwd, refusal.at)}: ${refusal.message}`,
+    `${place(options.cwd, refusal.at)}: ${refusal.message}`,
     ...refusal.sites.map((site) => `    ${place(options.cwd, site)}: ${site.what}`),
   ]);
 

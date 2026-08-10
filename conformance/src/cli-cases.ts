@@ -36,6 +36,8 @@ export type Step =
       readonly expect: Verdict;
       /** Text the output must contain — what the diagnostic has to name. */
       readonly names: readonly string[];
+      /** Text the output must not contain — what it has to leave out. */
+      readonly denies: readonly string[];
     }
   /**
    * Run `nothrow check` in a project of the case's own, rather than in the
@@ -48,6 +50,7 @@ export type Step =
       readonly directory: string;
       readonly expect: Verdict;
       readonly names: readonly string[];
+      readonly denies: readonly string[];
     }
   /** Assert facts about the emitted manifest, entry by entry. */
   | {
@@ -108,8 +111,8 @@ function loadCase(root: string, name: string): CliCase {
 }
 
 const STEP_KEYS: Record<string, readonly string[]> = {
-  emit: ["emit", "expect", "names"],
-  check: ["check", "in", "expect", "names"],
+  emit: ["emit", "expect", "names", "denies"],
+  check: ["check", "in", "expect", "names", "denies"],
   entries: ["entries"],
   absent: ["absent"],
   append: ["append", "text"],
@@ -134,7 +137,7 @@ function readStep(entry: unknown, where: string): Step {
         kind,
         args: readStrings(record, "emit", where),
         expect: readVerdict(record, where),
-        names: "names" in record ? readStrings(record, "names", where) : [],
+        ...assertions(record, where),
       };
     case "check":
       return {
@@ -142,7 +145,7 @@ function readStep(entry: unknown, where: string): Step {
         args: readStrings(record, "check", where),
         directory: readString(record, "in", where),
         expect: readVerdict(record, where),
-        names: "names" in record ? readStrings(record, "names", where) : [],
+        ...assertions(record, where),
       };
     case "entries":
       return { kind, expected: readEntries(record["entries"], where) };
@@ -164,6 +167,28 @@ function readStep(entry: unknown, where: string): Step {
     default:
       return { kind: "consumer", directory: readString(record, "consumer", where) };
   }
+}
+
+/**
+ * What a run of the binary has to say, and what it has to leave out. Both are
+ * optional: a step that asserts only an exit code is a step about the exit code.
+ */
+function assertions(
+  record: Record<string, unknown>,
+  where: string,
+): { readonly names: readonly string[]; readonly denies: readonly string[] } {
+  return {
+    names: readOptionalStrings(record, "names", where),
+    denies: readOptionalStrings(record, "denies", where),
+  };
+}
+
+function readOptionalStrings(
+  record: Record<string, unknown>,
+  key: string,
+  where: string,
+): readonly string[] {
+  return key in record ? readStrings(record, key, where) : [];
 }
 
 function readEntries(

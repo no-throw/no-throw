@@ -1,10 +1,11 @@
 {
-  "description": "A manifest hashes what is about to be published, so emit runs after the build: with no output on disk there is nothing to hash, and a manifest without `files` would make every consumer's staleness check vacuous.",
+  "description": "A manifest hashes what is about to be published, so emit runs after the build: with no output on disk there is nothing to hash, and a manifest without `files` would make every consumer's staleness check vacuous. The refusal is about the package, and says nothing about marks — it is reached before a single one is read.",
   "steps": [
     {
       "emit": [],
       "expect": "refused",
-      "names": ["./dist/index.js", "after the build"]
+      "names": ["./dist/index.js", "after the build", "Nothing was written."],
+      "denies": ["cannot be published as it stands"]
     },
     { "absent": "nothrow.json" }
   ]

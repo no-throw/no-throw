@@ -40,9 +40,9 @@ export type {
 export { emitManifest, manifestDrift } from "./emit.js";
 export type {
   EmitOutcome,
-  EmitRefusal,
   EmitSite,
   ManifestDocument,
+  MarkRefusal,
 } from "./emit.js";
 export { findMarks } from "./marks.js";
 export type { MarkProblem, MarkProblemKind, Marks, Span } from "./marks.js";
