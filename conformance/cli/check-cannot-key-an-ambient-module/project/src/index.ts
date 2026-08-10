@@ -1,6 +1,6 @@
-import { build } from "widget";
+import { posix } from "node:path";
 
 /** @nothrow */
-export function make(name: string): string {
-  return build(name);
+export function under(directory: string): string {
+  return posix.join(directory, "index.js");
 }

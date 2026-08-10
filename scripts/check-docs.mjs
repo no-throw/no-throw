@@ -10,7 +10,13 @@
 //
 // A refusal is normative in the same way and for the same reason — it is text a
 // reader acts on from the CI log alone — so what a fixture's `refuses` names
-// counts here exactly as a diagnostic's `message` does.
+// counts here exactly as a diagnostic's `message` does, and so does what a CLI
+// case's `names` holds the binary's own report to.
+//
+// The other fences are illustrations and are deliberately not held: a ```console
+// block shows the shape of a session, and its transcript may be elided or stand
+// in a package a reader knows for one the suite could install. Quote something
+// verbatim and it goes in a ```text block, where this gate can reach it.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,24 +35,40 @@ function quotedDiagnostics() {
   );
 }
 
-function assertedMessages() {
-  const fixtures = join(root, "conformance", "fixtures");
-  const messages = new Set();
-
-  for (const entry of readdirSync(fixtures, { withFileTypes: true })) {
-    // Every fixture directory has one, so an unreadable file is a broken
-    // fixture rather than a directory to skip — swallowing it here would
-    // report the README as drifted for a reason that is not the README's.
+/** Every case directory under `where`, with the one file each of them has. */
+function* casesOf(where, file) {
+  for (const entry of readdirSync(join(root, "conformance", where), {
+    withFileTypes: true,
+  })) {
+    // Every case directory has one, so an unreadable file is a broken case
+    // rather than a directory to skip — swallowing it here would report the
+    // README as drifted for a reason that is not the README's.
     if (!entry.isDirectory()) continue;
-    const path = join(fixtures, entry.name, "expected.json");
-    const expected = JSON.parse(readFileSync(path, "utf8"));
-    for (const diagnostic of expected.diagnostics ?? []) {
-      if (typeof diagnostic.message === "string") {
-        messages.add(diagnostic.message);
-      }
-    }
-    for (const refusal of expected.refuses ?? []) {
-      if (typeof refusal === "string") messages.add(refusal);
+    yield JSON.parse(
+      readFileSync(join(root, "conformance", where, entry.name, file), "utf8"),
+    );
+  }
+}
+
+/**
+ * Every string the suite holds some output to, unwrapped the way the README's
+ * quotations are: a `names` entry spanning a whole `check` report is one
+ * message with newlines in it, and the block quoting it is the same message
+ * wrapped to the prose column.
+ */
+function assertedMessages() {
+  const messages = new Set();
+  const add = (value) => {
+    if (typeof value === "string") messages.add(unwrap(value));
+  };
+
+  for (const expected of casesOf("fixtures", "expected.json")) {
+    for (const diagnostic of expected.diagnostics ?? []) add(diagnostic.message);
+    for (const refusal of expected.refuses ?? []) add(refusal);
+  }
+  for (const cliCase of casesOf("cli", "case.json")) {
+    for (const step of cliCase.steps ?? []) {
+      for (const name of step.names ?? []) add(name);
     }
   }
 

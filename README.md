@@ -281,10 +281,10 @@ that instead — it is a floor by absence rather than a color anyone stated — 
 module` blocks inside `@types/node`, and [the walk that assigns
 keys](#what-a-key-looks-like) starts at a package's entry points. So the module
 name is not a package you hold, and the package that declares it publishes
-nothing to walk. Both spellings of the key fail, and differently:
+nothing to walk. Both spellings of the key fail, and differently, and `nothrow
+check` is what says so:
 
-```console
-$ nothrow check
+```text
 nothrow.overrides.json
   node:path → "." → `posix.join`
     nothing of `node:path` is in this project, so there is no surface to hold

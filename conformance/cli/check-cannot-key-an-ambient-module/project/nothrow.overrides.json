@@ -2,20 +2,20 @@
   "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
   "version": 1,
   "packages": {
-    "widget": {
+    "node:path": {
       "exports": {
         ".": {
-          "build": {
+          "posix.join": {
             "color": "non-throwing",
             "conditions": []
           }
         }
       }
     },
-    "@types/ambientish": {
+    "@types/node": {
       "exports": {
         ".": {
-          "build": {
+          "posix.join": {
             "color": "non-throwing",
             "conditions": []
           }
