@@ -1,0 +1,33 @@
+{
+  "description": "`--help` is what a reader types when they do not yet know the grammar, so it cannot be an error against that grammar: the usage goes to stdout, alone, and the run succeeds. Asking for it after a command is the same request and gets the same answer. Naming no command at all is the different thing — nothing was asked for — and stays a usage error on stderr.",
+  "steps": [
+    {
+      "run": ["--help"],
+      "expect": "ok",
+      "names": [
+        "nothrow — statically enforce that no throw escapes a @nothrow function",
+        "nothrow --help"
+      ]
+    },
+    {
+      "run": ["-h"],
+      "expect": "ok",
+      "names": ["Usage:"]
+    },
+    {
+      "run": ["emit", "--help"],
+      "expect": "ok",
+      "names": ["Usage:"]
+    },
+    {
+      "run": [],
+      "expect": "cannot-run",
+      "names": ["nothrow: no command given."]
+    },
+    {
+      "run": ["emmit"],
+      "expect": "cannot-run",
+      "names": ["nothrow: `emmit` is not a command."]
+    }
+  ]
+}

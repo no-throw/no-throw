@@ -265,9 +265,8 @@ Call to `JSON.parse` escapes this `@nothrow` function: it is colored `throwing`
 by the shipped standard-library baseline, so calling it can throw. Your outs:
 bridge this call with `try`/`catch`; or, if it cannot throw, report it against
 the shipped standard-library baseline at
-https://github.com/MidnightDesign/no-throw/issues — the other three carriers are
-keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts`
-member.
+https://github.com/no-throw/no-throw/issues — the other three carriers are keyed
+by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.
 ```
 
 The second out is us because the baseline is the one rung you cannot write. Two
@@ -276,6 +275,30 @@ the one that owes the answer: `Element#innerHTML` sends you to the DOM baseline,
 not the standard-library one. A lib member a baseline is *silent* about says
 that instead — it is a floor by absence rather than a color anyone stated — and
 [offers no edit](#suggestions-never-fixes).
+
+**A floor over a Node builtin names four outs and no key reaches it either.**
+`node:path` and its siblings are not npm packages: they are ambient `declare
+module` blocks inside `@types/node`, and [the walk that assigns
+keys](#what-a-key-looks-like) starts at a package's entry points. So the module
+name is not a package you hold, and the package that declares it publishes
+nothing to walk. Both spellings of the key fail, and differently, and `nothrow
+check` is what says so:
+
+```text
+nothrow.overrides.json
+  node:path → "." → `posix.join`
+    nothing of `node:path` is in this project, so there is no surface to hold
+    this against. Inert rather than wrong.
+  @types/node → "." → `posix.join`
+    `@types/node` publishes nothing at ".", and nothing at any other subpath.
+    The walk from its entry points reached no name a carrier could key, so no
+    entry under this package reaches anything.
+```
+
+So the bridge is the only out that works over `node:*`, and the same holds for
+any dependency whose types arrive as ambient declarations rather than as
+exports. Unlike the lib case above, the floor itself does not yet know to say
+so: it names all four carriers, three of which have no key to be written under.
 
 Both the overrides file and an overlay are held to [a published
 schema](packages/core/schema) — the same file the engine validates them
@@ -303,7 +326,7 @@ export declare const _: LoDashStatic;
 
 ```json
 {
-  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.schema.json",
+  "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.schema.json",
   "version": 1,
   "package": "lodashish",
   "exports": {
@@ -407,9 +430,11 @@ nothrow.overrides.json
 ```
 
 An entry naming a package this project does not hold is reported apart and does
-not fail the run: it is inert rather than wrong. Exit codes are `0` every entry
-reached, `1` something reached nothing or a carrier is not being honored, `2`
-could not run.
+not fail the run: it is inert rather than wrong — a workspace that holds the
+dependency and a sibling that does not are both right about the same file. Exit
+codes are `0` nothing to refuse, `1` something reached nothing or a carrier is
+not being honored, `2` could not run. So an inert entry is named, and still
+exits `0`.
 
 A carrier is matched by the package a declaration **ships in**, never by the one
 that re-exported it — so an entry written under a barrel package reaches nothing
@@ -487,7 +512,9 @@ stale:
 It recomputes the manifest and compares. A rebuilt `.js` with identical
 declarations is drift like any other, because the hash is what your consumers
 check. Exit codes are `0` wrote or matched, `1` refused or drifted, `2` could
-not run.
+not run. Running it *before* the build is the last of those rather than the
+middle one: with no output to hash, emit stops before it has read a single
+mark, and a `1` there would be a verdict on a package nothing looked at.
 
 If you ship `.ts` source or URL imports, you need no manifest at all: your tags
 are honored and verified directly, because module resolution reaching source
@@ -979,7 +1006,7 @@ as sentences and nest a `node_modules` under several of them, which is enough to
 cross `MAX_PATH` from a deep working directory:
 
 ```bash
-git -c core.longpaths=true clone https://github.com/MidnightDesign/no-throw.git
+git -c core.longpaths=true clone https://github.com/no-throw/no-throw.git
 ```
 
 `git config --global core.longpaths true` sets it once for every repository,

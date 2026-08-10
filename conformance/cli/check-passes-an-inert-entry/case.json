@@ -1,0 +1,16 @@
+{
+  "description": "The one verdict that is named and still passes. An entry for a package this project does not hold has no surface to be wrong against — a monorepo where one workspace holds the dependency and another does not would otherwise fail the run over a file that is right — so it is reported apart, and the exit code says nothing was refused rather than that everything reached. Asserted alone because the mixed case cannot show it: one entry that reaches nothing sets the exit for all of them.",
+  "steps": [
+    {
+      "check": [],
+      "in": "project",
+      "expect": "ok",
+      "names": [
+        "uninstalled → \".\" → `whatever`",
+        "nothing of `uninstalled` is in this project",
+        "Inert rather than wrong.",
+        "1 entry checked. 1 names a package this project does not hold."
+      ]
+    }
+  ]
+}

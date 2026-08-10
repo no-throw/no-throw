@@ -27,18 +27,7 @@ export function runCheck(options: CheckOptions): CommandResult {
     return { code: CANNOT_RUN, out: "", err: `nothrow: ${opened.message}\n` };
   }
 
-  const { program, commandLine } = opened.project;
-  const configPath = commandLine.options.configFilePath;
-  if (typeof configPath !== "string") {
-    return {
-      code: CANNOT_RUN,
-      out: "",
-      err:
-        "nothrow: check needs the `tsconfig.json` a program was built from: " +
-        "without it there is no project root to look for carriers beside.\n",
-    };
-  }
-
+  const { program, configPath } = opened.project;
   const { carriers } = checkCarriers(program, packageHomeOf(configPath));
   const entries = carriers.flatMap((carrier) => carrier.entries);
   const dead = entries.filter(reachesNothing).length;

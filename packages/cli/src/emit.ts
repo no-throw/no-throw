@@ -45,8 +45,13 @@ export function runEmit(options: EmitOptions): CommandResult {
     return { code: CANNOT_RUN, out: "", err: `nothrow: ${error.message}\n` };
   }
 
+  // Nothing was read, so there is nothing to refuse: no `tsconfig.json`, no
+  // build on disk, nowhere a manifest would be found. That is the same stop as
+  // a project that would not open, and exits as one — a publishing script that
+  // could not tell it from an unpublishable package would be reading a verdict
+  // out of a run that never reached one.
   if (outcome.kind === "blocked") {
-    return { code: REFUSED, out: "", err: blockedReport(outcome.message) };
+    return { code: CANNOT_RUN, out: "", err: `nothrow: ${outcome.message}\n` };
   }
 
   if (outcome.kind === "refused") {
@@ -119,15 +124,6 @@ function summary(document: ManifestDocument): string {
 
 function count(n: number, noun: string): string {
   return `${n} ${noun}${n === 1 ? "" : "s"}`;
-}
-
-/**
- * A stop that is the package's rather than a mark's. There is no count in it:
- * a package emit refused before reading a mark has none to report, and the
- * clause that named one would be saying something false.
- */
-function blockedReport(message: string): string {
-  return `nothrow: ${message}\n\nNothing was written.\n`;
 }
 
 function refusalReport(

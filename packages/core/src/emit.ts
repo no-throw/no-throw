@@ -71,9 +71,11 @@ export type EmitOutcome =
       readonly text: string;
     }
   /**
-   * Nothing was written, and the reason is the package's rather than any
-   * mark's: no `tsconfig.json`, no build on disk, nowhere a `nothrow.json`
-   * would be found. One reason, because the first of them stops everything.
+   * Nothing was read, so nothing was written: no `tsconfig.json`, no build on
+   * disk, nowhere a `nothrow.json` would be found. Apart from `refused`
+   * because it says nothing about the package — emit never got as far as a
+   * mark — and a host that reported it as a verdict would be inventing one.
+   * One reason, because the first of them stops everything.
    */
   | { readonly kind: "blocked"; readonly message: string }
   /** Nothing was written, and the reasons are marks. Never empty. */

@@ -2,15 +2,22 @@
   "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
   "version": 1,
   "packages": {
-    "dual": {
+    "node:path": {
       "exports": {
         ".": {
-          "parse": {
+          "posix.join": {
             "color": "non-throwing",
             "conditions": []
-          },
-          "boom": {
-            "color": "throwing"
+          }
+        }
+      }
+    },
+    "@types/node": {
+      "exports": {
+        ".": {
+          "posix.join": {
+            "color": "non-throwing",
+            "conditions": []
           }
         }
       }
