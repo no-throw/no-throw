@@ -331,7 +331,10 @@ export is keyed `default`, and its members hang off that: `default#handle`,
 
 The walk that assigns keys starts at the package's entry points and follows
 what they publish, so a name no entry point reaches has no key, and a member
-whose name is not a plain identifier has none either.
+whose name is not a plain identifier has none either. Entry points are read from
+`exports` where a package has one, and from the legacy `types`/`typings`/`main`
+trio where it does not — spelled however its author spelled them, since only
+`exports` requires the leading `./`.
 
 The last two rows are worth reading twice, because the obvious guess colors
 nothing. A call enters the *signature*, and where a member's type is what
@@ -412,6 +415,13 @@ A carrier is matched by the package a declaration **ships in**, never by the one
 that re-exported it — so an entry written under a barrel package reaches nothing
 however right its key looks, and `check` names the package to key it under
 instead.
+
+Which package that is is decided by walking up to the first `package.json` that
+**names** one. A `package.json` with no `name` — the `{ "type": "module" }` file
+a dual-published package drops beside one of its builds — marks a module format
+scope rather than a package boundary, so the declarations under it still ship in
+the package that names itself, and one entry keyed under that name reaches them
+all.
 
 A **malformed or schema-invalid `nothrow.overrides.json` is refused outright**,
 and nothing is analyzed until it is fixed or removed. Every other carrier

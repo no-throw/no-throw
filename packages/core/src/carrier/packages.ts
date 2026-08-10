@@ -1,11 +1,12 @@
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve, sep } from "node:path";
+import { readFileSync } from "node:fs";
+import { basename, dirname, resolve, sep } from "node:path";
 
 /**
  * The npm package a file ships in, found the one way the design sanctions:
- * ascend to the **first** `package.json` and stop there. "Package" enters the
- * design only here, in the escape hatch's discovery walk-up — nothing merges
- * across a boundary, and a directory is answered once and cached.
+ * ascend to the first `package.json` that **names a package** and stop there.
+ * "Package" enters the design only here, in the escape hatch's discovery
+ * walk-up — nothing merges across a boundary, and a directory is answered once
+ * and cached.
  */
 export interface PackageHome {
   /** The directory holding the `package.json` the walk stopped at. */
@@ -45,19 +46,34 @@ function homeOfDirectory(directory: string): PackageHome | undefined {
 }
 
 function buildHome(directory: string): PackageHome | undefined {
-  const manifestPath = join(directory, "package.json");
-  if (!existsSync(manifestPath)) {
-    const parent = dirname(directory);
-    return parent === directory ? undefined : homeOfDirectory(parent);
-  }
+  const packageJson = readJson(join(directory, "package.json"));
+  const name =
+    typeof packageJson?.["name"] === "string" ? packageJson["name"] : undefined;
+  const own =
+    packageJson === undefined
+      ? undefined
+      : { directory, name, entryPoints: entryPoints(directory, packageJson) };
 
-  const packageJson = readJson(manifestPath);
+  // A `package.json` naming no package is a module-format marker — the
+  // `{ "type": "module" }` file a dual-published package drops beside one of
+  // its builds — and a format scope is not a package boundary. Identity is
+  // what this walk answers, so it reads past one: stopping there would file
+  // every declaration under that build under no npm name at all, and a carrier
+  // is matched by npm name and by nothing else.
+  return name === undefined ? (homeAbove(directory) ?? own) : own;
+}
 
-  return {
-    directory,
-    name: typeof packageJson?.["name"] === "string" ? packageJson["name"] : undefined,
-    entryPoints: entryPoints(directory, packageJson),
-  };
+/**
+ * The home of the directory above, where there is an above to ask.
+ * `node_modules` is where the ascent stops: everything over it belongs to the
+ * *consumer*, and an unnamed dependency answered with the asking project's
+ * home would be read as your own source rather than as somebody else's.
+ */
+function homeAbove(directory: string): PackageHome | undefined {
+  const parent = dirname(directory);
+  return parent === directory || basename(parent) === "node_modules"
+    ? undefined
+    : homeOfDirectory(parent);
 }
 
 /**
@@ -75,42 +91,56 @@ function entryPoints(
   packageJson: Record<string, unknown> | undefined,
 ): ReadonlyMap<string, readonly string[]> {
   const points = new Map<string, string[]>();
-  const add = (subpath: string, target: unknown): void => {
-    const found = targetFiles(target).map((file) =>
-      normalize(join(directory, file)),
-    );
+  const add = (subpath: string, files: readonly string[]): void => {
+    const found = files.map((file) => normalize(join(directory, file)));
     if (found.length === 0) return;
     points.set(subpath, [...(points.get(subpath) ?? []), ...found]);
   };
 
   const exported = packageJson?.["exports"];
   if (typeof exported === "string" || Array.isArray(exported)) {
-    add(".", exported);
+    add(".", exportTargets(exported));
   } else if (isRecord(exported)) {
     // `{ ".": … }` is a subpath map; anything else is the sugar form, one set
     // of conditions for the root.
     const subpaths = Object.keys(exported).filter((key) => key.startsWith("."));
     if (subpaths.length === Object.keys(exported).length) {
-      for (const subpath of subpaths) add(subpath, exported[subpath]);
+      for (const subpath of subpaths) {
+        add(subpath, exportTargets(exported[subpath]));
+      }
     } else {
-      add(".", exported);
+      add(".", exportTargets(exported));
     }
   }
 
+  // The legacy trio is read as what it is: a path relative to the package,
+  // written however its author wrote it. `exports` is the field that requires
+  // the `./`, and holding these to it drops the spelling most of npm predating
+  // `exports` actually ships — `"main": "out/index.js"` — leaving the package
+  // with no entry point, no surface, and no key any carrier could reach.
+  //
+  // The three are alternatives rather than a set, and in this order: they name
+  // one root, and a package whose `types` and `main` point at different modules
+  // publishes the first of them, not both at once.
   if (points.size === 0) {
-    for (const field of ["types", "typings", "main"]) {
-      add(".", packageJson?.[field]);
-    }
+    const legacy = ["types", "typings", "main"]
+      .map((field) => packageJson?.[field])
+      .find((path): path is string => typeof path === "string" && path !== "");
+    if (legacy !== undefined) add(".", [legacy]);
   }
 
   return points;
 }
 
-/** Every relative file an `exports` value can bottom out in. */
-function targetFiles(target: unknown): readonly string[] {
+/**
+ * Every file an `exports` value can bottom out in. Node requires a target to
+ * be relative and spelled with the `./`, so anything else is a condition value
+ * this reader has no file to take from — `null`, or a bare specifier.
+ */
+function exportTargets(target: unknown): readonly string[] {
   if (typeof target === "string") return target.startsWith(".") ? [target] : [];
-  if (Array.isArray(target)) return target.flatMap(targetFiles);
-  if (isRecord(target)) return Object.values(target).flatMap(targetFiles);
+  if (Array.isArray(target)) return target.flatMap(exportTargets);
+  if (isRecord(target)) return Object.values(target).flatMap(exportTargets);
   return [];
 }
 
