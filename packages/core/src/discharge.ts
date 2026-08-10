@@ -53,37 +53,58 @@ export function dischargeAt(
   caller: Bodied,
   resolution: Resolution,
 ): readonly Outcome[] {
+  const args = argumentsOf(transfer);
+  return condition.requires === "nullish"
+    ? absenceAt(args, condition.path.paramIndex, resolution.checker)
+    : enteredAt(args, condition.path, caller, resolution);
+}
+
+/**
+ * A `nullish` condition, which resolves nothing: the question is whether
+ * anything arrives at the position, never what.
+ */
+function absenceAt(
+  args: readonly ts.Expression[] | undefined,
+  paramIndex: number,
+  checker: ts.TypeChecker,
+): readonly Outcome[] {
+  // A tagged template's arguments are the template's own strings and
+  // substitutions, so there is no position there to read — but the question is
+  // answered all the same, and in the negative: whatever the tag receives at
+  // the position, it receives something.
+  if (args === undefined) return [{ kind: "present", reason: "argument-passed" }];
+
+  // A spread ahead of the position makes reading arguments positionally
+  // meaningless, so whether anything arrives is a runtime question.
+  if (args.some((arg, index) => index <= paramIndex && ts.isSpreadElement(arg))) {
+    return [{ kind: "present", reason: "unresolvable" }];
+  }
+
+  const argument = args[paramIndex];
+  return argument === undefined || namesNothing(argument, checker)
+    ? []
+    : [{ kind: "present", reason: "argument-passed" }];
+}
+
+/** An `entered` condition: which function reaches the position, if one can. */
+function enteredAt(
+  args: readonly ts.Expression[] | undefined,
+  path: ParameterPath,
+  caller: Bodied,
+  resolution: Resolution,
+): readonly Outcome[] {
   const { checker } = resolution;
-  const { paramIndex, members } = condition.path;
+  const { paramIndex, members } = path;
 
   // A tagged template's arguments are the template's own strings and
-  // substitutions. There is no position there to read an `entered` condition
-  // at — but a `nullish` one is answered all the same, and in the negative:
-  // whatever the tag receives at the position, it receives something.
-  const args = argumentsOf(transfer);
-  if (args === undefined) {
-    return condition.requires === "nullish"
-      ? [{ kind: "present", reason: "argument-passed" }]
-      : [{ kind: "floor", reason: "unresolvable" }];
-  }
+  // substitutions, so there is no position here to read the condition at.
+  if (args === undefined) return [{ kind: "floor", reason: "unresolvable" }];
 
   // A spread ahead of the position makes reading arguments positionally
   // meaningless, and which function lands there is a runtime question.
-  const spread = args.some(
-    (arg, index) => index <= paramIndex && ts.isSpreadElement(arg),
-  );
-
-  // Nothing is resolved for a `nullish` condition: the question is whether
-  // anything arrives at the position, never what.
-  if (condition.requires === "nullish") {
-    if (spread) return [{ kind: "present", reason: "unresolvable" }];
-    const argument = args[paramIndex];
-    return argument === undefined || namesNothing(argument, checker)
-      ? []
-      : [{ kind: "present", reason: "argument-passed" }];
+  if (args.some((arg, index) => index <= paramIndex && ts.isSpreadElement(arg))) {
+    return [{ kind: "floor", reason: "unresolvable" }];
   }
-
-  if (spread) return [{ kind: "floor", reason: "unresolvable" }];
 
   const argument = args[paramIndex];
   if (argument === undefined) {

@@ -1,11 +1,9 @@
-import {
-  formatConditionPath,
-  parseConditionPath,
-} from "@no-throw/core/baseline";
+import { formatConditionPath } from "@no-throw/core/baseline";
 import type {
   Color,
   ConditionPath,
   LibMember,
+  ParsedConditionPath,
   TypeDomains,
 } from "@no-throw/core/baseline";
 import type ts from "typescript";
@@ -36,9 +34,8 @@ export interface ClassifiedSite {
   readonly rootOp: string;
   readonly rule: string;
   readonly dial: keyof Dials | undefined;
-  readonly path: ConditionPath | undefined;
-  /** Positions an `absent-conditional` site needs no argument at; else empty. */
-  readonly absent: readonly number[];
+  /** What this site needs of the call to be unreachable; empty where nothing does. */
+  readonly requires: readonly ParsedConditionPath[];
   readonly condition: string;
 }
 
@@ -169,8 +166,7 @@ export function classifyAgainstSpec(
       rootOp: "ECMA-402",
       rule: "locale validation lives in ECMA-402, outside the extraction corpus",
       dial: undefined,
-      path: undefined,
-      absent: [],
+      requires: [],
       condition: "(no ECMA-262 algorithm covers the locale arguments)",
     });
   }
@@ -190,25 +186,21 @@ export function classifyAgainstSpec(
     };
   }
 
-  const absent = new Set(sites.flatMap((site) => site.absent));
-
-  const entered = sites
-    .filter((site) => site.verdict === "conditional")
-    .map((site) => site.path)
-    .filter((path): path is ConditionPath => path !== undefined)
-    // A position nothing reaches is a position no path through it is entered
-    // at, so an `entered` condition rooted there states a second requirement
-    // the first has already made unmeetable: the call site would have to pass
-    // a clean function *and* pass nothing.
-    .filter((path) => !absent.has(parseConditionPath(path)?.paramIndex ?? -1));
+  const required = sites.flatMap((site) => site.requires);
+  const absent = new Set(
+    required.filter((one) => one.requires === "nullish").map((one) => one.paramIndex),
+  );
 
   const conditions = [
-    ...new Set([
-      ...entered,
-      ...[...absent].map((paramIndex) =>
-        formatConditionPath({ requires: "nullish", paramIndex }),
-      ),
-    ]),
+    ...new Set(
+      required
+        // A position nothing reaches is a position no path through it is
+        // entered at, so an `entered` condition rooted there states a second
+        // requirement the first has already made unmeetable: the call site
+        // would have to pass a clean function *and* pass nothing.
+        .filter((one) => one.requires === "nullish" || !absent.has(one.paramIndex))
+        .map(formatConditionPath),
+    ),
   ].sort();
 
   return { sites, color: "non-throwing", conditions, reviewSites: 0 };
@@ -247,7 +239,10 @@ function behindAnEarlyReturn(
     ...site,
     verdict: "absent-conditional",
     rule: `${site.rule}; unreachable where ${hazard.given.join(" and ")} is absent`,
-    absent: positions,
+    requires: positions.map((paramIndex) => ({
+      requires: "nullish" as const,
+      paramIndex,
+    })),
   };
 }
 
@@ -267,14 +262,13 @@ function classifySite(
   const verdict = (
     value: SiteVerdict,
     rule: string,
-    extra: { dial?: keyof Dials; path?: ConditionPath } = {},
+    extra: { dial?: keyof Dials; path?: ParsedConditionPath } = {},
   ): ClassifiedSite => ({
     ...base,
     verdict: value,
     rule,
     dial: extra.dial,
-    path: extra.path,
-    absent: [],
+    requires: extra.path === undefined ? [] : [extra.path],
   });
 
   const fromDial = (dial: keyof Dials, rule: string): ClassifiedSite => {
@@ -296,7 +290,7 @@ function classifySite(
   switch (shape.id) {
     case "usercall":
       if (operand.path !== undefined && domains.isCallable(operand.types)) {
-        return verdict("conditional", `enters ${operand.path}`, {
+        return verdict("conditional", `enters ${formatConditionPath(operand.path)}`, {
           path: operand.path,
         });
       }
@@ -388,7 +382,7 @@ interface ResolvedOperand {
   readonly kind: "param" | "receiver" | "static-receiver" | "unresolved";
   readonly types: readonly ts.Type[];
   /** Set only when the operand is expressible as a condition on a parameter. */
-  readonly path: ConditionPath | undefined;
+  readonly path: ParsedConditionPath | undefined;
   readonly primitive: boolean;
   readonly optional: boolean;
   readonly describe: string;
@@ -469,13 +463,13 @@ function walkSegments(
   return current;
 }
 
-function conditionPathOf(operand: Operand): ConditionPath | undefined {
+function conditionPathOf(operand: Operand): ParsedConditionPath | undefined {
   if (operand.root !== "param" || operand.index < 0) return undefined;
-  return formatConditionPath({
+  return {
     requires: "entered",
     paramIndex: operand.index,
     segments: operand.segments,
-  });
+  };
 }
 
 function describeSegments(operand: Operand): string {
