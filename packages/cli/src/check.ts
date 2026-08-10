@@ -77,56 +77,60 @@ function reportOn(carrier: CheckedCarrier, cwd: string): readonly string[] {
 }
 
 function entryLines(entry: CheckedEntry, cwd: string): readonly string[] {
-  const at = `  ${entry.package} → ${JSON.stringify(entry.subpath)} → \`${entry.symbolPath}\``;
+  const why = whyItReachesNothing(entry, cwd);
+  if (why.length === 0) return [];
+  return [
+    `  ${entry.package} → ${JSON.stringify(entry.subpath)} → \`${entry.symbolPath}\``,
+    ...why.map((line) => `    ${line}`),
+  ];
+}
 
+function whyItReachesNothing(
+  entry: CheckedEntry,
+  cwd: string,
+): readonly string[] {
   switch (entry.verdict) {
     case "reaches":
       return [];
     case "unresolved":
       return [
-        at,
-        `    nothing of \`${entry.package}\` is in this project, so there is ` +
+        `nothing of \`${entry.package}\` is in this project, so there is ` +
           "no surface to hold this against. Inert rather than wrong.",
       ];
     case "no-subpath": {
-      const nothingAt = `    \`${entry.package}\` publishes nothing at ${JSON.stringify(entry.subpath)}`;
+      const nothingAt = `\`${entry.package}\` publishes nothing at ${JSON.stringify(entry.subpath)}`;
       // A package that publishes at no subpath at all has no list of subpaths
       // to offer instead, and a label with nothing after it reads as a bug in
       // the report rather than as the fact it is.
       return entry.subpaths.length === 0
         ? [
-            at,
             `${nothingAt}, and nothing at any other subpath.`,
-            "    The walk from its entry points reached no name a carrier " +
+            "The walk from its entry points reached no name a carrier " +
               "could key, so no entry under this package reaches anything.",
           ]
         : [
-            at,
             `${nothingAt}.`,
-            `    Its subpaths are: ${entry.subpaths.map((each) => JSON.stringify(each)).join(", ")}`,
+            `Its subpaths are: ${entry.subpaths.map((each) => JSON.stringify(each)).join(", ")}`,
           ];
     }
     case "no-key":
       return [
-        at,
-        `    \`${entry.package}\` publishes no symbol at this key, so this ` +
+        `\`${entry.package}\` publishes no symbol at this key, so this ` +
           "entry colors nothing.",
-        `    What it publishes at ${JSON.stringify(entry.subpath)}: ${nearest(entry.published, entry.symbolPath)}`,
+        `What it publishes at ${JSON.stringify(entry.subpath)}: ${nearest(entry.published, entry.symbolPath)}`,
       ];
     case "ships-elsewhere":
       return [
-        at,
-        `    \`${entry.package}\` publishes this key, and what it reaches ` +
+        `\`${entry.package}\` publishes this key, and what it reaches ` +
           `ships in \`${entry.shipsIn}\` — which is the package a carrier is ` +
           "matched by, so this entry is never consulted.",
-        `    Key it under \`${entry.shipsIn}\` instead.`,
+        `Key it under \`${entry.shipsIn}\` instead.`,
       ];
     case "unnamed-shipper":
       return [
-        at,
-        `    \`${entry.package}\` publishes this key, and what it reaches is ` +
+        `\`${entry.package}\` publishes this key, and what it reaches is ` +
           `declared in ${display(cwd, entry.declaredIn)}, which names no package.`,
-        "    A carrier is matched by the npm name of the package a " +
+        "A carrier is matched by the npm name of the package a " +
           "declaration ships in, so nothing keyed under any name reaches it " +
           "until a `package.json` there names one.",
       ];

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { basename, dirname, resolve, sep } from "node:path";
 
 /**
@@ -46,12 +46,13 @@ function homeOfDirectory(directory: string): PackageHome | undefined {
 }
 
 function buildHome(directory: string): PackageHome | undefined {
-  const manifestPath = join(directory, "package.json");
-  const packageJson = existsSync(manifestPath)
-    ? readJson(manifestPath)
-    : undefined;
+  const packageJson = readJson(join(directory, "package.json"));
   const name =
     typeof packageJson?.["name"] === "string" ? packageJson["name"] : undefined;
+  const own =
+    packageJson === undefined
+      ? undefined
+      : { directory, name, entryPoints: entryPoints(directory, packageJson) };
 
   // A `package.json` naming no package is a module-format marker — the
   // `{ "type": "module" }` file a dual-published package drops beside one of
@@ -59,14 +60,7 @@ function buildHome(directory: string): PackageHome | undefined {
   // what this walk answers, so it reads past one: stopping there would file
   // every declaration under that build under no npm name at all, and a carrier
   // is matched by npm name and by nothing else.
-  if (name === undefined) {
-    const above = homeAbove(directory);
-    if (above !== undefined) return above;
-  }
-
-  return packageJson === undefined
-    ? undefined
-    : { directory, name, entryPoints: entryPoints(directory, packageJson) };
+  return name === undefined ? (homeAbove(directory) ?? own) : own;
 }
 
 /**
@@ -129,11 +123,10 @@ function entryPoints(
   // one root, and a package whose `types` and `main` point at different modules
   // publishes the first of them, not both at once.
   if (points.size === 0) {
-    for (const field of ["types", "typings", "main"]) {
-      const named = packageJson?.[field];
-      if (typeof named === "string" && named.length > 0) add(".", [named]);
-      if (points.size > 0) break;
-    }
+    const legacy = ["types", "typings", "main"]
+      .map((field) => packageJson?.[field])
+      .find((path): path is string => typeof path === "string" && path !== "");
+    if (legacy !== undefined) add(".", [legacy]);
   }
 
   return points;
