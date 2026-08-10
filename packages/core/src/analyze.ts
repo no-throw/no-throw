@@ -2,6 +2,7 @@ import ts from "typescript";
 import type {
   ConsumptionReason,
   FloorReason,
+  FloorSource,
   Rejects,
   UndischargedReason,
 } from "./colors.js";
@@ -27,6 +28,11 @@ interface UnbridgedCall {
   readonly reason: FloorReason;
   /** The file whose hash drifted; only `stale-manifest` carries one. */
   readonly staleFile?: string | undefined;
+  /**
+   * Where the callee's declaration lives, which decides which of the floor's
+   * outs a message may honestly name. Absent means an ordinary package.
+   */
+  readonly source?: FloorSource | undefined;
 }
 
 /** A call whose callee was read rather than floored, and can throw. */
@@ -80,6 +86,7 @@ interface FlooredConditionArgument extends ConditionArgument {
   readonly kind: "floored-condition-argument";
   readonly reason: UndischargedReason;
   readonly staleFile?: string | undefined;
+  readonly source?: FloorSource | undefined;
 }
 
 /** A `for…of`, spread, destructuring, `.next()` or `yield*` that can throw. */
@@ -88,6 +95,7 @@ interface ThrowingConsumption {
   readonly node: ts.Node;
   readonly reason: ConsumptionReason;
   readonly staleFile?: string | undefined;
+  readonly source?: FloorSource | undefined;
 }
 
 /** `.throw()`: the consumer throwing, with a detour through the iterator. */
@@ -102,6 +110,7 @@ interface ThrowingReturnedIterator {
   readonly node: ts.Node;
   readonly reason: ConsumptionReason;
   readonly staleFile?: string | undefined;
+  readonly source?: FloorSource | undefined;
 }
 
 /**
@@ -152,6 +161,7 @@ interface UnbridgedHiddenTransfer extends HiddenTransfer {
   readonly kind: "unbridged-hidden-transfer";
   readonly reason: FloorReason;
   readonly staleFile?: string | undefined;
+  readonly source?: FloorSource | undefined;
 }
 
 interface InferredThrowingHiddenTransfer extends HiddenTransfer {
@@ -236,6 +246,7 @@ function findingFor(escape: BodyEscape): Finding {
             callee: calleeText(escape.node),
             reason: escape.reason,
             staleFile: escape.staleFile,
+            source: escape.source,
           };
     case "argument-throwing":
       return {
@@ -247,6 +258,7 @@ function findingFor(escape: BodyEscape): Finding {
         kind: "floored-condition-argument",
         reason: escape.reason,
         staleFile: escape.staleFile,
+        source: escape.source,
         ...conditionArgument(escape.node, escape.condition),
       };
     case "consumption":
@@ -255,6 +267,7 @@ function findingFor(escape: BodyEscape): Finding {
         node: escape.node,
         reason: escape.reason,
         staleFile: escape.staleFile,
+        source: escape.source,
       };
     case "iterator-throw":
       return { kind: "iterator-throw", node: escape.node };
@@ -264,6 +277,7 @@ function findingFor(escape: BodyEscape): Finding {
         node: escape.node,
         reason: escape.reason,
         staleFile: escape.staleFile,
+        source: escape.source,
       };
     case "rejected-await":
       return {
@@ -312,6 +326,7 @@ function findingFor(escape: BodyEscape): Finding {
             target,
             reason: escape.reason,
             staleFile: escape.staleFile,
+            source: escape.source,
           };
     }
   }

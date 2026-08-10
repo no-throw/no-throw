@@ -1,7 +1,12 @@
 import ts from "typescript";
 
 import type { CarrierAnswer, CarrierRung } from "../carrier/chain.js";
-import { baselineCoversOwner, lookupBaselineEntry } from "./data.js";
+import type { FloorSource } from "../colors.js";
+import {
+  baselineCoversOwner,
+  lookupBaselineEntry,
+  sourceOfLibTarget,
+} from "./data.js";
 import {
   libDeclarationsOf,
   memberKey,
@@ -46,6 +51,47 @@ export const baselineRung: CarrierRung = (query): CarrierAnswer | undefined => {
     entries.find(({ color }) => color === "throwing") ?? entries[0];
   return entry === undefined ? undefined : { kind: "entry", entry };
 };
+
+/**
+ * Whether the chain came back with a color for the declaration, which is only
+ * ever a question about a lib member: everywhere else the answer changes
+ * nothing a message says.
+ */
+export type Stated = "stated" | "unstated";
+
+/**
+ * Which outs a floor over this declaration can honestly name, and whether a
+ * mechanical bridge may be offered for it.
+ *
+ * A lib member is the baseline's alone — every other rung is keyed by npm
+ * package name, and no key in that grammar reaches one — so the question is
+ * first whether the libs declare the member, and then, once they do, whether
+ * the baseline stated a color for it. That second half is what decides the
+ * offer: a bridge over a color somebody wrote down after fuzzing it is honest,
+ * and one over a member the baseline is silent about would be a one-click offer
+ * to swallow a throw nobody proved.
+ *
+ * Asked wherever the libs declare it, for the reason the rung above is: a
+ * project augmenting a lib type gives the member a second declaration outside
+ * the libs, and reading the reach off the one overload resolution matched would
+ * send the reader at the package rungs over a builtin none of them can key.
+ */
+export function floorSourceOf(
+  declaration: ts.Declaration,
+  stated: Stated,
+  checker: ts.TypeChecker,
+): FloorSource {
+  const [declared] = libDeclarationsOf(declaration, checker);
+  if (declared === undefined) return PACKAGE_SOURCE;
+  return {
+    reach: "lib",
+    baseline: sourceOfLibTarget(declared.libTarget),
+    stated: stated === "stated",
+  };
+}
+
+/** The answer for everything that is not a lib member, which is most of it. */
+export const PACKAGE_SOURCE: FloorSource = { reach: "package" };
 
 /**
  * Whether the baseline enumerates the type this declaration is written on, and

@@ -1,9 +1,12 @@
 import {
   analyzeSourceFile,
+  PACKAGE_SOURCE,
+  type BaselineSource,
   type ConsumptionReason,
   type EntrySite,
   type Finding,
   type FloorReason,
+  type FloorSource,
   type HiddenCallee,
   type RejectionReason,
   type Rejects,
@@ -40,51 +43,96 @@ const PRODUCER_CARRIERS =
   "an `@no-throw/*` overlay; or, if you own the package, ship a manifest with " +
   "`nothrow emit`.";
 
-const outs = (what: string): string =>
-  `Your outs, in precedence order: bridge this ${what} with \`try\`/\`catch\`; ` +
-  CARRIERS;
+/**
+ * What those three come to for a `lib.*.d.ts` member: nothing. An override and
+ * an overlay are keyed by npm package name, and nobody owns TypeScript's libs
+ * to ship a manifest from — so naming them over one would be sending the reader
+ * at three doors that do not open, and the promise that every out is a rung you
+ * can really reach for would be false exactly where floors are commonest. What
+ * is left is the one rung a reader cannot write, which is why the second out
+ * here is to tell us.
+ */
+const baselineCarrier = (baseline: BaselineSource): string =>
+  `or, if it cannot throw, report it against ${BASELINE_NAME[baseline]} at ` +
+  "https://github.com/MidnightDesign/no-throw/issues — the other three " +
+  "carriers are keyed by npm package name, and no key in that grammar reaches " +
+  "a `lib.*.d.ts` member.";
 
-const OUTS = outs("call");
+/**
+ * What each shipped baseline is called. Two files by two generators over two
+ * specifications, and a reader sent to report a `Element#innerHTML` defect
+ * against the standard-library table has been sent to the wrong table.
+ */
+const BASELINE_NAME: Record<BaselineSource, string> = {
+  es: "the shipped standard-library baseline",
+  dom: "the shipped DOM baseline",
+};
+
+/**
+ * One message's outs: the edit it names first, then whichever carriers can
+ * really answer for what floored. The two tails are not a default and an
+ * override — they are the two disjoint reaches, so a message cannot name a
+ * carrier the reader has no key for, and only the package branch has a tail
+ * worth varying.
+ */
+function outsOf(
+  first: string,
+  source: FloorSource,
+  packageCarriers: string = CARRIERS,
+): string {
+  return source.reach === "package"
+    ? `Your outs, in precedence order: ${first}; ${packageCarriers}`
+    : `Your outs: ${first}; ${baselineCarrier(source.baseline)}`;
+}
+
+const outs = (what: string, source: FloorSource): string =>
+  outsOf(`bridge this ${what} with \`try\`/\`catch\``, source);
 
 /**
  * A returned iterator is consumed by the caller, so the bridge is not on this
  * side of the boundary. What is: naming the call that produced it.
  */
-const RETURN_OUTS =
-  "Your outs, in precedence order: return the iterator from a call this rule " +
-  "can trace — a direct call, or a `const` initialized by one; " +
-  PRODUCER_CARRIERS;
+const returnOuts = (source: FloorSource): string =>
+  outsOf(
+    "return the iterator from a call this rule can trace — a direct call, or " +
+      "a `const` initialized by one",
+    source,
+    PRODUCER_CARRIERS,
+  );
 
 /**
  * The bridge for a rejection is the awaiting one. A `catch` that never awaits
  * is not on the path a rejection takes, so naming the plain `try`/`catch` here
  * would be naming the fake bridge as a remedy.
  */
-const AWAIT_OUTS =
-  "Your outs, in precedence order: bridge it with `try { await … } catch`; " +
-  CARRIERS;
+const awaitOuts = (source: FloorSource): string =>
+  outsOf("bridge it with `try { await … } catch`", source);
 
 /**
  * A discarded promise is never awaited, so the bridge is a change of shape
  * rather than a wrapper — and the terminal `.catch(h)` is the other legal
  * form, which is the whole reason fire-and-forget has one at all.
  */
-const FLOAT_OUTS =
-  "Your outs, in precedence order: `await` it inside a `try`/`catch`; end the " +
-  "chain with a `.catch(h)` whose handler is non-throwing; " +
-  CARRIERS;
+const floatOuts = (source: FloorSource): string =>
+  outsOf(
+    "`await` it inside a `try`/`catch`; end the chain with a `.catch(h)` " +
+      "whose handler is non-throwing",
+    source,
+  );
 
 /** A returned promise is awaited by the caller, so the bridge is not here. */
-const RETURN_PROMISE_OUTS =
-  "Your outs, in precedence order: `await` it inside a `try`/`catch` and " +
-  "return a value instead; " +
-  PRODUCER_CARRIERS;
+const returnPromiseOuts = (source: FloorSource): string =>
+  outsOf(
+    "`await` it inside a `try`/`catch` and return a value instead",
+    source,
+    PRODUCER_CARRIERS,
+  );
 
 const diagnostics = {
   uncaughtThrow: "Uncaught `throw` escapes this `@nothrow` function.",
   unbridgedCall:
     "Call to `{{callee}}` escapes this `@nothrow` function: it {{reason}}. " +
-    OUTS,
+    "{{outs}}",
   // Not a floor, so not the floor's outs: the body was read and it can throw,
   // and every carrier on that list would be silencing a true positive.
   inferredThrowingCall:
@@ -114,7 +162,7 @@ const diagnostics = {
   conditionArgumentFloored:
     "Call to `{{callee}}` escapes this `@nothrow` function: it is non-throwing " +
     "given `{{path}}`, and {{reason}}. `{{callee}}` enters `{{path}}` at " +
-    "{{entry}}. " + OUTS,
+    "{{entry}}. {{outs}}",
   // The same contract for a condition a carrier states. There is no body to
   // point the reader at, so what the second clause names instead is the claim:
   // a manifest, an overlay or an override said this, and it is discharged here.
@@ -127,10 +175,10 @@ const diagnostics = {
   carriedConditionArgumentFloored:
     "Call to `{{callee}}` escapes this `@nothrow` function: the carrier that " +
     "colors it declares it non-throwing given `{{path}}`, and {{reason}}. " +
-    OUTS,
+    "{{outs}}",
   unbridgedConsumption:
     "Consuming this iterator escapes this `@nothrow` function: {{reason}}. " +
-    outs("consumption"),
+    "{{outs}}",
   inferredThrowingConsumption:
     "Consuming this iterator escapes this `@nothrow` function: the body " +
     "producing its values was analyzed and can throw. Your outs: bridge this " +
@@ -144,8 +192,7 @@ const diagnostics = {
     "laundered through one. Bridge it with `try`/`catch`.",
   unprovableReturnedIterator:
     "This `@nothrow` function returns an iterator, so the mark covers " +
-    "consuming it too: {{reason}}. " +
-    RETURN_OUTS,
+    "consuming it too: {{reason}}. {{outs}}",
   inferredThrowingReturnedIterator:
     "This `@nothrow` function returns an iterator, so the mark covers " +
     "consuming it too: the body producing its values was analyzed and can " +
@@ -158,7 +205,7 @@ const diagnostics = {
   // discard lets it reach nobody, and a `return` hands it on under this mark.
   unbridgedAwait:
     "Awaiting `{{expression}}` escapes this `@nothrow` function: {{reason}}. " +
-    AWAIT_OUTS,
+    "{{outs}}",
   inferredThrowingAwait:
     "Awaiting `{{expression}}` escapes this `@nothrow` function: {{reason}}. " +
     "Your outs: bridge it with `try { await … } catch`, or make {{culprit}} " +
@@ -166,8 +213,7 @@ const diagnostics = {
     "too.",
   unprovableFloat:
     "`{{expression}}` is discarded, so nothing handles a rejection and Node " +
-    "escalates one to an uncaught exception: {{reason}}. " +
-    FLOAT_OUTS,
+    "escalates one to an uncaught exception: {{reason}}. {{outs}}",
   inferredThrowingFloat:
     "`{{expression}}` is discarded, so nothing handles a rejection and Node " +
     "escalates one to an uncaught exception: {{reason}}. Your outs: `await` " +
@@ -187,8 +233,7 @@ const diagnostics = {
     "a `.catch(h)` whose handler is non-throwing.",
   unprovableReturnedPromise:
     "This `@nothrow` function returns a promise, so the mark covers its " +
-    "rejection too: {{reason}}. " +
-    RETURN_PROMISE_OUTS,
+    "rejection too: {{reason}}. {{outs}}",
   inferredThrowingReturnedPromise:
     "This `@nothrow` function returns a promise, so the mark covers its " +
     "rejection too: {{reason}}. Your outs: `await` it inside a `try`/`catch` " +
@@ -197,7 +242,7 @@ const diagnostics = {
   // Its own pair, because the first thing the reader needs told is that this
   // *is* a call: they did not write one, and the message has to say what runs.
   unbridgedHiddenTransfer:
-    "{{site}} escapes this `@nothrow` function: {{reason}}. " + OUTS,
+    "{{site}} escapes this `@nothrow` function: {{reason}}. {{outs}}",
   inferredThrowingHiddenTransfer:
     "{{site}} escapes this `@nothrow` function: it runs {{target}}, whose " +
     "body was analyzed and can throw. Your outs: bridge it with " +
@@ -290,8 +335,7 @@ const bridgeFor: Record<DiagnosticId, Bridge | undefined> = {
  */
 const CARRIED_THROWING =
   "is colored `throwing` by the carrier that answers for it — a shipped " +
-  "manifest, an overlay, an override, or the standard-library baseline — so " +
-  "calling it can throw";
+  "manifest, an overlay, or an override — so calling it can throw";
 
 const UNREADABLE_MANIFEST =
   "ships in a package whose `nothrow.json` names a `version` this release " +
@@ -322,6 +366,59 @@ const staleManifest = (file: string): string =>
   "is colored by a `nothrow.json` that no longer matches its package's " +
   `files — \`${file}\` has changed since the manifest was written — so the ` +
   "manifest is ignored and no surviving `@nothrow` tag colors it either";
+
+/**
+ * The two clauses a standard-library floor replaces. Only these two are wrong
+ * for a `lib.*.d.ts` member: the baseline is the sole carrier that can reach
+ * one, so "the carrier that answers for it" has a name here and the list of
+ * everything that might have colored it is a list of one. Every other reason
+ * either already names the lib — `no-accessor-fact` does — or says something
+ * true of a lib member and a package member alike.
+ */
+const baselineThrowing = (baseline: BaselineSource): string =>
+  `is colored \`throwing\` by ${BASELINE_NAME[baseline]}, so calling it can ` +
+  "throw";
+
+const noBaselineEntry = (baseline: BaselineSource): string =>
+  `is declared in a \`lib.*.d.ts\` ${BASELINE_NAME[baseline]} has no entry ` +
+  "for, and that baseline is the only carrier able to reach one, so nothing " +
+  "colors it and it is assumed to throw";
+
+/**
+ * The accessor control, with the table that owed the answer named. Always a lib
+ * member by construction — nothing else asks the enumeration a question — so
+ * this is what every `no-accessor-fact` floor reads, and the record entry below
+ * is the type's exhaustiveness rather than a reachable text.
+ */
+const noAccessorFact = (baseline: BaselineSource): string =>
+  "is declared as a plain property in a `lib.*.d.ts` that " +
+  `${BASELINE_NAME[baseline]} states no accessor fact for, and the libs ` +
+  "declare real getters as properties, so silence cannot be read as data";
+
+/** The same color, said about the channel a promise consumes it on. */
+const baselineRejecting = (baseline: BaselineSource): string =>
+  `is colored \`throwing\` by ${BASELINE_NAME[baseline]}, so the promise it ` +
+  "hands back can reject";
+
+/**
+ * The base clause a lib member replaces, where it replaces one. Every reason
+ * union a message reads from is a superset of `FloorReason`, and the two this
+ * answers for are floors, so one predicate serves all four records.
+ */
+function baselineClause(
+  reason:
+    | FloorReason
+    | UndischargedReason
+    | ConsumptionReason
+    | RejectionReason,
+  source: FloorSource,
+): string | undefined {
+  if (source.reach === "package") return undefined;
+  const { baseline } = source;
+  if (reason === "carried-throwing") return baselineThrowing(baseline);
+  if (reason === "bodyless") return noBaselineEntry(baseline);
+  return reason === "no-accessor-fact" ? noAccessorFact(baseline) : undefined;
+}
 
 /** The one reason whose text needs a fact the record cannot hold. */
 type StaticFloorReason = Exclude<FloorReason, "stale-manifest">;
@@ -364,10 +461,14 @@ const whyFloored: Record<StaticFloorReason, string> = {
 function whyCalleeFloored(
   reason: FloorReason,
   staleFile: string | undefined,
+  source: FloorSource,
 ): string {
-  return reason === "stale-manifest"
-    ? staleManifest(staleFile ?? "one of its files")
-    : whyFloored[reason];
+  return (
+    baselineClause(reason, source) ??
+    (reason === "stale-manifest"
+      ? staleManifest(staleFile ?? "one of its files")
+      : whyFloored[reason])
+  );
 }
 
 /** The same contract for the argument that was supposed to discharge a path. */
@@ -409,7 +510,10 @@ const whyUndischarged: Record<
 function whyArgumentUndischarged(
   reason: UndischargedReason,
   staleFile: string | undefined,
+  source: FloorSource,
 ): string {
+  const baseline = baselineClause(reason, source);
+  if (baseline !== undefined) return `the argument passed for it ${baseline}`;
   return reason === "stale-manifest"
     ? `the argument passed for it ${staleManifest(staleFile ?? "one of its files")}`
     : whyUndischarged[reason];
@@ -462,7 +566,10 @@ const whyConsumptionFloored: Record<
 function whyConsumption(
   reason: Exclude<ConsumptionReason, "inferred">,
   staleFile: string | undefined,
+  source: FloorSource,
 ): string {
+  const baseline = baselineClause(reason, source);
+  if (baseline !== undefined) return `what consuming it runs ${baseline}`;
   return reason === "stale-manifest"
     ? `what consuming it runs ${staleManifest(staleFile ?? "one of its files")}`
     : whyConsumptionFloored[reason];
@@ -533,24 +640,43 @@ const whyRejects: Record<Exclude<RejectionReason, "stale-manifest">, string> = {
     "not something a call site can discharge",
   "carried-throwing":
     "is colored `throwing` by the carrier that answers for it — a shipped " +
-    "manifest, an overlay, an override, or the standard-library baseline — so " +
-    "the promise it hands back can reject",
+    "manifest, an overlay, or an override — so the promise it hands back can " +
+    "reject",
   "no-accessor-fact": NO_ACCESSOR_FACT,
   "unreadable-manifest": UNREADABLE_MANIFEST,
   "superseded-tag": SUPERSEDED_TAG,
   "unusable-entry": UNUSABLE_ENTRY,
 };
 
+/**
+ * The same substitution on the promise channel. `carried-throwing` says what
+ * the color means for a promise rather than for a call, so the lib variant has
+ * to say it too; `bodyless` is the shared clause and needs no second spelling.
+ */
+function baselineRejectionClause(
+  reason: RejectionReason,
+  source: FloorSource,
+): string | undefined {
+  if (source.reach === "package") return undefined;
+  return reason === "carried-throwing"
+    ? baselineRejecting(source.baseline)
+    : baselineClause(reason, source);
+}
+
 /** The why clause — who, then what is wrong with them — and what to fix. */
-function rejectionData(rejects: Rejects): {
+function rejectionData(
+  rejects: Rejects,
+  source: FloorSource,
+): {
   readonly reason: string;
   readonly culprit: string;
 } {
   const { reason, subject, staleFile } = rejects;
   const why =
-    reason === "stale-manifest"
+    baselineRejectionClause(reason, source) ??
+    (reason === "stale-manifest"
       ? staleManifest(staleFile ?? "one of its files")
-      : whyRejects[reason];
+      : whyRejects[reason]);
   return {
     reason: `${rejectionSubject[subject]} ${why}`,
     culprit: rejectionCulprit[subject],
@@ -576,7 +702,11 @@ type Report =
   | { readonly messageId: "uncaughtThrow" | "iteratorThrow" }
   | {
       readonly messageId: "unbridgedCall";
-      readonly data: { readonly callee: string; readonly reason: string };
+      readonly data: {
+        readonly callee: string;
+        readonly reason: string;
+        readonly outs: string;
+      };
     }
   | {
       readonly messageId:
@@ -599,6 +729,7 @@ type Report =
         readonly path: string;
         readonly entry: string;
         readonly reason: string;
+        readonly outs: string;
       };
     }
   | {
@@ -611,11 +742,12 @@ type Report =
         readonly callee: string;
         readonly path: string;
         readonly reason: string;
+        readonly outs: string;
       };
     }
   | {
       readonly messageId: "unbridgedConsumption" | "unprovableReturnedIterator";
-      readonly data: { readonly reason: string };
+      readonly data: { readonly reason: string; readonly outs: string };
     }
   | {
       readonly messageId:
@@ -623,10 +755,17 @@ type Report =
         | "inferredThrowingReturnedIterator";
     }
   | {
+      readonly messageId: "unbridgedAwait" | "unprovableFloat";
+      readonly data: {
+        readonly expression: string;
+        readonly reason: string;
+        readonly culprit: string;
+        readonly outs: string;
+      };
+    }
+  | {
       readonly messageId:
-        | "unbridgedAwait"
         | "inferredThrowingAwait"
-        | "unprovableFloat"
         | "inferredThrowingFloat"
         | "fakeBridge";
       readonly data: {
@@ -636,14 +775,24 @@ type Report =
       };
     }
   | {
-      readonly messageId:
-        | "unprovableReturnedPromise"
-        | "inferredThrowingReturnedPromise";
+      readonly messageId: "unprovableReturnedPromise";
+      readonly data: {
+        readonly reason: string;
+        readonly culprit: string;
+        readonly outs: string;
+      };
+    }
+  | {
+      readonly messageId: "inferredThrowingReturnedPromise";
       readonly data: { readonly reason: string; readonly culprit: string };
     }
   | {
       readonly messageId: "unbridgedHiddenTransfer";
-      readonly data: { readonly site: string; readonly reason: string };
+      readonly data: {
+        readonly site: string;
+        readonly reason: string;
+        readonly outs: string;
+      };
     }
   | {
       readonly messageId: "inferredThrowingHiddenTransfer";
@@ -651,11 +800,47 @@ type Report =
     };
 
 /**
+ * How far the reader can reach for what floored: which carriers have a key that
+ * names it, and whether anybody stated its color at all. The message's outs and
+ * the offer it makes both turn on this, and they are built by different
+ * functions, so the answer is read here and handed to both rather than derived
+ * twice from the same finding. Enumerated rather than defaulted, so a new
+ * finding kind has to say which of the two it is.
+ */
+function sourceOf(finding: Finding): FloorSource {
+  switch (finding.kind) {
+    case "unbridged-call":
+    case "floored-condition-argument":
+    case "throwing-consumption":
+    case "throwing-returned-iterator":
+    case "unbridged-hidden-transfer":
+      return finding.source ?? PACKAGE_SOURCE;
+    case "rejected-await":
+    case "floating-rejection":
+    case "rejected-return":
+      return finding.rejects.source ?? PACKAGE_SOURCE;
+    // Nothing was floored: a body was read, a `throw` was written, or the
+    // argument that failed to discharge resolved to a body of its own.
+    case "uncaught-throw":
+    case "inferred-throwing-call":
+    case "inferred-throwing-construction":
+    case "throwing-condition-argument":
+    case "iterator-throw":
+    case "inferred-throwing-hidden-transfer":
+      return PACKAGE_SOURCE;
+  }
+}
+
+/**
  * The whole invariant is one rule, so every escape the core reports has to land
  * on a message inside it. A finding kind with no `case` here stops returning a
  * `Report` on every path, which is a compile error.
  */
-function reportFor(finding: Finding, cwd: string): Report {
+function reportFor(
+  finding: Finding,
+  cwd: string,
+  source: FloorSource,
+): Report {
   switch (finding.kind) {
     case "uncaught-throw":
       return { messageId: "uncaughtThrow" };
@@ -664,7 +849,8 @@ function reportFor(finding: Finding, cwd: string): Report {
         messageId: "unbridgedCall",
         data: {
           callee: finding.callee,
-          reason: whyCalleeFloored(finding.reason, finding.staleFile),
+          reason: whyCalleeFloored(finding.reason, finding.staleFile, source),
+          outs: outs("call", source),
         },
       };
     case "inferred-throwing-call":
@@ -694,11 +880,21 @@ function reportFor(finding: Finding, cwd: string): Report {
             },
           };
     case "floored-condition-argument": {
-      const reason = whyArgumentUndischarged(finding.reason, finding.staleFile);
+      const reason = whyArgumentUndischarged(
+        finding.reason,
+        finding.staleFile,
+        source,
+      );
+      const named = outs("call", source);
       return finding.entry === undefined
         ? {
             messageId: "carriedConditionArgumentFloored",
-            data: { callee: finding.callee, path: finding.path, reason },
+            data: {
+              callee: finding.callee,
+              path: finding.path,
+              reason,
+              outs: named,
+            },
           }
         : {
             messageId: "conditionArgumentFloored",
@@ -707,6 +903,7 @@ function reportFor(finding: Finding, cwd: string): Report {
               path: finding.path,
               entry: entryText(finding.entry, cwd),
               reason,
+              outs: named,
             },
           };
     }
@@ -716,7 +913,8 @@ function reportFor(finding: Finding, cwd: string): Report {
         : {
             messageId: "unbridgedConsumption",
             data: {
-              reason: whyConsumption(finding.reason, finding.staleFile),
+              reason: whyConsumption(finding.reason, finding.staleFile, source),
+              outs: outs("consumption", source),
             },
           };
     case "iterator-throw":
@@ -727,40 +925,53 @@ function reportFor(finding: Finding, cwd: string): Report {
         : {
             messageId: "unprovableReturnedIterator",
             data: {
-              reason: whyConsumption(finding.reason, finding.staleFile),
+              reason: whyConsumption(finding.reason, finding.staleFile, source),
+              outs: returnOuts(source),
             },
           };
     case "rejected-await":
-      return {
-        messageId:
-          finding.rejects.reason === "inferred"
-            ? "inferredThrowingAwait"
-            : "unbridgedAwait",
-        data: {
-          expression: finding.expression,
-          ...rejectionData(finding.rejects),
-        },
+      return finding.rejects.reason === "inferred"
+        ? {
+            messageId: "inferredThrowingAwait",
+            data: {
+              expression: finding.expression,
+              ...rejectionData(finding.rejects, source),
+            },
+          }
+        : {
+            messageId: "unbridgedAwait",
+            data: {
+              expression: finding.expression,
+              ...rejectionData(finding.rejects, source),
+              outs: awaitOuts(source),
+            },
+          };
+    case "floating-rejection": {
+      const about = {
+        expression: finding.expression,
+        ...rejectionData(finding.rejects, source),
       };
-    case "floating-rejection":
-      return {
-        messageId: finding.fake
-          ? "fakeBridge"
-          : finding.rejects.reason === "inferred"
-            ? "inferredThrowingFloat"
-            : "unprovableFloat",
-        data: {
-          expression: finding.expression,
-          ...rejectionData(finding.rejects),
-        },
-      };
+      if (finding.fake) return { messageId: "fakeBridge", data: about };
+      return finding.rejects.reason === "inferred"
+        ? { messageId: "inferredThrowingFloat", data: about }
+        : {
+            messageId: "unprovableFloat",
+            data: { ...about, outs: floatOuts(source) },
+          };
+    }
     case "rejected-return":
-      return {
-        messageId:
-          finding.rejects.reason === "inferred"
-            ? "inferredThrowingReturnedPromise"
-            : "unprovableReturnedPromise",
-        data: rejectionData(finding.rejects),
-      };
+      return finding.rejects.reason === "inferred"
+        ? {
+            messageId: "inferredThrowingReturnedPromise",
+            data: rejectionData(finding.rejects, source),
+          }
+        : {
+            messageId: "unprovableReturnedPromise",
+            data: {
+              ...rejectionData(finding.rejects, source),
+              outs: returnPromiseOuts(source),
+            },
+          };
     case "unbridged-hidden-transfer":
       return {
         messageId: "unbridgedHiddenTransfer",
@@ -771,7 +982,8 @@ function reportFor(finding: Finding, cwd: string): Report {
               ? `the checker cannot resolve \`${finding.text}\` to a ` +
                 "declaration, so nothing can say whether a body runs here"
               : `it runs ${describeTarget(finding.target)}, which ` +
-                whyCalleeFloored(finding.reason, finding.staleFile),
+                whyCalleeFloored(finding.reason, finding.staleFile, source),
+          outs: outs("call", source),
         },
       };
     case "inferred-throwing-hidden-transfer":
@@ -804,12 +1016,20 @@ function entryText(entry: EntrySite, cwd: string): string {
 function offerFor(
   messageId: DiagnosticId,
   node: TSESTree.Node | undefined,
-  source: string,
+  text: string,
+  source: FloorSource,
 ): TSESLint.ReportSuggestionArray<MessageId> | undefined {
   const bridge = bridgeFor[messageId];
   if (bridge === undefined || node === undefined) return undefined;
+  // A lib member nobody colored is a throw this tool assumed, not one it read
+  // or was told about, and the reader cannot change the assumption from here.
+  // One click to wrap it would make swallowing the path of least resistance
+  // over the largest source of floors there is — which is the outcome the
+  // suggestion channel exists to keep out of the fix channel. The message still
+  // names the bridge first; what it does not do is press it.
+  if (source.reach === "lib" && !source.stated) return undefined;
 
-  const edit = bridgeEdit(node, bridge.shape, source);
+  const edit = bridgeEdit(node, bridge.shape, text);
   if (edit === undefined) return undefined;
 
   return [
@@ -842,12 +1062,13 @@ export const noEscapingThrow = createRule<[], MessageId>({
         const sourceFile = services.esTreeNodeToTSNodeMap.get(
           node,
         ) as ts.SourceFile;
-        const source = context.sourceCode.getText();
+        const text = context.sourceCode.getText();
 
         for (const finding of analyzeSourceFile(sourceFile, services.program)) {
           const reportAt = services.tsNodeToESTreeNodeMap.get(finding.node);
-          const report = reportFor(finding, context.cwd);
-          const suggest = offerFor(report.messageId, reportAt, source);
+          const source = sourceOf(finding);
+          const report = reportFor(finding, context.cwd, source);
+          const suggest = offerFor(report.messageId, reportAt, text, source);
 
           context.report({
             node: reportAt ?? node,

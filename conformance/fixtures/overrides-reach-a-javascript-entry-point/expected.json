@@ -8,7 +8,7 @@
       "endLine": 10,
       "endColumn": 9,
       "messageId": "unbridgedCall",
-      "message": "Call to `boom` escapes this `@nothrow` function: it is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, an override, or the standard-library baseline — so calling it can throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Call to `boom` escapes this `@nothrow` function: it is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, or an override — so calling it can throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

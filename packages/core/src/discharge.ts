@@ -1,5 +1,5 @@
 import ts from "typescript";
-import type { UndischargedReason } from "./colors.js";
+import type { FloorSource, UndischargedReason } from "./colors.js";
 import {
   MAX_CONDITION_DEPTH,
   pathOf,
@@ -31,6 +31,8 @@ export type Outcome =
       readonly reason: UndischargedReason;
       /** The file whose hash drifted; only `stale-manifest` carries one. */
       readonly staleFile?: string | undefined;
+      /** Absent where the argument is not a standard-library declaration. */
+      readonly source?: FloorSource | undefined;
     };
 
 /**
