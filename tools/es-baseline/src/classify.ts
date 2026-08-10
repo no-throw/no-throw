@@ -1,4 +1,7 @@
-import { formatConditionPath } from "@no-throw/core/baseline";
+import {
+  formatConditionPath,
+  parseConditionPath,
+} from "@no-throw/core/baseline";
 import type {
   Color,
   ConditionPath,
@@ -17,6 +20,13 @@ export type SiteVerdict =
   | "type-excluded"
   | "trust-base"
   | "conditional"
+  /**
+   * Reachable on its own terms, and behind an early return on an absent
+   * argument, so the position it names must get nothing for the entry's color
+   * to hold. A verdict rather than a shape: it says nothing about what the
+   * hazard *is*, only that ECMA-262 returns before it.
+   */
+  | "absent-conditional"
   | "type-reachable"
   | "review";
 
@@ -27,6 +37,8 @@ export interface ClassifiedSite {
   readonly rule: string;
   readonly dial: keyof Dials | undefined;
   readonly path: ConditionPath | undefined;
+  /** Positions an `absent-conditional` site needs no argument at; else empty. */
+  readonly absent: readonly number[];
   readonly condition: string;
 }
 
@@ -63,8 +75,9 @@ const OBJECT_SHAPED = new Set<Shape["id"]>([
 ]);
 
 const RANK: Record<SiteVerdict, number> = {
-  "type-reachable": 4,
-  review: 3,
+  "type-reachable": 5,
+  review: 4,
+  "absent-conditional": 3,
   conditional: 2,
   "trust-base": 1,
   "type-excluded": 0,
@@ -142,7 +155,12 @@ export function classifyAgainstSpec(
   dials: Dials,
 ): SpecVerdict {
   const sites = spec.hazards.map((hazard) =>
-    classifySite(hazard, member, domains, dials),
+    behindAnEarlyReturn(
+      classifySite(hazard, member, domains, dials),
+      hazard,
+      spec,
+      member,
+    ),
   );
   if (ECMA_402.test(member.name)) {
     sites.push({
@@ -152,6 +170,7 @@ export function classifyAgainstSpec(
       rule: "locale validation lives in ECMA-402, outside the extraction corpus",
       dial: undefined,
       path: undefined,
+      absent: [],
       condition: "(no ECMA-262 algorithm covers the locale arguments)",
     });
   }
@@ -171,19 +190,66 @@ export function classifyAgainstSpec(
     };
   }
 
+  const absent = new Set(sites.flatMap((site) => site.absent));
+
+  const entered = sites
+    .filter((site) => site.verdict === "conditional")
+    .map((site) => site.path)
+    .filter((path): path is ConditionPath => path !== undefined)
+    // A position nothing reaches is a position no path through it is entered
+    // at, so an `entered` condition rooted there states a second requirement
+    // the first has already made unmeetable: the call site would have to pass
+    // a clean function *and* pass nothing.
+    .filter((path) => !absent.has(parseConditionPath(path)?.paramIndex ?? -1));
+
   const conditions = [
-    ...new Set(
-      sites
-        .filter((site) => site.verdict === "conditional")
-        .map((site) => site.path)
-        .filter((path): path is ConditionPath => path !== undefined),
-    ),
+    ...new Set([
+      ...entered,
+      ...[...absent].map((paramIndex) =>
+        formatConditionPath({ requires: "nullish", paramIndex }),
+      ),
+    ]),
   ].sort();
 
   return { sites, color: "non-throwing", conditions, reviewSites: 0 };
 }
 
+/**
+ * The early-return reading, applied over the shape reading rather than inside
+ * it. A hazard behind `If iterable is either undefined or null, return map` is
+ * unreachable when the call passes nothing there, whatever the hazard is — and
+ * a site the declared types already discharge needs no condition, so only the
+ * ones that would otherwise make the member throwing are moved.
+ *
+ * Every guarding name must be a parameter of the member. Requiring all of them
+ * rather than any is over-strict where two guards protect one site — the site
+ * needs only one of them to fire — and over-strict is the safe direction.
+ */
+function behindAnEarlyReturn(
+  site: ClassifiedSite,
+  hazard: Hazard,
+  spec: SpecBuiltin,
+  member: LibMember,
+): ClassifiedSite {
+  if (site.verdict !== "type-reachable" && site.verdict !== "review") {
+    return site;
+  }
 
+  const positions = hazard.given.map((name) => spec.params.indexOf(name));
+  if (
+    positions.length === 0 ||
+    positions.some((index) => index < 0 || member.params?.[index] === undefined)
+  ) {
+    return site;
+  }
+
+  return {
+    ...site,
+    verdict: "absent-conditional",
+    rule: `${site.rule}; unreachable where ${hazard.given.join(" and ")} is absent`,
+    absent: positions,
+  };
+}
 
 function classifySite(
   hazard: Hazard,
@@ -208,6 +274,7 @@ function classifySite(
     rule,
     dial: extra.dial,
     path: extra.path,
+    absent: [],
   });
 
   const fromDial = (dial: keyof Dials, rule: string): ClassifiedSite => {
@@ -405,6 +472,7 @@ function walkSegments(
 function conditionPathOf(operand: Operand): ConditionPath | undefined {
   if (operand.root !== "param" || operand.index < 0) return undefined;
   return formatConditionPath({
+    requires: "entered",
     paramIndex: operand.index,
     segments: operand.segments,
   });

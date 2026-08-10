@@ -1,8 +1,13 @@
 import ts from "typescript";
-import type { FloorSource, UndischargedReason } from "./colors.js";
+import type {
+  AbsenceReason,
+  FloorSource,
+  UndischargedReason,
+} from "./colors.js";
 import {
   MAX_CONDITION_DEPTH,
   pathOf,
+  skipParens,
   type Condition,
   type ParameterPath,
 } from "./conditions.js";
@@ -24,6 +29,8 @@ import {
  */
 export type Outcome =
   | { readonly kind: "propagate"; readonly path: ParameterPath }
+  /** A `nullish` condition's only failure: the position is not empty. */
+  | { readonly kind: "present"; readonly reason: AbsenceReason }
   /** The argument resolved to a body, or to a carrier's entry for one. */
   | Extract<Target, { readonly kind: "function" | "carried" }>
   | {
@@ -49,16 +56,34 @@ export function dischargeAt(
   const { checker } = resolution;
   const { paramIndex, members } = condition.path;
 
-  const args = argumentsOf(transfer);
   // A tagged template's arguments are the template's own strings and
-  // substitutions, so there is no position here to read the condition at.
-  if (args === undefined) return [{ kind: "floor", reason: "unresolvable" }];
+  // substitutions. There is no position there to read an `entered` condition
+  // at — but a `nullish` one is answered all the same, and in the negative:
+  // whatever the tag receives at the position, it receives something.
+  const args = argumentsOf(transfer);
+  if (args === undefined) {
+    return condition.requires === "nullish"
+      ? [{ kind: "present", reason: "argument-passed" }]
+      : [{ kind: "floor", reason: "unresolvable" }];
+  }
 
   // A spread ahead of the position makes reading arguments positionally
   // meaningless, and which function lands there is a runtime question.
-  if (args.some((arg, index) => index <= paramIndex && ts.isSpreadElement(arg))) {
-    return [{ kind: "floor", reason: "unresolvable" }];
+  const spread = args.some(
+    (arg, index) => index <= paramIndex && ts.isSpreadElement(arg),
+  );
+
+  // Nothing is resolved for a `nullish` condition: the question is whether
+  // anything arrives at the position, never what.
+  if (condition.requires === "nullish") {
+    if (spread) return [{ kind: "present", reason: "unresolvable" }];
+    const argument = args[paramIndex];
+    return argument === undefined || namesNothing(argument, checker)
+      ? []
+      : [{ kind: "present", reason: "argument-passed" }];
   }
+
+  if (spread) return [{ kind: "floor", reason: "unresolvable" }];
 
   const argument = args[paramIndex];
   if (argument === undefined) {
@@ -95,6 +120,26 @@ export function dischargeAt(
       outcomeOf(target, members),
     ),
   );
+}
+
+/**
+ * Whether the argument is written as nothing — the guard ECMA-262 states is
+ * `either undefined or null`, so `new Map(undefined)` is as clean as
+ * `new Map()`.
+ *
+ * Read off the syntax, and deliberately not off the type. A type here is the
+ * checker's *narrowed* one, and narrowing a reassignable binding is unsound
+ * across a closure that writes it: `let x: T | undefined = undefined` still
+ * reads `undefined` at a call made after something else assigned `x`. There is
+ * no absence to observe in that program and the entry's color would be a lie.
+ * Two spellings cannot be narrowed into: the `null` keyword, and the global
+ * `undefined`, which is the one identifier with no declaration to shadow it.
+ */
+function namesNothing(argument: ts.Expression, checker: ts.TypeChecker): boolean {
+  const written = skipParens(argument);
+  if (written.kind === ts.SyntaxKind.NullKeyword) return true;
+  if (!ts.isIdentifier(written) || written.text !== "undefined") return false;
+  return checker.getSymbolAtLocation(written)?.valueDeclaration === undefined;
 }
 
 /** The arguments a transfer passes positionally, where it passes any. */

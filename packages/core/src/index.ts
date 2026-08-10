@@ -29,6 +29,7 @@ export type {
   EntryKey,
 } from "./check.js";
 export type {
+  AbsenceReason,
   ConsumptionReason,
   FloorReason,
   FloorSource,

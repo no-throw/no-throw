@@ -1,4 +1,5 @@
 import ts from "typescript";
+import type { Requirement } from "./baseline/paths.js";
 import type { Bodied } from "./declarations.js";
 import type { Transfer } from "./escapes.js";
 
@@ -19,17 +20,24 @@ export interface ParameterPath {
 }
 
 /**
- * A precondition on one function: it is non-throwing given that whatever
- * reaches `path` is. `entry` is where the owner's own body transfers control
- * through the path, which the discharge diagnostic has to name — for a
- * propagated condition that is the site the owner hands the parameter on at,
- * so the parameter named and the line pointed at are always the same function.
+ * A precondition on one function about the argument at `path`. `requires` says
+ * which: `entered` is the ordinary reading — the owner enters the path, so
+ * whatever reaches it has to be non-throwing — and `nullish` is the one only a
+ * carrier can state, that the owner is clean given nothing reaches the position
+ * at all.
+ *
+ * `entry` is where the owner's own body transfers control through the path,
+ * which the discharge diagnostic has to name — for a propagated condition that
+ * is the site the owner hands the parameter on at, so the parameter named and
+ * the line pointed at are always the same function.
  *
  * A condition a carrier states has no entry: there is no body, and the line a
  * `.d.ts` declares the symbol on enters nothing. The diagnostic names the
- * carrier instead.
+ * carrier instead. A `nullish` condition never has one for a second reason —
+ * the whole claim is that no body is entered.
  */
 export interface Condition {
+  readonly requires: Requirement;
   readonly path: ParameterPath;
   readonly owner: Bodied;
   readonly entry: Transfer | undefined;
@@ -55,6 +63,15 @@ export function parametersOf(body: Bodied): readonly ts.ParameterDeclaration[] {
 /** Identity for a path: two conditions on the same path are one condition. */
 export function pathKey(path: ParameterPath): string {
   return [`param${path.paramIndex}`, ...path.members].join(".");
+}
+
+/**
+ * Identity for a condition. Two requirements on one position are two
+ * conditions, so the path alone does not identify one: `param0` and
+ * `param0=nullish` are answered by different questions about the same argument.
+ */
+export function conditionKey(condition: Condition): string {
+  return `${condition.requires} ${pathKey(condition.path)}`;
 }
 
 /**

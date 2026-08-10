@@ -44,7 +44,7 @@
           "type": "boolean"
         },
         "conditions": {
-          "description": "The access paths over this symbol's own parameters it is non-throwing given. Absence means maximally conditioned; unconditional cleanliness is recorded positively as [].",
+          "description": "The preconditions on this symbol's own parameters it is non-throwing given. Absence means maximally conditioned; unconditional cleanliness is recorded positively as [].",
           "type": "array",
           "items": { "$ref": "#/$defs/conditionPath" }
         },
@@ -57,9 +57,9 @@
     },
     "color": { "enum": ["throwing", "non-throwing"] },
     "conditionPath": {
-      "description": "Root `param<N>`, then `.member`, `[]` for element access, `.@@name` for a well-known symbol. The grammar is closed.",
+      "description": "One precondition on a parameter position. An access path — root `param<N>`, then `.member`, `[]` for element access, `.@@name` for a well-known symbol — says the symbol is non-throwing given whatever reaches there is. `param<N>=nullish` says the opposite: it is non-throwing given nothing reaches the position, which is how a hazard guarded by an early return on an absent argument is stated. The grammar is closed, so a reader that does not know a form floors the entry rather than dropping the condition it holds.",
       "type": "string",
-      "pattern": "^param(0|[1-9][0-9]*)(\\[\\]|\\.@@[A-Za-z_$][A-Za-z0-9_$]*|\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"
+      "pattern": "^param(0|[1-9][0-9]*)(=nullish|(\\[\\]|\\.@@[A-Za-z_$][A-Za-z0-9_$]*|\\.[A-Za-z_$][A-Za-z0-9_$]*)*)$"
     },
     "accessor": {
       "description": "`false` is a positive record that a declared property really is data. Absence is not that record.",

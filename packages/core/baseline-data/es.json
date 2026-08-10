@@ -76,7 +76,10 @@
         "runtime": "Map.prototype.size"
       },
       "MapConstructor#new()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "Map",
         "runtime": "Map"
       },
@@ -139,7 +142,10 @@
         "runtime": "WeakMap.prototype.set"
       },
       "WeakMapConstructor#new()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "WeakMap",
         "runtime": "WeakMap"
       },
@@ -189,7 +195,10 @@
         "runtime": "Set.prototype.size"
       },
       "SetConstructor#new()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "Set",
         "runtime": "Set"
       },
@@ -238,7 +247,10 @@
         "runtime": "WeakSet.prototype.has"
       },
       "WeakSetConstructor#new()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "WeakSet",
         "runtime": "WeakSet"
       }
@@ -859,22 +871,34 @@
         "runtime": "Array.from"
       },
       "MapConstructor#new()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "Map",
         "runtime": "Map"
       },
       "WeakMapConstructor#new()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "WeakMap",
         "runtime": "WeakMap"
       },
       "SetConstructor#new()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "Set",
         "runtime": "Set"
       },
       "WeakSetConstructor#new()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "WeakSet",
         "runtime": "WeakSet"
       },
@@ -4101,7 +4125,10 @@
         "runtime": "Number.prototype.toExponential"
       },
       "Number#toPrecision": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "accessor": false,
         "spec": "Number.prototype.toPrecision",
         "runtime": "Number.prototype.toPrecision"

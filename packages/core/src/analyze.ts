@@ -1,5 +1,6 @@
 import ts from "typescript";
 import type {
+  AbsenceReason,
   ConsumptionReason,
   FloorReason,
   FloorSource,
@@ -86,6 +87,20 @@ interface FlooredConditionArgument extends ConditionArgument {
   readonly kind: "floored-condition-argument";
   readonly reason: UndischargedReason;
   readonly staleFile?: string | undefined;
+  readonly source?: FloorSource | undefined;
+}
+
+/**
+ * The condition asked for no argument at the position and got one. Its own
+ * kind rather than one more reason on the two above, because the sentence it
+ * has to be told is the opposite one: stop passing, rather than pass something
+ * clean. Only a carrier can state the condition, so there is no `entry` half to
+ * this one either.
+ */
+interface UnwantedConditionArgument extends ConditionArgument {
+  readonly kind: "unwanted-condition-argument";
+  readonly reason: AbsenceReason;
+  /** The *callee's* declaration: it is the call that has to change. */
   readonly source?: FloorSource | undefined;
 }
 
@@ -181,6 +196,7 @@ export type Finding =
   | InferredThrowingConstruction
   | ThrowingConditionArgument
   | FlooredConditionArgument
+  | UnwantedConditionArgument
   | ThrowingConsumption
   | IteratorThrow
   | ThrowingReturnedIterator
@@ -258,6 +274,13 @@ function findingFor(escape: BodyEscape): Finding {
         kind: "floored-condition-argument",
         reason: escape.reason,
         staleFile: escape.staleFile,
+        source: escape.source,
+        ...conditionArgument(escape.node, escape.condition),
+      };
+    case "argument-present":
+      return {
+        kind: "unwanted-condition-argument",
+        reason: escape.reason,
         source: escape.source,
         ...conditionArgument(escape.node, escape.condition),
       };

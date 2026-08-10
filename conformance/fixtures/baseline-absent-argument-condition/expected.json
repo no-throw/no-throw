@@ -1,0 +1,69 @@
+{
+  "description": "Every hazard the collection constructors have is about the iterable, and ECMA-262 returns before all of it when the argument is absent. The entry states that as a condition on passing nothing rather than as a color, so the call site decides: `new Map()` is clean however the type arguments are written, and an explicit `undefined` is clean too, because the guard ECMA-262 writes is `either undefined or null`. `narrowedToNothing` is why the condition is read off the syntax and never off the type: the checker narrows `held` to `undefined` there, and a closure has already written an iterable into it.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 25,
+      "column": 10,
+      "endLine": 25,
+      "endColumn": 26,
+      "messageId": "carriedConditionArgumentPassed",
+      "message": "Call to `Map` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `iterable`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/MidnightDesign/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.",
+      "suggestions": [
+        {
+          "desc": "Bridge this with `try`/`catch`.",
+          "output": [
+            "type Entries = readonly (readonly [string, string])[];",
+            "",
+            "/** @nothrow */",
+            "export function emptyMap(): Map<string, string> {",
+            "  return new Map();",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function emptyTypedMap(): Map<string, string> {",
+            "  return new Map<string, string>();",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function emptySet(): Set<string> {",
+            "  return new Set<string>();",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function explicitlyNothing(): Map<string, string> {",
+            "  return new Map<string, string>(undefined);",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function fromEntries(entries: Entries): Map<string, string> {",
+            "  try {",
+            "    return new Map(entries);",
+            "  } catch {}",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function narrowedToNothing(entries: Entries): Map<string, string> {",
+            "  let held: Entries | undefined = undefined;",
+            "  const fill = (): void => {",
+            "    held = entries;",
+            "  };",
+            "  fill();",
+            "  return new Map(held);",
+            "}",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "line": 35,
+      "column": 10,
+      "endLine": 35,
+      "endColumn": 23,
+      "messageId": "carriedConditionArgumentPassed",
+      "message": "Call to `Map` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `iterable`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/MidnightDesign/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+    }
+  ]
+}

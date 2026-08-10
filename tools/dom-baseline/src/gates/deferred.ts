@@ -73,7 +73,11 @@ export class DeferredProbe {
     member: DomMember,
     paramIndex: number,
   ): Promise<DeferredVerdict> {
-    const path = formatConditionPath({ paramIndex, segments: [] });
+    const path = formatConditionPath({
+      requires: "entered",
+      paramIndex,
+      segments: [],
+    });
     const verdict = (
       adjudication: Adjudication,
       evidence: string,

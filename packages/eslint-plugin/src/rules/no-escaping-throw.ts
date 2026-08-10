@@ -1,6 +1,7 @@
 import {
   analyzeSourceFile,
   PACKAGE_SOURCE,
+  type AbsenceReason,
   type BaselineSource,
   type ConsumptionReason,
   type EntrySite,
@@ -176,6 +177,14 @@ const diagnostics = {
     "Call to `{{callee}}` escapes this `@nothrow` function: the carrier that " +
     "colors it declares it non-throwing given `{{path}}`, and {{reason}}. " +
     "{{outs}}",
+  // The mirror image, for the condition that asks for no argument at all. Its
+  // own message rather than a reason inside the two above, because the clause
+  // naming the claim inverts with it: "given `iterable`" would send the reader
+  // to pass something clean, and the remedy is to pass nothing.
+  carriedConditionArgumentPassed:
+    "Call to `{{callee}}` escapes this `@nothrow` function: the carrier that " +
+    "colors it declares it non-throwing given nothing is passed for " +
+    "`{{path}}`, and {{reason}}. {{outs}}",
   unbridgedConsumption:
     "Consuming this iterator escapes this `@nothrow` function: {{reason}}. " +
     "{{outs}}",
@@ -311,6 +320,7 @@ const bridgeFor: Record<DiagnosticId, Bridge | undefined> = {
   conditionArgumentFloored: BRIDGE,
   carriedConditionArgumentThrowing: BRIDGE,
   carriedConditionArgumentFloored: BRIDGE,
+  carriedConditionArgumentPassed: BRIDGE,
   unbridgedConsumption: BRIDGE,
   inferredThrowingConsumption: BRIDGE,
   iteratorThrow: BRIDGE,
@@ -505,6 +515,18 @@ const whyUndischarged: Record<
   "unreadable-manifest": `the argument passed for it ${UNREADABLE_MANIFEST}`,
   "superseded-tag": `the argument passed for it ${SUPERSEDED_TAG}`,
   "unusable-entry": `the argument passed for it ${UNUSABLE_ENTRY}`,
+};
+
+/**
+ * The same contract for the condition that asks for no argument at all: a
+ * reason here says why the position is not empty rather than why what landed
+ * there is throwing, and a spread cannot claim more than it knows.
+ */
+const whyNotAbsent: Record<AbsenceReason, string> = {
+  "argument-passed": "this call passes something",
+  unresolvable:
+    "a spread reaches that position, so whether anything arrives there is a " +
+    "runtime question",
 };
 
 function whyArgumentUndischarged(
@@ -746,6 +768,15 @@ type Report =
       };
     }
   | {
+      readonly messageId: "carriedConditionArgumentPassed";
+      readonly data: {
+        readonly callee: string;
+        readonly path: string;
+        readonly reason: string;
+        readonly outs: string;
+      };
+    }
+  | {
       readonly messageId: "unbridgedConsumption" | "unprovableReturnedIterator";
       readonly data: { readonly reason: string; readonly outs: string };
     }
@@ -811,6 +842,7 @@ function sourceOf(finding: Finding): FloorSource {
   switch (finding.kind) {
     case "unbridged-call":
     case "floored-condition-argument":
+    case "unwanted-condition-argument":
     case "throwing-consumption":
     case "throwing-returned-iterator":
     case "unbridged-hidden-transfer":
@@ -879,6 +911,16 @@ function reportFor(
               entry: entryText(finding.entry, cwd),
             },
           };
+    case "unwanted-condition-argument":
+      return {
+        messageId: "carriedConditionArgumentPassed",
+        data: {
+          callee: finding.callee,
+          path: finding.path,
+          reason: whyNotAbsent[finding.reason],
+          outs: outs("call", source),
+        },
+      };
     case "floored-condition-argument": {
       const reason = whyArgumentUndischarged(
         finding.reason,

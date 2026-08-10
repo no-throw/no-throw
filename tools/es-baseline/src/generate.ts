@@ -17,7 +17,12 @@ import { classifyMembers, type Proposal } from "./classify.js";
 import { DIALS, type Dials } from "./dials.js";
 import { currentSymbolSet, recordedSymbolSetPath } from "./gates/drift.js";
 import type { Counterexample } from "./gates/fuzz.js";
-import { runFuzzGate, type Claim, type GateReport } from "./gates/run.js";
+import {
+  absentPositions,
+  runFuzzGate,
+  type Claim,
+  type GateReport,
+} from "./gates/run.js";
 import { REFUTED_KEYS } from "./refutations.js";
 import { extractSpec } from "./spec/extract.js";
 import { loadSpecHtml } from "./spec/source.js";
@@ -74,6 +79,7 @@ export function generateBaseline(dials: Dials = DIALS): GenerationReport {
     draft.set(proposal.member.key, {
       cleanCall: proposal.color === "non-throwing",
       cleanGet: fact !== undefined && fact !== false && fact.get === "non-throwing",
+      absent: absentPositions(proposal.conditions),
     });
     if (proposal.color === "throwing") throwing.add(proposal.member.key);
   }
