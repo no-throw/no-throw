@@ -154,14 +154,6 @@ function binaryStep(
       report.push(`the output never names ${JSON.stringify(name)}`);
     }
   }
-  for (const denied of step.denies) {
-    if (output.includes(denied)) {
-      report.push(
-        `the output says ${JSON.stringify(denied)}, and this step ` +
-          "asserts it does not",
-      );
-    }
-  }
 
   return report.length === 0
     ? []

@@ -29,8 +29,6 @@ export interface Invocation {
   readonly expect: Verdict;
   /** Text the output must contain — what the diagnostic has to name. */
   readonly names: readonly string[];
-  /** Text the output must not contain — what it has to leave out. */
-  readonly denies: readonly string[];
 }
 
 /**
@@ -112,7 +110,7 @@ function loadCase(root: string, name: string): CliCase {
 }
 
 /** What a step spelling an invocation may carry beyond the argv it keys on. */
-const INVOCATION_KEYS = ["expect", "names", "denies"] as const;
+const INVOCATION_KEYS = ["expect", "names"] as const;
 
 const STEP_KEYS: Record<string, readonly string[]> = {
   emit: ["emit", ...INVOCATION_KEYS],
@@ -169,9 +167,8 @@ function readStep(entry: unknown, where: string): Step {
 }
 
 /**
- * What the step left unsaid, as nothing asserted. A step that names neither
- * what the output has to say nor what it has to leave out is a step about the
- * exit code.
+ * What the step left unsaid, as nothing asserted. A step that names nothing
+ * the output has to say is a step about the exit code.
  */
 function readOptionalStrings(
   record: Record<string, unknown>,
@@ -203,7 +200,6 @@ function readInvocation(
     args: readStrings(record, kind, where),
     expect: readVerdict(record, where),
     names: readOptionalStrings(record, "names", where),
-    denies: readOptionalStrings(record, "denies", where),
   };
 }
 

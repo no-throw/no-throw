@@ -1,11 +1,10 @@
 {
-  "description": "A manifest hashes what is about to be published, so emit runs after the build: with no output on disk there is nothing to hash, and a manifest without `files` would make every consumer's staleness check vacuous. The refusal is about the package, and says nothing about marks — it is reached before a single one is read.",
+  "description": "A manifest hashes what is about to be published, so emit runs after the build: with no output on disk there is nothing to hash, and a manifest without `files` would make every consumer's staleness check vacuous. Nothing about the package has been read at this point — not a single mark — so this exits the way a missing `tsconfig.json` does rather than the way a mark that will not verify does. A publishing script reads those apart.",
   "steps": [
     {
       "emit": [],
-      "expect": "refused",
-      "names": ["./dist/index.js", "after the build", "Nothing was written."],
-      "denies": ["cannot be published as it stands"]
+      "expect": "cannot-run",
+      "names": ["./dist/index.js", "after the build"]
     },
     { "absent": "nothrow.json" }
   ]

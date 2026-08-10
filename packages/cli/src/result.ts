@@ -7,7 +7,10 @@ export interface CommandResult {
   readonly err: string;
 }
 
-/** Nothing could be analyzed: a bad invocation or project, not a bad package. */
+/**
+ * Nothing could be analyzed: a bad invocation, a project that would not open,
+ * or a bug in this tool. Never a bad package — no run that exits here read one.
+ */
 export const CANNOT_RUN = 2;
 
 /**

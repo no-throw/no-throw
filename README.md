@@ -511,7 +511,9 @@ stale:
 It recomputes the manifest and compares. A rebuilt `.js` with identical
 declarations is drift like any other, because the hash is what your consumers
 check. Exit codes are `0` wrote or matched, `1` refused or drifted, `2` could
-not run.
+not run. Running it *before* the build is the last of those rather than the
+middle one: with no output to hash, emit stops before it has read a single
+mark, and a `1` there would be a verdict on a package nothing looked at.
 
 If you ship `.ts` source or URL imports, you need no manifest at all: your tags
 are honored and verified directly, because module resolution reaching source
