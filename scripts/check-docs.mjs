@@ -7,6 +7,10 @@
 // asserts, character for character once the hard wrap is undone. That fence is
 // what marks a *whole* message; the elided fragments inside the `ts` samples
 // are illustrations, and there is nothing verbatim in them to hold.
+//
+// A refusal is normative in the same way and for the same reason — it is text a
+// reader acts on from the CI log alone — so what a fixture's `refuses` names
+// counts here exactly as a diagnostic's `message` does.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,6 +44,9 @@ function assertedMessages() {
       if (typeof diagnostic.message === "string") {
         messages.add(diagnostic.message);
       }
+    }
+    for (const refusal of expected.refuses ?? []) {
+      if (typeof refusal === "string") messages.add(refusal);
     }
   }
 

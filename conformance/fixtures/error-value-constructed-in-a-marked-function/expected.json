@@ -1,0 +1,4 @@
+{
+  "description": "Building an error value to return is the error-as-value pattern the tool exists to enable: `new Error`, a native subclass, a derived class whose implicit `super()` reaches the base, and a marked constructor writing `super()` by hand are all green.",
+  "diagnostics": []
+}

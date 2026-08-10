@@ -33,6 +33,37 @@ export interface ProbeResult {
 const MAX_CALLS = 400;
 const MAX_VALUES_PER_PARAMETER = 6;
 
+/** How a member is entered, and every value it is entered on. */
+interface Invocation {
+  /** Receivers for a method; NewTargets for a construct signature. */
+  readonly on: readonly unknown[];
+  readonly enter: (on: unknown, args: readonly unknown[]) => unknown;
+}
+
+/** Why a member could not be reached at all, in `ProbeResult`'s words. */
+interface Unreachable {
+  readonly unreachable: string;
+}
+
+type AnyConstructor = new (...args: unknown[]) => object;
+
+/**
+ * The NewTargets a construct signature is probed with. A subclass belongs here
+ * because that is how a derived class reaches the entry — `class MyError
+ * extends Error {}` has an implicit `super()` whose color is this one — and it
+ * is the type-conformant hostile axis a constructor has, the way a hostile
+ * receiver is one for a method.
+ */
+function newTargets(callable: object): readonly unknown[] {
+  const targets: unknown[] = [callable];
+  try {
+    targets.push(class extends (callable as AnyConstructor) {});
+  } catch {
+    /* not subclassable; the member is simply probed on one NewTarget */
+  }
+  return targets;
+}
+
 export class HostileFuzzer {
   readonly #arbitrary: Arbitrary;
 
@@ -42,14 +73,9 @@ export class HostileFuzzer {
 
   /** Drive a member with hostile receivers and conformant arguments. */
   probeCall(member: LibMember): ProbeResult {
-    const target = this.#target(member);
-    if (typeof target !== "function") {
-      return skip(member.key, "call", "not implemented by this engine");
-    }
-
-    const receivers = this.#receiversFor(member);
-    if (receivers.length === 0) {
-      return skip(member.key, "call", "no constructible receiver");
+    const invocation = this.#invocationFor(member);
+    if ("unreachable" in invocation) {
+      return skip(member.key, "call", invocation.unreachable);
     }
 
     const pools: (readonly unknown[])[] = [];
@@ -72,19 +98,19 @@ export class HostileFuzzer {
     let calls = 0;
     let truncated = false;
 
-    outer: for (const receiver of receivers) {
+    outer: for (const on of invocation.on) {
       for (const args of tuples) {
         if (++calls > MAX_CALLS) {
           truncated = true;
           break outer;
         }
         try {
-          const result = Reflect.apply(target, receiver, spread(args, restFrom));
+          const result = invocation.enter(on, spread(args, restFrom));
           // A rejected promise is the member's own color, not a sync throw.
           if (isThenable(result)) result.then(noop, noop);
         } catch (error) {
           counterexamples.push(
-            counterexample(member.key, "call", error, receiver, args),
+            counterexample(member.key, "call", error, on, args),
           );
         }
       }
@@ -128,6 +154,50 @@ export class HostileFuzzer {
       calls,
       truncated: false,
       counterexamples,
+    };
+  }
+
+  /**
+   * How this member is entered, and what to enter it on — or why it cannot be
+   * reached at all. A construct signature and a call signature are the two
+   * members whose callable *is* the global rather than a property of one, and
+   * whose entry is `new` and a bare call rather than a method invocation. Before
+   * they were reachable here, a clean claim about `new Error(…)` could only ever
+   * ship floored, because unprobed is not evidence.
+   */
+  #invocationFor(member: LibMember): Invocation | Unreachable {
+    if (member.kind === "construct" || member.kind === "call") {
+      const callable = resolveHolder(member.runtimePath);
+      if (typeof callable !== "function") {
+        return { unreachable: "not implemented by this engine" };
+      }
+      return member.kind === "construct"
+        ? {
+            on: newTargets(callable),
+            enter: (target, args) =>
+              Reflect.construct(
+                callable as AnyConstructor,
+                args,
+                target as AnyConstructor,
+              ),
+          }
+        : {
+            on: [undefined],
+            enter: (_, args) => Reflect.apply(callable, undefined, args),
+          };
+    }
+
+    const target = this.#target(member);
+    if (typeof target !== "function") {
+      return { unreachable: "not implemented by this engine" };
+    }
+    const receivers = this.#receiversFor(member);
+    if (receivers.length === 0) {
+      return { unreachable: "no constructible receiver" };
+    }
+    return {
+      on: receivers,
+      enter: (receiver, args) => Reflect.apply(target, receiver, args),
     };
   }
 
@@ -237,6 +307,27 @@ function counterexample(
 /** One line a maintainer can act on: what threw, on what, with what. */
 export function formatCounterexample(found: Counterexample): string {
   return `${found.key.padEnd(38)} ${found.probe} ${found.error}: ${found.message} [receiver ${found.receiver}, args ${JSON.stringify(found.args)}]`;
+}
+
+/**
+ * The precision report, whole. Every entry is named rather than sampled: a cap
+ * would read as "these are all of them" while hiding the rest, and nothing else
+ * looks in this direction at all.
+ */
+export function formatUnrefuted(results: readonly ProbeResult[]): readonly string[] {
+  if (results.length === 0) {
+    return ["", "precision: every throwing entry the gate could probe was reproduced."];
+  }
+  return [
+    "",
+    `precision — ${results.length} throwing entr${results.length === 1 ? "y" : "ies"} the gate probed and could not make throw. Not a refutation; a list of places the baseline may be stricter than JavaScript:`,
+    ...[...results]
+      .sort((left, right) => left.key.localeCompare(right.key))
+      .map(
+        (result) =>
+          `  ${result.key.padEnd(42)} ${result.calls} calls${result.truncated ? " (probed to the budget, not exhaustively)" : ""}`,
+      ),
+  ];
 }
 
 function skip(key: string, probe: "call" | "get", reason: string): ProbeResult {

@@ -1,0 +1,13 @@
+{
+  "description": "The most markable code there is — string parsing into a `Map` — is green: `Map`/`Set` membership and mutation, `Object.entries`, and the `String` methods that take an optional parameter all carry a clean color. `new Map()` is the control, and it is reported: every hazard the constructor has is about the iterable, ECMA-262 returns before all of it when the argument is absent, and an entry is a fact about the function rather than about the arity a call used.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 29,
+      "column": 10,
+      "endLine": 29,
+      "endColumn": 19,
+      "messageId": "unbridgedCall"
+    }
+  ]
+}

@@ -25,6 +25,18 @@ export interface ExportKey {
  */
 export interface ExportSurface {
   keyOf(declaration: ts.Declaration): ExportKey | undefined;
+  /**
+   * Every symbol path a key lookup at this subpath can succeed with, sorted.
+   * The walk is the only thing that knows what a key could have been, so what
+   * an entry keyed at nothing should have said is read off it rather than
+   * guessed at — and read off the keys the walk *kept*, since a path it
+   * reached and then lost to first-path-wins is a path no lookup will find.
+   */
+  publishedAt(subpath: string): readonly string[];
+  /** The subpaths the walk reached anything through, sorted. */
+  subpaths(): readonly string[];
+  /** What a key reaches, which is what a rung would answer about. */
+  declarationsAt(subpath: string, symbolPath: string): readonly ts.Declaration[];
 }
 
 /**
@@ -71,11 +83,21 @@ export function surfaceOver(
       const sourceFile = sourceFileAt(file, program);
       if (sourceFile === undefined) continue;
       for (const module of modulesIn(sourceFile, checker)) {
-        for (const exported of checker.getExportsOfModule(module)) {
-          record(keys, checker, subpath, exported.getName(), exported, 0);
+        for (const [name, exported] of publishedBy(module, checker)) {
+          record(keys, checker, subpath, name, exported, 0);
         }
       }
     }
+  }
+
+  // Inverted from the keys themselves rather than collected during the walk:
+  // what a lookup can find is exactly what survived first-path-wins, and a
+  // path the walk reached and then lost would be a key nothing resolves.
+  const reached = new Map<string, Map<string, ts.Declaration[]>>();
+  for (const [declaration, { subpath, symbolPath }] of keys) {
+    const at = reached.get(subpath) ?? new Map<string, ts.Declaration[]>();
+    reached.set(subpath, at);
+    at.set(symbolPath, [...(at.get(symbolPath) ?? []), declaration]);
   }
 
   return {
@@ -86,7 +108,53 @@ export function surfaceOver(
       const holder = typeHolderOf(declaration);
       return holder === undefined ? undefined : keys.get(holder);
     },
+    publishedAt: (subpath) =>
+      [...(reached.get(subpath)?.keys() ?? [])].sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    subpaths: () => [...reached.keys()].sort((a, b) => a.localeCompare(b)),
+    declarationsAt: (subpath, symbolPath) =>
+      reached.get(subpath)?.get(symbolPath) ?? [],
   };
+}
+
+/**
+ * The names a module publishes, each with the symbol behind it.
+ *
+ * `export =` is the shape a CommonJS package's declarations take, and the
+ * checker reports no exports at all for one: there is no export table to walk,
+ * because the module *is* the exported value. What a consumer can name through
+ * it is what that value's type carries, so those are its published names —
+ * `m.red` reached the same way `export const red` would have been.
+ */
+function publishedBy(
+  module: ts.Symbol,
+  checker: ts.TypeChecker,
+): readonly (readonly [string, ts.Symbol])[] {
+  const assigned = exportedValueOf(module, checker);
+  if (assigned !== undefined) {
+    return checker
+      .getPropertiesOfType(assigned)
+      .map((property) => [property.getName(), property] as const);
+  }
+  return checker
+    .getExportsOfModule(module)
+    .map((exported) => [exported.getName(), exported] as const);
+}
+
+/** The type of what `export =` assigned, where the module assigned one. */
+function exportedValueOf(
+  module: ts.Symbol,
+  checker: ts.TypeChecker,
+): ts.Type | undefined {
+  const assignment = module.exports?.get(ts.InternalSymbolName.ExportEquals);
+  if (assignment === undefined) return undefined;
+
+  const resolved = aliasedSymbol(assignment, checker);
+  const at = resolved.valueDeclaration ?? resolved.declarations?.[0];
+  return at === undefined
+    ? undefined
+    : checker.getTypeOfSymbolAtLocation(resolved, at);
 }
 
 /**
@@ -201,5 +269,37 @@ function sourceFileAt(
     );
     files.set(program, index);
   }
-  return index.get(file);
+
+  for (const spelling of spellingsOf(file)) {
+    const found = index.get(spelling);
+    if (found !== undefined) return found;
+  }
+  return undefined;
 }
+
+/**
+ * How a program could be holding this entry point.
+ *
+ * A `package.json` names what a *runtime* resolves, and most of npm names
+ * nothing else — `"exports": { ".": "./index.js" }` beside an `index.d.ts` is
+ * the ordinary published shape. What a program holds for such a package is the
+ * declaration file, never the JavaScript, so an entry point is also asked for
+ * under the declaration extension TypeScript pairs it with: the same mapping
+ * module resolution itself applies, and the only spelling of that file the
+ * program has.
+ */
+function spellingsOf(file: string): readonly string[] {
+  for (const [runtime, declaration] of DECLARATIONS_FOR) {
+    if (file.endsWith(runtime)) {
+      return [file, `${file.slice(0, -runtime.length)}${declaration}`];
+    }
+  }
+  return [file];
+}
+
+const DECLARATIONS_FOR: readonly (readonly [string, string])[] = [
+  [".js", ".d.ts"],
+  [".jsx", ".d.ts"],
+  [".mjs", ".d.mts"],
+  [".cjs", ".d.cts"],
+];

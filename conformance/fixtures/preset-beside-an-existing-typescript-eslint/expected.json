@@ -1,0 +1,32 @@
+{
+  "description": "The preset loads into a config that has already registered `@typescript-eslint`, which is every project with typed lint in CI. It registers the object it was handed rather than one of its own, so flat config sees one plugin under that name and the same three rules report as they do without the existing registration.",
+  "config": "recommended-beside-typescript-eslint",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 6,
+      "column": 5,
+      "endLine": 6,
+      "endColumn": 13,
+      "messageId": "ineffectiveMarkNoSite",
+      "message": "`@nothrow` binds to nothing here, and there is no valid site near it to move it to. A mark binds on a declaration whose own body — or whose initializer, read through parentheses, `as` and `satisfies` — is exactly one function literal."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 12,
+      "column": 3,
+      "endLine": 12,
+      "endColumn": 11,
+      "messageId": "floatingVoid"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { ColorTable, ColorTables } from "./document.js";
-import { manifestAt } from "./manifest.js";
+import { manifestAt, type ManifestState } from "./manifest.js";
 import { join, normalize, packageHomeOf, type PackageHome } from "./packages.js";
 
 const EMPTY: ColorTables = new Map();
@@ -34,6 +34,28 @@ export function overlaysFor(asking: PackageHome | undefined): ColorTables {
   const found = scan(asking.directory);
   scans.set(asking.directory, found);
   return found;
+}
+
+/** One installed overlay, as something to report on rather than to ask. */
+export interface InstalledOverlay {
+  readonly home: PackageHome;
+  readonly state: ManifestState;
+}
+
+/**
+ * Every `@no-throw/*` package a project has installed, with what its
+ * `nothrow.json` came to — including the ones the scan passed over, which is
+ * the half a resolver never has to name and a reader checking their setup
+ * always does.
+ */
+export function installedOverlaysFor(
+  asking: PackageHome | undefined,
+): readonly InstalledOverlay[] {
+  if (asking === undefined) return [];
+  return installedOverlays(asking.directory).map((home) => ({
+    home,
+    state: manifestAt(home),
+  }));
 }
 
 function scan(directory: string): ColorTables {

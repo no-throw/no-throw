@@ -25,6 +25,8 @@ export type ManifestState =
        * by — never the npm name the overlay itself was published under.
        */
       readonly target: string | undefined;
+      /** The file as it was written, for a reader that reports on it. */
+      readonly document: Record<string, unknown>;
     }
   | { readonly kind: "stale"; readonly file: string }
   | { readonly kind: "unreadable" }
@@ -61,6 +63,9 @@ function readManifest(home: PackageHome): ManifestState {
 
   const document = readColorDocument(path, manifestSchema(), [], TABLES);
   if (document.kind !== "read") {
+    // A manifest that does not describe what it claims to hands the package
+    // back to its surviving tags, which is what an absent one does — so the
+    // two are one state here, and only a future wire version is kept apart.
     return document.kind === "unreadable" ? { kind: "unreadable" } : ABSENT;
   }
 
@@ -72,6 +77,7 @@ function readManifest(home: PackageHome): ManifestState {
     kind: "valid",
     table: document.tableAt([]),
     target: typeof target === "string" ? target : undefined,
+    document: document.value,
   };
 }
 

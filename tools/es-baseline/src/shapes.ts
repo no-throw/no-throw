@@ -107,7 +107,7 @@ const RULES: readonly ShapeRule[] = [
   },
   {
     id: "brand",
-    test: /RequireInternalSlot|does not have an? \[\[|Validate(TypedArray|IntegerTypedArray|NonRevokedProxy)\b|This(Number|String|BigInt|Time|Symbol|Boolean)Value|IsPromise\(\w+\) is false|IsRegExp/,
+    test: /RequireInternalSlot|does not have an? \[\[|Validate(TypedArray|IntegerTypedArray)\b|This(Number|String|BigInt|Time|Symbol|Boolean)Value|IsPromise\(\w+\) is false|IsRegExp/,
     domain: "brand",
   },
   { id: "isRegExp", test: /isRegexp is true|IsRegExp\(\w+\)/, domain: "string" },
@@ -165,19 +165,23 @@ export interface Shape {
  * its target, so "might this be a Proxy?" has no static answer for any object
  * and flooring on it would color nothing.
  *
- * Only the internal methods themselves qualify. The abstract operations that
- * *call* them — `GetV` coerces first, `RegExpExec` checks a user-supplied
- * `exec`'s result, `OrdinaryHasInstance` checks `C.prototype` — have throws of
+ * Only the internal methods themselves qualify, and one operation that is
+ * definitionally about a Proxy: `ValidateNonRevokedProxy` takes a Proxy exotic
+ * object and its single throw is that the Proxy was revoked, so a chain
+ * reaching it went through one just as surely as a trap does. The abstract
+ * operations that merely *call* internal methods do not qualify — `GetV`
+ * coerces first, `RegExpExec` checks a user-supplied `exec`'s result,
+ * `OrdinaryHasInstance` checks `C.prototype` — because they have throws of
  * their own that are nothing to do with a trap, and swallowing those is
  * unsound. Their trap-derived causes still carry an internal method in the
  * chain, so nothing is lost by naming this set narrowly.
  */
-const TRAP_DISPATCH = /^\[\[\w+\]\]$/;
+const PROXY_DISPATCH = /^(\[\[\w+\]\]|ValidateNonRevokedProxy)$/;
 
 export function shapeOf(hazard: Hazard): Shape {
   const { rootOp, condition } = hazard;
 
-  if ([...hazard.via, rootOp].some((op) => TRAP_DISPATCH.test(op))) {
+  if ([...hazard.via, rootOp].some((op) => PROXY_DISPATCH.test(op))) {
     return { id: "proxy", domain: undefined, rootOp, condition };
   }
 

@@ -6,9 +6,21 @@ import { asRecord, readString, rejectUnknownKeys } from "./json.js";
 /**
  * How the fixture is wired up: `rules` turns the rules on one by one, which is
  * what most fixtures want; `recommended` installs the shipped preset, so a
- * fixture can assert what a user gets from the config they actually install.
+ * fixture can assert what a user gets from the config they actually install;
+ * `recommended-beside-typescript-eslint` puts the preset into a config that has
+ * already registered `@typescript-eslint`, which is what the audience the
+ * preset is for actually has.
  */
-export type FixtureConfig = "rules" | "recommended";
+export type FixtureConfig =
+  | "rules"
+  | "recommended"
+  | "recommended-beside-typescript-eslint";
+
+const CONFIGS: readonly FixtureConfig[] = [
+  "rules",
+  "recommended",
+  "recommended-beside-typescript-eslint",
+];
 
 export interface Fixture {
   readonly name: string;
@@ -16,6 +28,13 @@ export interface Fixture {
   readonly description: string;
   readonly config: FixtureConfig;
   readonly expected: readonly Diagnostic[];
+  /**
+   * Text a refusal has to name. Non-empty means the run must not complete at
+   * all: a carrier file the project wrote and the engine cannot honor stops
+   * everything rather than being reported per file, and "the lint died saying
+   * this" is as much an observable behavior as a diagnostic is.
+   */
+  readonly refuses: readonly string[];
 }
 
 export function loadFixtures(fixturesRoot: string): Fixture[] {
@@ -36,6 +55,7 @@ export function loadFixture(directory: string): Fixture {
   const path = join(directory, "expected.json");
   const raw: unknown = JSON.parse(readFileSync(path, "utf8"));
   const root = asRecord(raw, path);
+  rejectUnknownKeys(root, FIXTURE_KEYS, path);
 
   const diagnostics = root["diagnostics"];
   if (!Array.isArray(diagnostics)) {
@@ -50,7 +70,27 @@ export function loadFixture(directory: string): Fixture {
     expected: diagnostics.map((entry, index) =>
       readDiagnostic(entry, `${path}: diagnostics[${index}]`),
     ),
+    refuses: readRefusals(root, path),
   };
+}
+
+function readRefusals(
+  root: Record<string, unknown>,
+  path: string,
+): readonly string[] {
+  const value = root["refuses"];
+  if (value === undefined) return [];
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.some((each) => typeof each !== "string")
+  ) {
+    throw new Error(
+      `${path}: \`refuses\`, when present, must be a non-empty array of ` +
+        "strings the refusal has to name",
+    );
+  }
+  return value as string[];
 }
 
 function readConfig(
@@ -59,13 +99,16 @@ function readConfig(
 ): FixtureConfig {
   const value = root["config"];
   if (value === undefined) return "rules";
-  if (value !== "rules" && value !== "recommended") {
-    throw new Error(`${path}: \`config\` must be "rules" or "recommended"`);
+  if (!CONFIGS.includes(value as FixtureConfig)) {
+    throw new Error(
+      `${path}: \`config\` must be one of ${CONFIGS.map((name) => `"${name}"`).join(", ")}`,
+    );
   }
-  return value;
+  return value as FixtureConfig;
 }
 
 const POSITION_KEYS = ["line", "column", "endLine", "endColumn"] as const;
+const FIXTURE_KEYS = ["description", "config", "diagnostics", "refuses"];
 const DIAGNOSTIC_KEYS = [
   "file",
   ...POSITION_KEYS,

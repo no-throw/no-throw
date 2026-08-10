@@ -1,4 +1,4 @@
 /** @nothrow */
-export function wrap(target: object, handler: ProxyHandler<object>): object {
-  return new Proxy(target, handler);
+export function target(reference: WeakRef<object>): object | undefined {
+  return reference.deref();
 }

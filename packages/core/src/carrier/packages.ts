@@ -64,6 +64,11 @@ function buildHome(directory: string): PackageHome | undefined {
  * The subpaths the package publishes, each with the files published there.
  * `exports` is authoritative where it exists; the legacy `types`/`typings`/
  * `main` trio answers for packages predating it.
+ *
+ * There is nothing to gain from consulting `types` beside an `exports` that
+ * does not name declarations: TypeScript resolves such a package to no
+ * declaration file at all — it reports the types it can see and declines to
+ * use them — so the file would not be in the program to be found.
  */
 function entryPoints(
   directory: string,
