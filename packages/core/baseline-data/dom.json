@@ -24,9 +24,9 @@
     "AnimationEvent#animationName",
     "AnimationEvent#elapsedTime",
     "AnimationEvent#pseudoElement",
-    "AnimationEvent.new",
+    "AnimationEvent.new()",
     "AnimationPlaybackEvent#timelineTime",
-    "AnimationPlaybackEvent.new",
+    "AnimationPlaybackEvent.new()",
     "AudioBuffer#duration",
     "AudioBuffer#length",
     "AudioBuffer#numberOfChannels",
@@ -36,7 +36,7 @@
     "AudioBufferSourceNode#loopEnd",
     "AudioBufferSourceNode#loopStart",
     "AudioBufferSourceNode#playbackRate",
-    "AudioBufferSourceNode.new",
+    "AudioBufferSourceNode.new()",
     "AudioContext#baseLatency",
     "AudioContext#getOutputTimestamp",
     "AudioContext#outputLatency",
@@ -73,7 +73,7 @@
     "AudioParam#minValue",
     "AudioParam#value",
     "AudioProcessingEvent#playbackTime",
-    "AudioProcessingEvent.new",
+    "AudioProcessingEvent.new()",
     "AudioScheduledSourceNode#onended",
     "AudioWorkletNode#onprocessorerror",
     "AudioWorkletNode#port",
@@ -92,12 +92,12 @@
     "BiquadFilterNode#type",
     "BlobEvent#data",
     "BlobEvent#timecode",
-    "BlobEvent.new",
+    "BlobEvent.new()",
     "Body#body",
     "Body#bodyUsed",
     "BroadcastChannel#name",
     "BroadcastChannel#onmessage",
-    "ByteLengthQueuingStrategy.new",
+    "ByteLengthQueuingStrategy.new()",
     "CSSContainerRule#containerName",
     "CSSContainerRule#containerQuery",
     "CSSCounterStyleRule#additiveSymbols",
@@ -130,19 +130,19 @@
     "CSSMathClamp#upper",
     "CSSMathClamp#value",
     "CSSMathInvert#value",
-    "CSSMathInvert.new",
+    "CSSMathInvert.new()",
     "CSSMathMax#values",
-    "CSSMathMax.new",
+    "CSSMathMax.new()",
     "CSSMathMin#values",
-    "CSSMathMin.new",
+    "CSSMathMin.new()",
     "CSSMathNegate#value",
-    "CSSMathNegate.new",
+    "CSSMathNegate.new()",
     "CSSMathProduct#values",
-    "CSSMathProduct.new",
+    "CSSMathProduct.new()",
     "CSSMathSum#values",
     "CSSMathValue#operator",
     "CSSMatrixComponent#matrix",
-    "CSSMatrixComponent.new",
+    "CSSMatrixComponent.new()",
     "CSSNamespaceRule#namespaceURI",
     "CSSNamespaceRule#prefix",
     "CSSNestedDeclarations#style",
@@ -179,7 +179,7 @@
     "CSSTranslate#z",
     "CSSUnitValue#unit",
     "CSSUnitValue#value",
-    "CSSUnparsedValue.new",
+    "CSSUnparsedValue.new()",
     "CSSVariableReferenceValue#fallback",
     "CSSVariableReferenceValue#variable",
     "CSSViewTransitionRule#navigation",
@@ -236,24 +236,24 @@
     "CaretPosition#offset",
     "CaretPosition#offsetNode",
     "ClipboardEvent#clipboardData",
-    "CloseEvent.new",
-    "CompositionEvent.new",
+    "CloseEvent.new()",
+    "CompositionEvent.new()",
     "CompressionStream#readable",
     "ConstantSourceNode#offset",
-    "ConstantSourceNode.new",
+    "ConstantSourceNode.new()",
     "ContentVisibilityAutoStateChangeEvent#skipped",
-    "ContentVisibilityAutoStateChangeEvent.new",
+    "ContentVisibilityAutoStateChangeEvent.new()",
     "ConvolverNode#buffer",
     "ConvolverNode#normalize",
-    "CookieChangeEvent.new",
+    "CookieChangeEvent.new()",
     "CookieStore#onchange",
-    "CountQueuingStrategy.new",
+    "CountQueuingStrategy.new()",
     "Credential#id",
     "CryptoKey#extractable",
     "CryptoKey#type",
     "CryptoKey#usages",
-    "CustomEvent.new",
-    "DOMException.new",
+    "CustomEvent.new()",
+    "DOMException.new()",
     "DOMMatrix#a",
     "DOMMatrix#b",
     "DOMMatrix#c",
@@ -328,14 +328,14 @@
     "DOMPoint#y",
     "DOMPoint#z",
     "DOMPoint.fromPoint",
-    "DOMPoint.new",
+    "DOMPoint.new()",
     "DOMPointReadOnly#toJSON",
     "DOMPointReadOnly#w",
     "DOMPointReadOnly#x",
     "DOMPointReadOnly#y",
     "DOMPointReadOnly#z",
     "DOMPointReadOnly.fromPoint",
-    "DOMPointReadOnly.new",
+    "DOMPointReadOnly.new()",
     "DOMQuad#p1",
     "DOMQuad#p2",
     "DOMQuad#p3",
@@ -343,11 +343,11 @@
     "DOMQuad#toJSON",
     "DOMQuad.fromQuad",
     "DOMQuad.fromRect",
-    "DOMQuad.new",
-    "DOMRect.new",
+    "DOMQuad.new()",
+    "DOMRect.new()",
     "DOMRectList#item",
     "DOMRectList#length",
-    "DOMRectReadOnly.new",
+    "DOMRectReadOnly.new()",
     "DOMStringList#contains",
     "DOMStringList#item",
     "DOMStringList#length",
@@ -356,7 +356,7 @@
     "DataTransfer#files",
     "DataTransfer#items",
     "DataTransfer#setDragImage",
-    "DataTransfer.new",
+    "DataTransfer.new()",
     "DataTransferItem#kind",
     "DataTransferItem#type",
     "DataTransferItem#webkitGetAsEntry",
@@ -367,7 +367,7 @@
     "DeviceMotionEvent#accelerationIncludingGravity",
     "DeviceMotionEvent#interval",
     "DeviceMotionEvent#rotationRate",
-    "DeviceMotionEvent.new",
+    "DeviceMotionEvent.new()",
     "DeviceMotionEventAcceleration#x",
     "DeviceMotionEventAcceleration#y",
     "DeviceMotionEventAcceleration#z",
@@ -378,7 +378,7 @@
     "DeviceOrientationEvent#alpha",
     "DeviceOrientationEvent#beta",
     "DeviceOrientationEvent#gamma",
-    "DeviceOrientationEvent.new",
+    "DeviceOrientationEvent.new()",
     "Document#clear",
     "DragEvent#dataTransfer",
     "DynamicsCompressorNode#attack",
@@ -401,7 +401,7 @@
     "EncodedVideoChunk#duration",
     "EncodedVideoChunk#timestamp",
     "EncodedVideoChunk#type",
-    "Event.new",
+    "Event.new()",
     "EventSource#onerror",
     "EventSource#onmessage",
     "EventSource#onopen",
@@ -413,7 +413,7 @@
     "File#name",
     "FileList#item",
     "FileList#length",
-    "FileReader.new",
+    "FileReader.new()",
     "FileSystem#name",
     "FileSystemDirectoryEntry#createReader",
     "FileSystemDirectoryHandle#kind",
@@ -425,7 +425,7 @@
     "FileSystemFileHandle#kind",
     "FileSystemHandle#kind",
     "FileSystemHandle#name",
-    "FocusEvent.new",
+    "FocusEvent.new()",
     "FontFace#ascentOverride",
     "FontFace#descentOverride",
     "FontFace#display",
@@ -442,7 +442,7 @@
     "FontFaceSet#onloadingdone",
     "FontFaceSet#onloadingerror",
     "FontFaceSet#status",
-    "FontFaceSetLoadEvent.new",
+    "FontFaceSetLoadEvent.new()",
     "GPUError#message",
     "GainNode#gain",
     "GenericTransformStream#readable",
@@ -507,7 +507,7 @@
     "IDBTransaction#db",
     "IDBTransaction#error",
     "IDBVersionChangeEvent#oldVersion",
-    "IDBVersionChangeEvent.new",
+    "IDBVersionChangeEvent.new()",
     "ImageBitmap#close",
     "ImageBitmap#height",
     "ImageBitmap#width",
@@ -530,7 +530,7 @@
     "ImageTrackList#ready",
     "ImageTrackList#selectedIndex",
     "ImageTrackList#selectedTrack",
-    "InputEvent.new",
+    "InputEvent.new()",
     "IntersectionObserver#disconnect",
     "IntersectionObserver#observe",
     "IntersectionObserver#root",
@@ -541,8 +541,8 @@
     "IntersectionObserverEntry#intersectionRatio",
     "IntersectionObserverEntry#isIntersecting",
     "IntersectionObserverEntry#time",
-    "IntersectionObserverEntry.new",
-    "KeyboardEvent.new",
+    "IntersectionObserverEntry.new()",
+    "KeyboardEvent.new()",
     "KeyframeEffect#composite",
     "KeyframeEffect#iterationComposite",
     "KeyframeEffect#pseudoElement",
@@ -582,7 +582,7 @@
     "MediaQueryList#onchange",
     "MediaQueryListEvent#matches",
     "MediaQueryListEvent#media",
-    "MediaQueryListEvent.new",
+    "MediaQueryListEvent.new()",
     "MediaRecorder#audioBitsPerSecond",
     "MediaRecorder#mimeType",
     "MediaRecorder#ondataavailable",
@@ -652,7 +652,7 @@
     "Notification#title",
     "Notification.permission",
     "OfflineAudioCompletionEvent#renderedBuffer",
-    "OfflineAudioCompletionEvent.new",
+    "OfflineAudioCompletionEvent.new()",
     "OfflineAudioContext#length",
     "OfflineAudioContext#oncomplete",
     "OfflineAudioContext#startRendering",
@@ -675,7 +675,7 @@
     "PannerNode#positionX",
     "PannerNode#positionY",
     "PannerNode#positionZ",
-    "Path2D.new",
+    "Path2D.new()",
     "Performance#clearMarks",
     "Performance#clearMeasures",
     "Performance#clearResourceTimings",
@@ -761,7 +761,7 @@
     "PermissionStatus#state",
     "Permissions#query",
     "PictureInPictureEvent#pictureInPictureWindow",
-    "PictureInPictureEvent.new",
+    "PictureInPictureEvent.new()",
     "PictureInPictureWindow#height",
     "PictureInPictureWindow#onresize",
     "PictureInPictureWindow#width",
@@ -788,18 +788,18 @@
     "PointerEvent#tiltY",
     "PointerEvent#twist",
     "PointerEvent#width",
-    "PointerEvent.new",
-    "ProgressEvent.new",
+    "PointerEvent.new()",
+    "ProgressEvent.new()",
     "PromiseRejectionEvent#promise",
     "PromiseRejectionEvent#reason",
     "PublicKeyCredential#getClientExtensionResults",
     "PublicKeyCredential.isConditionalMediationAvailable",
     "PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable",
     "RTCEncodedAudioFrame#data",
-    "RTCEncodedAudioFrame.new",
+    "RTCEncodedAudioFrame.new()",
     "RTCEncodedVideoFrame#data",
     "RTCEncodedVideoFrame#type",
-    "RTCEncodedVideoFrame.new",
+    "RTCEncodedVideoFrame.new()",
     "RTCRtpReceiver#transform",
     "RTCRtpSender#transform",
     "RadioNodeList#value",
@@ -958,7 +958,7 @@
     "SecurityPolicyViolationEvent#sourceFile",
     "SecurityPolicyViolationEvent#statusCode",
     "SecurityPolicyViolationEvent#violatedDirective",
-    "SecurityPolicyViolationEvent.new",
+    "SecurityPolicyViolationEvent.new()",
     "ServiceWorker#onstatechange",
     "ServiceWorker#scriptURL",
     "ServiceWorker#state",
@@ -1005,13 +1005,13 @@
     "SpeechSynthesis#speak",
     "SpeechSynthesis#speaking",
     "SpeechSynthesisErrorEvent#error",
-    "SpeechSynthesisErrorEvent.new",
+    "SpeechSynthesisErrorEvent.new()",
     "SpeechSynthesisEvent#charIndex",
     "SpeechSynthesisEvent#charLength",
     "SpeechSynthesisEvent#elapsedTime",
     "SpeechSynthesisEvent#name",
     "SpeechSynthesisEvent#utterance",
-    "SpeechSynthesisEvent.new",
+    "SpeechSynthesisEvent.new()",
     "SpeechSynthesisUtterance#lang",
     "SpeechSynthesisUtterance#onboundary",
     "SpeechSynthesisUtterance#onend",
@@ -1038,7 +1038,7 @@
     "TextDecoderCommon#fatal",
     "TextDecoderCommon#ignoreBOM",
     "TextDecoderStream#readable",
-    "TextEncoder.new",
+    "TextEncoder.new()",
     "TextEncoderCommon#encoding",
     "TextEncoderStream#readable",
     "TextEvent#data",
@@ -1082,8 +1082,8 @@
     "TransitionEvent#elapsedTime",
     "TransitionEvent#propertyName",
     "TransitionEvent#pseudoElement",
-    "TransitionEvent.new",
-    "UIEvent.new",
+    "TransitionEvent.new()",
+    "UIEvent.new()",
     "URL#hash",
     "URL#host",
     "URL#hostname",
@@ -1160,7 +1160,7 @@
     "WebTransportDatagramDuplexStream#maxDatagramSize",
     "WebTransportDatagramDuplexStream#readable",
     "WebTransportError#source",
-    "WebTransportError.new",
+    "WebTransportError.new()",
     "WritableStream#locked",
     "WritableStreamDefaultController#signal",
     "WritableStreamDefaultWriter#closed",
@@ -1171,8 +1171,8 @@
     "XMLHttpRequest#responseURL",
     "XMLHttpRequest#timeout",
     "XMLHttpRequest#withCredentials",
-    "XPathEvaluator.new",
-    "XSLTProcessor.new",
+    "XPathEvaluator.new()",
+    "XSLTProcessor.new()",
     "alert",
     "confirm",
     "matchMedia",
@@ -1182,7 +1182,7 @@
   ],
   "libs": {
     "dom": {
-      "AbortController.new": {
+      "AbortController.new()": {
         "color": "throwing",
         "spec": "dom#dom-abortcontroller-abortcontroller",
         "runtime": "new AbortController"
@@ -1375,7 +1375,7 @@
       "Algorithm#name": {
         "accessor": false
       },
-      "AnalyserNode.new": {
+      "AnalyserNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-analysernode-analysernode",
         "runtime": "new AnalyserNode"
@@ -1451,7 +1451,7 @@
         "spec": "web-animations-1#dom-animatable-animate",
         "runtime": "Animatable.prototype.animate"
       },
-      "Animation.new": {
+      "Animation.new()": {
         "color": "throwing",
         "spec": "web-animations-1#dom-animation-animation",
         "runtime": "new Animation"
@@ -2186,7 +2186,7 @@
         "spec": "dom#dom-attr-value",
         "runtime": "Attr.prototype.value"
       },
-      "AudioBuffer.new": {
+      "AudioBuffer.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-audiobuffer-audiobuffer",
         "runtime": "new AudioBuffer"
@@ -2333,7 +2333,7 @@
       "AudioConfiguration#spatialRendering": {
         "accessor": false
       },
-      "AudioContext.new": {
+      "AudioContext.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-audiocontext-audiocontext",
         "runtime": "new AudioContext"
@@ -2390,7 +2390,7 @@
       "AudioContextOptions#sampleRate": {
         "accessor": false
       },
-      "AudioData.new": {
+      "AudioData.new()": {
         "color": "throwing",
         "spec": "webcodecs#dom-audiodata-audiodata",
         "runtime": "new AudioData"
@@ -2496,7 +2496,7 @@
         "spec": "webcodecs#dom-audiodecoder-isconfigsupported",
         "runtime": "AudioDecoder.isConfigSupported"
       },
-      "AudioDecoder.new": {
+      "AudioDecoder.new()": {
         "color": "throwing",
         "spec": "webcodecs#dom-audiodecoder-audiodecoder",
         "runtime": "new AudioDecoder"
@@ -2590,7 +2590,7 @@
         "spec": "webcodecs#dom-audioencoder-isconfigsupported",
         "runtime": "AudioEncoder.isConfigSupported"
       },
-      "AudioEncoder.new": {
+      "AudioEncoder.new()": {
         "color": "throwing",
         "spec": "webcodecs#dom-audioencoder-audioencoder",
         "runtime": "new AudioEncoder"
@@ -2956,7 +2956,7 @@
       "AudioTimestamp#performanceTime": {
         "accessor": false
       },
-      "AudioWorkletNode.new": {
+      "AudioWorkletNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-audioworkletnode-audioworkletnode",
         "runtime": "new AudioWorkletNode"
@@ -3346,7 +3346,7 @@
         "spec": "html#dom-beforeunloadevent-returnvalue",
         "runtime": "BeforeUnloadEvent.prototype.returnValue"
       },
-      "BiquadFilterNode.new": {
+      "BiquadFilterNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-biquadfilternode-biquadfilternode",
         "runtime": "new BiquadFilterNode"
@@ -3411,7 +3411,7 @@
       "BiquadFilterOptions#type": {
         "accessor": false
       },
-      "Blob.new": {
+      "Blob.new()": {
         "color": "throwing",
         "spec": "FileAPI#dom-blob-blob",
         "runtime": "new Blob"
@@ -4051,7 +4051,7 @@
       "CaretPositionFromPointOptions#shadowRoots": {
         "accessor": false
       },
-      "ChannelMergerNode.new": {
+      "ChannelMergerNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-channelmergernode-channelmergernode",
         "runtime": "new ChannelMergerNode"
@@ -4059,7 +4059,7 @@
       "ChannelMergerOptions#numberOfInputs": {
         "accessor": false
       },
-      "ChannelSplitterNode.new": {
+      "ChannelSplitterNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-channelsplitternode-channelsplitternode",
         "runtime": "new ChannelSplitterNode"
@@ -4177,7 +4177,7 @@
       "ClientQueryOptions#type": {
         "accessor": false
       },
-      "ClipboardEvent.new": {
+      "ClipboardEvent.new()": {
         "color": "throwing",
         "spec": "clipboard-apis#dom-clipboardevent-clipboardevent",
         "runtime": "new ClipboardEvent"
@@ -4193,7 +4193,7 @@
       "ClipboardEventInit#clipboardData": {
         "accessor": false
       },
-      "ClipboardItem.new": {
+      "ClipboardItem.new()": {
         "color": "throwing",
         "spec": "clipboard-apis#dom-clipboarditem-clipboarditem",
         "runtime": "new ClipboardItem"
@@ -4253,7 +4253,7 @@
       "CloseEventInit#wasClean": {
         "accessor": false
       },
-      "Comment.new": {
+      "Comment.new()": {
         "color": "throwing",
         "spec": "dom#dom-comment-comment",
         "runtime": "new Comment"
@@ -4275,7 +4275,7 @@
       "CompositionEventInit#data": {
         "accessor": false
       },
-      "CompressionStream.new": {
+      "CompressionStream.new()": {
         "color": "throwing",
         "spec": "compression#dom-compressionstream-compressionstream",
         "runtime": "new CompressionStream"
@@ -4360,7 +4360,7 @@
       "ContentVisibilityAutoStateChangeEventInit#skipped": {
         "accessor": false
       },
-      "ConvolverNode.new": {
+      "ConvolverNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-convolvernode-convolvernode",
         "runtime": "new ConvolverNode"
@@ -4928,7 +4928,7 @@
         "spec": "css-animations-1#dom-csskeyframesrule-name",
         "runtime": "CSSKeyframesRule.prototype.name"
       },
-      "CSSKeywordValue.new": {
+      "CSSKeywordValue.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-csskeywordvalue-csskeywordvalue",
         "runtime": "new CSSKeywordValue"
@@ -4957,7 +4957,7 @@
         "spec": "css-cascade-5#dom-csslayerstatementrule-namelist",
         "runtime": "CSSLayerStatementRule.prototype.nameList"
       },
-      "CSSMathClamp.new": {
+      "CSSMathClamp.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-cssmathclamp-cssmathclamp",
         "runtime": "new CSSMathClamp"
@@ -5026,7 +5026,7 @@
         "spec": "css-typed-om-1#dom-cssmathproduct-values",
         "runtime": "CSSMathProduct.prototype.values"
       },
-      "CSSMathSum.new": {
+      "CSSMathSum.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-cssmathsum-cssmathsum",
         "runtime": "new CSSMathSum"
@@ -5178,7 +5178,7 @@
         "spec": "cssom-1#dom-csspagerule-style",
         "runtime": "CSSPageRule.prototype.style"
       },
-      "CSSPerspective.new": {
+      "CSSPerspective.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-cssperspective-cssperspective",
         "runtime": "new CSSPerspective"
@@ -5223,7 +5223,7 @@
         "spec": "css-properties-values-api-1#dom-csspropertyrule-syntax",
         "runtime": "CSSPropertyRule.prototype.syntax"
       },
-      "CSSRotate.new": {
+      "CSSRotate.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-cssrotate-cssrotate",
         "runtime": "new CSSRotate"
@@ -5396,7 +5396,7 @@
         "spec": "cssom-1#dom-cssrulelist-length",
         "runtime": "CSSRuleList.prototype.length"
       },
-      "CSSScale.new": {
+      "CSSScale.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-cssscale-cssscale",
         "runtime": "new CSSScale"
@@ -5441,7 +5441,7 @@
         "spec": "css-cascade-6#dom-cssscoperule-start",
         "runtime": "CSSScopeRule.prototype.start"
       },
-      "CSSSkew.new": {
+      "CSSSkew.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-cssskew-cssskew",
         "runtime": "new CSSSkew"
@@ -5462,7 +5462,7 @@
         "spec": "css-typed-om-1#dom-cssskew-ay",
         "runtime": "CSSSkew.prototype.ay"
       },
-      "CSSSkewX.new": {
+      "CSSSkewX.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-cssskewx-cssskewx",
         "runtime": "new CSSSkewX"
@@ -5475,7 +5475,7 @@
         "spec": "css-typed-om-1#dom-cssskewx-ax",
         "runtime": "CSSSkewX.prototype.ax"
       },
-      "CSSSkewY.new": {
+      "CSSSkewY.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-cssskewy-cssskewy",
         "runtime": "new CSSSkewY"
@@ -9612,7 +9612,7 @@
         "spec": "css-typed-om-1#dom-cssstylerule-stylemap",
         "runtime": "CSSStyleRule.prototype.styleMap"
       },
-      "CSSStyleSheet.new": {
+      "CSSStyleSheet.new()": {
         "color": "throwing",
         "spec": "cssom-1#dom-cssstylesheet-cssstylesheet",
         "runtime": "new CSSStyleSheet"
@@ -9703,7 +9703,7 @@
         "spec": "css-typed-om-1#dom-csstransformcomponent-tomatrix",
         "runtime": "CSSTransformComponent.prototype.toMatrix"
       },
-      "CSSTransformValue.new": {
+      "CSSTransformValue.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-csstransformvalue-csstransformvalue",
         "runtime": "new CSSTransformValue"
@@ -9732,7 +9732,7 @@
         "spec": "css-transitions-2#dom-csstransition-transitionproperty",
         "runtime": "CSSTransition.prototype.transitionProperty"
       },
-      "CSSTranslate.new": {
+      "CSSTranslate.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-csstranslate-csstranslate",
         "runtime": "new CSSTranslate"
@@ -9761,7 +9761,7 @@
         "spec": "css-typed-om-1#dom-csstranslate-z",
         "runtime": "CSSTranslate.prototype.z"
       },
-      "CSSUnitValue.new": {
+      "CSSUnitValue.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-cssunitvalue-cssunitvalue",
         "runtime": "new CSSUnitValue"
@@ -9790,7 +9790,7 @@
         "spec": "css-typed-om-1#dom-cssunparsedvalue-length",
         "runtime": "CSSUnparsedValue.prototype.length"
       },
-      "CSSVariableReferenceValue.new": {
+      "CSSVariableReferenceValue.new()": {
         "color": "throwing",
         "spec": "css-typed-om-1#dom-cssvariablereferencevalue-cssvariablereferencevalue",
         "runtime": "new CSSVariableReferenceValue"
@@ -9972,7 +9972,7 @@
         "spec": "html#dom-datatransferitemlist-remove",
         "runtime": "DataTransferItemList.prototype.remove"
       },
-      "DecompressionStream.new": {
+      "DecompressionStream.new()": {
         "color": "throwing",
         "spec": "compression#dom-decompressionstream-decompressionstream",
         "runtime": "new DecompressionStream"
@@ -9993,7 +9993,7 @@
         "spec": "streams#dom-generictransformstream-writable",
         "runtime": "DecompressionStream.prototype.writable"
       },
-      "DelayNode.new": {
+      "DelayNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-delaynode-delaynode",
         "runtime": "new DelayNode"
@@ -10177,7 +10177,7 @@
       "DisplayMediaStreamOptions#video": {
         "accessor": false
       },
-      "Document.new": {
+      "Document.new()": {
         "color": "throwing",
         "spec": "dom#dom-document-document",
         "runtime": "new Document"
@@ -10810,7 +10810,7 @@
       "DocumentEventMap#visibilitychange": {
         "accessor": false
       },
-      "DocumentFragment.new": {
+      "DocumentFragment.new()": {
         "color": "throwing",
         "spec": "dom#dom-documentfragment-documentfragment",
         "runtime": "new DocumentFragment"
@@ -10888,7 +10888,7 @@
         "spec": "cssom-1#dom-documentorshadowroot-stylesheets",
         "runtime": "DocumentOrShadowRoot.prototype.styleSheets"
       },
-      "DocumentTimeline.new": {
+      "DocumentTimeline.new()": {
         "color": "throwing",
         "spec": "web-animations-1#dom-documenttimeline-documenttimeline",
         "runtime": "new DocumentTimeline"
@@ -11196,7 +11196,7 @@
         "spec": "geometry-1#dom-dommatrix-frommatrix",
         "runtime": "DOMMatrix.fromMatrix"
       },
-      "DOMMatrix.new": {
+      "DOMMatrix.new()": {
         "color": "throwing",
         "spec": "geometry-1#dom-dommatrix-dommatrix",
         "runtime": "new DOMMatrix"
@@ -11476,7 +11476,7 @@
         "spec": "geometry-1#dom-dommatrixreadonly-frommatrix",
         "runtime": "DOMMatrixReadOnly.fromMatrix"
       },
-      "DOMMatrixReadOnly.new": {
+      "DOMMatrixReadOnly.new()": {
         "color": "throwing",
         "spec": "geometry-1#dom-dommatrixreadonly-dommatrixreadonly",
         "runtime": "new DOMMatrixReadOnly"
@@ -12035,7 +12035,7 @@
       "DragEventInit#dataTransfer": {
         "accessor": false
       },
-      "DynamicsCompressorNode.new": {
+      "DynamicsCompressorNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-dynamicscompressornode-dynamicscompressornode",
         "runtime": "new DynamicsCompressorNode"
@@ -12674,7 +12674,7 @@
         "spec": "html#dom-elementinternals-willvalidate",
         "runtime": "ElementInternals.prototype.willValidate"
       },
-      "EncodedAudioChunk.new": {
+      "EncodedAudioChunk.new()": {
         "color": "throwing",
         "spec": "webcodecs#dom-encodedaudiochunk-encodedaudiochunk",
         "runtime": "new EncodedAudioChunk"
@@ -12734,7 +12734,7 @@
       "EncodedAudioChunkMetadata#decoderConfig": {
         "accessor": false
       },
-      "EncodedVideoChunk.new": {
+      "EncodedVideoChunk.new()": {
         "color": "throwing",
         "spec": "webcodecs#dom-encodedvideochunk-encodedvideochunk",
         "runtime": "new EncodedVideoChunk"
@@ -13074,7 +13074,7 @@
         "accessor": false,
         "runtime": "EventSource.CONNECTING"
       },
-      "EventSource.new": {
+      "EventSource.new()": {
         "color": "throwing",
         "spec": "html#dom-eventsource",
         "runtime": "new EventSource"
@@ -13160,7 +13160,7 @@
       "EventSourceInit#withCredentials": {
         "accessor": false
       },
-      "EventTarget.new": {
+      "EventTarget.new()": {
         "color": "throwing",
         "spec": "dom#dom-eventtarget-eventtarget",
         "runtime": "new EventTarget"
@@ -13293,7 +13293,7 @@
         "spec": "fetch#dom-global-fetch",
         "runtime": "fetch"
       },
-      "File.new": {
+      "File.new()": {
         "color": "throwing",
         "spec": "FileAPI#dom-file-file",
         "runtime": "new File"
@@ -13679,7 +13679,7 @@
       "FocusOptions#preventScroll": {
         "accessor": false
       },
-      "FontFace.new": {
+      "FontFace.new()": {
         "color": "throwing",
         "spec": "css-font-loading-3#dom-fontface-fontface",
         "runtime": "new FontFace"
@@ -13884,7 +13884,7 @@
         "spec": "css-font-loading-3#dom-fontfacesource-fonts",
         "runtime": "FontFaceSource.prototype.fonts"
       },
-      "FormData.new": {
+      "FormData.new()": {
         "color": "throwing",
         "spec": "xhr#dom-formdata",
         "runtime": "new FormData"
@@ -13937,7 +13937,7 @@
       "FullscreenOptions#navigationUI": {
         "accessor": false
       },
-      "GainNode.new": {
+      "GainNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-gainnode-gainnode",
         "runtime": "new GainNode"
@@ -15364,7 +15364,7 @@
       "HashChangeEventInit#oldURL": {
         "accessor": false
       },
-      "Headers.new": {
+      "Headers.new()": {
         "color": "throwing",
         "spec": "fetch#dom-headers",
         "runtime": "new Headers"
@@ -15400,7 +15400,7 @@
         "spec": "fetch#dom-headers-set",
         "runtime": "Headers.prototype.set"
       },
-      "Highlight.new": {
+      "Highlight.new()": {
         "color": "throwing",
         "spec": "css-highlight-api-1#dom-highlight-highlight",
         "runtime": "new Highlight"
@@ -19265,7 +19265,7 @@
         "spec": "html#dom-optgroup-label",
         "runtime": "HTMLOptGroupElement.prototype.label"
       },
-      "HTMLOptionElement.new": {
+      "HTMLOptionElement.new()": {
         "color": "throwing",
         "spec": "html#dom-option",
         "runtime": "new HTMLOptionElement"
@@ -21728,7 +21728,7 @@
       "IdleRequestOptions#timeout": {
         "accessor": false
       },
-      "IIRFilterNode.new": {
+      "IIRFilterNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-iirfilternode-iirfilternode",
         "runtime": "new IIRFilterNode"
@@ -21794,7 +21794,7 @@
       "ImageBitmapRenderingContextSettings#alpha": {
         "accessor": false
       },
-      "ImageCapture.new": {
+      "ImageCapture.new()": {
         "color": "throwing",
         "spec": "image-capture#dom-imagecapture-imagecapture",
         "runtime": "new ImageCapture"
@@ -21822,7 +21822,7 @@
         "spec": "image-capture#dom-imagecapture-track",
         "runtime": "ImageCapture.prototype.track"
       },
-      "ImageData.new": {
+      "ImageData.new()": {
         "color": "throwing",
         "spec": "html#dom-imagedata",
         "runtime": "new ImageData"
@@ -21873,7 +21873,7 @@
         "spec": "webcodecs#dom-imagedecoder-istypesupported",
         "runtime": "ImageDecoder.isTypeSupported"
       },
-      "ImageDecoder.new": {
+      "ImageDecoder.new()": {
         "color": "throwing",
         "spec": "webcodecs#dom-imagedecoder-imagedecoder",
         "runtime": "new ImageDecoder"
@@ -22064,7 +22064,7 @@
       "InputEventInit#targetRanges": {
         "accessor": false
       },
-      "IntersectionObserver.new": {
+      "IntersectionObserver.new()": {
         "color": "throwing",
         "spec": "intersection-observer#dom-intersectionobserver-intersectionobserver",
         "runtime": "new IntersectionObserver"
@@ -22374,7 +22374,7 @@
       "KeyframeAnimationOptions#timeline": {
         "accessor": false
       },
-      "KeyframeEffect.new": {
+      "KeyframeEffect.new()": {
         "color": "throwing",
         "spec": "web-animations-1#dom-keyframeeffect-keyframeeffect",
         "runtime": "new KeyframeEffect"
@@ -22814,7 +22814,7 @@
       "MediaDevicesEventMap#devicechange": {
         "accessor": false
       },
-      "MediaElementAudioSourceNode.new": {
+      "MediaElementAudioSourceNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-mediaelementaudiosourcenode-mediaelementaudiosourcenode",
         "runtime": "new MediaElementAudioSourceNode"
@@ -22833,7 +22833,7 @@
       "MediaEncodingConfiguration#type": {
         "accessor": false
       },
-      "MediaEncryptedEvent.new": {
+      "MediaEncryptedEvent.new()": {
         "color": "throwing",
         "spec": "encrypted-media-2#dom-mediaencryptedevent-constructor",
         "runtime": "new MediaEncryptedEvent"
@@ -22917,7 +22917,7 @@
       "MediaImage#type": {
         "accessor": false
       },
-      "MediaKeyMessageEvent.new": {
+      "MediaKeyMessageEvent.new()": {
         "color": "throwing",
         "spec": "encrypted-media-2#dom-mediakeymessageevent-constructor",
         "runtime": "new MediaKeyMessageEvent"
@@ -23118,7 +23118,7 @@
         "spec": "cssom-1#dom-medialist-mediatext",
         "runtime": "MediaList.prototype.mediaText"
       },
-      "MediaMetadata.new": {
+      "MediaMetadata.new()": {
         "color": "throwing",
         "spec": "mediasession#dom-mediametadata-mediametadata",
         "runtime": "new MediaMetadata"
@@ -23230,7 +23230,7 @@
       "MediaQueryListEventMap#change": {
         "accessor": false
       },
-      "MediaRecorder.new": {
+      "MediaRecorder.new()": {
         "color": "throwing",
         "spec": "mediastream-recording#dom-mediarecorder-mediarecorder",
         "runtime": "new MediaRecorder"
@@ -23438,7 +23438,7 @@
         "spec": "media-source-2#dom-mediasource-canconstructindedicatedworker",
         "runtime": "MediaSource.canConstructInDedicatedWorker"
       },
-      "MediaSource.new": {
+      "MediaSource.new()": {
         "color": "throwing",
         "spec": "media-source-2#dom-mediasource-constructor",
         "runtime": "new MediaSource"
@@ -23561,7 +23561,7 @@
         },
         "runtime": "MediaStream.prototype.onremovetrack"
       },
-      "MediaStreamAudioDestinationNode.new": {
+      "MediaStreamAudioDestinationNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-mediastreamaudiodestinationnode-mediastreamaudiodestinationnode",
         "runtime": "new MediaStreamAudioDestinationNode"
@@ -23574,7 +23574,7 @@
         "spec": "webaudio-1.0#dom-mediastreamaudiodestinationnode-stream",
         "runtime": "MediaStreamAudioDestinationNode.prototype.stream"
       },
-      "MediaStreamAudioSourceNode.new": {
+      "MediaStreamAudioSourceNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-mediastreamaudiosourcenode-mediastreamaudiosourcenode",
         "runtime": "new MediaStreamAudioSourceNode"
@@ -24361,7 +24361,7 @@
       "MultiCacheQueryOptions#cacheName": {
         "accessor": false
       },
-      "MutationObserver.new": {
+      "MutationObserver.new()": {
         "color": "throwing",
         "spec": "dom#dom-mutationobserver-mutationobserver",
         "runtime": "new MutationObserver"
@@ -25382,7 +25382,7 @@
         "spec": "dom#dom-nonelementparentnode-getelementbyid",
         "runtime": "NonElementParentNode.prototype.getElementById"
       },
-      "Notification.new": {
+      "Notification.new()": {
         "color": "throwing",
         "spec": "notifications#dom-notification-notification",
         "runtime": "new Notification"
@@ -25579,7 +25579,7 @@
       "OfflineAudioCompletionEventInit#renderedBuffer": {
         "accessor": false
       },
-      "OfflineAudioContext.new": {
+      "OfflineAudioContext.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-offlineaudiocontext-offlineaudiocontext",
         "runtime": "new OfflineAudioContext"
@@ -25617,7 +25617,7 @@
       "OfflineAudioContextOptions#sampleRate": {
         "accessor": false
       },
-      "OffscreenCanvas.new": {
+      "OffscreenCanvas.new()": {
         "color": "throwing",
         "spec": "html#dom-offscreencanvas",
         "runtime": "new OffscreenCanvas"
@@ -25732,7 +25732,7 @@
       "OpusEncoderConfig#useinbandfec": {
         "accessor": false
       },
-      "OscillatorNode.new": {
+      "OscillatorNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-oscillatornode-oscillatornode",
         "runtime": "new OscillatorNode"
@@ -25840,7 +25840,7 @@
       "PageTransitionEventInit#persisted": {
         "accessor": false
       },
-      "PannerNode.new": {
+      "PannerNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-pannernode-pannernode",
         "runtime": "new PannerNode"
@@ -26464,7 +26464,7 @@
         "spec": "event-timing#dom-performanceeventtiming-target",
         "runtime": "PerformanceEventTiming.prototype.target"
       },
-      "PerformanceMark.new": {
+      "PerformanceMark.new()": {
         "color": "throwing",
         "spec": "user-timing#dom-performancemark-performancemark",
         "runtime": "new PerformanceMark"
@@ -26631,7 +26631,7 @@
         "spec": "navigation-timing-2#dom-performancenavigationtiming-unloadeventstart",
         "runtime": "PerformanceNavigationTiming.prototype.unloadEventStart"
       },
-      "PerformanceObserver.new": {
+      "PerformanceObserver.new()": {
         "color": "throwing",
         "spec": "performance-timeline#dom-performanceobserver-performanceobserver",
         "runtime": "new PerformanceObserver"
@@ -27001,7 +27001,7 @@
         "spec": "navigation-timing-2#dom-performancetiming-unloadeventstart",
         "runtime": "PerformanceTiming.prototype.unloadEventStart"
       },
-      "PeriodicWave.new": {
+      "PeriodicWave.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-periodicwave-periodicwave",
         "runtime": "new PeriodicWave"
@@ -27332,7 +27332,7 @@
         "spec": "html#dom-print",
         "runtime": "print"
       },
-      "ProcessingInstruction.new": {
+      "ProcessingInstruction.new()": {
         "color": "throwing",
         "spec": "dom#dom-processinginstruction-processinginstruction",
         "runtime": "new ProcessingInstruction"
@@ -27700,7 +27700,7 @@
         "accessor": false,
         "runtime": "Range.END_TO_START"
       },
-      "Range.new": {
+      "Range.new()": {
         "color": "throwing",
         "spec": "dom#dom-range-range",
         "runtime": "new Range"
@@ -27873,7 +27873,7 @@
         "spec": "streams#rbs-controller-error",
         "runtime": "ReadableByteStreamController.prototype.error"
       },
-      "ReadableStream.new": {
+      "ReadableStream.new()": {
         "color": "throwing",
         "spec": "streams#rs-constructor",
         "runtime": "new ReadableStream"
@@ -27911,7 +27911,7 @@
         "spec": "streams#rs-tee",
         "runtime": "ReadableStream.prototype.tee"
       },
-      "ReadableStreamBYOBReader.new": {
+      "ReadableStreamBYOBReader.new()": {
         "color": "throwing",
         "spec": "streams#byob-reader-constructor",
         "runtime": "new ReadableStreamBYOBReader"
@@ -27956,7 +27956,7 @@
         "spec": "streams#rs-default-controller-error",
         "runtime": "ReadableStreamDefaultController.prototype.error"
       },
-      "ReadableStreamDefaultReader.new": {
+      "ReadableStreamDefaultReader.new()": {
         "color": "throwing",
         "spec": "streams#default-reader-constructor",
         "runtime": "new ReadableStreamDefaultReader"
@@ -28066,7 +28066,7 @@
       "Report#url": {
         "accessor": false
       },
-      "ReportingObserver.new": {
+      "ReportingObserver.new()": {
         "color": "throwing",
         "spec": "reporting-1#dom-reportingobserver-reportingobserver",
         "runtime": "new ReportingObserver"
@@ -28087,7 +28087,7 @@
       "ReportingObserverOptions#types": {
         "accessor": false
       },
-      "Request.new": {
+      "Request.new()": {
         "color": "throwing",
         "spec": "fetch#dom-request",
         "runtime": "new Request"
@@ -28253,7 +28253,7 @@
         "spec": "cssom-view-1#dom-window-resizeby",
         "runtime": "resizeBy"
       },
-      "ResizeObserver.new": {
+      "ResizeObserver.new()": {
         "color": "throwing",
         "spec": "resize-observer-1#dom-resizeobserver-resizeobserver",
         "runtime": "new ResizeObserver"
@@ -28332,7 +28332,7 @@
         "spec": "fetch#dom-response-json",
         "runtime": "Response.json"
       },
-      "Response.new": {
+      "Response.new()": {
         "color": "throwing",
         "spec": "fetch#dom-response",
         "runtime": "new Response"
@@ -29702,7 +29702,7 @@
         },
         "runtime": "RTCRtpReceiver.prototype.transport"
       },
-      "RTCRtpScriptTransform.new": {
+      "RTCRtpScriptTransform.new()": {
         "color": "throwing",
         "spec": "webrtc-encoded-transform#dom-rtcrtpscripttransform-rtcrtpscripttransform",
         "runtime": "new RTCRtpScriptTransform"
@@ -30593,7 +30593,7 @@
       "ShareData#url": {
         "accessor": false
       },
-      "SharedWorker.new": {
+      "SharedWorker.new()": {
         "color": "throwing",
         "spec": "html#dom-sharedworker",
         "runtime": "new SharedWorker"
@@ -30908,7 +30908,7 @@
       "SpeechSynthesisEventMap#voiceschanged": {
         "accessor": false
       },
-      "SpeechSynthesisUtterance.new": {
+      "SpeechSynthesisUtterance.new()": {
         "color": "throwing",
         "spec": "speech-api#dom-speechsynthesisutterance-speechsynthesisutterance",
         "runtime": "new SpeechSynthesisUtterance"
@@ -31084,7 +31084,7 @@
       "StartViewTransitionOptions#update": {
         "accessor": false
       },
-      "StaticRange.new": {
+      "StaticRange.new()": {
         "color": "throwing",
         "spec": "dom#dom-staticrange-staticrange",
         "runtime": "new StaticRange"
@@ -31101,7 +31101,7 @@
       "StaticRangeInit#startOffset": {
         "accessor": false
       },
-      "StereoPannerNode.new": {
+      "StereoPannerNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-stereopannernode-stereopannernode",
         "runtime": "new StereoPannerNode"
@@ -34413,7 +34413,7 @@
         },
         "runtime": "SVGUseElement.prototype.y"
       },
-      "Text.new": {
+      "Text.new()": {
         "color": "throwing",
         "spec": "dom#dom-text-text",
         "runtime": "new Text"
@@ -34434,7 +34434,7 @@
       "TextDecodeOptions#stream": {
         "accessor": false
       },
-      "TextDecoder.new": {
+      "TextDecoder.new()": {
         "color": "throwing",
         "spec": "encoding#dom-textdecoder",
         "runtime": "new TextDecoder"
@@ -34474,7 +34474,7 @@
       "TextDecoderOptions#ignoreBOM": {
         "accessor": false
       },
-      "TextDecoderStream.new": {
+      "TextDecoderStream.new()": {
         "color": "throwing",
         "spec": "encoding#dom-textdecoderstream",
         "runtime": "new TextDecoderStream"
@@ -34519,7 +34519,7 @@
       "TextEncoderEncodeIntoResult#written": {
         "accessor": false
       },
-      "TextEncoderStream.new": {
+      "TextEncoderStream.new()": {
         "color": "throwing",
         "spec": "encoding#dom-textencoderstream",
         "runtime": "new TextEncoderStream"
@@ -35100,7 +35100,7 @@
       "Transformer#writableType": {
         "accessor": false
       },
-      "TransformStream.new": {
+      "TransformStream.new()": {
         "color": "throwing",
         "spec": "streams#ts-constructor",
         "runtime": "new TransformStream"
@@ -35329,7 +35329,7 @@
         "spec": "FileAPI#dfn-createObjectURL",
         "runtime": "URL.createObjectURL"
       },
-      "URL.new": {
+      "URL.new()": {
         "color": "throwing",
         "spec": "url#dom-url-url",
         "runtime": "new URL"
@@ -35445,7 +35445,7 @@
         "spec": "url#dom-url-username",
         "runtime": "URL.prototype.username"
       },
-      "URLSearchParams.new": {
+      "URLSearchParams.new()": {
         "color": "throwing",
         "spec": "url#dom-urlsearchparams-urlsearchparams",
         "runtime": "new URLSearchParams"
@@ -35633,7 +35633,7 @@
       "ValidityStateFlags#valueMissing": {
         "accessor": false
       },
-      "VideoColorSpace.new": {
+      "VideoColorSpace.new()": {
         "color": "throwing",
         "spec": "webcodecs#dom-videocolorspace-videocolorspace",
         "runtime": "new VideoColorSpace"
@@ -35717,7 +35717,7 @@
         "spec": "webcodecs#dom-videodecoder-isconfigsupported",
         "runtime": "VideoDecoder.isConfigSupported"
       },
-      "VideoDecoder.new": {
+      "VideoDecoder.new()": {
         "color": "throwing",
         "spec": "webcodecs#dom-videodecoder-videodecoder",
         "runtime": "new VideoDecoder"
@@ -35818,7 +35818,7 @@
         "spec": "webcodecs#dom-videoencoder-isconfigsupported",
         "runtime": "VideoEncoder.isConfigSupported"
       },
-      "VideoEncoder.new": {
+      "VideoEncoder.new()": {
         "color": "throwing",
         "spec": "webcodecs#dom-videoencoder-videoencoder",
         "runtime": "new VideoEncoder"
@@ -35938,7 +35938,7 @@
       "VideoEncoderSupport#supported": {
         "accessor": false
       },
-      "VideoFrame.new": {
+      "VideoFrame.new()": {
         "color": "throwing",
         "spec": "webcodecs#dom-videoframe-videoframe",
         "runtime": "new VideoFrame"
@@ -36268,7 +36268,7 @@
       "VisualViewportEventMap#scroll": {
         "accessor": false
       },
-      "VTTCue.new": {
+      "VTTCue.new()": {
         "color": "throwing",
         "spec": "webvtt1#dom-vttcue-vttcue",
         "runtime": "new VTTCue"
@@ -36358,7 +36358,7 @@
         "spec": "webvtt1#dom-vttcue-vertical",
         "runtime": "VTTCue.prototype.vertical"
       },
-      "VTTRegion.new": {
+      "VTTRegion.new()": {
         "color": "throwing",
         "spec": "webvtt1#dom-vttregion-vttregion",
         "runtime": "new VTTRegion"
@@ -36451,7 +36451,7 @@
       "WakeLockSentinelEventMap#release": {
         "accessor": false
       },
-      "WaveShaperNode.new": {
+      "WaveShaperNode.new()": {
         "color": "throwing",
         "spec": "webaudio-1.0#dom-waveshapernode-waveshapernode",
         "runtime": "new WaveShaperNode"
@@ -42628,7 +42628,7 @@
         "accessor": false,
         "runtime": "WebSocket.CONNECTING"
       },
-      "WebSocket.new": {
+      "WebSocket.new()": {
         "color": "throwing",
         "spec": "websockets#dom-websocket-websocket",
         "runtime": "new WebSocket"
@@ -42755,7 +42755,7 @@
       "WebSocketEventMap#open": {
         "accessor": false
       },
-      "WebTransport.new": {
+      "WebTransport.new()": {
         "color": "throwing",
         "spec": "webtransport#dom-webtransport-webtransport",
         "runtime": "new WebTransport"
@@ -43851,7 +43851,7 @@
         "spec": "html#dom-sessionstorage",
         "runtime": "WindowSessionStorage.prototype.sessionStorage"
       },
-      "Worker.new": {
+      "Worker.new()": {
         "color": "throwing",
         "spec": "html#dom-worker",
         "runtime": "new Worker"
@@ -43883,7 +43883,7 @@
       "WorkletOptions#credentials": {
         "accessor": false
       },
-      "WritableStream.new": {
+      "WritableStream.new()": {
         "color": "throwing",
         "spec": "streams#ws-constructor",
         "runtime": "new WritableStream"
@@ -43919,7 +43919,7 @@
         "spec": "streams#ws-default-controller-signal",
         "runtime": "WritableStreamDefaultController.prototype.signal"
       },
-      "WritableStreamDefaultWriter.new": {
+      "WritableStreamDefaultWriter.new()": {
         "color": "throwing",
         "spec": "streams#default-writer-constructor",
         "runtime": "new WritableStreamDefaultWriter"
@@ -43986,7 +43986,7 @@
         "accessor": false,
         "runtime": "XMLHttpRequest.LOADING"
       },
-      "XMLHttpRequest.new": {
+      "XMLHttpRequest.new()": {
         "color": "throwing",
         "spec": "xhr#dom-xmlhttprequest",
         "runtime": "new XMLHttpRequest"

@@ -62,6 +62,14 @@ export type CarrierRung = (query: CarrierQuery) => CarrierAnswer | undefined;
  */
 export interface Carrier {
   answerFor(declaration: ts.Declaration): CarrierAnswer | undefined;
+  /**
+   * Where the published surface reaches the declaration, if it reaches it —
+   * whether a consumer *could* have keyed it, which is a different question
+   * from whether anybody did. A caller deciding to ask about something else
+   * instead needs the first: a key nobody wrote is still that member's key,
+   * and reaching past it would answer for one member out of another's entry.
+   */
+  keyFor(declaration: ts.Declaration): ExportKey | undefined;
 }
 
 export function createCarrier(
@@ -78,20 +86,41 @@ export function createCarrier(
   const answers = new Map<ts.Declaration, CarrierAnswer | undefined>();
   const checker = program.getTypeChecker();
 
+  interface Located {
+    readonly home: PackageHome | undefined;
+    readonly key: ExportKey | undefined;
+  }
+  const located = new Map<ts.Declaration, Located>();
+
+  // Where the declaration ships and what its package publishes it as, which
+  // both questions below need and neither owns.
+  const locate = (declaration: ts.Declaration): Located => {
+    const known = located.get(declaration);
+    if (known !== undefined) return known;
+
+    const home = packageHomeOf(declaration.getSourceFile().fileName);
+    const at: Located = {
+      home,
+      key:
+        home === undefined
+          ? undefined
+          : exportSurfaceOf(home, program).keyOf(declaration),
+    };
+    located.set(declaration, at);
+    return at;
+  };
+
   return {
     answerFor(declaration) {
       if (answers.has(declaration)) return answers.get(declaration);
 
-      const home = packageHomeOf(declaration.getSourceFile().fileName);
+      const { home, key } = locate(declaration);
       const query: CarrierQuery = {
         declaration,
         checker,
         home,
         asking,
-        key:
-          home === undefined
-            ? undefined
-            : exportSurfaceOf(home, program).keyOf(declaration),
+        key,
       };
 
       let answer: CarrierAnswer | undefined;
@@ -103,6 +132,7 @@ export function createCarrier(
       answers.set(declaration, answer);
       return answer;
     },
+    keyFor: (declaration) => locate(declaration).key,
   };
 }
 

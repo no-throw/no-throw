@@ -326,17 +326,38 @@ export is keyed `default`, and its members hang off that: `default#handle`,
 | `default` | the default export |
 | `Wrapper#size` | an instance member of a published class or interface |
 | `Service.make` | a static member, or a member of a published namespace |
+| `Formatter#()` | a call signature |
+| `Wrapper#new()` | a construct signature, or a class's own constructor |
 
 The walk that assigns keys starts at the package's entry points and follows
 what they publish, so a name no entry point reaches has no key, and a member
 whose name is not a plain identifier has none either.
 
-One shape has no namepath worth writing down yet, and it is worth knowing
-because the obvious guess colors nothing. Where a member's *type* carries the
-call signature — `red: Formatter`, with `Formatter` an interface declaring
-`(input: string): string` — a call resolves to that signature rather than to
-the property, so `Colors#red` is a key for something nobody enters. Bridge
-those, or assert the color on something the grammar names.
+The last two rows are worth reading twice, because the obvious guess colors
+nothing. A call enters the *signature*, and where a member's type is what
+carries that signature the property is not on the way:
+
+```ts
+// node_modules/picoish/index.d.ts
+export interface Formatter {
+  (input: string): string;
+}
+
+export interface Colors {
+  red: Formatter;
+  bold: Formatter;
+}
+
+declare const picoish: Colors;
+export default picoish;
+```
+
+`pc.red(text)` reaches the signature inside `Formatter`, so `Colors#red`,
+`default#red` and `red` name something nobody calls, and `Formatter#()` is the
+key that colors it — both properties at once, since both are that one
+signature. A construct signature and a class's own constructor are keyed
+`new()`, and deliberately not `new`: a property may already be called that, and
+one key for two members would let an entry written for one color the other.
 
 A package's own manifest is verified against SRI hashes of the files it was
 written for. A mismatch floors **that manifest**, names the file that drifted,

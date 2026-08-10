@@ -3,11 +3,11 @@
   "unprobed": [
     "AsyncDisposableStack#disposeAsync",
     "AsyncDisposableStack#disposed",
-    "AsyncDisposableStackConstructor#new",
+    "AsyncDisposableStackConstructor#new()",
     "Atomics#pause",
     "DisposableStack#dispose",
     "DisposableStack#disposed",
-    "DisposableStackConstructor#new",
+    "DisposableStackConstructor#new()",
     "ErrorConstructor#isError",
     "FinalizationRegistry#@@toStringTag",
     "Float16Array#@@toStringTag",
@@ -17,7 +17,7 @@
     "Float16Array#length",
     "Math#f16round",
     "SuppressedErrorConstructor#()",
-    "SuppressedErrorConstructor#new",
+    "SuppressedErrorConstructor#new()",
     "WeakRef#@@toStringTag",
     "WeakRef#deref"
   ],
@@ -75,7 +75,7 @@
         "spec": "Map.prototype.size",
         "runtime": "Map.prototype.size"
       },
-      "MapConstructor#new": {
+      "MapConstructor#new()": {
         "color": "throwing",
         "spec": "Map",
         "runtime": "Map"
@@ -138,7 +138,7 @@
         "spec": "WeakMap.prototype.set",
         "runtime": "WeakMap.prototype.set"
       },
-      "WeakMapConstructor#new": {
+      "WeakMapConstructor#new()": {
         "color": "throwing",
         "spec": "WeakMap",
         "runtime": "WeakMap"
@@ -188,7 +188,7 @@
         "spec": "Set.prototype.size",
         "runtime": "Set.prototype.size"
       },
-      "SetConstructor#new": {
+      "SetConstructor#new()": {
         "color": "throwing",
         "spec": "Set",
         "runtime": "Set"
@@ -237,7 +237,7 @@
         "spec": "WeakSet.prototype.has",
         "runtime": "WeakSet.prototype.has"
       },
-      "WeakSetConstructor#new": {
+      "WeakSetConstructor#new()": {
         "color": "throwing",
         "spec": "WeakSet",
         "runtime": "WeakSet"
@@ -251,12 +251,12 @@
         "spec": "Object.keys",
         "runtime": "Object.keys"
       },
-      "DateConstructor#new": {
+      "DateConstructor#new()": {
         "color": "throwing",
         "spec": "Date",
         "runtime": "Date"
       },
-      "RegExpConstructor#new": {
+      "RegExpConstructor#new()": {
         "color": "throwing",
         "spec": "RegExp",
         "runtime": "RegExp"
@@ -753,7 +753,7 @@
       }
     },
     "es2015.iterable": {
-      "Int8ArrayConstructor#new": {
+      "Int8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int8Array",
         "runtime": "Int8Array"
@@ -764,7 +764,7 @@
         "spec": "Int8Array.from",
         "runtime": "Int8Array.from"
       },
-      "Uint8ArrayConstructor#new": {
+      "Uint8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8Array",
         "runtime": "Uint8Array"
@@ -775,7 +775,7 @@
         "spec": "Uint8Array.from",
         "runtime": "Uint8Array.from"
       },
-      "Uint8ClampedArrayConstructor#new": {
+      "Uint8ClampedArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8ClampedArray",
         "runtime": "Uint8ClampedArray"
@@ -786,7 +786,7 @@
         "spec": "Uint8ClampedArray.from",
         "runtime": "Uint8ClampedArray.from"
       },
-      "Int16ArrayConstructor#new": {
+      "Int16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int16Array",
         "runtime": "Int16Array"
@@ -797,7 +797,7 @@
         "spec": "Int16Array.from",
         "runtime": "Int16Array.from"
       },
-      "Uint16ArrayConstructor#new": {
+      "Uint16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint16Array",
         "runtime": "Uint16Array"
@@ -808,7 +808,7 @@
         "spec": "Uint16Array.from",
         "runtime": "Uint16Array.from"
       },
-      "Int32ArrayConstructor#new": {
+      "Int32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int32Array",
         "runtime": "Int32Array"
@@ -819,7 +819,7 @@
         "spec": "Int32Array.from",
         "runtime": "Int32Array.from"
       },
-      "Uint32ArrayConstructor#new": {
+      "Uint32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint32Array",
         "runtime": "Uint32Array"
@@ -830,7 +830,7 @@
         "spec": "Uint32Array.from",
         "runtime": "Uint32Array.from"
       },
-      "Float32ArrayConstructor#new": {
+      "Float32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float32Array",
         "runtime": "Float32Array"
@@ -841,7 +841,7 @@
         "spec": "Float32Array.from",
         "runtime": "Float32Array.from"
       },
-      "Float64ArrayConstructor#new": {
+      "Float64ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float64Array",
         "runtime": "Float64Array"
@@ -858,22 +858,22 @@
         "spec": "Array.from",
         "runtime": "Array.from"
       },
-      "MapConstructor#new": {
+      "MapConstructor#new()": {
         "color": "throwing",
         "spec": "Map",
         "runtime": "Map"
       },
-      "WeakMapConstructor#new": {
+      "WeakMapConstructor#new()": {
         "color": "throwing",
         "spec": "WeakMap",
         "runtime": "WeakMap"
       },
-      "SetConstructor#new": {
+      "SetConstructor#new()": {
         "color": "throwing",
         "spec": "Set",
         "runtime": "Set"
       },
-      "WeakSetConstructor#new": {
+      "WeakSetConstructor#new()": {
         "color": "throwing",
         "spec": "WeakSet",
         "runtime": "WeakSet"
@@ -1303,7 +1303,7 @@
         "spec": "Promise.race",
         "runtime": "Promise.race"
       },
-      "PromiseConstructor#new": {
+      "PromiseConstructor#new()": {
         "color": "throwing",
         "spec": "Promise",
         "runtime": "Promise"
@@ -1329,7 +1329,7 @@
         "spec": "Proxy.revocable",
         "runtime": "Proxy.revocable"
       },
-      "ProxyConstructor#new": {
+      "ProxyConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "Proxy",
@@ -1803,7 +1803,7 @@
       }
     },
     "es2017.arraybuffer": {
-      "ArrayBufferConstructor#new": {
+      "ArrayBufferConstructor#new()": {
         "color": "throwing",
         "spec": "ArrayBuffer",
         "runtime": "ArrayBuffer"
@@ -1863,7 +1863,7 @@
         "spec": "SharedArrayBuffer.prototype [ %Symbol.toStringTag% ]",
         "runtime": "SharedArrayBuffer.prototype[Symbol.toStringTag]"
       },
-      "SharedArrayBufferConstructor#new": {
+      "SharedArrayBufferConstructor#new()": {
         "color": "throwing",
         "spec": "SharedArrayBuffer",
         "runtime": "SharedArrayBuffer"
@@ -1973,47 +1973,47 @@
       }
     },
     "es2017.typedarrays": {
-      "Int8ArrayConstructor#new": {
+      "Int8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int8Array",
         "runtime": "Int8Array"
       },
-      "Uint8ArrayConstructor#new": {
+      "Uint8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8Array",
         "runtime": "Uint8Array"
       },
-      "Uint8ClampedArrayConstructor#new": {
+      "Uint8ClampedArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8ClampedArray",
         "runtime": "Uint8ClampedArray"
       },
-      "Int16ArrayConstructor#new": {
+      "Int16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int16Array",
         "runtime": "Int16Array"
       },
-      "Uint16ArrayConstructor#new": {
+      "Uint16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint16Array",
         "runtime": "Uint16Array"
       },
-      "Int32ArrayConstructor#new": {
+      "Int32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int32Array",
         "runtime": "Int32Array"
       },
-      "Uint32ArrayConstructor#new": {
+      "Uint32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint32Array",
         "runtime": "Uint32Array"
       },
-      "Float32ArrayConstructor#new": {
+      "Float32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float32Array",
         "runtime": "Float32Array"
       },
-      "Float64ArrayConstructor#new": {
+      "Float64ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float64Array",
         "runtime": "Float64Array"
@@ -2371,7 +2371,7 @@
         "spec": "BigInt64Array.prototype [ %Symbol.toStringTag% ]",
         "runtime": "BigInt64Array.prototype[Symbol.toStringTag]"
       },
-      "BigInt64ArrayConstructor#new": {
+      "BigInt64ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "BigInt64Array",
         "runtime": "BigInt64Array"
@@ -2605,7 +2605,7 @@
         "spec": "BigUint64Array.prototype [ %Symbol.toStringTag% ]",
         "runtime": "BigUint64Array.prototype[Symbol.toStringTag]"
       },
-      "BigUint64ArrayConstructor#new": {
+      "BigUint64ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "BigUint64Array",
         "runtime": "BigUint64Array"
@@ -2802,7 +2802,7 @@
       }
     },
     "es2021.promise": {
-      "AggregateErrorConstructor#new": {
+      "AggregateErrorConstructor#new()": {
         "color": "throwing",
         "spec": "AggregateError",
         "runtime": "AggregateError"
@@ -2841,7 +2841,7 @@
         "spec": "WeakRef.prototype.deref",
         "runtime": "WeakRef.prototype.deref"
       },
-      "WeakRefConstructor#new": {
+      "WeakRefConstructor#new()": {
         "color": "throwing",
         "spec": "WeakRef",
         "runtime": "WeakRef"
@@ -2866,7 +2866,7 @@
         "spec": "FinalizationRegistry.prototype.unregister",
         "runtime": "FinalizationRegistry.prototype.unregister"
       },
-      "FinalizationRegistryConstructor#new": {
+      "FinalizationRegistryConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "FinalizationRegistry",
@@ -2956,7 +2956,7 @@
       }
     },
     "es2022.error": {
-      "ErrorConstructor#new": {
+      "ErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "Error",
@@ -2968,7 +2968,7 @@
         "spec": "Error",
         "runtime": "Error"
       },
-      "EvalErrorConstructor#new": {
+      "EvalErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "EvalError",
@@ -2980,7 +2980,7 @@
         "spec": "EvalError",
         "runtime": "EvalError"
       },
-      "RangeErrorConstructor#new": {
+      "RangeErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "RangeError",
@@ -2992,7 +2992,7 @@
         "spec": "RangeError",
         "runtime": "RangeError"
       },
-      "ReferenceErrorConstructor#new": {
+      "ReferenceErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "ReferenceError",
@@ -3004,7 +3004,7 @@
         "spec": "ReferenceError",
         "runtime": "ReferenceError"
       },
-      "SyntaxErrorConstructor#new": {
+      "SyntaxErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "SyntaxError",
@@ -3016,7 +3016,7 @@
         "spec": "SyntaxError",
         "runtime": "SyntaxError"
       },
-      "TypeErrorConstructor#new": {
+      "TypeErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "TypeError",
@@ -3028,7 +3028,7 @@
         "spec": "TypeError",
         "runtime": "TypeError"
       },
-      "URIErrorConstructor#new": {
+      "URIErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "URIError",
@@ -3040,7 +3040,7 @@
         "spec": "URIError",
         "runtime": "URIError"
       },
-      "AggregateErrorConstructor#new": {
+      "AggregateErrorConstructor#new()": {
         "color": "throwing",
         "spec": "AggregateError",
         "runtime": "AggregateError"
@@ -3495,7 +3495,7 @@
       }
     },
     "es2024.arraybuffer": {
-      "ArrayBufferConstructor#new": {
+      "ArrayBufferConstructor#new()": {
         "color": "throwing",
         "spec": "ArrayBuffer",
         "runtime": "ArrayBuffer"
@@ -3578,7 +3578,7 @@
       }
     },
     "es2024.sharedmemory": {
-      "SharedArrayBufferConstructor#new": {
+      "SharedArrayBufferConstructor#new()": {
         "color": "throwing",
         "spec": "SharedArrayBuffer",
         "runtime": "SharedArrayBuffer"
@@ -3755,7 +3755,7 @@
         "spec": "Object.prototype.propertyIsEnumerable",
         "runtime": "Object.prototype.propertyIsEnumerable"
       },
-      "ObjectConstructor#new": {
+      "ObjectConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "Object",
@@ -3897,7 +3897,7 @@
         "spec": "Function.prototype.caller",
         "runtime": "Function.prototype.caller"
       },
-      "FunctionConstructor#new": {
+      "FunctionConstructor#new()": {
         "color": "throwing",
         "spec": "Function",
         "runtime": "Function"
@@ -4046,7 +4046,7 @@
         "spec": "String.prototype.valueOf",
         "runtime": "String.prototype.valueOf"
       },
-      "StringConstructor#new": {
+      "StringConstructor#new()": {
         "color": "throwing",
         "spec": "String",
         "runtime": "String"
@@ -4070,7 +4070,7 @@
         "spec": "Boolean.prototype.valueOf",
         "runtime": "Boolean.prototype.valueOf"
       },
-      "BooleanConstructor#new": {
+      "BooleanConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "Boolean",
@@ -4113,7 +4113,7 @@
         "spec": "Number.prototype.valueOf",
         "runtime": "Number.prototype.valueOf"
       },
-      "NumberConstructor#new": {
+      "NumberConstructor#new()": {
         "color": "throwing",
         "spec": "Number",
         "runtime": "Number"
@@ -4649,7 +4649,7 @@
         "spec": "Date.prototype.toJSON",
         "runtime": "Date.prototype.toJSON"
       },
-      "DateConstructor#new": {
+      "DateConstructor#new()": {
         "color": "throwing",
         "spec": "Date",
         "runtime": "Date"
@@ -4729,7 +4729,7 @@
         "spec": "RegExp.prototype.compile",
         "runtime": "RegExp.prototype.compile"
       },
-      "RegExpConstructor#new": {
+      "RegExpConstructor#new()": {
         "color": "throwing",
         "spec": "RegExp",
         "runtime": "RegExp"
@@ -4901,7 +4901,7 @@
         "spec": "Error.prototype.message",
         "runtime": "Error.prototype.message"
       },
-      "ErrorConstructor#new": {
+      "ErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "Error",
@@ -4913,7 +4913,7 @@
         "spec": "Error",
         "runtime": "Error"
       },
-      "EvalErrorConstructor#new": {
+      "EvalErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "EvalError",
@@ -4925,7 +4925,7 @@
         "spec": "EvalError",
         "runtime": "EvalError"
       },
-      "RangeErrorConstructor#new": {
+      "RangeErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "RangeError",
@@ -4937,7 +4937,7 @@
         "spec": "RangeError",
         "runtime": "RangeError"
       },
-      "ReferenceErrorConstructor#new": {
+      "ReferenceErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "ReferenceError",
@@ -4949,7 +4949,7 @@
         "spec": "ReferenceError",
         "runtime": "ReferenceError"
       },
-      "SyntaxErrorConstructor#new": {
+      "SyntaxErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "SyntaxError",
@@ -4961,7 +4961,7 @@
         "spec": "SyntaxError",
         "runtime": "SyntaxError"
       },
-      "TypeErrorConstructor#new": {
+      "TypeErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "TypeError",
@@ -4973,7 +4973,7 @@
         "spec": "TypeError",
         "runtime": "TypeError"
       },
-      "URIErrorConstructor#new": {
+      "URIErrorConstructor#new()": {
         "color": "non-throwing",
         "conditions": [],
         "spec": "URIError",
@@ -5239,7 +5239,7 @@
         "spec": "Array.prototype.reduceRight",
         "runtime": "Array.prototype.reduceRight"
       },
-      "ArrayConstructor#new": {
+      "ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Array",
         "runtime": "Array"
@@ -5282,7 +5282,7 @@
         "spec": "ArrayBuffer.prototype.slice",
         "runtime": "ArrayBuffer.prototype.slice"
       },
-      "ArrayBufferConstructor#new": {
+      "ArrayBufferConstructor#new()": {
         "color": "throwing",
         "spec": "ArrayBuffer",
         "runtime": "ArrayBuffer"
@@ -5414,7 +5414,7 @@
         "spec": "DataView.prototype.setUint32",
         "runtime": "DataView.prototype.setUint32"
       },
-      "DataViewConstructor#new": {
+      "DataViewConstructor#new()": {
         "color": "throwing",
         "spec": "DataView",
         "runtime": "DataView"
@@ -5590,7 +5590,7 @@
         "spec": "Int8Array.prototype.valueOf",
         "runtime": "Int8Array.prototype.valueOf"
       },
-      "Int8ArrayConstructor#new": {
+      "Int8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int8Array",
         "runtime": "Int8Array"
@@ -5786,7 +5786,7 @@
         "spec": "Uint8Array.prototype.valueOf",
         "runtime": "Uint8Array.prototype.valueOf"
       },
-      "Uint8ArrayConstructor#new": {
+      "Uint8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8Array",
         "runtime": "Uint8Array"
@@ -5982,7 +5982,7 @@
         "spec": "Uint8ClampedArray.prototype.valueOf",
         "runtime": "Uint8ClampedArray.prototype.valueOf"
       },
-      "Uint8ClampedArrayConstructor#new": {
+      "Uint8ClampedArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8ClampedArray",
         "runtime": "Uint8ClampedArray"
@@ -6178,7 +6178,7 @@
         "spec": "Int16Array.prototype.valueOf",
         "runtime": "Int16Array.prototype.valueOf"
       },
-      "Int16ArrayConstructor#new": {
+      "Int16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int16Array",
         "runtime": "Int16Array"
@@ -6374,7 +6374,7 @@
         "spec": "Uint16Array.prototype.valueOf",
         "runtime": "Uint16Array.prototype.valueOf"
       },
-      "Uint16ArrayConstructor#new": {
+      "Uint16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint16Array",
         "runtime": "Uint16Array"
@@ -6570,7 +6570,7 @@
         "spec": "Int32Array.prototype.valueOf",
         "runtime": "Int32Array.prototype.valueOf"
       },
-      "Int32ArrayConstructor#new": {
+      "Int32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int32Array",
         "runtime": "Int32Array"
@@ -6766,7 +6766,7 @@
         "spec": "Uint32Array.prototype.valueOf",
         "runtime": "Uint32Array.prototype.valueOf"
       },
-      "Uint32ArrayConstructor#new": {
+      "Uint32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint32Array",
         "runtime": "Uint32Array"
@@ -6962,7 +6962,7 @@
         "spec": "Float32Array.prototype.valueOf",
         "runtime": "Float32Array.prototype.valueOf"
       },
-      "Float32ArrayConstructor#new": {
+      "Float32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float32Array",
         "runtime": "Float32Array"
@@ -7158,7 +7158,7 @@
         "spec": "Float64Array.prototype.valueOf",
         "runtime": "Float64Array.prototype.valueOf"
       },
-      "Float64ArrayConstructor#new": {
+      "Float64ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float64Array",
         "runtime": "Float64Array"
@@ -7569,7 +7569,7 @@
         "spec": "Float16Array.prototype [ %Symbol.toStringTag% ]",
         "runtime": "Float16Array.prototype[Symbol.toStringTag]"
       },
-      "Float16ArrayConstructor#new": {
+      "Float16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float16Array",
         "runtime": "Float16Array"

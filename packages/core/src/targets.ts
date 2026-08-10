@@ -373,6 +373,12 @@ function transferTarget(transfer: Transfer, resolution: Resolution): Target {
  *
  * Only asked where the signature itself keys nothing, so a declaration the
  * surface already reaches is never re-keyed through the site that reached it.
+ * Keys nothing, rather than *answers* nothing: `interface Risky { (…): … }` is
+ * reachable as `Risky#()` whether or not anybody wrote that entry, and falling
+ * through to the property over an unwritten key would color a call from an
+ * entry written for a member no call enters. A bare `type Paint = (…) => …` is
+ * the shape that really carries no key, and it is the one this is for.
+ *
  * And only of a callee written as a name: `new` resolves to a class rather than
  * to a signature, and `super` names nothing at all.
  */
@@ -381,9 +387,11 @@ function keyDeclarationFor(
   transfer: Transfer,
   resolution: Resolution,
 ): ts.Declaration {
+  const { carrier } = resolution;
   if (
     ts.isNewExpression(transfer) ||
-    resolution.carrier.answerFor(declaration) !== undefined
+    carrier.answerFor(declaration) !== undefined ||
+    carrier.keyFor(declaration) !== undefined
   ) {
     return declaration;
   }

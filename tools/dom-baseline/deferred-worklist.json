@@ -1758,7 +1758,7 @@
       "evidence": "no constructible receiver"
     },
     {
-      "key": "IntersectionObserver.new",
+      "key": "IntersectionObserver.new()",
       "param": "param0",
       "adjudication": "unreachable",
       "observedAfterCall": false,
@@ -2031,7 +2031,7 @@
       "evidence": "no constructible receiver"
     },
     {
-      "key": "MutationObserver.new",
+      "key": "MutationObserver.new()",
       "param": "param0",
       "adjudication": "unreachable",
       "observedAfterCall": false,
@@ -2199,7 +2199,7 @@
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
-      "key": "PerformanceObserver.new",
+      "key": "PerformanceObserver.new()",
       "param": "param0",
       "adjudication": "unreachable",
       "observedAfterCall": false,
@@ -2269,7 +2269,7 @@
       "evidence": "the callback never ran, so nothing was observed either way"
     },
     {
-      "key": "ReportingObserver.new",
+      "key": "ReportingObserver.new()",
       "param": "param0",
       "adjudication": "unreachable",
       "observedAfterCall": false,
@@ -2290,7 +2290,7 @@
       "evidence": "not implemented by this engine"
     },
     {
-      "key": "ResizeObserver.new",
+      "key": "ResizeObserver.new()",
       "param": "param0",
       "adjudication": "unreachable",
       "observedAfterCall": false,

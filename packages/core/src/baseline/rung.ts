@@ -2,6 +2,7 @@ import ts from "typescript";
 
 import type { CarrierAnswer, CarrierRung } from "../carrier/chain.js";
 import type { FloorSource } from "../colors.js";
+import { signatureSegment } from "../segments.js";
 import {
   baselineCoversOwner,
   lookupBaselineEntry,
@@ -150,10 +151,10 @@ function baselineKeyOf(declaration: ts.Declaration): string | undefined {
   return name === undefined ? undefined : owner.join(owner.name, name);
 }
 
-/** `push`, `@@iterator`, `()` for a call signature, `new` for a construct one. */
+/** `push`, `@@iterator`, and the two segments a signature is keyed by. */
 function memberNameOf(declaration: ts.Declaration): string | undefined {
-  if (ts.isCallSignatureDeclaration(declaration)) return "()";
-  if (ts.isConstructSignatureDeclaration(declaration)) return "new";
+  const signature = signatureSegment(ts, declaration);
+  if (signature !== undefined) return signature;
 
   const nameNode = ts.getNameOfDeclaration(declaration);
   if (nameNode === undefined) return undefined;

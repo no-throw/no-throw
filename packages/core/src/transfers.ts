@@ -8,6 +8,7 @@ import type {
   DestructuringElement,
   Escape,
 } from "./escapes.js";
+import { signatureSegment } from "./segments.js";
 import type { Resolution } from "./targets.js";
 
 /** How a hidden transfer reads in a diagnostic: the verb the site is. */
@@ -569,9 +570,9 @@ function libCalleeKey(
   for (const { declaration } of libDeclarationsOf(resolved, checker)) {
     const owner = declaration.parent;
     if (!ts.isInterfaceDeclaration(owner)) continue;
-    const name = ts.isCallSignatureDeclaration(declaration)
-      ? "()"
-      : ts.getNameOfDeclaration(declaration)?.getText();
+    const name =
+      signatureSegment(ts, declaration) ??
+      ts.getNameOfDeclaration(declaration)?.getText();
     if (name !== undefined) return memberKey(owner.name.text, name);
   }
   return undefined;

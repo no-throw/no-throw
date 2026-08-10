@@ -1,0 +1,14 @@
+{
+  "description": "A class's own constructor is public surface — `new Wrapper(1)` is what a consumer writes — and it has no name of its own to be keyed by. Emit writes it `Wrapper#new()`, and a separate project resolves the construction back through the `.d.ts`. The segment is not `new`, because a property may already be called that.",
+  "steps": [
+    { "emit": [], "expect": "ok" },
+    {
+      "entries": {
+        ".": {
+          "Wrapper#new()": { "color": "non-throwing", "conditions": [] }
+        }
+      }
+    },
+    { "consumer": "consumer" }
+  ]
+}

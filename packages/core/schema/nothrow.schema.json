@@ -31,11 +31,11 @@
     },
     "subpath": {
       "type": "object",
-      "patternProperties": { "^[A-Za-z_$][A-Za-z0-9_$]*([.#][A-Za-z_$][A-Za-z0-9_$]*)*$": { "$ref": "#/$defs/entry" } },
+      "patternProperties": { "^[A-Za-z_$][A-Za-z0-9_$]*([.#](new\\(\\)|\\(\\)|[A-Za-z_$][A-Za-z0-9_$]*))*$": { "$ref": "#/$defs/entry" } },
       "additionalProperties": false
     },
     "entry": {
-      "description": "One symbol, covering all of its overloads. Keys are public export names post-aliasing, in a strict JSDoc-namepath subset.",
+      "description": "One symbol, covering all of its overloads. Keys are public export names post-aliasing, in a strict JSDoc-namepath subset: `name`, then `#` for an instance member and `.` for a static or namespace one. Two members have no name of their own and are keyed `()` for a call signature and `new()` for a construct signature or a class constructor — never `new`, which a real property may already be called.",
       "type": "object",
       "properties": {
         "color": { "$ref": "#/$defs/color" },
