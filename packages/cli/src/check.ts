@@ -30,19 +30,29 @@ export function runCheck(options: CheckOptions): CommandResult {
   const { program, configPath } = opened.project;
   const { carriers } = checkCarriers(program, packageHomeOf(configPath));
   const entries = carriers.flatMap((carrier) => carrier.entries);
-  const dead = entries.filter(reachesNothing).length;
-  const inert = entries.filter((entry) => entry.verdict === "unresolved").length;
   const fatal = carriers.some((carrier) => carrier.problem?.fatal === true);
+  const tally: Tally = {
+    checked: entries.length,
+    // The two failures are counted apart because they are two faults with two
+    // fixes: one is a key held against a surface, and the other never got as
+    // far as a surface. Both fail the run — an entry that colors nothing does
+    // it silently, which is the whole reason this command exists.
+    dead: entries.filter(
+      (entry) => reachesNothing(entry) && entry.verdict !== "unusable",
+    ).length,
+    unusable: entries.filter((entry) => entry.verdict === "unusable").length,
+    inert: entries.filter((entry) => entry.verdict === "unresolved").length,
+  };
 
   const lines: string[] = [];
   for (const carrier of carriers) {
     const report = reportOn(carrier, options.cwd);
     if (report.length > 0) lines.push(...report, "");
   }
-  lines.push(summary(entries.length, dead, inert, fatal));
+  lines.push(summary(tally, fatal));
 
   const text = `${lines.join("\n")}\n`;
-  return dead > 0 || fatal
+  return entries.some(reachesNothing) || fatal
     ? { code: REFUSED, out: "", err: text }
     : { code: 0, out: text, err: "" };
 }
@@ -85,6 +95,17 @@ function whyItReachesNothing(
       return [
         `nothing of \`${entry.package}\` is in this project, so there is ` +
           "no surface to hold this against. Inert rather than wrong.",
+      ];
+    case "unusable":
+      return [
+        `this entry does not validate against \`${entry.schema}\` at ` +
+          `${entry.faults.map((fault) => `\`${fault}\``).join(", ")}, so the ` +
+          "reader discarded it and it colors nothing.",
+        // The one thing that separates this from an entry nobody wrote, and
+        // the reason it is worth failing a run over: a carrier that claims a
+        // key and cannot be honored floors it rather than handing it down.
+        "Anything it would have colored floors rather than falling through " +
+          "to the rung below.",
       ];
     case "no-subpath": {
       const nothingAt = `\`${entry.package}\` publishes nothing at ${JSON.stringify(entry.subpath)}`;
@@ -149,12 +170,16 @@ function lastSegment(symbolPath: string): string {
   return symbolPath.split(/[#.]/u).at(-1) ?? symbolPath;
 }
 
-function summary(
-  checked: number,
-  dead: number,
-  inert: number,
-  fatal: boolean,
-): string {
+/** What the run came to, in the counts the last line is written out of. */
+interface Tally {
+  readonly checked: number;
+  readonly dead: number;
+  readonly unusable: number;
+  readonly inert: number;
+}
+
+function summary(tally: Tally, fatal: boolean): string {
+  const { checked, dead, unusable, inert } = tally;
   if (checked === 0) {
     return fatal
       ? "Nothing was checked: a carrier above is not being honored."
@@ -163,6 +188,9 @@ function summary(
 
   const clauses = [
     ...(dead === 0 ? [] : [`${count(dead, "reaches", "reach")} nothing`]),
+    ...(unusable === 0
+      ? []
+      : [`${count(unusable, "does", "do")} not validate`]),
     ...(inert === 0
       ? []
       : [

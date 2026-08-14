@@ -22,7 +22,15 @@ export interface ManifestEntry {
  */
 export type EntryState =
   | { readonly kind: "entry"; readonly entry: ManifestEntry }
-  | { readonly kind: "unusable" };
+  /**
+   * `faults` names where inside the entry the schema rejected it, as the
+   * property paths past the entry an author would point at. A resolver has no
+   * use for them — the entry floors whatever it was going to say — but the
+   * reader checking a carrier does: the file is the only place a fix can be
+   * made, and an entry discarded without saying which field lost it is the
+   * silent no-op again, one level down.
+   */
+  | { readonly kind: "unusable"; readonly faults: readonly string[] };
 
 /** One `exports` table — subpath, then symbol path — as something to ask. */
 export interface ColorTable {
@@ -150,18 +158,23 @@ function indexTable(
   prefix: readonly string[],
   issues: readonly SchemaIssue[],
 ): ColorTable {
-  const unusable = new Set(
-    issues
-      .filter((issue) => startsWith(issue.path, prefix))
-      .map((issue) =>
-        identityOf(issue.path.slice(prefix.length, prefix.length + 2)),
-      ),
-  );
+  const unusable = new Map<string, Set<string>>();
+  for (const issue of issues) {
+    if (!startsWith(issue.path, prefix)) continue;
+    const at = identityOf(issue.path.slice(prefix.length, prefix.length + 2));
+    const faults = unusable.get(at) ?? new Set<string>();
+    // Deduped, because one value can depart from a schema more than once — a
+    // `oneOf` reports the branch and the whole — and a field named twice reads
+    // as two faults to fix.
+    faults.add(issue.path.slice(prefix.length + 2).join("."));
+    unusable.set(at, faults);
+  }
   const table = valueAt(value, prefix);
 
   return {
     entryFor: (subpath, key) => {
-      if (unusable.has(identityOf([subpath, key]))) return { kind: "unusable" };
+      const faults = unusable.get(identityOf([subpath, key]));
+      if (faults !== undefined) return { kind: "unusable", faults: [...faults] };
       const entries = isRecord(table) ? table[subpath] : undefined;
       const entry = isRecord(entries) ? entries[key] : undefined;
       return isRecord(entry)

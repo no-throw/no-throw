@@ -8,7 +8,11 @@ import {
 } from "./document.js";
 import { isRecord, type PackageHome } from "./packages.js";
 import type { SchemaIssue } from "./schema.js";
-import { manifestSchema, overridesSchema } from "./schemas.js";
+import {
+  manifestSchema,
+  overridesSchema,
+  OVERRIDES_SCHEMA,
+} from "./schemas.js";
 
 const EMPTY: ColorTables = new Map();
 
@@ -116,7 +120,7 @@ export function refusalMessage(
   const why =
     state.refusal.kind === "not-an-object"
       ? "it could not be read as a JSON object"
-      : `it does not validate against \`nothrow.overrides.schema.json\` at ${faultsAt(state.refusal.issues)}`;
+      : `it does not validate against \`${OVERRIDES_SCHEMA}\` at ${faultsAt(state.refusal.issues)}`;
 
   return (
     `\`nothrow.overrides.json\` cannot be read — ${why} — so nothing in it ` +

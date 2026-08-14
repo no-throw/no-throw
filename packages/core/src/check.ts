@@ -1,5 +1,6 @@
 import { dirname } from "node:path";
 import ts from "typescript";
+import type { ColorTable, ColorTables } from "./carrier/document.js";
 import { installedOverlaysFor } from "./carrier/overlays.js";
 import {
   OVERRIDES,
@@ -12,6 +13,7 @@ import {
   packageHomeOf,
   type PackageHome,
 } from "./carrier/packages.js";
+import { MANIFEST_SCHEMA, OVERRIDES_SCHEMA } from "./carrier/schemas.js";
 import { exportSurfaceOf } from "./carrier/surface.js";
 
 /** The three halves of a key, which is what a carrier writes an entry under. */
@@ -32,6 +34,19 @@ export type CheckedEntry = EntryKey &
     | { readonly verdict: "reaches" }
     /** Nothing of the package is in the program, so there is no surface. */
     | { readonly verdict: "unresolved" }
+    /**
+     * The entry is written and does not describe a color: the schema rejected
+     * something inside it, so the reader discarded it before any question of
+     * what it reaches. Asked first for that reason — a discarded entry keys as
+     * well as a correct one, and the surface would call it healthy — and
+     * carrying both the contract it lost against and the fields that lost it,
+     * because the carrier file is the only place the fix can be made.
+     */
+    | {
+        readonly verdict: "unusable";
+        readonly schema: string;
+        readonly faults: readonly string[];
+      }
     /** The package publishes no such subpath; these are the ones it has. */
     | { readonly verdict: "no-subpath"; readonly subpaths: readonly string[] }
     /** The subpath is published and holds no such key; these are its keys. */
@@ -105,8 +120,16 @@ export function checkCarriers(
 
   for (const asking of askingHomes(program, fallback)) {
     for (const carrier of [
-      overridesCarrier(overridesStateIn(asking), packages, program),
-      ...overlayCarriers(asking, packages, program),
+      overridesCarrier(overridesStateIn(asking), {
+        schema: OVERRIDES_SCHEMA,
+        packages,
+        program,
+      }),
+      ...overlayCarriers(asking, {
+        schema: MANIFEST_SCHEMA,
+        packages,
+        program,
+      }),
     ]) {
       if (seen.has(carrier.path)) continue;
       seen.add(carrier.path);
@@ -138,10 +161,21 @@ function askingHomes(
   return [...homes.values()];
 }
 
+/**
+ * What one carrier's entries are held against: the packages the program holds,
+ * and the contract that carrier's own entries were validated by — the overrides
+ * file's and a manifest's are two different published files, and an entry the
+ * schema rejected is owed the one it lost against.
+ */
+interface Against {
+  readonly schema: string;
+  readonly packages: ReadonlyMap<string, PackageHome>;
+  readonly program: ts.Program;
+}
+
 function overridesCarrier(
   state: OverridesState,
-  packages: ReadonlyMap<string, PackageHome>,
-  program: ts.Program,
+  against: Against,
 ): CheckedCarrier {
   const name = OVERRIDES;
 
@@ -186,8 +220,8 @@ function overridesCarrier(
         entries: ownedEntries(
           state.document["packages"],
           state.packages,
-          packages,
-          program,
+          state.tables,
+          against,
         ),
       };
   }
@@ -195,8 +229,7 @@ function overridesCarrier(
 
 function overlayCarriers(
   asking: PackageHome,
-  packages: ReadonlyMap<string, PackageHome>,
-  program: ts.Program,
+  against: Against,
 ): readonly CheckedCarrier[] {
   return installedOverlaysFor(asking).map(({ home: overlay, state }) => {
     const name = overlay.name ?? overlay.directory;
@@ -230,8 +263,8 @@ function overlayCarriers(
       entries: subpathEntries(
         state.document["exports"],
         state.target,
-        packages,
-        program,
+        state.table,
+        against,
       ),
     };
   });
@@ -255,26 +288,32 @@ function overlayProblem(kind: "stale" | "unreadable"): CarrierProblem {
 
 /** Every entry under `packages` → the package → `exports`. */
 function ownedEntries(
-  table: unknown,
+  owner: unknown,
   names: readonly string[],
-  packages: ReadonlyMap<string, PackageHome>,
-  program: ts.Program,
+  tables: ColorTables,
+  against: Against,
 ): readonly CheckedEntry[] {
-  if (!isRecord(table)) return [];
+  if (!isRecord(owner)) return [];
   return names.flatMap((name) => {
-    const owned = table[name];
+    const owned = owner[name];
     return isRecord(owned)
-      ? subpathEntries(owned["exports"], name, packages, program)
+      ? subpathEntries(owned["exports"], name, tables.get(name), against)
       : [];
   });
 }
 
-/** Every entry under one `exports` table, which is one package's colors. */
+/**
+ * Every entry under one `exports` table, which is one package's colors. The
+ * document says which entries were *written*, and the reader's own table says
+ * what became of each — the two are read together because neither alone is the
+ * question: a discarded entry is absent from the table and present in the file,
+ * and reading only the table would lose it as completely as the reader did.
+ */
 function subpathEntries(
   exported: unknown,
   packageName: string,
-  packages: ReadonlyMap<string, PackageHome>,
-  program: ts.Program,
+  table: ColorTable | undefined,
+  against: Against,
 ): readonly CheckedEntry[] {
   if (!isRecord(exported)) return [];
 
@@ -282,19 +321,25 @@ function subpathEntries(
   for (const [subpath, keys] of Object.entries(exported)) {
     if (!isRecord(keys)) continue;
     for (const symbolPath of Object.keys(keys)) {
+      const key = { package: packageName, subpath, symbolPath };
+      const state = table?.entryFor(subpath, symbolPath);
       entries.push(
-        verdictFor({ package: packageName, subpath, symbolPath }, packages, program),
+        state?.kind === "unusable"
+          ? {
+              ...key,
+              verdict: "unusable",
+              schema: against.schema,
+              faults: state.faults,
+            }
+          : verdictFor(key, against),
       );
     }
   }
   return entries;
 }
 
-function verdictFor(
-  key: EntryKey,
-  packages: ReadonlyMap<string, PackageHome>,
-  program: ts.Program,
-): CheckedEntry {
+function verdictFor(key: EntryKey, against: Against): CheckedEntry {
+  const { packages, program } = against;
   const home = packages.get(key.package);
   // Nothing of this package is in the program, so there is no surface to hold
   // the entry against. Inert rather than wrong: a project may carry colors for

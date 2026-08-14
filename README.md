@@ -450,12 +450,28 @@ nothrow.overrides.json
 2 entries checked. 1 reaches nothing.
 ```
 
+An entry the **schema rejects** is named the same way, and fails the run for the
+same reason. A misspelled `color`, or a condition path outside the closed
+grammar, floors that one entry rather than refusing the file — but a floored
+entry keys as well as a correct one does, so nothing about the surface would
+catch it. The field is pointed at the way an envelope fault is:
+
+```console
+$ nothrow check
+nothrow.overrides.json
+  picocolors → "." → `red`
+    this entry does not validate against `nothrow.overrides.schema.json` at `color`, so the reader discarded it and it colors nothing.
+    Anything it would have colored floors rather than falling through to the rung below.
+
+1 entry checked. 1 does not validate.
+```
+
 An entry naming a package this project does not hold is reported apart and does
 not fail the run: it is inert rather than wrong — a workspace that holds the
 dependency and a sibling that does not are both right about the same file. Exit
-codes are `0` nothing to refuse, `1` something reached nothing or a carrier is
-not being honored, `2` could not run. So an inert entry is named, and still
-exits `0`.
+codes are `0` nothing to refuse, `1` something reached nothing, did not validate
+or a carrier is not being honored, `2` could not run. So an inert entry is
+named, and still exits `0`.
 
 A carrier is matched by the package a declaration **ships in**, never by the one
 that re-exported it — so an entry written under a barrel package reaches nothing
