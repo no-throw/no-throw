@@ -1,19 +1,16 @@
-# One dispatch bumps the three packages in lockstep, runs every gate on the
-# commit it is about to tag, tags it, and publishes. The gates run after the
-# bump on purpose: what they prove is the tree that ships.
+# Nobody types a version here. Conventional-commit subjects landing on `main`
+# accumulate into a release PR that bumps the four manifests in lockstep and
+# writes `CHANGELOG.md`; merging that PR tags, creates the GitHub release, and
+# releases the publish job below. The version is a reading of what merged, so
+# the only way to get a major is to have written `!` on a commit.
 name: Release
 
 on:
+  push:
+    branches: [main]
+  # An escape hatch for a publish that failed with the tag already cut: this
+  # re-runs the publish job against `main` without cutting anything new.
   workflow_dispatch:
-    inputs:
-      version:
-        description: The version all three packages move to, `major.minor.patch`
-        required: true
-        type: string
-      dry-run:
-        description: Run every gate and pack the tarballs, but publish nothing
-        type: boolean
-        default: false
 
 # The publish is the point of no return, so nothing else may be running against
 # the same branch when it happens.
@@ -22,22 +19,42 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Release ${{ inputs.version }}
+  release-please:
+    name: Release PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      released: ${{ steps.release.outputs.releases_created }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          # A pull request opened with the default `GITHUB_TOKEN` triggers no
+          # other workflow, so the release PR would sit there with no CI on it.
+          # A PAT or App token in `RELEASE_PLEASE_TOKEN` restores that. The
+          # publish job re-runs every gate either way, so its absence costs
+          # review signal rather than safety.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    name: Publish
+    needs: release-please
+    if: ${{ needs.release-please.outputs.released == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     environment: release
     permissions:
-      contents: write
+      contents: read
       # npm provenance: the publish is signed against this workflow run, so a
       # consumer can check that the tarball came from this repo at this commit.
       id-token: write
     steps:
-      # A release is only ever cut from `main`: the gates below prove the
-      # commit, and the tag has to be reachable from the branch consumers read.
+      # The release commit release-please just pushed — the tree that carries
+      # the bumped manifests, and the one everything below proves.
       - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -49,14 +66,14 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Bump the three packages in lockstep
-        run: node scripts/release.mjs "${{ inputs.version }}"
-
-      # Everything below runs *after* the bump, so what the gates prove is the
-      # tree that gets tagged and packed rather than the one before it.
       - run: pnpm run build
 
-      - run: pnpm run check:lockstep
+      # Every gate, on the release commit. CI runs a wider version of this on
+      # the release PR, but only when release-please had a token that could
+      # trigger it — and only the run below is guaranteed to have happened
+      # against the manifests that are about to be packed.
+      - name: The four manifests moved together
+        run: pnpm run check:lockstep
 
       - run: pnpm run check:docs
 
@@ -92,34 +109,16 @@ jobs:
       # published: a `files` list that forgot the baseline data produces a
       # package that installs and floors everything.
       - name: The tarballs carry what they claim
-        run: node scripts/check-packed.mjs
-
-      - name: Commit and tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "Release ${{ inputs.version }}"
-          git tag -a "v${{ inputs.version }}" -m "Release ${{ inputs.version }}"
-
-      - name: Push the release commit and tag
-        if: ${{ !inputs.dry-run }}
-        run: git push origin main "v${{ inputs.version }}"
+        run: pnpm run check:packed
 
       # Order matters: the two adapters name `@no-throw/core` as a dependency,
       # and pnpm rewrites `workspace:*` to this exact version as it packs. A
       # consumer installing an adapter before core is on the registry gets an
       # unresolvable dependency.
       - name: Publish
-        if: ${{ !inputs.dry-run }}
         run: |
           pnpm --filter @no-throw/core publish --no-git-checks
           pnpm --filter @no-throw/eslint-plugin publish --no-git-checks
           pnpm --filter @no-throw/cli publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Release notes
-        if: ${{ !inputs.dry-run }}
-        run: gh release create "v${{ inputs.version }}" --notes-file docs/release-notes/v${{ inputs.version }}.md --title "v${{ inputs.version }}"
-        env:
-          GH_TOKEN: ${{ github.token }}

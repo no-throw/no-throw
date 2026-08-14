@@ -1033,9 +1033,12 @@ when a floor names its outs out of precedence order, or when a message that must
 not name a nearest valid site starts naming one. A clause with no artifact
 behind it is a failure, not a gap to note.
 
-Releases are one dispatch of the [Release workflow](.github/workflows/release.yml);
-see [docs/releasing.md](docs/releasing.md), which also records the schemas'
-canonical URLs and the SchemaStore submission.
+Releases are cut by release-please off the commit log, so a pull request title
+carries a [Conventional Commits](https://www.conventionalcommits.org) type —
+`feat:`, `fix:`, `fix!:` for a breaking change — ahead of the sentence it would
+have had anyway. `feat` and `fix` open a release PR; everything else lands
+without moving a version. See [docs/releasing.md](docs/releasing.md), which also
+records the schemas' canonical URLs and the SchemaStore submission.
 
 Two peer ranges name what a consumer may install these packages against: the
 plugin's `eslint`, and the `typescript` all three share. CI enumerates each
