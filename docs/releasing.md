@@ -99,11 +99,12 @@ Four things live outside the repo and are the owner's:
 - **GitHub Pages** — set the source to *GitHub Actions*. The **Schema**
   workflow deploys there; see below.
 
-The manifests sit at `0.1.0` and nothing has ever been published, so the first
-release-please PR would offer `0.2.0`. To make the first release `1.0.0`, put a
-`Release-As: 1.0.0` footer on any commit that lands on `main` beforehand — an
-empty one is fine — and release-please will propose that instead. The launch
-announcement drafted at `docs/release-notes/v1.0.0.md` is not read by anything;
+The first release is already named. `.release-please-manifest.json` sits at
+`0.0.0`, which is true — nothing has ever been published — and a
+`Release-As: 0.1.0` footer landed on `main` to name what the first one is rather
+than leave it to what a `feat` does below 1.0. That footer works on any commit,
+any time you want to name a version by hand; otherwise the log decides. The
+launch announcement at `docs/release-notes/v0.1.0.md` is not read by anything;
 it is prose for the GitHub release body, to paste above the generated section.
 
 The README's **Status** section still opens with *nothing is published to npm
