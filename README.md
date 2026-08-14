@@ -717,9 +717,13 @@ chain of helpers stays markable all the way down.
 
 A condition is a precondition, exactly like a parameter type: it is discharged
 at every call by a **call-site join** of the argument's color, so no caller ever
-holds a promise it cannot cash. Where the argument cannot be resolved — a `let`,
-a function captured by a factory — the call floors, and the diagnostic names the
-parameter, where the body enters it, and your outs.
+holds a promise it cannot cash. A path landing on a standard-library member is
+discharged against the baseline like any other call, so `f(s: string)` entering
+`s.startsWith` is markable *and* callable with whatever string you have — no
+subtype of `string` exists to override the member. Where the argument cannot be
+resolved — a `let` holding a callback, a function captured by a factory — the
+call floors, and the diagnostic names the parameter, where the body enters it,
+and your outs.
 
 ## Generators
 
