@@ -21,6 +21,7 @@ import {
 } from "./declarations.js";
 import { calleeExpression, type Transfer } from "./escapes.js";
 import { isMarkedFunction } from "./marks.js";
+import { everyValueIs, PRIMITIVE_VALUE } from "./primitives.js";
 
 /**
  * What resolving a callee takes. The checker answers what the program says;
@@ -163,6 +164,18 @@ export function resolveValue(
   const { checker } = resolution;
   const expression = skipParens(expr);
 
+  // Before anything is deferred or given up on: a member the receiver's type
+  // decides outright is a statically named callee, whoever's parameter it
+  // hangs off and whether or not the expression could name a path at all.
+  if (ts.isPropertyAccessExpression(expression)) {
+    const pinned = pinnedTargets(
+      expression.expression,
+      [expression.name.text],
+      resolution,
+    );
+    if (pinned !== undefined) return { kind: "targets", targets: pinned };
+  }
+
   const root = parameterRoot(expression, body, checker);
   if (root === "own") {
     const path = pathOf(expression, body, checker);
@@ -299,6 +312,42 @@ export function memberTargets(
   const declarations = symbol?.declarations ?? [];
   if (declarations.length === 0) return [floor("unresolvable")];
   return declarations.map((declaration) => memberTarget(declaration, resolution));
+}
+
+/**
+ * The targets a member of `receiver` names where the receiver's *type* decides
+ * which function that is, and nothing where it does not.
+ *
+ * `resolveReceiver` starts at the value in hand because a binding's declared
+ * type is only a supertype's promise: a subclass is free to override the very
+ * member a path names, which is why `repo.save` is a condition for a call site
+ * to answer. A primitive type makes no such promise. Every value of type
+ * `string` finds `startsWith` on `String.prototype`, with no subtype able to
+ * put anything else there, so the type is as exact as a value in hand — and a
+ * condition over it would only defer the question to a call site that could
+ * repeat this answer and nothing else, which is an obligation no argument can
+ * ever meet.
+ *
+ * Deciding the member is not trusting it: what a carrier says about what the
+ * type named still decides the color, and a member nothing colors floors here
+ * rather than being deferred.
+ *
+ * One step only. A type decides the member it declares; it does not decide
+ * what the value found *there* decides in turn, and a member's own type is a
+ * supertype's promise like any other.
+ */
+export function pinnedTargets(
+  receiver: ts.Expression,
+  members: readonly string[],
+  resolution: Resolution,
+): readonly Target[] | undefined {
+  if (members.length !== 1) return undefined;
+  const { checker } = resolution;
+  const expression = skipParens(receiver);
+  const type = checker.getTypeAtLocation(expression);
+  return everyValueIs(type, PRIMITIVE_VALUE, checker)
+    ? memberTargets(expression, members, resolution)
+    : undefined;
 }
 
 function memberTarget(

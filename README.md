@@ -715,6 +715,25 @@ unmarkable. And when the argument you pass is itself one of *your* parameters,
 the condition **propagates** up to you instead of discharging — which is how a
 chain of helpers stays markable all the way down.
 
+A member is only a condition where the parameter's *type* leaves it open. It
+does for `repo: Repo`, since a subclass is free to override `save`. It does not
+for a primitive: no value of type `string` finds anything but
+`String.prototype.startsWith` there, so the member is resolved on the spot and
+nothing is deferred to a caller who could only repeat the same answer:
+
+```ts
+/** @nothrow */
+function isFlag(s: string): boolean {
+  return s.startsWith("--"); // clean — not "clean given `s.startsWith`"
+}
+
+isFlag("--verbose"); // fine, and so is any other string you have
+```
+
+Resolving it there is not trusting it: the member is colored by the same
+carriers as any other call, so one the baseline colors `throwing` — or does not
+color at all — is reported inside the helper, where you can bridge it.
+
 A condition is a precondition, exactly like a parameter type: it is discharged
 at every call by a **call-site join** of the argument's color, so no caller ever
 holds a promise it cannot cash. Where the argument cannot be resolved — a `let`,

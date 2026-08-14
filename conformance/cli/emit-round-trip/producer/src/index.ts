@@ -32,3 +32,8 @@ export function register(handler: () => void): void {
 export function latestHandler(): (() => void) | undefined {
   return latest;
 }
+
+/** @nothrow */
+export function isFlag(text: string): boolean {
+  return text.startsWith("--");
+}

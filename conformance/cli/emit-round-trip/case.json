@@ -9,7 +9,8 @@
           "fetchOk": { "color": "non-throwing", "async": true, "conditions": [] },
           "each": { "color": "non-throwing", "conditions": ["param1"] },
           "widen": { "color": "non-throwing", "conditions": [] },
-          "register": { "color": "non-throwing", "conditions": [] }
+          "register": { "color": "non-throwing", "conditions": [] },
+          "isFlag": { "color": "non-throwing", "conditions": [] }
         }
       }
     },

@@ -15,6 +15,7 @@ import type { Bodied } from "./declarations.js";
 import type { Transfer } from "./escapes.js";
 import {
   memberTargets,
+  pinnedTargets,
   resolveReceiver,
   resolveValue,
   type Resolution,
@@ -126,6 +127,16 @@ function enteredAt(
   // function entered. The member is answered by the checker's symbol for it —
   // but on the value in hand, since a binding's declared type is a promise a
   // subclass is free to override the named member out from under.
+  //
+  // Unless the type pins the member, which is the better answer than either
+  // walking a value or deferring the obligation upward: a condition a carrier
+  // states over `param0.startsWith` is answered by any argument typed `string`,
+  // whatever expression it was written as.
+  const pinned = pinnedTargets(argument, members, resolution);
+  if (pinned !== undefined) {
+    return pinned.map((target) => outcomeOf(target, members));
+  }
+
   const argumentPath = pathOf(argument, caller, checker);
   if (argumentPath !== undefined) return [propagate(argumentPath, members)];
 

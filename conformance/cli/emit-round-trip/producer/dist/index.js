@@ -19,3 +19,6 @@ export function register(handler) {
 export function latestHandler() {
     return latest;
 }
+export function isFlag(text) {
+    return text.startsWith("--");
+}

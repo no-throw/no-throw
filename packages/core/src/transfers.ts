@@ -8,6 +8,7 @@ import type {
   DestructuringElement,
   Escape,
 } from "./escapes.js";
+import { everyValueIs, NO_VALUE, PRIMITIVE_VALUE } from "./primitives.js";
 import { signatureSegment } from "./segments.js";
 import type { Resolution } from "./targets.js";
 
@@ -142,17 +143,8 @@ export function textOf(node: ts.Node): string {
 /** `any` and `unknown` say nothing about what runs, so they cannot be read. */
 const OPAQUE_TYPE = ts.TypeFlags.Any | ts.TypeFlags.Unknown;
 
-/** Types that run no user code when coerced. */
-const PRIMITIVE_TYPE =
-  ts.TypeFlags.StringLike |
-  ts.TypeFlags.NumberLike |
-  ts.TypeFlags.BigIntLike |
-  ts.TypeFlags.BooleanLike |
-  ts.TypeFlags.ESSymbolLike |
-  ts.TypeFlags.Null |
-  ts.TypeFlags.Undefined |
-  ts.TypeFlags.Void |
-  ts.TypeFlags.Never;
+/** Types that run no user code when coerced: a primitive, or no value at all. */
+const COERCES_NOTHING = PRIMITIVE_VALUE | NO_VALUE;
 
 function accessTransfers(
   node: AccessExpression,
@@ -486,11 +478,7 @@ function coercionTransfers(
   if ((type.flags & OPAQUE_TYPE) !== 0) {
     return [unnameable(value, "coercion", text)];
   }
-  if (isPrimitive(type)) return [];
-  // A type parameter is not itself a primitive, but a constraint that is bounds
-  // every value it can hold — so `${k}` on `K extends string` costs nothing.
-  const constraint = checker.getBaseConstraintOfType(type);
-  if (constraint !== undefined && isPrimitive(constraint)) return [];
+  if (everyValueIs(type, COERCES_NOTHING, checker)) return [];
 
   // `ToPrimitive` tries all three in turn, and which of them stops depends on
   // the hint and on what each returns — neither of which is static.
@@ -665,12 +653,6 @@ function receiverType(
 
 function constituentsOf(type: ts.Type): readonly ts.Type[] {
   return type.isUnion() ? type.types : [type];
-}
-
-function isPrimitive(type: ts.Type): boolean {
-  return constituentsOf(type).every(
-    (part) => (part.flags & PRIMITIVE_TYPE) !== 0,
-  );
 }
 
 /**

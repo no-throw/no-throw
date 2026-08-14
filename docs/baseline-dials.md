@@ -49,6 +49,16 @@ the inexpressibility, so `new Set(someArray)` now discharges against
 `Array.prototype[Symbol.iterator]` and a set operation against `param0.has`.
 Where no path can be formed the hazard falls back to `hazard`, unchanged.
 
+`memberCallable` is also asked of a *declared object* parameter and of nothing
+else, which is the half of its wording that turned out to be load-bearing. A
+subclass may override any member an object type declares, and that openness is
+the whole hazard; a primitive type has no subtype to override with, so no value
+of type `string` finds anything but `String.prototype.startsWith` there. A
+member of one is therefore not a hazard to defer at all: it resolves against
+the baseline where it is written, exactly as `"literal".startsWith(…)` does,
+and a condition over it could only have deferred the question to a call site
+able to repeat this answer and nothing else (#118).
+
 `proxyTraps` was not a dial to decide: a `Proxy` is type-identical to its
 target, so "might this be a Proxy?" has no static answer for *any* object, and
 flooring on it would color nothing. It is trust base, already ruled.

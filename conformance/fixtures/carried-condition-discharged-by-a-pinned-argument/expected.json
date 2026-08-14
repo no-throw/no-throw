@@ -1,0 +1,4 @@
+{
+  "description": "A condition a carrier states over a member of a parameter is discharged by the argument's type where that type pins the member: `\"abc\"` finds `startsWith` on `String.prototype`, which the baseline colors.",
+  "diagnostics": []
+}
