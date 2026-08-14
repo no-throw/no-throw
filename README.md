@@ -102,6 +102,27 @@ parser and crashes the same way; TypeScript the parser reaches that no
 `tsconfig.json` includes is a parse error, which is `projectService`'s business
 to settle and not ours.
 
+That last one is the first thing a real project meets, so it is worth naming
+even though nothing here produces it. The block above matches every TypeScript
+file in the tree and `ignores` none of them, so a `vitest.config.ts` your
+`tsconfig.json` does not `include` fails to parse before any rule sees a line of
+it:
+
+```console
+vitest.config.ts
+  0:0  error  Parsing error: vitest.config.ts was not found by the project service.
+              Consider either including it in the tsconfig.json or including it in allowDefaultProject
+```
+
+Settle it the way the parser asks. Either put the file in a `tsconfig.json` —
+which is the better answer, because a config file you never typecheck is a
+config file nothing checks — or, for the root files you deliberately keep out of
+one, name them:
+
+```js
+parserOptions: { projectService: { allowDefaultProject: ["*.config.ts"] } },
+```
+
 `configs.recommended` is the whole contract, all at `error`:
 
 | rule | what it holds you to |
@@ -902,6 +923,16 @@ offering it, shaped by where it lands: `try`/`catch` around the statement, or
 that cannot fire because nothing is awaited, the missing `await` alone. A
 statement a branch or a loop holds without braces is a statement all the same,
 so the offer is made there too, and writes the braces along with the bridge.
+
+Where a diagnostic *points* is not where its edit lands. The caret sits on
+exactly what the message names, which for a call is the callee: in
+`s.trim().slice(0, 3).padEnd(5, "-")` only `padEnd` is throwing, so that is
+what is underlined and that is what the message quotes, rather than the whole
+chain starting at the `s` nothing is wrong with. How much of the callee is a
+name is what decides where the caret starts — `JSON.parse` is one all the way
+down and is named in full, while everything left of `padEnd` is a value some
+call produced and could not be acted on if it were named. The bridge, when one
+is offered, still wraps the statement the escape was written in.
 
 Nothing is ever an ESLint **fix**. Wrapping a call in a bridge changes what the
 program does with an error, so the edit is always yours to accept; `--fix` would
