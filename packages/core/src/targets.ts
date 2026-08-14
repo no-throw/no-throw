@@ -164,10 +164,12 @@ export function resolveValue(
   const { checker } = resolution;
   const expression = skipParens(expr);
 
-  // Before anything is deferred or given up on: a member the receiver's type
-  // decides outright is a statically named callee, whoever's parameter it
-  // hangs off and whether or not the expression could name a path at all.
-  if (ts.isPropertyAccessExpression(expression)) {
+  const root = parameterRoot(expression, body, checker);
+  // A member of a parameter is only deferred or given up on because the
+  // parameter's type left it open. Where the type decides it, neither answer
+  // applies: it is a statically named callee, whether it would have become
+  // this function's condition or a floor for hanging off an enclosing one.
+  if (root !== "other" && ts.isPropertyAccessExpression(expression)) {
     const pinned = pinnedTargets(
       expression.expression,
       [expression.name.text],
@@ -175,8 +177,6 @@ export function resolveValue(
     );
     if (pinned !== undefined) return { kind: "targets", targets: pinned };
   }
-
-  const root = parameterRoot(expression, body, checker);
   if (root === "own") {
     const path = pathOf(expression, body, checker);
     return path === undefined
@@ -299,8 +299,23 @@ export function memberTargets(
   members: readonly string[],
   resolution: Resolution,
 ): readonly Target[] {
+  return typeMemberTargets(
+    resolution.checker.getTypeAtLocation(value),
+    value,
+    members,
+    resolution,
+  );
+}
+
+/** The same walk from a type the caller chose, rather than the value's own. */
+function typeMemberTargets(
+  start: ts.Type,
+  value: ts.Expression,
+  members: readonly string[],
+  resolution: Resolution,
+): readonly Target[] {
   const { checker } = resolution;
-  let type = checker.getTypeAtLocation(value);
+  let type = start;
   let symbol: ts.Symbol | undefined;
 
   for (const member of members) {
@@ -344,10 +359,47 @@ export function pinnedTargets(
   if (members.length !== 1) return undefined;
   const { checker } = resolution;
   const expression = skipParens(receiver);
-  const type = checker.getTypeAtLocation(expression);
+  const type = assignableType(expression, checker);
   return everyValueIs(type, PRIMITIVE_VALUE, checker)
-    ? memberTargets(expression, members, resolution)
+    ? typeMemberTargets(type, expression, members, resolution)
     : undefined;
+}
+
+/**
+ * The type every value the expression can arrive as satisfies — which is not
+ * the checker's type *at* it wherever something can assign to it.
+ *
+ * A narrowing is a fact about one path, and an assignment the checker did not
+ * follow outruns it: `let v: string | Weird` narrowed to `string` may hold a
+ * `Weird` by the time the call it was passed to runs, and `Weird#startsWith`
+ * is nobody's promise. What the binding was *declared* as is the one thing
+ * every value it can hold really keeps, so that is what a pin is read off —
+ * and the walk to the member starts from the same type, or a declared
+ * `string | number` narrowed to `string` would resolve `String#toString` and
+ * never meet the `Number#toString` the value may really carry.
+ *
+ * Only a reassignable binding needs this. A `const` cannot be written, so a
+ * narrowing of one is the whole truth about it, and reading past the
+ * narrowing there would give up precision for nothing.
+ */
+function assignableType(
+  expression: ts.Expression,
+  checker: ts.TypeChecker,
+): ts.Type {
+  const declaration = ts.isIdentifier(expression)
+    ? checker.getSymbolAtLocation(expression)?.valueDeclaration
+    : undefined;
+  return declaration !== undefined && isReassignable(declaration)
+    ? checker.getTypeAtLocation(declaration)
+    : checker.getTypeAtLocation(expression);
+}
+
+function isReassignable(declaration: ts.Declaration): boolean {
+  if (ts.isParameter(declaration)) return true;
+  return (
+    ts.isVariableDeclaration(declaration) &&
+    (ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const) === 0
+  );
 }
 
 function memberTarget(
