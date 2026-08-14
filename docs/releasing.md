@@ -63,8 +63,13 @@ Merging it is the release. On the push that follows, the workflow:
    `files` list that forgot `baseline-data` is caught before publish rather than
    by the first consumer, whose symptom would be every builtin flooring.
 4. Publishes core first, then the two adapters — they name core as a dependency,
-   and pnpm rewrites `workspace:*` to the exact version as it packs, so an
-   adapter on the registry ahead of core is unresolvable.
+   so an adapter reaching the registry ahead of core is unresolvable.
+
+The publish takes two tools because neither does both halves. **pnpm packs**:
+`workspace:*` is a pnpm protocol that npm would publish literally, which is a
+dependency range no consumer can resolve. **npm publishes**: it exchanges the
+job's OIDC token for a short-lived registry credential, which pnpm 9 cannot do.
+So pnpm produces each tarball and npm uploads it.
 
 The gates run on the release commit, so what they prove is the tree that ships.
 They run there **again**, rather than being trusted from the release PR, because
@@ -97,14 +102,16 @@ releases that deserve more than a list of commit subjects.
 Four things live outside the repo. They are set up; this is what to check when
 one expires or a release fails at a step that used to work.
 
-- **`NPM_TOKEN`** — a granular npm token scoped to `@no-throw`, read and write,
-  as a secret on the **`release` environment** rather than on the repository. An
-  environment secret is readable only by a job running in that environment,
-  which is what makes the reviewer gate mean something: a repository secret
-  would be readable by any workflow.
+- **A trusted publisher on each of the three packages** — set at
+  `npmjs.com/package/<name>/access`, naming this repository, the workflow
+  filename `release.yml`, and the `release` environment. npm trades the job's
+  OIDC token for a short-lived credential, so there is no publish token stored
+  anywhere and nothing to rotate or leak. All three must be configured; the
+  publish stops at the first package that is not.
 - **The `release` environment** — a required reviewer, since the publish is the
   one step in this repo nothing can undo, and a branch policy admitting only
-  `main`.
+  `main`. The trusted publisher names this environment, so it is part of the
+  credential's conditions rather than only a gate in front of it.
 - **`RELEASE_PLEASE_TOKEN`** — a PAT or App token with `contents` and
   `pull-requests` write, as a repository secret. Optional, and the workflow
   falls back to `GITHUB_TOKEN`; what it buys is CI running on the release PR,
