@@ -56,8 +56,32 @@ The pipeline:
 
 A member whose every reachable hazard sits behind an early return is clean
 **given the position gets nothing**, which the entry states as a
-`param<N>=nullish` condition and the call site discharges. Nine entries carry
-one: the four collection constructors under both lib targets that declare them,
+`param<N>=nullish` condition and the call site discharges.
+
+ECMA-402 reaches the same form from the other side. It is a different document
+and its validation is structurally invisible here, but *which arguments it
+reads* is not: ECMA-262 reserves the positions for it in the clause heading and
+names them there — `String.prototype.localeCompare ( that [ , reserved1 [ ,
+reserved2 ] ] )` — so a call that puts nothing there is on the near side of the
+boundary. The reading needs ECMA-262's own steps to have been read, so it is
+made only where there is an algorithm to read: a prose-only clause has none, and
+its zero hazards are zero for want of a corpus rather than for want of a throw —
+the same hole an alias left on eleven typed-array members until the fuzzer found
+it. That leaves `localeCompare` the one member of the family it colors, and
+`Number.prototype.toLocaleString`, the three `Date` ones and the rest shipping
+throwing as before.
+
+The second narrowing is about the form rather than the boundary.
+`param<N>=nullish` admits the `null` keyword as well as absence, because the
+guard it was built for is ECMA-262's `either undefined or null` — which is why
+`new Map(null)` is clean. ECMA-402 writes no such guard: `null` reaches
+`CanonicalizeLocaleList`, which coerces it and throws. So the reading states a
+condition only where the declaration cannot deliver `null` at the position, and
+a position that can keeps the hazard instead. What that leans on is the
+declaration, the way every domain judgment here does.
+
+Eleven entries carry a `=nullish` condition: the four collection constructors
+and `String.prototype.localeCompare` under both lib targets that declare them,
 and `Number.prototype.toPrecision`.
 
 ## The gates
