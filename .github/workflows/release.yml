@@ -48,8 +48,9 @@ jobs:
     environment: release
     permissions:
       contents: read
-      # npm provenance: the publish is signed against this workflow run, so a
-      # consumer can check that the tarball came from this repo at this commit.
+      # Load-bearing twice over: npm trades this token for the credential it
+      # publishes with, so there is none stored here, and it signs the
+      # provenance a consumer checks the tarball against.
       id-token: write
     steps:
       # The release commit release-please just pushed — the tree that carries
@@ -111,14 +112,24 @@ jobs:
       - name: The tarballs carry what they claim
         run: pnpm run check:packed
 
-      # Order matters: the two adapters name `@no-throw/core` as a dependency,
-      # and pnpm rewrites `workspace:*` to this exact version as it packs. A
-      # consumer installing an adapter before core is on the registry gets an
-      # unresolvable dependency.
+      # Trusted publishing needs npm 11.5.1 or later, which is newer than what
+      # Node 22 bundles. Nothing else in this repo runs through npm, so this is
+      # scoped to the runner rather than to the toolchain.
+      - name: An npm that speaks OIDC
+        run: npm install --global npm@^11.5.1
+
+      # Two tools because neither can do both halves. pnpm packs: it rewrites
+      # `workspace:*` to the exact version, which npm has no notion of and would
+      # publish literally, breaking every consumer. npm publishes: it exchanges
+      # this job's id-token for a short-lived registry credential, which pnpm 9
+      # cannot do. So pnpm produces the tarball and npm uploads it.
+      #
+      # Order matters for the same reason it always did: the adapters name
+      # `@no-throw/core` as a dependency, and a consumer installing one before
+      # core is on the registry gets something unresolvable.
       - name: Publish
         run: |
-          pnpm --filter @no-throw/core publish --no-git-checks
-          pnpm --filter @no-throw/eslint-plugin publish --no-git-checks
-          pnpm --filter @no-throw/cli publish --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          for package in core eslint-plugin cli; do
+            tarball=$(cd "packages/$package" && pnpm pack | tail -1)
+            npm publish "packages/$package/$tarball" --access public --provenance
+          done
