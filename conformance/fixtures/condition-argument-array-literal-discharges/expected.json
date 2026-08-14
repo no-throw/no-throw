@@ -1,0 +1,23 @@
+{
+  "description": "An array literal is a value in hand exactly as an object literal is, so a path walked through one reaches `Array.prototype` and the baseline answers for it: `indexOf` discharges the condition and `join` fails it. A `const` bound to the literal is the same value, reached one hop further. The last call is the boundary: a binding merely *typed* `readonly string[]` is a supertype's promise a subclass can override, so it floors as before.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 32,
+      "column": 10,
+      "endLine": 32,
+      "endColumn": 33,
+      "messageId": "conditionArgumentFloored",
+      "message": "Call to `commaJoined` escapes this `@nothrow` function: it is non-throwing given `xs.join`, and the argument passed for it is colored `throwing` by the shipped standard-library baseline, so calling it can throw. `commaJoined` enters `xs.join` at src/index.ts:16. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 39,
+      "column": 10,
+      "endLine": 39,
+      "endColumn": 32,
+      "messageId": "conditionArgumentFloored",
+      "message": "Call to `positionOfA` escapes this `@nothrow` function: it is non-throwing given `xs.indexOf`, and the argument passed for it does not resolve to a function this engine can color, so nothing can say whether it throws. `positionOfA` enters `xs.indexOf` at src/index.ts:11. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

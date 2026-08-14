@@ -5,7 +5,9 @@ import type { Carrier } from "./carrier/chain.js";
 import { carriedFacts } from "./carrier/entries.js";
 import type { FloorReason, FloorSource } from "./colors.js";
 import {
+  conditionKey,
   parameterRoot,
+  pathKey,
   pathOf,
   skipParens,
   type Condition,
@@ -234,7 +236,15 @@ function resolveBinding(
  * Follow an expression to the values it can hold, for a path that has to be
  * walked *through* it rather than entered. A binding's declared type is only a
  * supertype's promise — a subclass can override the very member the path names
- * — so the walk starts at the value in hand, whose own type is exact.
+ * — so the walk starts at the value in hand, whose own type is exact. An object
+ * literal, an array literal and a `new` are each a value in hand.
+ *
+ * A primitive type is where that promise is already a certainty, whatever the
+ * expression carrying it: no subtype of `string` exists to override
+ * `startsWith`, so every value the type admits looks the member up on the one
+ * prototype the libs declare. Without this, `f(s: string)` calling
+ * `s.startsWith` conditions on a path no call site could ever answer, and the
+ * obligation is deferred forever rather than ever discharged.
  */
 export function resolveReceiver(
   expr: ts.Expression,
@@ -243,8 +253,13 @@ export function resolveReceiver(
 ): ReceiverResolution {
   const expression = skipParens(expr);
 
+  if (hasExactType(expression, checker)) {
+    return { kind: "values", values: [expression] };
+  }
+
   if (
     ts.isObjectLiteralExpression(expression) ||
+    ts.isArrayLiteralExpression(expression) ||
     ts.isNewExpression(expression)
   ) {
     return { kind: "values", values: [expression] };
@@ -277,6 +292,39 @@ export function resolveReceiver(
 }
 
 /**
+ * The types with exactly one prototype behind them, so that naming the type
+ * names the declaration a member lookup lands on.
+ *
+ * `null`, `undefined` and `void` are deliberately not in the set. They are
+ * primitive too, but they carry no member to look up at all, and reading them
+ * as exact would turn "this receiver has no members" into an answer about one.
+ */
+const EXACT_TYPE =
+  ts.TypeFlags.StringLike |
+  ts.TypeFlags.NumberLike |
+  ts.TypeFlags.BigIntLike |
+  ts.TypeFlags.BooleanLike |
+  ts.TypeFlags.ESSymbolLike;
+
+/**
+ * Whether the expression's type settles the member lookup by itself. A type
+ * parameter is not a primitive, but a constraint that is bounds every value it
+ * can hold — so `k.startsWith` on `K extends string` resolves like `string`'s.
+ */
+function hasExactType(expr: ts.Expression, checker: ts.TypeChecker): boolean {
+  const type = checker.getTypeAtLocation(expr);
+  if (isExactType(type)) return true;
+  const constraint = checker.getBaseConstraintOfType(type);
+  return constraint !== undefined && isExactType(constraint);
+}
+
+/** A union is exact only where every arm is: the member lookup is joined. */
+function isExactType(type: ts.Type): boolean {
+  const parts = type.isUnion() ? type.types : [type];
+  return parts.every((part) => (part.flags & EXACT_TYPE) !== 0);
+}
+
+/**
  * The target a member of a value names, joined over its declarations. Which
  * function a member holds is answered by the checker's symbol for it, which is
  * the whole reason a condition can reach past depth 0 at all.
@@ -298,7 +346,59 @@ export function memberTargets(
 
   const declarations = symbol?.declarations ?? [];
   if (declarations.length === 0) return [floor("unresolvable")];
-  return declarations.map((declaration) => memberTarget(declaration, resolution));
+  return distinct(
+    declarations.map((declaration) => memberTarget(declaration, resolution)),
+  );
+}
+
+/**
+ * The join, less the answers it says twice. One member is routinely declared
+ * several times over — an overload pair, an interface the libs merge across two
+ * `lib.*.d.ts` files — and each of those declarations names the same runtime
+ * function, so the chain answers for all of them alike and reporting each would
+ * report one call twice. Only a union's members are genuinely several functions,
+ * and those answer for themselves.
+ */
+function distinct(targets: readonly Target[]): readonly Target[] {
+  const byKey = new Map<string | Bodied, Target>();
+  for (const target of targets) {
+    const key = targetKey(target);
+    if (!byKey.has(key)) byKey.set(key, target);
+  }
+  return [...byKey.values()];
+}
+
+/**
+ * What makes two targets the same answer. A body is identified by its node,
+ * since two bodies are two functions however alike they read; everything else is
+ * identified by what it states, since a stated color has no other content.
+ *
+ * The return type is written out so that a target kind added later fails to
+ * compile here rather than keying as nothing and quietly collapsing onto some
+ * other answer.
+ */
+function targetKey(target: Target): string | Bodied {
+  switch (target.kind) {
+    case "function":
+      return target.declaration;
+    case "condition":
+      return JSON.stringify(["condition", pathKey(target.path)]);
+    case "carried":
+      return JSON.stringify([
+        "carried",
+        target.color,
+        target.async,
+        target.source,
+        target.conditions.map(conditionKey),
+      ]);
+    case "floor":
+      return JSON.stringify([
+        "floor",
+        target.reason,
+        target.staleFile,
+        target.source,
+      ]);
+  }
 }
 
 function memberTarget(
