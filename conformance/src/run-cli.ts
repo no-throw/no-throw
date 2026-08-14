@@ -15,8 +15,8 @@ import {
   EXIT_CODES,
   loadCliCases,
   type CliCase,
+  type Invocation,
   type Step,
-  type Verdict,
 } from "./cli-cases.js";
 import { compare, section, type Diagnostic } from "./diagnostics.js";
 import { runFixture } from "./driver-eslint.js";
@@ -85,14 +85,17 @@ async function runStep(
 ): Promise<readonly string[]> {
   switch (step.kind) {
     case "emit":
-      return binaryStep("emit", step.args, producer, step);
+      return binaryStep(["emit", ...step.args], producer, step);
     case "check":
       return binaryStep(
-        "check",
-        step.args,
+        ["check", ...step.args],
         join(workspace, step.directory),
         step,
       );
+    // The workspace root, because a case that answers out of the grammar has
+    // no producer and no project to stand in.
+    case "run":
+      return binaryStep(step.args, workspace, step);
     case "entries":
       return entriesStep(step, producer);
     case "absent":
@@ -110,26 +113,42 @@ async function runStep(
 }
 
 function binaryStep(
-  command: string,
-  args: readonly string[],
+  argv: readonly string[],
   cwd: string,
-  step: { readonly expect: Verdict; readonly names: readonly string[] },
+  step: Invocation,
 ): readonly string[] {
-  const run = spawnSync(process.execPath, [bin, command, ...args], {
+  const run = spawnSync(process.execPath, [bin, ...argv], {
     cwd,
     encoding: "utf8",
   });
 
   const output = `${run.stdout}${run.stderr}`;
   const report: string[] = [];
+  const command = `nothrow ${argv.join(" ")}`;
 
   const expected = EXIT_CODES[step.expect];
   if (run.status !== expected) {
     report.push(
-      `\`nothrow ${command} ${args.join(" ")}\` exited ${run.status}, and ` +
-        `${step.expect} is ${expected}`,
+      `\`${command}\` exited ${run.status}, and ${step.expect} is ${expected}`,
     );
   }
+
+  // Exit code and stream are one fact in this tool: a run that succeeded says
+  // so on stdout, and a run that did not says so on stderr. Held here for every
+  // invocation rather than per case, because it is the difference between help
+  // a reader asked for and a usage error announced at them — and `names` can
+  // only assert what output contains, never which stream carried it.
+  const stray =
+    step.expect === "ok"
+      ? { stream: "stderr", text: run.stderr }
+      : { stream: "stdout", text: run.stdout };
+  if (stray.text !== "") {
+    report.push(
+      `\`${command}\` wrote to ${stray.stream}, and a run expecting ` +
+        `${step.expect} speaks on the other one`,
+    );
+  }
+
   for (const name of step.names) {
     if (!output.includes(name)) {
       report.push(`the output never names ${JSON.stringify(name)}`);

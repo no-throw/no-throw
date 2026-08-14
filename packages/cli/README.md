@@ -8,6 +8,7 @@ a body escapes, and what a function is clean *given* are the engine's answers.
 nothrow emit [--project <path>]           # lower verified marks into nothrow.json
 nothrow emit --check [--project <path>]   # fail if the manifest has drifted
 nothrow check [--project <path>]          # name every carrier entry that reaches nothing
+nothrow --help                            # print the usage
 ```
 
 The documentation is [the root README](../../README.md) — [publishing a

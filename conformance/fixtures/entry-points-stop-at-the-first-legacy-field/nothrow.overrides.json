@@ -1,0 +1,20 @@
+{
+  "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "layered": {
+      "exports": {
+        ".": {
+          "make": {
+            "color": "non-throwing",
+            "conditions": []
+          },
+          "Inner#run": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    }
+  }
+}

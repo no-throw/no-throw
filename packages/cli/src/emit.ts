@@ -2,9 +2,9 @@ import {
   emitManifest,
   manifestDrift,
   OverridesError,
-  type EmitRefusal,
   type EmitSite,
   type ManifestDocument,
+  type MarkRefusal,
 } from "@no-throw/core";
 import { readFileSync, writeFileSync } from "node:fs";
 import { openProject } from "./project.js";
@@ -43,6 +43,15 @@ export function runEmit(options: EmitOptions): CommandResult {
   } catch (error) {
     if (!(error instanceof OverridesError)) throw error;
     return { code: CANNOT_RUN, out: "", err: `nothrow: ${error.message}\n` };
+  }
+
+  // Nothing was read, so there is nothing to refuse: no `tsconfig.json`, no
+  // build on disk, nowhere a manifest would be found. That is the same stop as
+  // a project that would not open, and exits as one — a publishing script that
+  // could not tell it from an unpublishable package would be reading a verdict
+  // out of a run that never reached one.
+  if (outcome.kind === "blocked") {
+    return { code: CANNOT_RUN, out: "", err: `nothrow: ${outcome.message}\n` };
   }
 
   if (outcome.kind === "refused") {
@@ -118,13 +127,11 @@ function count(n: number, noun: string): string {
 }
 
 function refusalReport(
-  refusals: readonly EmitRefusal[],
+  refusals: readonly MarkRefusal[],
   options: EmitOptions,
 ): string {
   const lines = refusals.flatMap((refusal) => [
-    refusal.at === undefined
-      ? `nothrow: ${refusal.message}`
-      : `${place(options.cwd, refusal.at)}: ${refusal.message}`,
+    `${place(options.cwd, refusal.at)}: ${refusal.message}`,
     ...refusal.sites.map((site) => `    ${place(options.cwd, site)}: ${site.what}`),
   ]);
 

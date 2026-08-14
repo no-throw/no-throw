@@ -23,32 +23,34 @@ export const EXIT_CODES: Record<Verdict, number> = {
   "cannot-run": 2,
 };
 
+/** What every step that runs the binary states about the run. */
+export interface Invocation {
+  readonly args: readonly string[];
+  readonly expect: Verdict;
+  /** Text the output must contain — what the diagnostic has to name. */
+  readonly names: readonly string[];
+}
+
 /**
  * One thing the case does to the producer, or asserts about it. Steps run in
  * order against one copy of the case, so a `--check` run can be asked about a
  * file the previous step changed.
  */
 export type Step =
-  /** Run the binary, and hold its exit and its output to what is expected. */
-  | {
-      readonly kind: "emit";
-      readonly args: readonly string[];
-      readonly expect: Verdict;
-      /** Text the output must contain — what the diagnostic has to name. */
-      readonly names: readonly string[];
-    }
+  /** Run `nothrow emit` in the producer, with `args` after the command. */
+  | ({ readonly kind: "emit" } & Invocation)
   /**
    * Run `nothrow check` in a project of the case's own, rather than in the
    * producer: what it reads is what a *consumer* wrote and installed, so the
    * directory is named rather than assumed.
    */
-  | {
-      readonly kind: "check";
-      readonly args: readonly string[];
-      readonly directory: string;
-      readonly expect: Verdict;
-      readonly names: readonly string[];
-    }
+  | ({ readonly kind: "check"; readonly directory: string } & Invocation)
+  /**
+   * Run the binary over the whole argv, command word or none. What the two
+   * above cannot reach: an invocation the tool answers for out of its own
+   * grammar rather than out of a project.
+   */
+  | ({ readonly kind: "run" } & Invocation)
   /** Assert facts about the emitted manifest, entry by entry. */
   | {
       readonly kind: "entries";
@@ -107,9 +109,13 @@ function loadCase(root: string, name: string): CliCase {
   };
 }
 
+/** What a step spelling an invocation may carry beyond the argv it keys on. */
+const INVOCATION_KEYS = ["expect", "names"] as const;
+
 const STEP_KEYS: Record<string, readonly string[]> = {
-  emit: ["emit", "expect", "names"],
-  check: ["check", "in", "expect", "names"],
+  emit: ["emit", ...INVOCATION_KEYS],
+  check: ["check", "in", ...INVOCATION_KEYS],
+  run: ["run", ...INVOCATION_KEYS],
   entries: ["entries"],
   absent: ["absent"],
   append: ["append", "text"],
@@ -130,19 +136,13 @@ function readStep(entry: unknown, where: string): Step {
 
   switch (kind) {
     case "emit":
-      return {
-        kind,
-        args: readStrings(record, "emit", where),
-        expect: readVerdict(record, where),
-        names: "names" in record ? readStrings(record, "names", where) : [],
-      };
+    case "run":
+      return { kind, ...readInvocation(record, kind, where) };
     case "check":
       return {
         kind,
-        args: readStrings(record, "check", where),
+        ...readInvocation(record, kind, where),
         directory: readString(record, "in", where),
-        expect: readVerdict(record, where),
-        names: "names" in record ? readStrings(record, "names", where) : [],
       };
     case "entries":
       return { kind, expected: readEntries(record["entries"], where) };
@@ -166,6 +166,18 @@ function readStep(entry: unknown, where: string): Step {
   }
 }
 
+/**
+ * What the step left unsaid, as nothing asserted. A step that names nothing
+ * the output has to say is a step about the exit code.
+ */
+function readOptionalStrings(
+  record: Record<string, unknown>,
+  key: string,
+  where: string,
+): readonly string[] {
+  return key in record ? readStrings(record, key, where) : [];
+}
+
 function readEntries(
   value: unknown,
   where: string,
@@ -176,6 +188,19 @@ function readEntries(
     read[subpath] = asRecord(entries, `${where}: entries[${subpath}]`);
   }
   return read;
+}
+
+/** Every invocation step keys on its own kind, so that name is both. */
+function readInvocation(
+  record: Record<string, unknown>,
+  kind: string,
+  where: string,
+): Invocation {
+  return {
+    args: readStrings(record, kind, where),
+    expect: readVerdict(record, where),
+    names: readOptionalStrings(record, "names", where),
+  };
 }
 
 function readVerdict(record: Record<string, unknown>, where: string): Verdict {

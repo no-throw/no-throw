@@ -55,7 +55,7 @@ const PRODUCER_CARRIERS =
  */
 const baselineCarrier = (baseline: BaselineSource): string =>
   `or, if it cannot throw, report it against ${BASELINE_NAME[baseline]} at ` +
-  "https://github.com/MidnightDesign/no-throw/issues — the other three " +
+  "https://github.com/no-throw/no-throw/issues — the other three " +
   "carriers are keyed by npm package name, and no key in that grammar reaches " +
   "a `lib.*.d.ts` member.";
 

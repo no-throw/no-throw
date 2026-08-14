@@ -1,0 +1,14 @@
+{
+  "description": "Why `node:*` is permanently floored, in the shape that makes it so. Node's builtins are ambient `declare module` blocks inside `@types/node`, and the walk that assigns keys starts at a package's entry points — whose file is a hub of `/// <reference>` directives, laid out here the way the real package lays it out, so the walk reaches no module and the blocks are never in the file it reads. The module name is not an npm package the project holds, and the package that declares it publishes nothing to walk. Both spellings of the key fail, and differently, and `check` is where a reader who tried them learns that rather than guessing at a third. The whole report is named here rather than fragments of it, because the README quotes it and the docs gate holds the quotation to this.",
+  "steps": [
+    {
+      "check": [],
+      "in": "project",
+      "expect": "refused",
+      "names": [
+        "nothrow.overrides.json\n  node:path → \".\" → `posix.join`\n    nothing of `node:path` is in this project, so there is no surface to hold this against. Inert rather than wrong.\n  @types/node → \".\" → `posix.join`\n    `@types/node` publishes nothing at \".\", and nothing at any other subpath.\n    The walk from its entry points reached no name a carrier could key, so no entry under this package reaches anything.",
+        "2 entries checked. 1 reaches nothing; 1 names a package this project does not hold."
+      ]
+    }
+  ]
+}

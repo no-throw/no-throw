@@ -8,7 +8,7 @@
       "endLine": 8,
       "endColumn": 22,
       "messageId": "unbridgedHiddenTransfer",
-      "message": "Reading `element[key]` escapes this `@nothrow` function: it runs the getter `innerHTML`, which is colored `throwing` by the shipped DOM baseline, so calling it can throw. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped DOM baseline at https://github.com/MidnightDesign/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+      "message": "Reading `element[key]` escapes this `@nothrow` function: it runs the getter `innerHTML`, which is colored `throwing` by the shipped DOM baseline, so calling it can throw. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped DOM baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
     }
   ]
 }

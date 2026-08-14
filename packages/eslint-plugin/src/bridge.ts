@@ -37,6 +37,9 @@ const WRAPPABLE: ReadonlySet<string> = new Set<string>([
   AST_NODE_TYPES.ForOfStatement,
 ]);
 
+/** One level of indentation, in the edits this file writes. */
+const STEP = "  ";
+
 type FunctionNode =
   | TSESTree.ArrowFunctionExpression
   | TSESTree.FunctionDeclaration
@@ -77,15 +80,15 @@ function wrapStatementAround(
   awaitAt: number | undefined,
   source: string,
 ): BridgeEdit | undefined {
-  const statement = enclosingStatement(node);
-  if (statement === undefined) return undefined;
-  if (!WRAPPABLE.has(statement.type)) return undefined;
+  const enclosing = enclosingStatement(node);
+  if (enclosing === undefined) return undefined;
+  if (!WRAPPABLE.has(enclosing.statement.type)) return undefined;
 
-  return wrap(statement, awaitAt, source);
+  return wrap(enclosing, awaitAt, source);
 }
 
 function wrap(
-  statement: TSESTree.Node,
+  { statement, braced }: EnclosingStatement,
   awaitAt: number | undefined,
   source: string,
 ): BridgeEdit {
@@ -97,16 +100,26 @@ function wrap(
 
   const newline = source.includes("\r\n") ? "\r\n" : "\n";
   const indent = indentationAt(source, start);
+  // Braces the reader left out are braces the bridge writes, and they put the
+  // `try` — and with it everything under it — one level further in.
+  const { tryIndent, deeper } = braced
+    ? { tryIndent: indent, deeper: STEP }
+    : { tryIndent: `${indent}${STEP}`, deeper: `${STEP}${STEP}` };
   // The replacement starts where the statement did, so the first line is
   // already indented by the file and only the ones after it carry their own.
   const body = region
     .split(newline)
-    .map((line, index) => (index === 0 ? `${indent}  ${line}` : `  ${line}`))
+    .map((line, index) =>
+      index === 0 ? `${indent}${deeper}${line}` : `${deeper}${line}`,
+    )
     .join(newline);
+  const bridge = `try {${newline}${body}${newline}${tryIndent}} catch {}`;
 
   return {
     range: statement.range,
-    text: `try {${newline}${body}${newline}${indent}} catch {}`,
+    text: braced
+      ? bridge
+      : `{${newline}${tryIndent}${bridge}${newline}${indent}}`,
   };
 }
 
@@ -118,6 +131,12 @@ function indentationAt(source: string, offset: number): string {
   const lineStart = source.lastIndexOf("\n", offset - 1) + 1;
   const line = source.slice(lineStart, offset);
   return /^\s*/.exec(line)?.[0] ?? "";
+}
+
+/** A statement position, and whether the braces around it are already there. */
+interface EnclosingStatement {
+  readonly statement: TSESTree.Node;
+  readonly braced: boolean;
 }
 
 /**
@@ -135,13 +154,18 @@ function indentationAt(source: string, offset: number): string {
  * to treat a boundary this walk refuses to cross as synchronous, the offer
  * goes missing rather than going wrong.
  */
-function enclosingStatement(node: TSESTree.Node): TSESTree.Node | undefined {
+function enclosingStatement(
+  node: TSESTree.Node,
+): EnclosingStatement | undefined {
   let current: TSESTree.Node = node;
 
   for (;;) {
     const parent: TSESTree.Node | undefined = current.parent;
     if (parent === undefined) return undefined;
-    if (statementListOf(parent)?.includes(current) === true) return current;
+    if (statementListOf(parent)?.includes(current) === true)
+      return { statement: current, braced: true };
+    if (isHeldBody(parent, current))
+      return { statement: current, braced: false };
     if (isFunction(parent)) return undefined;
     current = parent;
   }
@@ -161,6 +185,40 @@ function statementListOf(
       return node.consequent;
     default:
       return undefined;
+  }
+}
+
+/**
+ * Whether `child` is the statement a branch or a loop holds on its own, which
+ * is a statement position no less than a member of a block is — it is the same
+ * statement, on the same synchronous path, written without braces. Nothing
+ * about the escape turns on that, so nothing about the offer may either.
+ *
+ * A braced body never reaches here: the walk out of it meets the block's own
+ * statement list first, which is what leaves this the unbraced case alone.
+ */
+function isHeldBody(parent: TSESTree.Node, child: TSESTree.Node): boolean {
+  switch (parent.type) {
+    case AST_NODE_TYPES.IfStatement:
+      return parent.consequent === child || parent.alternate === child;
+    case AST_NODE_TYPES.DoWhileStatement:
+    case AST_NODE_TYPES.ForInStatement:
+    // A `for…of` is an escape site in its own right, since driving the
+    // iterator is what the loop *is*. That is the loop; this is the body
+    // inside it, which the walk reaches first and wraps on its own.
+    case AST_NODE_TYPES.ForOfStatement:
+    case AST_NODE_TYPES.ForStatement:
+    case AST_NODE_TYPES.WhileStatement:
+      return parent.body === child;
+    // A label holds a statement too, and is left out anyway: braces there
+    // change what the label denotes, and a label on a loop is a `continue`
+    // target, so bracing its body turns every `continue` into a syntax error.
+    //
+    // `with` is left out for a different reason. TypeScript calls the
+    // statement unsupported and gives every name in its body the type `any`,
+    // so the color an offer there would endorse is one nothing read.
+    default:
+      return false;
   }
 }
 

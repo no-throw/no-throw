@@ -48,15 +48,15 @@ export interface EmitSite {
 }
 
 /**
- * One reason nothing was written. A refusal is the whole of emit's contract:
- * a published manifest is true by construction, so a mark the engine cannot
- * verify — or cannot lower into a shape emit is allowed to write — stops the
- * file rather than being quietly left out of it.
+ * One mark nothing can be published for. A refusal is the whole of emit's
+ * contract: a published manifest is true by construction, so a mark the engine
+ * cannot verify — or cannot lower into a shape emit is allowed to write — stops
+ * the file rather than being quietly left out of it.
  */
-export interface EmitRefusal {
+export interface MarkRefusal {
   readonly message: string;
-  /** Where the mark is; absent for a refusal about the package as a whole. */
-  readonly at?: EmitSite;
+  /** Where the mark is. */
+  readonly at: EmitSite;
   /** The places the message refers to. */
   readonly sites: readonly EmitSite[];
 }
@@ -70,7 +70,16 @@ export type EmitOutcome =
       /** The bytes to write, canonical, so two runs of one source agree. */
       readonly text: string;
     }
-  | { readonly kind: "refused"; readonly refusals: readonly EmitRefusal[] };
+  /**
+   * Nothing was read, so nothing was written: no `tsconfig.json`, no build on
+   * disk, nowhere a `nothrow.json` would be found. Apart from `refused`
+   * because it says nothing about the package — emit never got as far as a
+   * mark — and a host that reported it as a verdict would be inventing one.
+   * One reason, because the first of them stops everything.
+   */
+  | { readonly kind: "blocked"; readonly message: string }
+  /** Nothing was written, and the reasons are marks. Never empty. */
+  | { readonly kind: "refused"; readonly refusals: readonly MarkRefusal[] };
 
 /**
  * Lower a package's verified marks into a manifest.
@@ -243,8 +252,8 @@ function collectEntries(
   surface: ExportSurface,
 ):
   | { readonly kind: "exports"; readonly exports: ManifestDocument["exports"] }
-  | { readonly kind: "refused"; readonly refusals: readonly EmitRefusal[] } {
-  const refusals: EmitRefusal[] = [];
+  | { readonly kind: "refused"; readonly refusals: readonly MarkRefusal[] } {
+  const refusals: MarkRefusal[] = [];
   const entries = new Map<string, Map<string, ManifestEntry>>();
 
   for (const sourceFile of sources) {
@@ -459,7 +468,7 @@ function unverifiedRefusal(
   seed: ts.FunctionLikeDeclaration,
   escapes: readonly BodyEscape[],
   at: EmitSite,
-): EmitRefusal {
+): MarkRefusal {
   return {
     message:
       `${describe(seed)} is marked \`@nothrow\`, and its body escapes. A ` +
@@ -472,7 +481,7 @@ function unverifiedRefusal(
   };
 }
 
-function accessorRefusal(key: ExportKey, at: EmitSite): EmitRefusal {
+function accessorRefusal(key: ExportKey, at: EmitSite): MarkRefusal {
   return {
     message:
       `\`${key.symbolPath}\` is marked \`@nothrow\` on an accessor, and a ` +
@@ -491,7 +500,7 @@ function accessorRefusal(key: ExportKey, at: EmitSite): EmitRefusal {
  * merging can put two bodies behind one published name, and dropping one of
  * two disagreeing colors silently is the one thing emit must not do.
  */
-function conflictRefusal(key: ExportKey, at: EmitSite): EmitRefusal {
+function conflictRefusal(key: ExportKey, at: EmitSite): MarkRefusal {
   return {
     message:
       `\`${key.symbolPath}\` is published once and marked twice, with ` +
@@ -528,7 +537,7 @@ function unboundRefusal(
   sourceFile: ts.SourceFile,
   kind: MarkProblemKind,
   start: number,
-): EmitRefusal {
+): MarkRefusal {
   return {
     message:
       `\`@nothrow\` binds to nothing here: ${UNBOUND[kind]}. Every mark in ` +
@@ -586,7 +595,7 @@ function siteOf(
 }
 
 function blocked(message: string): EmitOutcome {
-  return { kind: "refused", refusals: [{ message, sites: [] }] };
+  return { kind: "blocked", message };
 }
 
 /** The schema's own `$id`, so what a manifest points at cannot drift from it. */

@@ -228,10 +228,13 @@ cli/<name>/
 `emit` runs the binary and holds its exit code to `ok`, `refused` or
 `cannot-run` — the last apart from the others, so a broken project cannot pass
 for a package that is merely unpublishable. `names` asserts what the output has
-to say, which is where the diagnostic contract for a refusal lives. `append`
-and `replace` are the changes `--check` has to notice — a rebuild that changed
-no declaration, and an edit to the source. `entries` asserts the facts of an
-emitted entry, because the wire format is the spec's and not the emitter's.
+to say, which is where the diagnostic contract for a refusal lives — and where
+the root README's quotations of it are held, since `scripts/check-docs.mjs`
+reads `names` the way it reads a fixture's `message`, so an entry may be a whole
+report rather than a fragment of one. `append` and `replace` are the changes
+`--check` has to notice — a rebuild that changed no declaration, and an edit to
+the source. `entries` asserts the facts of an emitted entry, because the wire
+format is the spec's and not the emitter's.
 
 `check` is the same shape one directory over: it runs `nothrow check` in the
 project named by `in` rather than in the producer, since the carriers it reads
@@ -240,6 +243,22 @@ are a consumer's.
 ```json
 { "check": [], "in": "project", "expect": "refused", "names": ["reaches nothing"] }
 ```
+
+`run` is the same shape again with nothing prepended: the whole argv, command
+word or none, in the workspace root. It is what reaches the invocations the
+tool answers for out of its own grammar rather than out of a project, which is
+where `--help` and an unknown command live.
+
+```json
+{ "run": ["--help"], "expect": "ok", "names": ["Usage:"] }
+```
+
+No step says which stream it expected, because none has a choice: exit code and
+stream are one fact in this tool — a run that succeeded says so on stdout, and a
+run that did not says so on stderr — so `expect` decides it, and every
+invocation is held to it. That is what separates help a reader asked for from a
+usage error announced at them, and `names` could never assert it: it holds what
+output contains, never which stream carried it.
 
 `consumer` is the one that matters: it installs the producer, emitted manifest
 and all, into the consumer's `node_modules` and runs that project through the

@@ -11,6 +11,13 @@ import ts from "typescript";
 export interface Project {
   readonly program: ts.Program;
   readonly commandLine: ts.ParsedCommandLine;
+  /**
+   * The `tsconfig.json` this was built from. Carried rather than read back out
+   * of `commandLine.options`, where it is optional because a command line
+   * needs no file behind it: opening a project is exactly the act of finding
+   * one, so a caller holding a `Project` has it.
+   */
+  readonly configPath: string;
 }
 
 export type OpenedProject =
@@ -60,7 +67,7 @@ export function openProject(
       : { projectReferences: commandLine.projectReferences }),
   });
 
-  return { kind: "project", project: { program, commandLine } };
+  return { kind: "project", project: { program, commandLine, configPath } };
 }
 
 function configPathOf(argument: string, cwd: string): string | undefined {

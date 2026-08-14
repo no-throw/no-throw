@@ -1,3 +1,4 @@
+import { dirname } from "node:path";
 import ts from "typescript";
 import { installedOverlaysFor } from "./carrier/overlays.js";
 import {
@@ -41,6 +42,15 @@ export type CheckedEntry = EntryKey &
      * written under the package that re-exported it is never consulted.
      */
     | { readonly verdict: "ships-elsewhere"; readonly shipsIn: string }
+    /**
+     * The key resolves, and what it resolves to is declared where no
+     * `package.json` names a package. A rung's table is matched by npm name, so
+     * this one has no name to be keyed under at all — which is the difference
+     * from `ships-elsewhere`, where there is a name and it is somebody else's.
+     * `declaredIn` is the directory a `package.json` naming it would go in,
+     * which is the walk's answer whether or not it found a file there.
+     */
+    | { readonly verdict: "unnamed-shipper"; readonly declaredIn: string }
   );
 
 /**
@@ -293,7 +303,8 @@ function verdictFor(
 
   const surface = exportSurfaceOf(home, program);
   const reached = surface.declarationsAt(key.subpath, key.symbolPath);
-  if (reached.length === 0) {
+  const [first] = reached;
+  if (first === undefined) {
     const published = surface.publishedAt(key.subpath);
     return published.length === 0
       ? { ...key, verdict: "no-subpath", subpaths: surface.subpaths() }
@@ -304,25 +315,32 @@ function verdictFor(
   // this package merely re-exports is looked up under the package that
   // declared it and never under this one.
   const elsewhere = reached.every(
-    (declaration) => shipperOf(declaration) !== home.directory,
+    (declaration) => shipperOf(declaration)?.directory !== home.directory,
   );
-  return elsewhere
+  if (!elsewhere) return { ...key, verdict: "reaches" };
+
+  // Which package to key it under is the whole use of this verdict, so a
+  // shipper with no npm name is a report of its own rather than a placeholder
+  // standing in for one: there is no name to key it under, and that is the
+  // fact the reader needs.
+  const shipper = shipperOf(first);
+  return shipper?.name === undefined
     ? {
         ...key,
-        verdict: "ships-elsewhere",
-        shipsIn: shipperName(reached[0]) ?? "another package",
+        verdict: "unnamed-shipper",
+        // A walk that found no `package.json` at all and one that found a
+        // nameless file come to the same thing for a reader — there is no name
+        // here — so both are reported as the directory the file that would
+        // supply one belongs in, rather than as two shapes of message where
+        // one of them would name a `.d.ts` and call it a manifest.
+        declaredIn:
+          shipper?.directory ?? dirname(first.getSourceFile().fileName),
       }
-    : { ...key, verdict: "reaches" };
+    : { ...key, verdict: "ships-elsewhere", shipsIn: shipper.name };
 }
 
-function shipperOf(declaration: ts.Declaration): string | undefined {
-  return packageHomeOf(declaration.getSourceFile().fileName)?.directory;
-}
-
-function shipperName(declaration: ts.Declaration | undefined): string | undefined {
-  return declaration === undefined
-    ? undefined
-    : packageHomeOf(declaration.getSourceFile().fileName)?.name;
+function shipperOf(declaration: ts.Declaration): PackageHome | undefined {
+  return packageHomeOf(declaration.getSourceFile().fileName);
 }
 
 /**

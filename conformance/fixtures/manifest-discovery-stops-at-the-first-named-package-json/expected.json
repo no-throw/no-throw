@@ -1,5 +1,5 @@
 {
-  "description": "Discovery ascends to the *first* `package.json` and consults only it: a symbol declared inside a nested package boundary is that package's to color, and the outer manifest is never merged across the boundary.",
+  "description": "Discovery ascends to the first `package.json` that *names* a package and consults only it: a symbol declared inside a nested package boundary is that package's to color, and the outer manifest is never merged across the boundary. The name is what makes it a boundary — see `manifest-reaches-past-a-format-marker` and `overrides-reach-past-a-format-marker` for the counterfactual, where the nested file names nothing and the walk reads past it.",
   "diagnostics": [
     {
       "file": "src/index.ts",
