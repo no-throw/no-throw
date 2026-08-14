@@ -5,3 +5,10 @@ conformance/fixtures/*/node_modules/** text eol=lf
 # A CLI case hashes the producer's built files and edits its source by exact
 # text, so both are pinned for the same reason.
 conformance/cli/** text eol=lf
+# release-please rewrites these as it bumps a version, and it writes LF. An
+# editor that saves CRLF turns the next release PR into a whole-file diff over
+# one changed line.
+/package.json text eol=lf
+/packages/*/package.json text eol=lf
+/.release-please-manifest.json text eol=lf
+/CHANGELOG.md text eol=lf
