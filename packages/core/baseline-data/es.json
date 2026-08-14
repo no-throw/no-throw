@@ -2785,7 +2785,11 @@
     },
     "es2020.string": {
       "String#localeCompare": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param1=nullish",
+          "param2=nullish"
+        ],
         "accessor": false,
         "spec": "String.prototype.localeCompare",
         "runtime": "String.prototype.localeCompare"
@@ -3974,7 +3978,11 @@
         "runtime": "String.prototype.lastIndexOf"
       },
       "String#localeCompare": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param1=nullish",
+          "param2=nullish"
+        ],
         "accessor": false,
         "spec": "String.prototype.localeCompare",
         "runtime": "String.prototype.localeCompare"

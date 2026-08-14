@@ -51,10 +51,22 @@ export interface Proposal {
 
 /**
  * ECMA-402 is a *different* specification document — ECMA-262 defers to it in
- * prose, so its validation is structurally invisible to this corpus. The whole
- * family ships throwing. That is a coverage boundary, not a judgment call.
+ * prose, so its validation is structurally invisible to this corpus. That is a
+ * coverage boundary, not a judgment call.
+ *
+ * What is not invisible is *which arguments* the other document reads: ECMA-262
+ * reserves the positions for it in the clause heading and names them there. So
+ * the boundary is a site like any other, and one a call can be on the far side
+ * of.
  */
 const ECMA_402 = /^(toLocale|localeCompare$)/;
+
+/**
+ * `String.prototype.localeCompare ( that [ , reserved1 [ , reserved2 ] ] )`.
+ * The numbering is how ECMA-262 tells two reserved positions apart rather than
+ * part of the word, so a lone `reserved` counts as one too.
+ */
+const RESERVED_PARAM = /^reserved\d*$/;
 
 /** Interfaces that describe a primitive: their receiver runs no user code. */
 const PRIMITIVE_OWNERS = new Set(["String", "Number", "Boolean", "BigInt", "Symbol"]);
@@ -160,15 +172,7 @@ export function classifyAgainstSpec(
     ),
   );
   if (ECMA_402.test(member.name)) {
-    sites.push({
-      verdict: "type-reachable",
-      shape: "unknown",
-      rootOp: "ECMA-402",
-      rule: "locale validation lives in ECMA-402, outside the extraction corpus",
-      dial: undefined,
-      requires: [],
-      condition: "(no ECMA-262 algorithm covers the locale arguments)",
-    });
+    sites.push(ecma402Site(spec, member, domains));
   }
 
   const worst = sites.reduce<SiteVerdict>(
@@ -204,6 +208,103 @@ export function classifyAgainstSpec(
   ].sort();
 
   return { sites, color: "non-throwing", conditions, reviewSites: 0 };
+}
+
+/**
+ * The site ECMA-402 is, for a member ECMA-262 defers to it about. Every hazard
+ * the other document adds is behind an argument — a locale to canonicalize, an
+ * options bag to validate — and ECMA-262 says which positions those are by
+ * writing `reserved1` and `reserved2` into the clause heading. A call that puts
+ * nothing there gets the default service, so the member is clean *given the
+ * reserved positions get nothing*, which is the sentence `behindAnEarlyReturn`
+ * already has a form for.
+ *
+ * That last step is a judgment about a document this corpus cannot read, and
+ * the only thing holding it is the fuzz gate, which drives every conditioned
+ * entry inside the scope it claims. ECMA-402 *supersedes* the algorithm rather
+ * than extending it, so "the arguments are all it adds" is not something the
+ * extraction shows — it is a claim, made narrow and then attacked.
+ *
+ * Narrow in two ways, one here and one at the `null` check below. The claim
+ * rests on ECMA-262's own steps having been read, so it is made only where
+ * there are steps: a prose-only clause — which is most of this family,
+ * `Number.prototype.toLocaleString` and the three `Date` ones among them — has
+ * no algorithm to have read, and its zero hazards are zero for want of a corpus
+ * rather than for want of a throw. That is the hole an alias left on eleven
+ * typed-array members until the fuzzer found it, and conditioning the one
+ * boundary this file can name would leave the wider one unnamed. Those clauses
+ * keep a flat hazard and ship throwing.
+ */
+function ecma402Site(
+  spec: SpecBuiltin,
+  member: LibMember,
+  domains: TypeDomains,
+): ClassifiedSite {
+  const site = {
+    shape: "unknown",
+    rootOp: "ECMA-402",
+    dial: undefined,
+    condition: "(ECMA-402 validates the arguments at the positions ECMA-262 reserves for it)",
+  } as const;
+
+  const reserved = spec.params.flatMap((name, index) =>
+    RESERVED_PARAM.test(name) ? [index] : [],
+  );
+  if (reserved.length === 0 || !spec.hasAlgorithm) {
+    return {
+      ...site,
+      verdict: "type-reachable",
+      rule: "locale validation lives in ECMA-402, outside the extraction corpus",
+      requires: [],
+    };
+  }
+
+  // A position nothing declares cannot receive an argument, so it is already
+  // absent and states no requirement. This is where the reading parts company
+  // with `behindAnEarlyReturn`, which bails instead: what that one holds is a
+  // name out of the algorithm's own namespace, so a position the declaration
+  // does not have leaves the name-to-position mapping itself in doubt. These
+  // positions come off the clause heading, where an undeclared one is not a
+  // doubtful mapping but an argument no call can pass.
+  const passable = reserved.flatMap((paramIndex) => {
+    const param = member.params?.[paramIndex];
+    return param === undefined ? [] : [{ paramIndex, param }];
+  });
+
+  // And narrow in the second way. `param<N>=nullish` admits the `null` keyword
+  // as well as absence, because the guard it was built for is ECMA-262's
+  // `either undefined or null` — which is why `new Map(null)` is clean. ECMA-402
+  // writes no such guard: it hands `null` to `CanonicalizeLocaleList`, which
+  // coerces it and throws. So the form says more here than the boundary does,
+  // and the entry is only true where the declaration cannot deliver `null` at
+  // the position. One that can keeps the hazard rather than understating it.
+  if (passable.some(({ param }) => domains.mayBeNull(param.types))) {
+    return {
+      ...site,
+      verdict: "type-reachable",
+      rule: "locale validation lives in ECMA-402, outside the extraction corpus, and a position it reads is declared able to be `null`, which is not absence there",
+      requires: [],
+    };
+  }
+
+  if (passable.length === 0) {
+    return {
+      ...site,
+      verdict: "type-excluded",
+      rule: `ECMA-402 reads ${reserved.map((index) => `param${index}`).join(" and ")}, which the declaration does not declare`,
+      requires: [],
+    };
+  }
+
+  return {
+    ...site,
+    verdict: "absent-conditional",
+    rule: "locale validation lives in ECMA-402, outside the extraction corpus; unreachable where the positions it reserves are absent",
+    requires: passable.map(({ paramIndex }) => ({
+      requires: "nullish" as const,
+      paramIndex,
+    })),
+  };
 }
 
 /**

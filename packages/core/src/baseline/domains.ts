@@ -115,6 +115,24 @@ export class TypeDomains {
     return this.#all(types, (type) => (type.flags & mask) !== 0);
   }
 
+  /**
+   * Some overload declares `null` at this position. The nullish halves read
+   * apart, and existential like `mayBeCallable`: a guard ECMA-262 spells
+   * `either undefined or null` rules out both spellings at once, while a rule
+   * that rules out only `undefined` leaves this one reachable — and a
+   * `param<N>=nullish` condition admits the `null` keyword, so stating one off
+   * the narrower rule needs the declaration to be unable to deliver it.
+   */
+  mayBeNull(types: readonly ts.Type[]): boolean {
+    const { TypeFlags } = this.#ts;
+    for (const declared of types) {
+      for (const constituent of this.#constituents(declared)) {
+        if ((constituent.flags & TypeFlags.Null) !== 0) return true;
+      }
+    }
+    return false;
+  }
+
   isNonNullish(types: readonly ts.Type[]): boolean {
     const { TypeFlags } = this.#ts;
     const nullish = TypeFlags.Undefined | TypeFlags.Null | TypeFlags.Void;
