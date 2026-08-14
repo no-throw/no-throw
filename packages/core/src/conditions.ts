@@ -22,9 +22,9 @@ export interface ParameterPath {
 /**
  * A precondition on one function about the argument at `path`. `requires` says
  * which: `entered` is the ordinary reading — the owner enters the path, so
- * whatever reaches it has to be non-throwing — and `nullish` is the one only a
- * carrier can state, that the owner is clean given nothing reaches the position
- * at all.
+ * whatever reaches it has to be non-throwing — and the two absence forms are
+ * the ones only a carrier can state, that the owner is clean given nothing
+ * reaches the position at all.
  *
  * `entry` is where the owner's own body transfers control through the path,
  * which the discharge diagnostic has to name — for a propagated condition that
@@ -33,7 +33,7 @@ export interface ParameterPath {
  *
  * A condition a carrier states has no entry: there is no body, and the line a
  * `.d.ts` declares the symbol on enters nothing. The diagnostic names the
- * carrier instead. A `nullish` condition never has one for a second reason —
+ * carrier instead. An absence condition never has one for a second reason —
  * the whole claim is that no body is entered.
  */
 export interface Condition {
@@ -67,8 +67,9 @@ export function pathKey(path: ParameterPath): string {
 
 /**
  * Identity for a condition. Two requirements on one position are two
- * conditions, so the path alone does not identify one: `param0` and
- * `param0=nullish` are answered by different questions about the same argument.
+ * conditions, so the path alone does not identify one: `param0`,
+ * `param0=nullish` and `param0=undefined` are answered by different questions
+ * about the same argument.
  */
 export function conditionKey(condition: Condition): string {
   return `${condition.requires} ${pathKey(condition.path)}`;

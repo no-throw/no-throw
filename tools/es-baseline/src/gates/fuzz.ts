@@ -1,4 +1,10 @@
-import type { LibMember, LibParam, LibProgram } from "@no-throw/core/baseline";
+import { TypeDomains } from "@no-throw/core/baseline";
+import type {
+  Absence,
+  LibMember,
+  LibParam,
+  LibProgram,
+} from "@no-throw/core/baseline";
 import type ts from "typescript";
 
 import { resolveHolder, runtimeKey } from "../accessors.js";
@@ -66,20 +72,22 @@ function newTargets(callable: object): readonly unknown[] {
 
 export class HostileFuzzer {
   readonly #arbitrary: Arbitrary;
+  readonly #domains: TypeDomains;
 
   constructor(lib: LibProgram) {
     this.#arbitrary = new Arbitrary(lib);
+    this.#domains = new TypeDomains(lib);
   }
 
   /**
    * Drive a member with hostile receivers and conformant arguments, inside the
    * scope `absent` gives the claim. Such a position is still driven — with the
-   * one value the condition admits — rather than skipped, because
+   * values the condition admits — rather than skipped, because
    * `new Map(undefined)` is exactly the call the entry does cover.
    */
   probeCall(
     member: LibMember,
-    absent: ReadonlySet<number> = new Set(),
+    absent: ReadonlyMap<number, Absence> = new Map(),
   ): ProbeResult {
     const invocation = this.#invocationFor(member);
     if ("unreachable" in invocation) {
@@ -89,8 +97,9 @@ export class HostileFuzzer {
     const pools: (readonly unknown[])[] = [];
     let restFrom: number | undefined;
     for (const [index, parameter] of (member.params ?? []).entries()) {
-      if (absent.has(index)) {
-        pools.push([undefined]);
+      const requires = absent.get(index);
+      if (requires !== undefined) {
+        pools.push(this.#absenceValues(requires, parameter));
         continue;
       }
       const values = this.#valuesForParameter(parameter);
@@ -237,6 +246,24 @@ export class HostileFuzzer {
       return holder === undefined ? [] : [holder];
     }
     return receiverPool().get(member.receiverOwner) ?? [];
+  }
+
+  /**
+   * What an absence-conditioned position may be driven with. `undefined` always,
+   * and `null` where the claim is `=nullish` — that spelling is exactly the
+   * assertion that `new Map(null)` is clean, and leaving it undriven left the
+   * gate unable to see the overclaim it is the whole point of the two forms.
+   *
+   * The declared type still decides, for the reason it decides everywhere else
+   * here: a position that does not accept `null` cannot be passed one
+   * conformantly, and a non-conformant argument manufactures a false
+   * counterexample. That leaves such a claim partly undriven, which is the
+   * ordinary unprobed state and not evidence either way.
+   */
+  #absenceValues(requires: Absence, parameter: LibParam): readonly unknown[] {
+    return requires === "nullish" && this.#domains.mayBeNull(parameter.types)
+      ? [undefined, null]
+      : [undefined];
   }
 
   #valuesForParameter(parameter: LibParam): readonly unknown[] | undefined {

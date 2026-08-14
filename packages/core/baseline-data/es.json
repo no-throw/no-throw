@@ -2787,8 +2787,8 @@
       "String#localeCompare": {
         "color": "non-throwing",
         "conditions": [
-          "param1=nullish",
-          "param2=nullish"
+          "param1=undefined",
+          "param2=undefined"
         ],
         "accessor": false,
         "spec": "String.prototype.localeCompare",
@@ -3983,8 +3983,8 @@
       "String#localeCompare": {
         "color": "non-throwing",
         "conditions": [
-          "param1=nullish",
-          "param2=nullish"
+          "param1=undefined",
+          "param2=undefined"
         ],
         "accessor": false,
         "spec": "String.prototype.localeCompare",
@@ -4138,7 +4138,7 @@
       "Number#toPrecision": {
         "color": "non-throwing",
         "conditions": [
-          "param0=nullish"
+          "param0=undefined"
         ],
         "accessor": false,
         "spec": "Number.prototype.toPrecision",

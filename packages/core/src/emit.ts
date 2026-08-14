@@ -341,9 +341,9 @@ function entryFor(
     conditions: conditions
       .map(({ path }) =>
         formatConditionPath({
-          // A body's conditions are all paths it enters: `nullish` is a claim
-          // about a body nobody can read, which is why only a carrier states
-          // one and emit never writes one.
+          // A body's conditions are all paths it enters: an absence form is a
+          // claim about a body nobody can read, which is why only a carrier
+          // states one and emit never writes one.
           requires: "entered",
           paramIndex: path.paramIndex,
           segments: path.members.map(

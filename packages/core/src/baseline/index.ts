@@ -22,7 +22,12 @@ export {
   symbolMemberName,
 } from "./keys.js";
 export { formatConditionPath, parseConditionPath } from "./paths.js";
-export type { ParsedConditionPath, PathSegment } from "./paths.js";
+export type {
+  Absence,
+  ParsedConditionPath,
+  PathSegment,
+  Requirement,
+} from "./paths.js";
 export {
   baselineData,
   lookupBaselineEntry,
