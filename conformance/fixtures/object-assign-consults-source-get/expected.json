@@ -6,7 +6,7 @@
       "line": 18,
       "column": 10,
       "endLine": 18,
-      "endColumn": 36,
+      "endColumn": 23,
       "messageId": "unbridgedCall"
     },
     {
@@ -14,7 +14,7 @@
       "line": 23,
       "column": 10,
       "endLine": 23,
-      "endColumn": 40,
+      "endColumn": 23,
       "messageId": "unbridgedCall"
     },
     {

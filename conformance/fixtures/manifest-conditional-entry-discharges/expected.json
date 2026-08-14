@@ -5,8 +5,8 @@
       "file": "src/index.ts",
       "line": 27,
       "column": 3,
-      "endLine": 29,
-      "endColumn": 5,
+      "endLine": 27,
+      "endColumn": 11,
       "messageId": "carriedConditionArgumentThrowing",
       "message": "Call to `eachItem` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given `cb`, and the argument passed for `cb` is throwing — its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `cb`."
     },
@@ -15,7 +15,7 @@
       "line": 39,
       "column": 3,
       "endLine": 39,
-      "endColumn": 24,
+      "endColumn": 10,
       "messageId": "carriedConditionArgumentThrowing",
       "message": "Call to `saveAll` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given `repo.save`, and the argument passed for `repo.save` is throwing — its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `repo.save`."
     }

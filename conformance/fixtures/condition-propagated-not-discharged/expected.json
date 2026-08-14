@@ -6,7 +6,7 @@
       "line": 18,
       "column": 10,
       "endLine": 18,
-      "endColumn": 63,
+      "endColumn": 19,
       "messageId": "conditionArgumentThrowing",
       "message": "Call to `myMapKeys` escapes this `@nothrow` function: it is non-throwing given `key`, and the argument passed for `key` is throwing — its body was analyzed and can throw. `myMapKeys` enters `key` at src/index.ts:7. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `key`."
     }

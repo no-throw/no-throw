@@ -4,9 +4,9 @@
     {
       "file": "src/index.ts",
       "line": 13,
-      "column": 10,
+      "column": 14,
       "endLine": 13,
-      "endColumn": 23,
+      "endColumn": 21,
       "messageId": "inferredThrowingConstruction",
       "message": "Construction of `Derived` escapes this `@nothrow` function: what runs — its field initializers and the `super()` it does not write — was analyzed and can throw. Your outs: bridge this construction with `try`/`catch`, or make `Derived` non-throwing by declaring a constructor and marking that `@nothrow`, since a mark on a class binds to nothing."
     }

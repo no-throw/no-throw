@@ -6,7 +6,7 @@
       "line": 19,
       "column": 4,
       "endLine": 19,
-      "endColumn": 10,
+      "endColumn": 8,
       "messageId": "inferredThrowingCall",
       "message": "Call to `seal` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `seal` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     },
@@ -15,7 +15,7 @@
       "line": 20,
       "column": 23,
       "endLine": 20,
-      "endColumn": 29,
+      "endColumn": 27,
       "messageId": "inferredThrowingCall",
       "message": "Call to `base` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `base` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     },
@@ -24,7 +24,7 @@
       "line": 21,
       "column": 31,
       "endLine": 21,
-      "endColumn": 37,
+      "endColumn": 35,
       "messageId": "inferredThrowingCall",
       "message": "Call to `boom` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `boom` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     },
@@ -33,7 +33,7 @@
       "line": 24,
       "column": 7,
       "endLine": 24,
-      "endColumn": 13,
+      "endColumn": 11,
       "messageId": "inferredThrowingCall",
       "message": "Call to `boom` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `boom` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     },
@@ -42,7 +42,7 @@
       "line": 27,
       "column": 6,
       "endLine": 27,
-      "endColumn": 11,
+      "endColumn": 9,
       "messageId": "inferredThrowingCall",
       "message": "Call to `key` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `key` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     }

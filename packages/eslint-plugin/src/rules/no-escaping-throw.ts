@@ -23,6 +23,7 @@ import {
 import { relative, sep } from "node:path";
 import type ts from "typescript";
 import { bridgeEdit, type BridgeShape } from "../bridge.js";
+import { locOf } from "../loc.js";
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/no-throw/no-throw#${name}`,
@@ -1107,13 +1108,16 @@ export const noEscapingThrow = createRule<[], MessageId>({
         const text = context.sourceCode.getText();
 
         for (const finding of analyzeSourceFile(sourceFile, services.program)) {
-          const reportAt = services.tsNodeToESTreeNodeMap.get(finding.node);
+          // The escape site is what an offered bridge wraps; where the caret
+          // goes is the core's own answer, and it is narrower wherever the
+          // escape is about one member of the expression it was written in.
+          const bridgeAt = services.tsNodeToESTreeNodeMap.get(finding.node);
           const source = sourceOf(finding);
           const report = reportFor(finding, context.cwd, source);
-          const suggest = offerFor(report.messageId, reportAt, text, source);
+          const suggest = offerFor(report.messageId, bridgeAt, text, source);
 
           context.report({
-            node: reportAt ?? node,
+            loc: locOf(sourceFile, finding.anchor),
             ...report,
             ...(suggest === undefined ? {} : { suggest }),
           });

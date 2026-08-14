@@ -6,7 +6,7 @@
       "line": 13,
       "column": 10,
       "endLine": 13,
-      "endColumn": 30,
+      "endColumn": 27,
       "messageId": "carriedConditionArgumentPassed",
       "message": "Call to `value.toPrecision` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `precision`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.",
       "suggestions": [

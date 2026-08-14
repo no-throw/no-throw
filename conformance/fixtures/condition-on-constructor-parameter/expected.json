@@ -4,9 +4,9 @@
     {
       "file": "src/index.ts",
       "line": 15,
-      "column": 10,
+      "column": 14,
       "endLine": 15,
-      "endColumn": 27,
+      "endColumn": 20,
       "messageId": "conditionArgumentThrowing",
       "message": "Call to `Runner` escapes this `@nothrow` function: it is non-throwing given `cb`, and the argument passed for `cb` is throwing — its body was analyzed and can throw. `Runner` enters `cb` at src/index.ts:4. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `cb`."
     }

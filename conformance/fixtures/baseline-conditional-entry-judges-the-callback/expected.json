@@ -5,8 +5,8 @@
       "file": "src/index.ts",
       "line": 15,
       "column": 3,
-      "endLine": 17,
-      "endColumn": 5,
+      "endLine": 15,
+      "endColumn": 16,
       "messageId": "carriedConditionArgumentThrowing",
       "message": "Call to `users.forEach` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given `callbackfn`, and the argument passed for `callbackfn` is throwing — its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `callbackfn`."
     }
