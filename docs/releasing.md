@@ -81,35 +81,38 @@ Re-running the **Release** workflow by hand runs the publish job on its own.
 That is for a publish that failed with the tag already cut; it is not how a
 release is normally made.
 
-### Before the first one
+### Naming a version by hand
 
-Four things live outside the repo and are the owner's:
+`Release-As: <version>` as a footer on a commit landing on `main` overrides what
+the log would have computed, and opens a release PR even where nothing
+releasable landed. It is how a version gets chosen rather than inferred — the
+first release used it, and so would a jump to `1.0.0`.
 
-- **`NPM_TOKEN`** — an automation token for the `no-throw` npm org, as a secret
-  on the `release` environment. Publishing uses npm provenance, so the token
-  needs publish rights and nothing else.
-- **The `release` environment** — worth a required reviewer, since the publish
-  is the one step in this repo nothing can undo.
-- **`RELEASE_PLEASE_TOKEN`** — a PAT or GitHub App token with `contents` and
-  `pull-requests` write. Optional, and the workflow falls back to
-  `GITHUB_TOKEN`; what it buys is CI running on the release PR, which is the
-  difference between reviewing a release you have seen pass and one you have
-  not. Also allow **Actions to create and approve pull requests** in the
-  repository's Actions settings.
-- **GitHub Pages** — set the source to *GitHub Actions*. The **Schema**
-  workflow deploys there; see below.
+`docs/release-notes/` holds hand-written launch prose. Nothing reads it: it is
+there to paste above the generated section of a GitHub release body, for the
+releases that deserve more than a list of commit subjects.
 
-The first release is already named. `.release-please-manifest.json` sits at
-`0.0.0`, which is true — nothing has ever been published — and a
-`Release-As: 0.1.0` footer landed on `main` to name what the first one is rather
-than leave it to what a `feat` does below 1.0. That footer works on any commit,
-any time you want to name a version by hand; otherwise the log decides. The
-launch announcement at `docs/release-notes/v0.1.0.md` is not read by anything;
-it is prose for the GitHub release body, to paste above the generated section.
+### What the pipeline depends on
 
-The README's **Status** section still opens with *nothing is published to npm
-yet*. It stops being true the moment the first release lands, so rewriting it is
-part of cutting that release rather than a follow-up.
+Four things live outside the repo. They are set up; this is what to check when
+one expires or a release fails at a step that used to work.
+
+- **`NPM_TOKEN`** — a granular npm token scoped to `@no-throw`, read and write,
+  as a secret on the **`release` environment** rather than on the repository. An
+  environment secret is readable only by a job running in that environment,
+  which is what makes the reviewer gate mean something: a repository secret
+  would be readable by any workflow.
+- **The `release` environment** — a required reviewer, since the publish is the
+  one step in this repo nothing can undo, and a branch policy admitting only
+  `main`.
+- **`RELEASE_PLEASE_TOKEN`** — a PAT or App token with `contents` and
+  `pull-requests` write, as a repository secret. Optional, and the workflow
+  falls back to `GITHUB_TOKEN`; what it buys is CI running on the release PR,
+  because a PR opened with the default token triggers no other workflow. When it
+  expires the release PR stops being opened at all, which is a louder failure
+  than one arriving unproven.
+- **GitHub Pages** — source set to *GitHub Actions*. The **Schema** workflow
+  deploys there; see below.
 
 ## The schemas
 
