@@ -8,7 +8,7 @@
       "endLine": 25,
       "endColumn": 26,
       "messageId": "carriedConditionArgumentPassed",
-      "message": "Call to `Map` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `iterable`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/MidnightDesign/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.",
+      "message": "Call to `Map` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `iterable`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.",
       "suggestions": [
         {
           "desc": "Bridge this with `try`/`catch`.",
@@ -63,7 +63,7 @@
       "endLine": 35,
       "endColumn": 23,
       "messageId": "carriedConditionArgumentPassed",
-      "message": "Call to `Map` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `iterable`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/MidnightDesign/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+      "message": "Call to `Map` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `iterable`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
     }
   ]
 }
