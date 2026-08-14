@@ -32,9 +32,25 @@ export type EntryState =
    */
   | { readonly kind: "unusable"; readonly faults: readonly string[] };
 
+/** One entry, at the key the file wrote it under. */
+export interface WrittenEntry {
+  readonly subpath: string;
+  readonly key: string;
+  readonly state: EntryState;
+}
+
 /** One `exports` table — subpath, then symbol path — as something to ask. */
 export interface ColorTable {
   entryFor(subpath: string, key: string): EntryState | undefined;
+  /**
+   * Every entry written under this table, in the order the file wrote them.
+   * A resolver asks by key and never needs this; a reader reporting on the
+   * file has no key to ask by — the entries *are* the question — and walking
+   * the document for them would be a second statement of the shape `TablePath`
+   * exists to state once, one that could not see the entries this reader
+   * discarded.
+   */
+  written(): readonly WrittenEntry[];
 }
 
 /** Tables by the npm package each one colors, which is how a rung holds them. */
@@ -171,15 +187,29 @@ function indexTable(
   }
   const table = valueAt(value, prefix);
 
+  const entryFor = (subpath: string, key: string): EntryState | undefined => {
+    const faults = unusable.get(identityOf([subpath, key]));
+    if (faults !== undefined) return { kind: "unusable", faults: [...faults] };
+    const entries = isRecord(table) ? table[subpath] : undefined;
+    const entry = isRecord(entries) ? entries[key] : undefined;
+    return isRecord(entry)
+      ? { kind: "entry", entry: entry as ManifestEntry }
+      : undefined;
+  };
+
   return {
-    entryFor: (subpath, key) => {
-      const faults = unusable.get(identityOf([subpath, key]));
-      if (faults !== undefined) return { kind: "unusable", faults: [...faults] };
-      const entries = isRecord(table) ? table[subpath] : undefined;
-      const entry = isRecord(entries) ? entries[key] : undefined;
-      return isRecord(entry)
-        ? { kind: "entry", entry: entry as ManifestEntry }
-        : undefined;
+    entryFor,
+    written: () => {
+      if (!isRecord(table)) return [];
+      const written: WrittenEntry[] = [];
+      for (const [subpath, keys] of Object.entries(table)) {
+        if (!isRecord(keys)) continue;
+        for (const key of Object.keys(keys)) {
+          const state = entryFor(subpath, key);
+          if (state !== undefined) written.push({ subpath, key, state });
+        }
+      }
+      return written;
     },
   };
 }

@@ -1,5 +1,5 @@
 {
-  "description": "The fault a hand-author actually makes. A misspelled `color`, or a condition path outside the closed grammar, is discarded by the reader rather than refusing the file — and a discarded entry reaches a published symbol exactly as a correct one does, so `check` would otherwise call it healthy. It is named like the ones that reach nothing, with the field pointed at the way an envelope fault is pointed at, and against the schema the carrier it sits in is held to — the overrides file's and an overlay's are two different files.",
+  "description": "The fault a hand-author actually makes. A misspelled `color`, or a condition path outside the closed grammar, is discarded by the reader rather than refusing the file — and a discarded entry reaches a published symbol exactly as a correct one does, so `check` would otherwise call it healthy. It is named like the ones that reach nothing, with the field pointed at the way an envelope fault is pointed at, and against the schema the carrier it sits in is held to — the overrides file's and an overlay's are two different files. The one asked of an uninstalled package is asked all the same, and fails the run where a valid entry for the same package would have been inert: a file that departs from its schema does so on every machine, so there is no sibling workspace this one is right on.",
   "steps": [
     {
       "check": [],
@@ -8,10 +8,12 @@
       "names": [
         "flaky → \".\" → `safeParse`",
         "this entry does not validate against `nothrow.overrides.schema.json` at `color`, so the reader discarded it and it colors nothing.",
+        "uninstalled → \".\" → `whatever`",
+        "this entry does not validate against `nothrow.overrides.schema.json` at `conditions.0`, so the reader discarded it and it colors nothing.",
         "flaky → \".\" → `boom`",
         "this entry does not validate against `nothrow.schema.json` at `conditions.0`, so the reader discarded it and it colors nothing.",
         "Anything it would have colored floors rather than falling through to the rung below.",
-        "2 entries checked. 2 do not validate."
+        "3 entries checked. 3 do not validate."
       ]
     }
   ]

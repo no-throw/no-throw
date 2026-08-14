@@ -11,6 +11,16 @@
           }
         }
       }
+    },
+    "uninstalled": {
+      "exports": {
+        ".": {
+          "whatever": {
+            "color": "non-throwing",
+            "conditions": ["param1..cb"]
+          }
+        }
+      }
     }
   }
 }

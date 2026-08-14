@@ -466,12 +466,13 @@ nothrow.overrides.json
 1 entry checked. 1 does not validate.
 ```
 
-An entry naming a package this project does not hold is reported apart and does
-not fail the run: it is inert rather than wrong — a workspace that holds the
-dependency and a sibling that does not are both right about the same file. Exit
-codes are `0` nothing to refuse, `1` something reached nothing, did not validate
-or a carrier is not being honored, `2` could not run. So an inert entry is
-named, and still exits `0`.
+A **valid** entry naming a package this project does not hold is reported apart
+and does not fail the run: it is inert rather than wrong — a workspace that holds
+the dependency and a sibling that does not are both right about the same file. A
+rejected one fails wherever it is read, because a file that departs from its
+schema does so on every machine. Exit codes are `0` nothing to refuse, `1`
+something reached nothing, did not validate, or a carrier is not being honored,
+`2` could not run. So an inert entry is named, and still exits `0`.
 
 A carrier is matched by the package a declaration **ships in**, never by the one
 that re-exported it — so an entry written under a barrel package reaches nothing
@@ -485,11 +486,15 @@ scope rather than a package boundary, so the declarations under it still ship in
 the package that names itself, and one entry keyed under that name reaches them
 all.
 
-A **malformed or schema-invalid `nothrow.overrides.json` is refused outright**,
-and nothing is analyzed until it is fixed or removed. Every other carrier
-answers for somebody else's package and may fall through to the rung below when
-it cannot be read; this one is yours, and falling through would discard what you
-wrote without saying so:
+Where the fault is in the **envelope** rather than inside an entry — malformed
+JSON, a missing `version`, an export key that is not a subpath — the whole
+`nothrow.overrides.json` **is refused outright**, and nothing is analyzed until
+it is fixed or removed. The file no longer describes what it claims to, so there
+is no part of it left to trust; a fault inside one entry floors that entry
+alone, which is what `check` reports above. Every other carrier answers for
+somebody else's package and may fall through to the rung below when it cannot be
+read; this one is yours, and falling through would discard what you wrote
+without saying so:
 
 ```text
 `nothrow.overrides.json` cannot be read — it could not be read as a JSON object — so nothing in it is

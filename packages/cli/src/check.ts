@@ -51,8 +51,11 @@ export function runCheck(options: CheckOptions): CommandResult {
   }
   lines.push(summary(tally, fatal));
 
+  // Read off the same counts the summary is written from, so the exit code and
+  // the last line cannot come to different verdicts: a failure the report does
+  // not account for is a red build with nothing in it to act on.
   const text = `${lines.join("\n")}\n`;
-  return entries.some(reachesNothing) || fatal
+  return tally.dead > 0 || tally.unusable > 0 || fatal
     ? { code: REFUSED, out: "", err: text }
     : { code: 0, out: text, err: "" };
 }
@@ -71,12 +74,18 @@ function reportOn(carrier: CheckedCarrier, cwd: string): readonly string[] {
   const path = display(cwd, carrier.path);
   const lines = [path === carrier.name ? path : `${carrier.name} — ${path}`];
   if (carrier.problem !== undefined) lines.push(`  ${carrier.problem.message}`);
-  for (const entry of problems) lines.push(...entryLines(entry, cwd));
+  for (const entry of problems) {
+    lines.push(...entryLines(entry, carrier.schema, cwd));
+  }
   return lines;
 }
 
-function entryLines(entry: CheckedEntry, cwd: string): readonly string[] {
-  const why = whyItReachesNothing(entry, cwd);
+function entryLines(
+  entry: CheckedEntry,
+  schema: string,
+  cwd: string,
+): readonly string[] {
+  const why = whyItReachesNothing(entry, schema, cwd);
   if (why.length === 0) return [];
   return [
     `  ${entry.package} → ${JSON.stringify(entry.subpath)} → \`${entry.symbolPath}\``,
@@ -86,6 +95,7 @@ function entryLines(entry: CheckedEntry, cwd: string): readonly string[] {
 
 function whyItReachesNothing(
   entry: CheckedEntry,
+  schema: string,
   cwd: string,
 ): readonly string[] {
   switch (entry.verdict) {
@@ -98,7 +108,7 @@ function whyItReachesNothing(
       ];
     case "unusable":
       return [
-        `this entry does not validate against \`${entry.schema}\` at ` +
+        `this entry does not validate against \`${schema}\` at ` +
           `${entry.faults.map((fault) => `\`${fault}\``).join(", ")}, so the ` +
           "reader discarded it and it colors nothing.",
         // The one thing that separates this from an entry nobody wrote, and

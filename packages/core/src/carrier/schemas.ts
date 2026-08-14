@@ -19,19 +19,21 @@ function load(file: URL): unknown {
 }
 
 /**
- * What each schema is called, which is also how a report points an author at
- * it. Named here rather than at the report, so the file a reader is sent to
- * open is the file the reader actually evaluated.
+ * What the manifest schema is called on disk, which is also how a report points
+ * an author at it. Spelled once, so the file a reader is sent to open is the
+ * file the reader actually evaluated.
  */
-export const MANIFEST_SCHEMA = "nothrow.schema.json";
-export const OVERRIDES_SCHEMA = "nothrow.overrides.schema.json";
+export const MANIFEST_SCHEMA_FILE = "nothrow.schema.json";
+
+/** The same for the overrides schema. */
+export const OVERRIDES_SCHEMA_FILE = "nothrow.overrides.schema.json";
 
 /** `nothrow.json`: what a package ships, and what an overlay publishes. */
 export function manifestSchema(): unknown {
-  return load(new URL(`../../schema/${MANIFEST_SCHEMA}`, import.meta.url));
+  return load(new URL(`../../schema/${MANIFEST_SCHEMA_FILE}`, import.meta.url));
 }
 
 /** `nothrow.overrides.json`: what a project asserts for itself. */
 export function overridesSchema(): unknown {
-  return load(new URL(`../../schema/${OVERRIDES_SCHEMA}`, import.meta.url));
+  return load(new URL(`../../schema/${OVERRIDES_SCHEMA_FILE}`, import.meta.url));
 }

@@ -1,6 +1,6 @@
 import { dirname } from "node:path";
 import ts from "typescript";
-import type { ColorTable, ColorTables } from "./carrier/document.js";
+import type { ColorTable } from "./carrier/document.js";
 import { installedOverlaysFor } from "./carrier/overlays.js";
 import {
   OVERRIDES,
@@ -8,12 +8,11 @@ import {
   refusalMessage,
   type OverridesState,
 } from "./carrier/overrides.js";
+import { packageHomeOf, type PackageHome } from "./carrier/packages.js";
 import {
-  isRecord,
-  packageHomeOf,
-  type PackageHome,
-} from "./carrier/packages.js";
-import { MANIFEST_SCHEMA, OVERRIDES_SCHEMA } from "./carrier/schemas.js";
+  MANIFEST_SCHEMA_FILE,
+  OVERRIDES_SCHEMA_FILE,
+} from "./carrier/schemas.js";
 import { exportSurfaceOf } from "./carrier/surface.js";
 
 /** The three halves of a key, which is what a carrier writes an entry under. */
@@ -38,15 +37,15 @@ export type CheckedEntry = EntryKey &
      * The entry is written and does not describe a color: the schema rejected
      * something inside it, so the reader discarded it before any question of
      * what it reaches. Asked first for that reason — a discarded entry keys as
-     * well as a correct one, and the surface would call it healthy — and
-     * carrying both the contract it lost against and the fields that lost it,
-     * because the carrier file is the only place the fix can be made.
+     * well as a correct one, and the surface would call it healthy — and it is
+     * asked of every entry, held package or not, because a file that departs
+     * from its schema does so on every machine.
+     *
+     * `faults` names the fields that lost it, since the carrier file is the
+     * only place the fix can be made. Which schema they lost against is the
+     * carrier's, not the entry's.
      */
-    | {
-        readonly verdict: "unusable";
-        readonly schema: string;
-        readonly faults: readonly string[];
-      }
+    | { readonly verdict: "unusable"; readonly faults: readonly string[] }
     /** The package publishes no such subpath; these are the ones it has. */
     | { readonly verdict: "no-subpath"; readonly subpaths: readonly string[] }
     /** The subpath is published and holds no such key; these are its keys. */
@@ -83,6 +82,13 @@ export interface CheckedCarrier {
   /** What the report calls it: the file's name, or an overlay's package. */
   readonly name: string;
   readonly path: string;
+  /**
+   * The published contract this file's entries were held to, as it is named on
+   * disk. A property of the file rather than of any entry in it: the overrides
+   * file and a manifest borrow one entry shape through two envelopes, and an
+   * author sent to fix an entry is sent to the one their file declares.
+   */
+  readonly schema: string;
   readonly problem?: CarrierProblem;
   readonly entries: readonly CheckedEntry[];
 }
@@ -120,16 +126,8 @@ export function checkCarriers(
 
   for (const asking of askingHomes(program, fallback)) {
     for (const carrier of [
-      overridesCarrier(overridesStateIn(asking), {
-        schema: OVERRIDES_SCHEMA,
-        packages,
-        program,
-      }),
-      ...overlayCarriers(asking, {
-        schema: MANIFEST_SCHEMA,
-        packages,
-        program,
-      }),
+      overridesCarrier(overridesStateIn(asking), packages, program),
+      ...overlayCarriers(asking, packages, program),
     ]) {
       if (seen.has(carrier.path)) continue;
       seen.add(carrier.path);
@@ -161,29 +159,20 @@ function askingHomes(
   return [...homes.values()];
 }
 
-/**
- * What one carrier's entries are held against: the packages the program holds,
- * and the contract that carrier's own entries were validated by — the overrides
- * file's and a manifest's are two different published files, and an entry the
- * schema rejected is owed the one it lost against.
- */
-interface Against {
-  readonly schema: string;
-  readonly packages: ReadonlyMap<string, PackageHome>;
-  readonly program: ts.Program;
-}
-
 function overridesCarrier(
   state: OverridesState,
-  against: Against,
+  packages: ReadonlyMap<string, PackageHome>,
+  program: ts.Program,
 ): CheckedCarrier {
   const name = OVERRIDES;
+  const schema = OVERRIDES_SCHEMA_FILE;
 
   switch (state.kind) {
     case "absent":
       return {
         name,
         path: state.path,
+        schema,
         problem: {
           message: `there is no \`${name}\` here, so it asserts nothing.`,
           fatal: false,
@@ -194,6 +183,7 @@ function overridesCarrier(
       return {
         name,
         path: state.path,
+        schema,
         problem: { message: refusalMessage(state), fatal: true },
         entries: [],
       };
@@ -201,6 +191,7 @@ function overridesCarrier(
       return {
         name,
         path: state.path,
+        schema,
         // Reading forward is what the version field is for, so this is a fact
         // about the file rather than a fault in it — and it is exactly the
         // fact a reader cannot otherwise tell from the file being absent.
@@ -217,11 +208,9 @@ function overridesCarrier(
       return {
         name,
         path: state.path,
-        entries: ownedEntries(
-          state.document["packages"],
-          state.packages,
-          state.tables,
-          against,
+        schema,
+        entries: [...state.tables].flatMap(([owner, table]) =>
+          tableEntries(table, owner, packages, program),
         ),
       };
   }
@@ -229,23 +218,33 @@ function overridesCarrier(
 
 function overlayCarriers(
   asking: PackageHome,
-  against: Against,
+  packages: ReadonlyMap<string, PackageHome>,
+  program: ts.Program,
 ): readonly CheckedCarrier[] {
   return installedOverlaysFor(asking).map(({ home: overlay, state }) => {
     const name = overlay.name ?? overlay.directory;
     const path = `${overlay.directory}/nothrow.json`;
 
+    const schema = MANIFEST_SCHEMA_FILE;
+
     // A `@no-throw/*` package shipping no `nothrow.json` is not an overlay at
     // all, and the three this project ships are exactly that — so it is not
     // something to report, only something not to read.
-    if (state.kind === "absent") return { name, path, entries: [] };
+    if (state.kind === "absent") return { name, path, schema, entries: [] };
     if (state.kind !== "valid") {
-      return { name, path, problem: overlayProblem(state.kind), entries: [] };
+      return {
+        name,
+        path,
+        schema,
+        problem: overlayProblem(state.kind),
+        entries: [],
+      };
     }
     if (state.target === undefined) {
       return {
         name,
         path,
+        schema,
         problem: {
           message:
             "it names no `package`, and an overlay is matched by that field " +
@@ -260,12 +259,8 @@ function overlayCarriers(
     return {
       name,
       path,
-      entries: subpathEntries(
-        state.document["exports"],
-        state.target,
-        state.table,
-        against,
-      ),
+      schema,
+      entries: tableEntries(state.table, state.target, packages, program),
     };
   });
 }
@@ -286,60 +281,31 @@ function overlayProblem(kind: "stale" | "unreadable"): CarrierProblem {
       };
 }
 
-/** Every entry under `packages` → the package → `exports`. */
-function ownedEntries(
-  owner: unknown,
-  names: readonly string[],
-  tables: ColorTables,
-  against: Against,
+/**
+ * Every entry of one table, which is one package's colors. Read off the reader
+ * rather than off the file, so that what is checked is what was read: an entry
+ * the reader discarded is one the file wrote and no key will ever reach, and a
+ * walk of the document could only see the first half of that.
+ */
+function tableEntries(
+  table: ColorTable,
+  packageName: string,
+  packages: ReadonlyMap<string, PackageHome>,
+  program: ts.Program,
 ): readonly CheckedEntry[] {
-  if (!isRecord(owner)) return [];
-  return names.flatMap((name) => {
-    const owned = owner[name];
-    return isRecord(owned)
-      ? subpathEntries(owned["exports"], name, tables.get(name), against)
-      : [];
+  return table.written().map(({ subpath, key: symbolPath, state }) => {
+    const key = { package: packageName, subpath, symbolPath };
+    return state.kind === "unusable"
+      ? { ...key, verdict: "unusable" as const, faults: state.faults }
+      : verdictFor(key, packages, program);
   });
 }
 
-/**
- * Every entry under one `exports` table, which is one package's colors. The
- * document says which entries were *written*, and the reader's own table says
- * what became of each — the two are read together because neither alone is the
- * question: a discarded entry is absent from the table and present in the file,
- * and reading only the table would lose it as completely as the reader did.
- */
-function subpathEntries(
-  exported: unknown,
-  packageName: string,
-  table: ColorTable | undefined,
-  against: Against,
-): readonly CheckedEntry[] {
-  if (!isRecord(exported)) return [];
-
-  const entries: CheckedEntry[] = [];
-  for (const [subpath, keys] of Object.entries(exported)) {
-    if (!isRecord(keys)) continue;
-    for (const symbolPath of Object.keys(keys)) {
-      const key = { package: packageName, subpath, symbolPath };
-      const state = table?.entryFor(subpath, symbolPath);
-      entries.push(
-        state?.kind === "unusable"
-          ? {
-              ...key,
-              verdict: "unusable",
-              schema: against.schema,
-              faults: state.faults,
-            }
-          : verdictFor(key, against),
-      );
-    }
-  }
-  return entries;
-}
-
-function verdictFor(key: EntryKey, against: Against): CheckedEntry {
-  const { packages, program } = against;
+function verdictFor(
+  key: EntryKey,
+  packages: ReadonlyMap<string, PackageHome>,
+  program: ts.Program,
+): CheckedEntry {
   const home = packages.get(key.package);
   // Nothing of this package is in the program, so there is no surface to hold
   // the entry against. Inert rather than wrong: a project may carry colors for

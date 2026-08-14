@@ -11,7 +11,7 @@ import type { SchemaIssue } from "./schema.js";
 import {
   manifestSchema,
   overridesSchema,
-  OVERRIDES_SCHEMA,
+  OVERRIDES_SCHEMA_FILE,
 } from "./schemas.js";
 
 const EMPTY: ColorTables = new Map();
@@ -60,9 +60,7 @@ export type OverridesState =
   | {
       readonly kind: "read";
       readonly path: string;
-      /** The packages named, in the order they were written. */
-      readonly packages: readonly string[];
-      readonly document: Record<string, unknown>;
+      /** One per package named, in the order they were written. */
       readonly tables: ColorTables;
     };
 
@@ -120,10 +118,10 @@ export function refusalMessage(
   const why =
     state.refusal.kind === "not-an-object"
       ? "it could not be read as a JSON object"
-      : `it does not validate against \`${OVERRIDES_SCHEMA}\` at ${faultsAt(state.refusal.issues)}`;
+      : `it does not validate against \`${OVERRIDES_SCHEMA_FILE}\` at ${faultsAt(state.refusal.issues)}`;
 
   return (
-    `\`nothrow.overrides.json\` cannot be read — ${why} — so nothing in it ` +
+    `\`${OVERRIDES}\` cannot be read — ${why} — so nothing in it ` +
     "is being honored. An overrides file that is quietly ignored is the " +
     "silent no-op the rest of this design exists to rule out, so nothing is " +
     "analyzed until it is fixed or removed"
@@ -177,11 +175,5 @@ function readOverrides(asking: PackageHome): OverridesState {
   for (const name of Object.keys(packages)) {
     tables.set(name, document.tableAt([name]));
   }
-  return {
-    kind: "read",
-    path,
-    packages: Object.keys(packages),
-    document: document.value,
-    tables,
-  };
+  return { kind: "read", path, tables };
 }
