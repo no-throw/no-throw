@@ -1,5 +1,6 @@
 import ts from "typescript";
 import type {
+  AbsenceReason,
   ConsumptionReason,
   FloorReason,
   FloorSource,
@@ -9,7 +10,12 @@ import type {
   ThrowingReason,
   UndischargedReason,
 } from "./colors.js";
-import { pathKey, skipParens, type Condition } from "./conditions.js";
+import {
+  conditionKey,
+  pathKey,
+  skipParens,
+  type Condition,
+} from "./conditions.js";
 import { dischargeAt, type Outcome } from "./discharge.js";
 import {
   baseClassExpression,
@@ -91,6 +97,20 @@ export type BodyEscape =
       readonly condition: Condition;
       readonly reason: UndischargedReason;
       readonly staleFile?: string | undefined;
+      /** Absent where the argument is not a standard-library declaration. */
+      readonly source?: FloorSource | undefined;
+    }
+  /**
+   * A condition asking for no argument at the position, and a call that puts
+   * one there. The remedy is to stop passing rather than to pass something
+   * else, so what floored is the *call* — which is why the source here is the
+   * callee's declaration and not the argument's.
+   */
+  | {
+      readonly kind: "argument-present";
+      readonly node: Transfer;
+      readonly condition: Condition;
+      readonly reason: AbsenceReason;
       readonly source?: FloorSource | undefined;
     }
   /** A `for…of`, spread, destructuring, `.next()` or `yield*`. */
@@ -417,7 +437,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     outcomesAt.set(site, byPath);
 
     return conditions.flatMap((condition) => {
-      const key = pathKey(condition.path);
+      const key = conditionKey(condition);
       let outcomes = byPath.get(key);
       if (outcomes === undefined) {
         outcomes = dischargeAt(site, condition, body, resolution);
@@ -469,9 +489,14 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       ),
     recompute: (body, conditionsOf) => {
       const derived = new Map<string, Condition>();
+      // Only `entered` is ever derived: a `nullish` condition is a claim about
+      // a body nobody can read, and propagation carries a path onward rather
+      // than the absence of one.
       const add = (path: Condition["path"], entry: Transfer): void => {
         const key = pathKey(path);
-        if (!derived.has(key)) derived.set(key, { path, owner: body, entry });
+        if (!derived.has(key)) {
+          derived.set(key, { requires: "entered", path, owner: body, entry });
+        }
       };
 
       for (const { site, target } of targetsIn(body, "all")) {
@@ -491,7 +516,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
 
       return [...derived.values()];
     },
-    settled: samePaths,
+    settled: sameConditions,
   });
 
   const settledConditions: Conditions = (body) => conditions.valueOf(body);
@@ -747,12 +772,19 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       }
     }
 
+    const calleeSource = target.kind === "carried" ? target.source : undefined;
     for (const { condition, outcome } of dischargesAt(
       site,
       conditionsOfTarget(target, settledConditions),
       body,
     )) {
-      const escape = undischarged(site, condition, outcome, throwingOf);
+      const escape = undischarged(
+        site,
+        condition,
+        outcome,
+        calleeSource,
+        throwingOf,
+      );
       if (escape !== undefined) found.push(escape);
     }
   }
@@ -834,6 +866,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     site: Transfer,
     condition: Condition,
     outcome: Outcome,
+    calleeSource: FloorSource | undefined,
     throwingOf: (callee: ColorNode) => boolean,
   ): BodyEscape | undefined {
     const floored = (
@@ -850,6 +883,15 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     });
 
     if (outcome.kind === "propagate") return undefined;
+    if (outcome.kind === "present") {
+      return {
+        kind: "argument-present",
+        node: site,
+        condition,
+        reason: outcome.reason,
+        source: calleeSource,
+      };
+    }
     if (outcome.kind === "floor") {
       return floored(outcome.reason, outcome.staleFile, outcome.source);
     }
@@ -1502,10 +1544,10 @@ function untracedReason(
     : "untraced";
 }
 
-function samePaths(a: readonly Condition[], b: readonly Condition[]): boolean {
+function sameConditions(a: readonly Condition[], b: readonly Condition[]): boolean {
   if (a.length !== b.length) return false;
-  const keys = new Set(b.map((condition) => pathKey(condition.path)));
-  return a.every((condition) => keys.has(pathKey(condition.path)));
+  const keys = new Set(b.map(conditionKey));
+  return a.every((condition) => keys.has(conditionKey(condition)));
 }
 
 function memoize<K extends object, V>(compute: (key: K) => V): (key: K) => V {

@@ -26,7 +26,14 @@ The pipeline:
    Object` cannot produce a cause about `x` being nullish or not an Object.
    That one guard is `ToPrimitive`'s, which every coercion goes through, and
    without it `ToString` of a declared `string` looks like it reaches
-   `ToObject` on a couple of hundred members.
+   `ToObject` on a couple of hundred members. An **early return** is read the
+   same way and needs its own reading, because it protects its *siblings*
+   rather than its children: `If iterable is either undefined or null, return
+   map` is step 4 of `Map`, and steps 5 to 7 hold every hazard the constructor
+   has. So a step carries the names an earlier return in its own list has ruled
+   out — which is what a step's position, rather than its depth, is recorded
+   for: two branches of an `If`/`Else` are both later than the `If` and neither
+   runs after the other.
 2. **Operand tracing** — a root cause is about the *callee's* parameter *i*, so
    lifting it into a caller re-resolves the expression passed at *i*,
    recursively, until the chain ends at a builtin's declared parameter or its
@@ -47,6 +54,12 @@ The pipeline:
 6. **The gate, before emit** — a proposed-clean entry the gate refutes fails the
    run; one it cannot reach ships **floored**, and is listed under `unprobed`.
 
+A member whose every reachable hazard sits behind an early return is clean
+**given the position gets nothing**, which the entry states as a
+`param<N>=nullish` condition and the call site discharges. Nine entries carry
+one: the four collection constructors under both lib targets that declare them,
+and `Number.prototype.toPrecision`.
+
 ## The gates
 
 ```sh
@@ -58,7 +71,11 @@ pnpm --filter @no-throw/es-baseline-tools run gate:drift -- --against /path/to/o
 ```
 
 **The hostile fuzz gate.** Every proposed-clean entry — conditional ones
-included — faces a type-conformant but hostile refutation attempt. The pool is
+included — faces a type-conformant but hostile refutation attempt, inside the
+scope the entry claims: a position conditioned `=nullish` is driven with
+`undefined` and with nothing, because a color stated for `new Map()` says
+nothing about `new Map(iterable)` and refuting it there would refute a sentence
+nobody wrote. The pool is
 detached and shrunk buffers, a throwing-`Symbol.species` subclass, and
 `Object.create(null)`; `Proxy` is excluded because it is trust base. A construct
 signature is entered with `new` on two NewTargets — the constructor and a

@@ -11,10 +11,21 @@
 export type Color = "throwing" | "non-throwing";
 
 /**
- * An access path over a member's own parameters. Root `param<N>`, then any of
- * `.member`, `[]` for element access, `.@@name` for a well-known symbol —
- * `"param0.save"`, `"param0[].run"`, `"param0.@@iterator"`. The grammar is
- * closed; anything else floors the entry.
+ * A precondition on a member's own parameters, spelled as an access path over
+ * them. Root `param<N>`, then any of `.member`, `[]` for element access,
+ * `.@@name` for a well-known symbol — `"param0.save"`, `"param0[].run"`,
+ * `"param0.@@iterator"` — which says the member is non-throwing given whatever
+ * reaches there is.
+ *
+ * `param<N>=nullish` is the other thing a condition can say: the member is
+ * non-throwing given *nothing* reaches the position. ECMA-262 writes that guard
+ * as an early return — `If iterable is either undefined or null, return map` —
+ * and every hazard `new Map()` has sits behind one.
+ *
+ * The grammar is closed; anything else floors the entry. Which is why a new
+ * form belongs here rather than in a field of its own: a reader that does not
+ * know `=nullish` refuses the entry, where one that met an unknown *field*
+ * would read the color and drop the condition it holds.
  */
 export type ConditionPath = string;
 

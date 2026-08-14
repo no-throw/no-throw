@@ -25,6 +25,18 @@ export interface Hazard {
   readonly rootOp: string;
   readonly via: readonly string[];
   readonly operand: Operand;
+  /**
+   * Names the builtin's own steps established are neither `undefined` nor
+   * `null` before this hazard can be reached, by returning early where they
+   * are. Every hazard `new Map()` has is one of these: ECMA-262 returns at
+   * step 4 when `iterable` is absent, and steps 5 to 7 hold the rest.
+   *
+   * The builtin's own namespace, so a name here is a parameter of the member
+   * itself and the classifier can turn it into a condition on that position.
+   * Nothing lifted from a callee carries one — a fact about the callee's own
+   * locals is not a fact any call site could discharge.
+   */
+  readonly given: readonly string[];
 }
 
 export interface SpecBuiltin {
@@ -154,6 +166,41 @@ function objectsEstablishedBy(
   return names;
 }
 
+/**
+ * An early return on an absent argument: `If iterable is either undefined or
+ * null, return map`. Every step that runs after one of these runs only because
+ * the name held a value, which is the fact `new Map()` needs and the enclosing
+ * guards cannot carry — the step is a *sibling* of what it protects, not its
+ * parent.
+ *
+ * The return has to be unconditional in the same step. `If x is undefined,
+ * then` opening a sub-list establishes the fact for that list and not for what
+ * follows it, and that shape is the enclosing-guard reading's business.
+ */
+const RETURNS_IF_NULLISH =
+  /^If (\w+) is (?:either undefined or null|undefined|null), return\b/;
+
+/**
+ * The names an early return has ruled out by the time this step runs. A fact
+ * holds for the steps *after* the return in the same list, and for everything
+ * nested under them: those are exactly the steps the return can skip.
+ */
+function establishedBefore(
+  step: Step,
+  returns: readonly { name: string; path: readonly number[] }[],
+): readonly string[] {
+  return returns
+    .filter(({ path }) => {
+      const depth = path.length - 1;
+      return (
+        step.path.length > depth &&
+        path.slice(0, depth).every((at, index) => step.path[index] === at) &&
+        (step.path[depth] ?? -1) > (path[depth] ?? 0)
+      );
+    })
+    .map(({ name }) => name);
+}
+
 /** A throw condition that fires only on something that is not an Object. */
 const NEEDS_A_NON_OBJECT =
   /is either undefined or null|RequireObjectCoercible|is not an Object\b/;
@@ -229,7 +276,18 @@ export function extractSpec(html: string): SpecCorpus {
     const unresolved: string[] = [];
     const reassigned = reassignedNames(steps);
 
+    // A name the algorithm rebinds cannot carry a fact forward, for the reason
+    // an enclosing guard's cannot: the value at the later step may not be the
+    // one that was tested.
+    const earlyReturns = steps.flatMap((step) => {
+      const name = RETURNS_IF_NULLISH.exec(step.text)?.[1];
+      return name === undefined || reassigned.has(name)
+        ? []
+        : [{ name, path: step.path }];
+    });
+
     for (const step of steps) {
+      const given = establishedBefore(step, earlyReturns);
       const explicit = THROW_SITE.exec(step.html);
       if (explicit !== null) {
         hazards.push({
@@ -238,6 +296,7 @@ export function extractSpec(html: string): SpecCorpus {
           rootOp: "EXPLICIT",
           via: [],
           operand: trace.subjectOf(step.context),
+          given,
         });
       }
       for (const call of abruptCalls(step, reassigned)) {
@@ -254,6 +313,7 @@ export function extractSpec(html: string): SpecCorpus {
             rootOp: cause.rootOp,
             via: [call.name, ...cause.via],
             operand: liftOperand(cause.operand, call.args, trace),
+            given,
           });
         }
       }
@@ -360,6 +420,9 @@ function resolveCauses(
         rootOp: name,
         via: [],
         operand: operation.trace.subjectOf(thrown.condition),
+        // An operation's own early returns are about its own locals, and a
+        // caller's argument list is where those names stop meaning anything.
+        given: [],
       });
     }
     causes.set(name, own);
@@ -380,6 +443,7 @@ function resolveCauses(
             rootOp: cause.rootOp,
             via: [call.name, ...cause.via],
             operand: liftOperand(cause.operand, call.args, operation.trace),
+            given: [],
           });
         }
       }
@@ -424,6 +488,11 @@ function resolveAliases(
       hazards: target.hazards.map((hazard) => ({
         ...hazard,
         via: [`alias→${target.name}`, ...hazard.via],
+        // The names are the *aliased* clause's parameters, and this clause
+        // writes its own parameter list. A name that happens to appear in both
+        // could name a different position, so the fact is dropped rather than
+        // carried across.
+        given: [],
       })),
     });
     resolved++;
@@ -453,7 +522,18 @@ function dedupeHazards(hazards: readonly Hazard[]): readonly Hazard[] {
   const seen = new Map<string, Hazard>();
   for (const hazard of hazards) {
     const key = `${hazard.rootOp} ${hazard.condition} ${hazard.operand.root}${hazard.operand.index}${hazard.operand.segments.map((segment) => segment.kind + ("name" in segment ? segment.name : "")).join()}`;
-    if (!seen.has(key)) seen.set(key, hazard);
+    const known = seen.get(key);
+    if (known === undefined) {
+      seen.set(key, hazard);
+      continue;
+    }
+    // The same cause at two steps is reachable however either one is guarded,
+    // so what survives is what both agree on. Keeping the first would let a
+    // step behind an early return answer for one that is not.
+    const shared = known.given.filter((name) => hazard.given.includes(name));
+    if (shared.length !== known.given.length) {
+      seen.set(key, { ...known, given: shared });
+    }
   }
   return [...seen.values()];
 }

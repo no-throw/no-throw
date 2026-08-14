@@ -24,7 +24,9 @@ const members = collectLibMembers(lib);
 const claims = new Map<string, Claim>(claimsOf(data));
 if (selfCheck) {
   for (const key of PLANTED) {
-    claims.set(key, { cleanCall: true, cleanGet: false });
+    // Planted unconditioned on purpose: a claim that scoped itself away from
+    // the refuting call would prove the opposite of what this is for.
+    claims.set(key, { cleanCall: true, cleanGet: false, absent: new Set() });
   }
 }
 

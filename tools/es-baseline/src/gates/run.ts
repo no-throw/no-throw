@@ -1,3 +1,4 @@
+import { parseConditionPath } from "@no-throw/core/baseline";
 import type { BaselineData, LibMember, LibProgram } from "@no-throw/core/baseline";
 
 import { HostileFuzzer, type Counterexample, type ProbeResult } from "./fuzz.js";
@@ -9,6 +10,13 @@ import { HostileFuzzer, type Counterexample, type ProbeResult } from "./fuzz.js"
 export interface Claim {
   readonly cleanCall: boolean;
   readonly cleanGet: boolean;
+  /**
+   * Positions the clean call claim is conditioned on getting no argument. The
+   * gate has to hold the claim to its own scope: an entry saying `new Map()`
+   * is clean says nothing about `new Map(iterable)`, and probing the second
+   * would refute a sentence nobody wrote.
+   */
+  readonly absent: ReadonlySet<number>;
 }
 
 export interface GateReport {
@@ -35,6 +43,22 @@ export interface GateReport {
   readonly unrefuted: readonly ProbeResult[];
 }
 
+/**
+ * The `param<N>=nullish` conditions of an entry, as positions. Absence of the
+ * whole field means maximally conditioned, which conditions nothing on being
+ * absent — every callable parameter is conditioned on being *entered*.
+ */
+export function absentPositions(
+  conditions: readonly string[] | undefined,
+): ReadonlySet<number> {
+  const positions = new Set<number>();
+  for (const condition of conditions ?? []) {
+    const parsed = parseConditionPath(condition);
+    if (parsed?.requires === "nullish") positions.add(parsed.paramIndex);
+  }
+  return positions;
+}
+
 export function claimsOf(data: BaselineData): ReadonlyMap<string, Claim> {
   const claims = new Map<string, Claim>();
   for (const lib of Object.values(data.libs)) {
@@ -46,6 +70,7 @@ export function claimsOf(data: BaselineData): ReadonlyMap<string, Claim> {
           accessor !== undefined &&
           accessor !== false &&
           accessor.get === "non-throwing",
+        absent: absentPositions(entry.conditions),
       };
       const existing = claims.get(key);
       claims.set(
@@ -55,6 +80,12 @@ export function claimsOf(data: BaselineData): ReadonlyMap<string, Claim> {
           : {
               cleanCall: existing.cleanCall || claim.cleanCall,
               cleanGet: existing.cleanGet || claim.cleanGet,
+              // One member, several lib versions of its entry. The gate drives
+              // what every one of them claims, so a position only one of them
+              // conditions is still driven with a value for the others.
+              absent: new Set(
+                [...claim.absent].filter((at) => existing.absent.has(at)),
+              ),
             },
       );
     }
@@ -85,7 +116,7 @@ export function runFuzzGate(
     // parameter list. Exempting those would let a claim ship that the gate
     // never looked at, which is the one thing unprobed-ships-floored exists to
     // prevent.
-    if (claim.cleanCall) record(fuzzer.probeCall(member));
+    if (claim.cleanCall) record(fuzzer.probeCall(member, claim.absent));
     if (claim.cleanGet) record(fuzzer.probeGet(member));
   }
 

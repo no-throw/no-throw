@@ -103,6 +103,17 @@ export type UndischargedReason =
   | "beyond-depth";
 
 /**
+ * Why a position a condition asks to be empty is not. Its own union rather
+ * than more `UndischargedReason`s: nothing here is a fact about an argument's
+ * *color*, because the claim was that no argument reaches the position at all.
+ */
+export type AbsenceReason =
+  /** Something is written at the position, and it is not `undefined` or `null`. */
+  | "argument-passed"
+  /** A spread reaches it, so whether anything arrives is a runtime question. */
+  | "unresolvable";
+
+/**
  * Why a promise can reject. Reject-ness rides our color and nothing else — a
  * rejecting and a non-rejecting `async` function have the identical type — so
  * everything a callee can be carries over, plus the shapes only a promise in

@@ -71,8 +71,16 @@ export class HostileFuzzer {
     this.#arbitrary = new Arbitrary(lib);
   }
 
-  /** Drive a member with hostile receivers and conformant arguments. */
-  probeCall(member: LibMember): ProbeResult {
+  /**
+   * Drive a member with hostile receivers and conformant arguments, inside the
+   * scope `absent` gives the claim. Such a position is still driven — with the
+   * one value the condition admits — rather than skipped, because
+   * `new Map(undefined)` is exactly the call the entry does cover.
+   */
+  probeCall(
+    member: LibMember,
+    absent: ReadonlySet<number> = new Set(),
+  ): ProbeResult {
     const invocation = this.#invocationFor(member);
     if ("unreachable" in invocation) {
       return skip(member.key, "call", invocation.unreachable);
@@ -81,6 +89,10 @@ export class HostileFuzzer {
     const pools: (readonly unknown[])[] = [];
     let restFrom: number | undefined;
     for (const [index, parameter] of (member.params ?? []).entries()) {
+      if (absent.has(index)) {
+        pools.push([undefined]);
+        continue;
+      }
       const values = this.#valuesForParameter(parameter);
       if (values === undefined || values.length === 0) {
         return skip(

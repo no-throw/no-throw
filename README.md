@@ -960,14 +960,14 @@ Three things are worth knowing before you try it. `Array.prototype.map`,
 and `Set` on a frozen array are reachable without lying to the type system and
 [the dial sign-off](docs/baseline-dials.md) rules those a hazard; the
 `forEach`/`every`/`some`/`find` family is where the **conditional entries** are.
-`new Map()` and `new Set()` ship throwing while `new Error(msg)` is green.
-Every hazard those two have is about the iterable you pass — driving its
-iterator, and reading `set`/`add` back off the object to add entries with — and
-ECMA-262 returns before all of it when the argument is absent. An entry is a
-fact about the function and not about the arity you called it with, so passing
-nothing cannot buy a color the function does not have. And writing through an
-unnarrowable key — `xs[i] = v` — floors, because the join reaches every accessor
-the receiver has.
+`new Map()` and `new Set()` are green and `new Map(entries)` is not, which is
+one entry rather than two: every hazard those constructors have is about the
+iterable you pass — driving its iterator, and reading `set`/`add` back off the
+object to add entries with — and ECMA-262 returns before all of it when the
+argument is absent. The entry states that as a **condition on passing nothing**,
+discharged at the call site like any other. And writing through an unnarrowable
+key — `xs[i] = v` — floors, because the join reaches every accessor the receiver
+has.
 
 ## Packages
 

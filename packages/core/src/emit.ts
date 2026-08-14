@@ -341,6 +341,10 @@ function entryFor(
     conditions: conditions
       .map(({ path }) =>
         formatConditionPath({
+          // A body's conditions are all paths it enters: `nullish` is a claim
+          // about a body nobody can read, which is why only a carrier states
+          // one and emit never writes one.
+          requires: "entered",
           paramIndex: path.paramIndex,
           segments: path.members.map(
             (name) => ({ kind: "member", name }) as const,
@@ -556,6 +560,8 @@ const ESCAPES: Record<BodyEscape["kind"], string> = {
     "an argument that does not discharge the callee's condition",
   "argument-floored":
     "an argument that does not discharge the callee's condition",
+  "argument-present":
+    "an argument at a position the callee is only clean without",
   consumption: "consuming an iterator that can throw",
   "iterator-throw": "`.throw()` on an iterator",
   "returned-iterator": "an iterator handed out that can throw when consumed",
