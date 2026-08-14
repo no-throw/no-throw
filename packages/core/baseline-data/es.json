@@ -3077,7 +3077,8 @@
     },
     "es2022.object": {
       "ObjectConstructor#hasOwn": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Object.hasOwn",
         "runtime": "Object.hasOwn"
@@ -3761,7 +3762,8 @@
         "runtime": "Object.prototype.valueOf"
       },
       "Object#hasOwnProperty": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Object.prototype.hasOwnProperty",
         "runtime": "Object.prototype.hasOwnProperty"
@@ -3774,7 +3776,8 @@
         "runtime": "Object.prototype.isPrototypeOf"
       },
       "Object#propertyIsEnumerable": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Object.prototype.propertyIsEnumerable",
         "runtime": "Object.prototype.propertyIsEnumerable"

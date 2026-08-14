@@ -42,8 +42,12 @@ The pipeline:
 3. **Classification** — hazards key on the **shape of the throw condition**,
    never on the root operation's name. That is a soundness requirement: an
    op-name enum fails silently in the unsafe direction when a name is misfiled.
-   The chain is still read where one step covers hundreds of members: an
-   internal method or `ValidateNonRevokedProxy` means Proxy behavior.
+   The chain is still read where one step decides what a whole family of
+   members needs of its arguments: an internal method or
+   `ValidateNonRevokedProxy` means Proxy behavior, and `ToPropertyKey` means
+   any primitive will do — its coercion causes are lifted out of `ToPrimitive`
+   and carry *that* name, so a root-keyed reading asks a `PropertyKey` to be
+   neither Symbol nor BigInt and refuses `o[sym]`.
 4. **Discharge against a live `ts.Program`** — the domains are computed from
    `ts.Type`s, which is why generation lives inside the engine rather than in a
    standalone script.

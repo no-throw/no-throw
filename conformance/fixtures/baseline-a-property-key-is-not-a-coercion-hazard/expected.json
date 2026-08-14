@@ -1,0 +1,4 @@
+{
+  "description": "A property key is any primitive, so asking whether an object has one costs nothing: `Object.hasOwn`, `hasOwnProperty` and `propertyIsEnumerable` are green. `Object.keys` is the control they were reported against — past their arguments, all four reach only a proxy trap, which is trust base.",
+  "diagnostics": []
+}

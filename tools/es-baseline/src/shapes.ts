@@ -131,9 +131,6 @@ const RULES: readonly ShapeRule[] = [
     on: "root",
     test: /^(Set|CreateDataPropertyOrThrow|DefinePropertyOrThrow|DeletePropertyOrThrow|SetIntegrityLevel|CreateMethodProperty|ArrayCreate|FlattenIntoArray|ArraySetLength|AddValueToKeyedGroup)$/,
   },
-  // A property key may be *any* primitive — `o[sym]` is not a coercion hazard —
-  // so this one discharges wider than the numeric and string coercions do.
-  { id: "propertyKey", on: "root", test: /^ToPropertyKey$/, domain: "primitive" },
   {
     id: "coerce",
     on: "root",
@@ -178,12 +175,42 @@ export interface Shape {
  */
 const PROXY_DISPATCH = /^(\[\[\w+\]\]|ValidateNonRevokedProxy)$/;
 
+/**
+ * Which coercion a coercion cause belongs to, which the cause itself cannot
+ * say: `ToPropertyKey`'s only abrupt step is `? ToPrimitive(arg, string)`, so
+ * its causes are lifted out of `ToPrimitive` carrying *that* name, and the
+ * coercion rule then asks a `PropertyKey` to be neither Symbol nor BigInt —
+ * refusing exactly what `Object.hasOwn(o, key)` accepts.
+ *
+ * A property key may be *any* primitive: `ToPrimitive` hands a primitive back
+ * untouched, a Symbol returns at step 2, and the `ToString` that finishes the
+ * algorithm is marked `!`. So both causes `ToPrimitive` has — the exotic
+ * `@@toPrimitive` and the ordinary `valueOf`/`toString` pair — sit under its
+ * `If input is an Object` guard, and a declared primitive is not an Object.
+ *
+ * Read over the shape rather than ahead of them, because it is a statement
+ * about a *coercion* and has nothing to say about the other shapes a key's
+ * chain can reach: a trap stays trap behavior, and a call into user code stays
+ * the dials' question.
+ */
+const PROPERTY_KEY_COERCION = "ToPropertyKey";
+
 export function shapeOf(hazard: Hazard): Shape {
   const { rootOp, condition } = hazard;
+  const chain = [...hazard.via, rootOp];
 
-  if ([...hazard.via, rootOp].some((op) => PROXY_DISPATCH.test(op))) {
+  if (chain.some((op) => PROXY_DISPATCH.test(op))) {
     return { id: "proxy", domain: undefined, rootOp, condition };
   }
+
+  const shape = ruleFor(hazard);
+  return shape.id === "coerce" && chain.includes(PROPERTY_KEY_COERCION)
+    ? { ...shape, id: "propertyKey", domain: "primitive" }
+    : shape;
+}
+
+function ruleFor(hazard: Hazard): Shape {
+  const { rootOp, condition } = hazard;
 
   for (const rule of RULES) {
     const subject = rule.on === "root" ? rootOp : condition;
