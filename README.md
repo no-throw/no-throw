@@ -60,8 +60,8 @@ fourth is for people who publish.
 pnpm add -D @no-throw/eslint-plugin
 ```
 
-That will not resolve yet — [nothing is published](#status). Everything below is
-what the suite runs against today.
+That resolves: `0.1.0` is [on npm](#status). Everything below is what the suite
+runs against today.
 
 The rules are type-aware, so typescript-eslint is already a prerequisite: they
 need its parser and a project. The preset takes typescript-eslint's **plugin
@@ -928,7 +928,9 @@ can decide — what the function returns now that it does not throw.
 
 ## Status
 
-This is early, and **nothing is published to npm yet**. What works today: the
+This is early, and **`0.1.0` is the first release** — `@no-throw/core`,
+`@no-throw/eslint-plugin` and `@no-throw/cli`, on npm at the same version, as
+they always will be. What works today: the
 mark and its binding rules, the body walk, the `try`/`catch` bridge, the
 call-shaped escape sites — a call, `new C()`, `super()`, a tagged template and
 a parameter default — **hidden transfers** — accessors, dynamic keys, spread
