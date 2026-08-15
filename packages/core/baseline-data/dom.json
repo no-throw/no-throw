@@ -274,7 +274,6 @@
     "Credential#id",
     "CryptoKey#extractable",
     "CryptoKey#type",
-    "CryptoKey#usages",
     "CustomEvent.new()",
     "DOMException.new()",
     "DOMMatrix#a",
@@ -658,12 +657,10 @@
     "NavigationActivation#entry",
     "NavigationActivation#from",
     "NavigationActivation#navigationType",
-    "NavigationHistoryEntry#ondispose",
     "NavigatorLogin#setStatus",
     "Notification#badge",
     "Notification#body",
     "Notification#close",
-    "Notification#data",
     "Notification#dir",
     "Notification#icon",
     "Notification#lang",
@@ -1199,8 +1196,7 @@
     "confirm",
     "matchMedia",
     "prompt",
-    "reportError",
-    "structuredClone"
+    "reportError"
   ],
   "libs": {
     "dom": {
@@ -11091,7 +11087,7 @@
       },
       "DOMException#code": {
         "accessor": {
-          "get": "non-throwing",
+          "get": "throwing",
           "set": "throwing"
         },
         "spec": "webidl#dom-domexception-code",
@@ -31305,6 +31301,11 @@
       "StreamPipeOptions#signal": {
         "accessor": false
       },
+      "structuredClone": {
+        "color": "throwing",
+        "spec": "html#dom-structuredclone",
+        "runtime": "structuredClone"
+      },
       "StructuredSerializeOptions#transfer": {
         "accessor": false
       },
@@ -43182,7 +43183,7 @@
       },
       "Window#location": {
         "accessor": {
-          "get": "non-throwing",
+          "get": "throwing",
           "set": "throwing"
         },
         "spec": "html#dom-location",
