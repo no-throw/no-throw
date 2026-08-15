@@ -25,7 +25,7 @@ import { loadIdlCorpus } from "./idl/corpus.js";
 import { joinToIdl, type Structure } from "./join.js";
 import { attachProse } from "./prose.js";
 import { REFUTED_KEYS } from "./refutations.js";
-import { buildDfnGraph } from "./specs/dfns.js";
+import { buildDfnGraph, type DfnGraph } from "./specs/dfns.js";
 import { buildWorklist, type Worklist } from "./worklist.js";
 
 const OUTPUT = new URL(
@@ -67,6 +67,12 @@ export interface GenerationReport {
     readonly geckoThrows: number;
     readonly unprobed: number;
     readonly throwBearingExtAttrs: number;
+    /**
+     * Passed through from {@link DfnGraph.stats}, and printed beside the
+     * extended-attribute count: the other number kept for what its *absence*
+     * would mean rather than for its value.
+     */
+    readonly memberDefinitionsByForm: DfnGraph["stats"]["memberDefinitionsByForm"];
   };
 }
 
@@ -210,6 +216,7 @@ export async function generateBaseline(): Promise<GenerationReport> {
       gecko.size,
       data.unprobed.length,
       corpus.stats.throwBearingExtAttrs.length,
+      graph.stats.memberDefinitionsByForm,
     ),
   };
 }
@@ -373,6 +380,7 @@ function summarize(
   geckoThrows: number,
   unprobed: number,
   throwBearingExtAttrs: number,
+  memberDefinitionsByForm: DfnGraph["stats"]["memberDefinitionsByForm"],
 ): GenerationReport["summary"] {
   const entries = [...byMember.values()];
   const facts = [...accessors.values()].map((record) => record.fact);
@@ -407,6 +415,7 @@ function summarize(
     geckoThrows,
     unprobed,
     throwBearingExtAttrs,
+    memberDefinitionsByForm,
   };
 }
 
