@@ -155,10 +155,7 @@ function positionAt(
  * more of itself than the general one it also happens to satisfy.
  */
 const catalog: readonly { id: string; pattern: RegExp; literal: number }[] =
-  Object.entries({
-    ...noEscapingThrow.meta.messages,
-    ...validMark.meta.messages,
-  }).map(([id, template]) => ({
+  Object.entries(mergedCatalog()).map(([id, template]) => ({
     id,
     pattern: new RegExp(
       `^${template
@@ -167,6 +164,18 @@ const catalog: readonly { id: string; pattern: RegExp; literal: number }[] =
     ),
     literal: template.replace(/\{\{\w+\}\}/g, "").length,
   }));
+
+/** One id in both rules would let a spread drop a template unnoticed. */
+function mergedCatalog(): Record<string, string> {
+  const escape = noEscapingThrow.meta.messages;
+  const mark = validMark.meta.messages;
+  for (const id of Object.keys(mark)) {
+    if (id in escape) {
+      throw new Error(`both rules define the messageId \`${id}\``);
+    }
+  }
+  return { ...escape, ...mark };
+}
 
 function messageIdOf(message: string): string {
   const matches = catalog

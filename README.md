@@ -159,10 +159,11 @@ Everything below this rung reads the same for either host.
 
 Three differences, all host-shaped. The rules are type-aware and oxlint hands
 a JS plugin no type information, so the plugin builds your program itself: the
-nearest `tsconfig.json` above each file, one program per config. A file no
-project includes — what the ESLint host surfaces as a `projectService` parse
-error — is here a diagnostic naming the `tsconfig.json` to fix: the same
-remedy, on the only channel a plugin has. And the preset's third rule is
+`tsconfig.json` above each file that includes it — the nearest first, then the
+ones above, walking past a solution-style config that holds no files — one
+program per config. A file no project includes — what the ESLint host surfaces
+as a `projectService` parse error — is here a diagnostic naming the
+`tsconfig.json` to fix: the same remedy, on the only channel a plugin has. And the preset's third rule is
 covered by oxlint itself: its type-aware mode carries
 `typescript/no-floating-promises`, so turn that on with `--type-aware` for the
 float hygiene the ESLint preset wires up.

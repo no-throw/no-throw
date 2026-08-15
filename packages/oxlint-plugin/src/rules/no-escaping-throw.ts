@@ -1,11 +1,11 @@
 import {
   escapeMessages,
   escapeReports,
+  locationOf,
   type EscapeOffer,
 } from "@no-throw/core";
 import type ts from "typescript";
 import type { HostContext, HostRule, HostSuggestion } from "../host.js";
-import { locOf } from "../loc.js";
 import { projectFor } from "../project.js";
 import { isTypeScriptFile } from "../scope.js";
 
@@ -108,7 +108,7 @@ function report(
   for (const found of escapeReports(sourceFile, program, context.cwd)) {
     const suggest = suggestionFor(found.offer);
     context.report({
-      loc: locOf(sourceFile, found.anchor),
+      loc: locationOf(sourceFile, found.anchor),
       messageId: found.messageId,
       ...(found.data === undefined ? {} : { data: found.data }),
       ...(suggest === undefined ? {} : { suggest }),

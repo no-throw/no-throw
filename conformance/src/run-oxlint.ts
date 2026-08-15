@@ -180,8 +180,10 @@ async function fixerProbes(): Promise<void> {
 
   // A probe with nothing to probe would pass forever and hold nothing.
   if (candidates.length === 0) {
-    console.log("\nno fixture pins exactly one offer, so the fixer probes ran nothing");
-    process.exitCode = 1;
+    console.log(
+      "\nFAIL  fixer probes — no fixture pins exactly one offer, so they ran nothing",
+    );
+    failures.push("fixer probes ran nothing");
     return;
   }
 
@@ -255,6 +257,11 @@ async function hostingProbes(): Promise<void> {
     writeFileSync(join(scoped, "src", "included.ts"), "export const n = 1;\n");
     writeFileSync(join(scoped, "stray.ts"), "export const s = 1;\n");
 
+    const broken = join(workspace, "broken");
+    mkdirSync(join(broken, "src"), { recursive: true });
+    writeFileSync(join(broken, "tsconfig.json"), "{ not a project\n");
+    writeFileSync(join(broken, "src", "index.ts"), "export const n = 1;\n");
+
     const probes: readonly {
       readonly name: string;
       readonly directory: string;
@@ -272,6 +279,12 @@ async function hostingProbes(): Promise<void> {
         directory: scoped,
         messageId: "outsideProject",
         file: "stray.ts",
+      },
+      {
+        name: "a file whose project cannot be read",
+        directory: broken,
+        messageId: "brokenProject",
+        file: "src/index.ts",
       },
     ];
 

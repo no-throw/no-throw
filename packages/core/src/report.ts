@@ -1054,6 +1054,41 @@ function entryText(entry: EntrySite, cwd: string): string {
   return `${path}:${entry.line}`;
 }
 
+/** One-based line, zero-based column — the convention both hosts report in. */
+export interface ReportPosition {
+  readonly line: number;
+  readonly column: number;
+}
+
+export interface ReportLocation {
+  readonly start: ReportPosition;
+  readonly end: ReportPosition;
+}
+
+/**
+ * A span as a host reports it. The engine anchors findings to source offsets,
+ * including inside JSDoc, which no host's own tree carries — so the
+ * translation lives beside the reports rather than once per adapter.
+ */
+export function locationOf(
+  sourceFile: ts.SourceFile,
+  span: Span,
+): ReportLocation {
+  return {
+    start: positionOf(sourceFile, span.start),
+    end: positionOf(sourceFile, span.end),
+  };
+}
+
+/** Hosts count lines from one and columns from zero; TypeScript, both from zero. */
+function positionOf(
+  sourceFile: ts.SourceFile,
+  offset: number,
+): ReportPosition {
+  const { line, character } = sourceFile.getLineAndCharacterOfPosition(offset);
+  return { line: line + 1, column: character };
+}
+
 /** The offered edit and the label an editor puts on it. */
 export interface EscapeOffer {
   readonly messageId: EscapeOfferId;

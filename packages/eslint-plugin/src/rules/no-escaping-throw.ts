@@ -1,6 +1,7 @@
 import {
   escapeMessages,
   escapeReports,
+  locationOf,
   type EscapeMessageId,
   type EscapeOffer,
 } from "@no-throw/core";
@@ -10,7 +11,6 @@ import {
   type TSESTree,
 } from "@typescript-eslint/utils";
 import type ts from "typescript";
-import { locOf } from "../loc.js";
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/no-throw/no-throw#${name}`,
@@ -65,7 +65,7 @@ export const noEscapingThrow = createRule<[], EscapeMessageId>({
         )) {
           const suggest = suggestionFor(report.offer);
           context.report({
-            loc: locOf(sourceFile, report.anchor),
+            loc: locationOf(sourceFile, report.anchor),
             messageId: report.messageId,
             ...(report.data === undefined ? {} : { data: report.data }),
             ...(suggest === undefined ? {} : { suggest }),

@@ -18,9 +18,10 @@ adapter](../eslint-plugin), under the same names, saying the same words:
 ```
 
 The rules are type-aware and oxlint hands a JS plugin no type information, so
-the plugin reads your program itself: the nearest `tsconfig.json` above each
-file, one program per config. A file no project includes is a diagnostic
-naming the config to fix, never a silent pass.
+the plugin reads your program itself: the `tsconfig.json` above each file that
+includes it — the nearest first, then the ones above — one program per config.
+A file no project includes is a diagnostic naming the config to fix, never a
+silent pass.
 
 Two host-specific notes. The preset's third rule has an oxlint counterpart —
 enable `typescript/no-floating-promises` with `--type-aware` to cover the same

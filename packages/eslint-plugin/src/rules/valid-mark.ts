@@ -1,11 +1,11 @@
 import {
+  locationOf,
   markMessages,
   markReports,
   type MarkMessageId,
 } from "@no-throw/core";
 import { ESLintUtils, type TSESTree } from "@typescript-eslint/utils";
 import type ts from "typescript";
-import { locOf } from "../loc.js";
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/no-throw/no-throw#${name}`,
@@ -33,7 +33,7 @@ export const validMark = createRule<[], MarkMessageId>({
 
         for (const report of markReports(sourceFile)) {
           context.report({
-            loc: locOf(sourceFile, report.anchor),
+            loc: locationOf(sourceFile, report.anchor),
             messageId: report.messageId,
             data: report.data,
           });

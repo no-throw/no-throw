@@ -1,7 +1,6 @@
-import { markMessages, markReports } from "@no-throw/core";
+import { locationOf, markMessages, markReports } from "@no-throw/core";
 import ts from "typescript";
 import type { HostContext, HostRule } from "../host.js";
-import { locOf } from "../loc.js";
 import { isTypeScriptFile } from "../scope.js";
 
 export const validMark: HostRule = {
@@ -29,7 +28,7 @@ export const validMark: HostRule = {
 
         for (const found of markReports(sourceFile)) {
           context.report({
-            loc: locOf(sourceFile, found.anchor),
+            loc: locationOf(sourceFile, found.anchor),
             messageId: found.messageId,
             data: found.data,
           });

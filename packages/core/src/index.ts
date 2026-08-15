@@ -49,6 +49,7 @@ export type {
 export {
   escapeMessages,
   escapeReports,
+  locationOf,
   markMessages,
   markReports,
 } from "./report.js";
@@ -60,6 +61,8 @@ export type {
   EscapeReport,
   MarkMessageId,
   MarkReport,
+  ReportLocation,
+  ReportPosition,
 } from "./report.js";
 export { findMarks } from "./marks.js";
 export type { MarkProblem, MarkProblemKind, Marks, Span } from "./marks.js";
