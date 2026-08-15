@@ -25,7 +25,7 @@ import { loadIdlCorpus } from "./idl/corpus.js";
 import { joinToIdl, type Structure } from "./join.js";
 import { attachProse } from "./prose.js";
 import { REFUTED_KEYS } from "./refutations.js";
-import { buildDfnGraph } from "./specs/dfns.js";
+import { buildDfnGraph, type MarkupForm } from "./specs/dfns.js";
 import { buildWorklist, type Worklist } from "./worklist.js";
 
 const OUTPUT = new URL(
@@ -67,6 +67,13 @@ export interface GenerationReport {
     readonly geckoThrows: number;
     readonly unprobed: number;
     readonly throwBearingExtAttrs: number;
+    /**
+     * Member definitions by the markup Bikeshed wrote them in. A form the
+     * extractor stops reading costs precision and nothing else — the members
+     * floor — so it leaves no trace anywhere but here (#130).
+     */
+    readonly memberDfnsInDfnTag: number;
+    readonly memberDfnsInHeading: number;
   };
 }
 
@@ -210,6 +217,7 @@ export async function generateBaseline(): Promise<GenerationReport> {
       gecko.size,
       data.unprobed.length,
       corpus.stats.throwBearingExtAttrs.length,
+      graph.stats.memberDefinitionsByForm,
     ),
   };
 }
@@ -373,6 +381,7 @@ function summarize(
   geckoThrows: number,
   unprobed: number,
   throwBearingExtAttrs: number,
+  memberDfnsByForm: Readonly<Record<MarkupForm, number>>,
 ): GenerationReport["summary"] {
   const entries = [...byMember.values()];
   const facts = [...accessors.values()].map((record) => record.fact);
@@ -407,6 +416,8 @@ function summarize(
     geckoThrows,
     unprobed,
     throwBearingExtAttrs,
+    memberDfnsInDfnTag: memberDfnsByForm.dfn,
+    memberDfnsInHeading: memberDfnsByForm.heading,
   };
 }
 
