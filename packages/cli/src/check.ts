@@ -42,8 +42,8 @@ export function runCheck(options: CheckOptions): CommandResult {
       (entry) => reachesNothing(entry) && entry.verdict !== "unusable",
     ).length,
     unusable: entries.filter((entry) => entry.verdict === "unusable").length,
-    absentPackages: inert.filter((entry) => entry.kind === "package").length,
-    absentModules: inert.filter((entry) => entry.kind === "module").length,
+    packages: inert.filter((entry) => entry.kind === "package").length,
+    modules: inert.filter((entry) => entry.kind === "module").length,
   };
 
   const lines: string[] = [];
@@ -151,20 +151,37 @@ function whyItReachesNothing(
       ];
     case "no-subpath": {
       const nothingAt = `\`${entry.package}\` publishes nothing at ${JSON.stringify(entry.subpath)}`;
+      if (entry.subpaths.length > 0) {
+        return [
+          `${nothingAt}.`,
+          `Its subpaths are: ${entry.subpaths.map((each) => JSON.stringify(each)).join(", ")}`,
+        ];
+      }
       // A package that publishes at no subpath at all has no list of subpaths
       // to offer instead, and a label with nothing after it reads as a bug in
-      // the report rather than as the fact it is.
-      return entry.subpaths.length === 0
-        ? [
-            `${nothingAt}, and nothing at any other subpath.`,
-            "The walk from its entry points reached no name a carrier " +
-              "could key, so no entry under this package reaches anything.",
-          ]
-        : [
-            `${nothingAt}.`,
-            `Its subpaths are: ${entry.subpaths.map((each) => JSON.stringify(each)).join(", ")}`,
-          ];
+      // the report rather than as the fact it is. Where it declares blocks, it
+      // publishes nothing *because* of them, so that is the answer rather than
+      // a second dead end.
+      return [
+        `${nothingAt}, and nothing at any other subpath.`,
+        "The walk from its entry points reached no name a carrier " +
+          "could key, so no entry under this package reaches anything.",
+        ...(entry.blocks.length === 0
+          ? []
+          : [
+              "Its types are ambient `declare module` blocks, which no entry " +
+                `point publishes: key those under \`modules\`. It declares: ${names(entry.blocks)}`,
+            ]),
+      ];
     }
+    case "keyed-as-a-package":
+      return [
+        `nothing of \`${entry.package}\` is in this project, and ` +
+          `${JSON.stringify(entry.package)} is an ambient \`declare module\` block ` +
+          "this project does declare — so this is the right name under the " +
+          "wrong table.",
+        `Key it under \`modules\` → ${JSON.stringify(entry.package)} instead.`,
+      ];
     case "no-key": {
       if (entry.kind === "module") {
         const publishes =
@@ -226,6 +243,13 @@ function nearest(published: readonly string[], missed: string): string {
 
 const SHOWN = 12;
 
+/** A plain list, cut off where a reader stops reading. */
+function names(all: readonly string[]): string {
+  const shown = all.slice(0, SHOWN).map((each) => JSON.stringify(each));
+  const rest = all.length - shown.length;
+  return rest > 0 ? `${shown.join(", ")}, and ${rest} more` : shown.join(", ");
+}
+
 /** The member a namepath ends in: `Class#member`, `Class.static`, `name`. */
 function lastSegment(symbolPath: string): string {
   return symbolPath.split(/[#.]/u).at(-1) ?? symbolPath;
@@ -241,13 +265,13 @@ interface Tally {
    * different reasons, and one clause covering both would tell a reader with
    * only module entries that they named a package they never wrote.
    */
-  readonly absentPackages: number;
-  readonly absentModules: number;
+  readonly packages: number;
+  readonly modules: number;
 }
 
 function summary(tally: Tally, fatal: boolean): string {
-  const { checked, dead, unusable, absentPackages, absentModules } = tally;
-  if (checked === 0) {
+  const { dead, unusable, packages, modules } = tally;
+  if (tally.checked === 0) {
     return fatal
       ? "Nothing was checked: a carrier above is not being honored."
       : "No carrier entry to check.";
@@ -258,21 +282,22 @@ function summary(tally: Tally, fatal: boolean): string {
     ...(unusable === 0
       ? []
       : [`${count(unusable, "does", "do")} not validate`]),
-    ...(absentPackages === 0
+    ...(packages === 0
       ? []
       : [
-          `${count(absentPackages, "names", "name")} a package this project does not hold`,
+          `${count(packages, "names", "name")} a package this project does not hold`,
         ]),
-    ...(absentModules === 0
+    ...(modules === 0
       ? []
       : [
-          `${count(absentModules, "names", "name")} an ambient module nothing here declares`,
+          `${count(modules, "names", "name")} an ambient module nothing here declares`,
         ]),
   ];
 
+  const checked = count(tally.checked, "entry", "entries");
   return clauses.length === 0
-    ? `${count(checked, "entry", "entries")} checked, all reaching a published symbol.`
-    : `${count(checked, "entry", "entries")} checked. ${clauses.join("; ")}.`;
+    ? `${checked} checked, all reaching a published symbol.`
+    : `${checked} checked. ${clauses.join("; ")}.`;
 }
 
 function count(n: number, one: string, many: string): string {

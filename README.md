@@ -269,14 +269,21 @@ claim that is not true:
 Nothing was written: 1 mark cannot be published as it stands.
 ```
 
-A [`modules` table](#ambient-modules) is the one thing emit refuses that is not a mark. Emit writes only what it verified against a body, and a
-`declare module` block has none, so no run could produce one — and rewriting the
-file would silently delete it. Both `emit` and `emit --check` stop instead and
-say where the table belongs: in a project's `nothrow.overrides.json`, or in an
-overlay, which are the carriers read for one.
+A [`modules` table](#ambient-modules) is the one thing emit refuses that is not
+a mark. Emit writes only what it verified against a body, and a `declare module`
+block has none, so no run could produce one — and rewriting the file would
+silently delete it. Both `emit` and `emit --check` stop instead and say where
+the table belongs: in a project's `nothrow.overrides.json`, or in an overlay,
+which are the carriers read for one.
 
-That refusal is what makes a published manifest true by construction rather than
-by discipline. Wire the check into `prepublishOnly` and a stale manifest can
+That refusal runs in the package that publishes, so it never reaches a consumer
+who installed the result. `nothrow check` is the other half: a dependency whose
+manifest holds a table nothing reads is named there too, and does not fail the
+run — it is somebody else's package, and failing over a file you cannot edit
+would make their mistake yours.
+
+The refusal on a lying mark is what makes a published manifest true by
+construction rather than by discipline. Wire the check into `prepublishOnly` and a stale manifest can
 never ship:
 
 ```json
@@ -494,9 +501,10 @@ one, keyed by specifier and then by the same namepath:
 The specifier is the one the block is **written under**, which is not always the
 one you imported — a carrier is matched by where a declaration ships, here as
 everywhere. `node:path` re-exports what `declare module "path"` declares, so
-`path` is the key. `process.stdout.write` is a third step removed again: written
-in `declare module "stream"`, reached through the type of a global that
-`declare module "process"` declares. So the floor spells the key out rather than
+`path` is the key. `process.stdout.write` is further off still: the `write` it
+resolves to is `Socket#write`, written in `declare module "net"` and reached
+through a global that `declare module "process"` declares. Nothing you can see
+at that call site is its key, so the floor spells the key out rather than
 leaving you to work it out:
 
 ```text
@@ -587,19 +595,25 @@ than wrong**, since a monorepo where one workspace has the dependency and anothe
 does not would otherwise fail over a file that is right.
 
 A [`modules`](#ambient-modules) entry is held the same way, against the block a
-declaration is *written in* rather than one that re-exports it — and the two
-package spellings a Node builtin invites are sorted out here, since neither
-reaches anything and neither says so at the call site:
+declaration is *written in* rather than one that re-exports it — and this is
+where the spellings a Node builtin invites get sorted out, with no row left as a
+dead end: the two package ones each say what to write instead, the block that
+only re-exports names the one to move to, and a specifier nothing here declares
+is inert rather than wrong:
 
 ```text
 nothrow.overrides.json
   node:path → "." → `join`
-    nothing of `node:path` is in this project, so there is no surface to hold
-    this against. Inert rather than wrong.
+    nothing of `node:path` is in this project, and "node:path" is an ambient
+    `declare module` block this project does declare — so this is the right
+    name under the wrong table.
+    Key it under `modules` → "node:path" instead.
   @types/node → "." → `join`
     `@types/node` publishes nothing at ".", and nothing at any other subpath.
     The walk from its entry points reached no name a carrier could key, so no
     entry under this package reaches anything.
+    Its types are ambient `declare module` blocks, which no entry point
+    publishes: key those under `modules`. It declares: "node:path", "path"
   modules → "path" → `basename`
     "path" declares no symbol at this key, so this entry colors nothing.
     What it declares: `join`, `resolve`

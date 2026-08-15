@@ -1,0 +1,14 @@
+{
+  "description": "The consumer's half of the rule that a package's own manifest carries no `modules` table. `nothrow emit` refuses to write over one, but emit runs in the package that publishes — by the time the file is installed here, saying so is the only thing left to do about it, and a carrier quietly having no effect is the silent no-op the rest of this design exists to rule out. Named, and not fatal: it is somebody else's package, and failing this run over a file the reader cannot edit would make a dependency's mistake theirs. The `exports` half of the same manifest still carries, which is why the run has nothing to refuse.",
+  "steps": [
+    {
+      "check": [],
+      "in": "project",
+      "expect": "ok",
+      "names": [
+        "flaky — node_modules/flaky/nothrow.json\n  it holds a `modules` table, and a package's own manifest is not read for one: `nothrow emit` writes only what it verified against a body, and an ambient `declare module` block has none. Nothing in that table is being honored — those colors carry from an `@no-throw/*` overlay, or from your own `nothrow.overrides.json`.",
+        "No carrier entry to check."
+      ]
+    }
+  ]
+}

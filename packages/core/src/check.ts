@@ -6,6 +6,7 @@ import {
   type AmbientSurface,
 } from "./carrier/ambient.js";
 import type { ColorTable } from "./carrier/document.js";
+import { manifestAt } from "./carrier/manifest.js";
 import { installedOverlaysFor } from "./carrier/overlays.js";
 import {
   OVERRIDES,
@@ -71,8 +72,23 @@ type CommonVerdict =
 
 type PackageVerdict =
   | CommonVerdict
-  /** The package publishes no such subpath; these are the ones it has. */
-  | { readonly verdict: "no-subpath"; readonly subpaths: readonly string[] }
+  /**
+   * The name is not a package this project holds, and it *is* a block this
+   * project declares — so it is the right name written under the wrong table.
+   * Told apart from `unresolved` because the two are opposites: one may become
+   * right when a dependency is installed, and this one never will.
+   */
+  | { readonly verdict: "keyed-as-a-package" }
+  /**
+   * The package publishes no such subpath; these are the ones it has, and
+   * these are the blocks it declares instead — which for a `@types` package is
+   * the whole of what it has, and the only thing a key could reach.
+   */
+  | {
+      readonly verdict: "no-subpath";
+      readonly subpaths: readonly string[];
+      readonly blocks: readonly string[];
+    }
   /**
    * The key resolves, and what it resolves to ships somewhere else. A rung
    * holds one table per package the *declaration* belongs to, so an entry
@@ -193,6 +209,15 @@ export function checkCarriers(
     }
   }
 
+  // The overlays above are added first on purpose: they are the packages a
+  // `modules` table is read from, they share the file name with the manifests
+  // below, and `seen` is what keeps one from being reported as the other.
+  for (const carrier of unreadModuleTables(packages)) {
+    if (seen.has(carrier.path)) continue;
+    seen.add(carrier.path);
+    carriers.push(carrier);
+  }
+
   return { carriers };
 }
 
@@ -262,19 +287,82 @@ function overridesCarrier(
         },
         entries: [],
       };
-    case "read":
-      return {
-        name,
-        path: state.path,
-        schema,
-        entries: [
-          ...[...state.tables.packages].flatMap(([owner, table]) =>
-            tableEntries(table, owner, packages, program),
-          ),
-          ...moduleEntries(state.tables.modules, program),
-        ],
-      };
+    case "read": {
+      const { packages: byPackage, modules } = state.tables;
+      const entries = [
+        ...[...byPackage].flatMap(([owner, table]) =>
+          tableEntries(table, owner, packages, program),
+        ),
+        ...moduleEntries(modules, program),
+      ];
+
+      // A file naming neither table is the one shape the schema cannot turn
+      // away: its grammar has no "one of these two", and requiring both would
+      // make a project that colors only ambient modules write an empty
+      // `packages` to say nothing with. So the report catches it, which is
+      // what a `packagez` comes to as well.
+      return byPackage.size === 0 && modules.length === 0
+        ? {
+            name,
+            path: state.path,
+            schema,
+            problem: {
+              message:
+                "it names neither `packages` nor `modules`, so it asserts " +
+                "nothing. Those are the two tables read; a key spelled any " +
+                "other way is not one of them.",
+              fatal: false,
+            },
+            entries,
+          }
+        : { name, path: state.path, schema, entries };
+    }
   }
+}
+
+/**
+ * The dependencies that wrote a `modules` table into their own manifest, where
+ * nothing reads one.
+ *
+ * A package's `nothrow.json` is `nothrow emit`'s output, and emit writes only
+ * marks it verified against a body — an ambient `declare module` block has none
+ * — so the shipped rung does not consult one and `nothrow emit` refuses to
+ * write over one. Neither of those reaches a *consumer*: emit runs in the
+ * package that publishes, and by the time the file is installed here the only
+ * thing left to do about it is say so. A carrier quietly having no effect is
+ * the silent no-op the rest of this design exists to rule out, and this is the
+ * one channel that can rule it out from this side.
+ *
+ * Not fatal: it is somebody else's package, and failing a consumer's run over
+ * a file they cannot edit would make a dependency's mistake theirs.
+ */
+function unreadModuleTables(
+  packages: ReadonlyMap<string, PackageHome>,
+): readonly CheckedCarrier[] {
+  const carriers: CheckedCarrier[] = [];
+
+  for (const [name, home] of packages) {
+    const state = manifestAt(home);
+    if (state.kind !== "valid" || state.modules === undefined) continue;
+
+    carriers.push({
+      name,
+      path: `${home.directory}/nothrow.json`,
+      schema: MANIFEST_SCHEMA_FILE,
+      problem: {
+        message:
+          "it holds a `modules` table, and a package's own manifest is not " +
+          "read for one: `nothrow emit` writes only what it verified against " +
+          "a body, and an ambient `declare module` block has none. Nothing " +
+          "in that table is being honored — those colors carry from an " +
+          "`@no-throw/*` overlay, or from your own `nothrow.overrides.json`.",
+        fatal: false,
+      },
+      entries: [],
+    });
+  }
+
+  return carriers;
 }
 
 function overlayCarriers(
@@ -309,9 +397,11 @@ function overlayCarriers(
     // An ambient module is nobody's export surface, so a `modules` table is not
     // about the overlay's target — an overlay that carries one and names no
     // package is coloring something, and reporting it as colorless would be
-    // wrong about the file in front of the reader.
+    // wrong about the file in front of the reader. Read off whether the table
+    // is *there* rather than off what it produced: an empty one is a table its
+    // author wrote, and telling them it is missing sends them to add it twice.
     if (state.target === undefined) {
-      return modules.length > 0
+      return state.modules !== undefined
         ? { name, path, schema, entries: modules }
         : {
             name,
@@ -448,11 +538,19 @@ function verdictFor(
   packages: ReadonlyMap<string, PackageHome>,
   program: ts.Program,
 ): CheckedEntry {
+  const ambient = ambientSurfaceOf(program);
   const home = packages.get(key.package);
-  // Nothing of this package is in the program, so there is no surface to hold
-  // the entry against. Inert rather than wrong: a project may carry colors for
-  // a dependency it has not imported yet.
-  if (home === undefined) return { ...key, verdict: "unresolved" };
+  if (home === undefined) {
+    // `packages: { "node:path": … }` is the guess this design invites and
+    // cannot honor, so it is answered rather than shrugged at: the name is a
+    // block, and blocks are keyed one table over.
+    return ambient.declares(key.package)
+      ? { ...key, verdict: "keyed-as-a-package" }
+      : // Nothing of this package is in the program, so there is no surface to
+        // hold the entry against. Inert rather than wrong: a project may carry
+        // colors for a dependency it has not imported yet.
+        { ...key, verdict: "unresolved" };
+  }
 
   const surface = exportSurfaceOf(home, program);
   const reached = surface.declarationsAt(key.subpath, key.symbolPath);
@@ -460,7 +558,15 @@ function verdictFor(
   if (first === undefined) {
     const published = surface.publishedAt(key.subpath);
     return published.length === 0
-      ? { ...key, verdict: "no-subpath", subpaths: surface.subpaths() }
+      ? {
+          ...key,
+          verdict: "no-subpath",
+          subpaths: surface.subpaths(),
+          // A `@types` package publishes nothing *because* its content is
+          // blocks, so what it declares is the answer to why it publishes
+          // nothing — and the only thing under it a key can reach.
+          blocks: ambient.blocksDeclaredIn(home.directory),
+        }
       : { ...key, verdict: "no-key", published };
   }
 

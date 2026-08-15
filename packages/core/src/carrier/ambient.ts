@@ -1,14 +1,3 @@
-import ts from "typescript";
-import { namepathsIn, typeHolderOf } from "./surface.js";
-
-/** Where an ambient `declare module` block's surface reaches a declaration. */
-export interface AmbientKey {
-  /** The specifier the block was written under: `node:path`, `stream`. */
-  readonly module: string;
-  /** The same JSDoc-namepath subset a package key's second half uses. */
-  readonly symbolPath: string;
-}
-
 /**
  * The address of everything a package's entry points cannot reach.
  *
@@ -24,6 +13,17 @@ export interface AmbientKey {
  * never off what re-exported it — and what a consumer may call it is read off
  * the block's own published surface, by the same walk an npm subpath's is.
  */
+import ts from "typescript";
+import { normalize } from "./packages.js";
+import { namepathsIn, typeHolderOf } from "./surface.js";
+
+/** Where an ambient `declare module` block's surface reaches a declaration. */
+export interface AmbientKey {
+  /** The specifier the block was written under: `node:path`, `stream`. */
+  readonly module: string;
+  /** The same JSDoc-namepath subset a package key's second half uses. */
+  readonly symbolPath: string;
+}
 
 /**
  * The specifier of the block a declaration is written in, whether or not the
@@ -73,10 +73,18 @@ export interface AmbientSurface {
   publishedIn(module: string): readonly string[];
   /** What a key reaches, which is what a rung would answer about. */
   declarationsIn(module: string, symbolPath: string): readonly ts.Declaration[];
+  /**
+   * The blocks a package's own files declare, sorted. What a report needs to
+   * say why a package publishes nothing: `@types/node` has no export surface
+   * because its content is blocks, and a reader told only that it publishes
+   * nothing learns what failed without learning what to write instead.
+   */
+  blocksDeclaredIn(directory: string): readonly string[];
 }
 
 const surfaces = new WeakMap<ts.Program, AmbientSurface>();
 
+/** Every block the program declares, answered once and held for its life. */
 export function ambientSurfaceOf(program: ts.Program): AmbientSurface {
   const known = surfaces.get(program);
   if (known !== undefined) return known;
@@ -97,13 +105,9 @@ function build(program: ts.Program): AmbientSurface {
 
     const symbol = blocks.get(module);
     const members = new Map<string, ts.Declaration[]>();
-    if (symbol !== undefined) {
-      for (const [declaration, symbolPath] of namepathsCached(symbol, checker)) {
-        members.set(symbolPath, [
-          ...(members.get(symbolPath) ?? []),
-          declaration,
-        ]);
-      }
+    const walked = symbol === undefined ? [] : namepathsCached(symbol, checker);
+    for (const [declaration, symbolPath] of walked) {
+      members.set(symbolPath, [...(members.get(symbolPath) ?? []), declaration]);
     }
     reached.set(module, members);
     return members;
@@ -115,6 +119,17 @@ function build(program: ts.Program): AmbientSurface {
       [...membersOf(module).keys()].sort((a, b) => a.localeCompare(b)),
     declarationsIn: (module, symbolPath) =>
       membersOf(module).get(symbolPath) ?? [],
+    blocksDeclaredIn: (directory) => {
+      const under = `${normalize(directory)}/`;
+      return [...blocks]
+        .filter(([, symbol]) =>
+          (symbol.declarations ?? []).some((declaration) =>
+            normalize(declaration.getSourceFile().fileName).startsWith(under),
+          ),
+        )
+        .map(([module]) => module)
+        .sort((a, b) => a.localeCompare(b));
+    },
   };
 }
 
@@ -151,9 +166,10 @@ function blockOf(declaration: ts.Node): AmbientBlock | undefined {
     node !== undefined;
     node = node.parent
   ) {
-    // A `declare global` block inside one is still inside it: what publishes
-    // `NodeJS.Process#exit` is the `declare module "process"` around the global
-    // block it is written in, and that is the block a key names.
+    // A `declare global` block inside one is still inside it, which is what
+    // gives a global an address at all: `process.exit` is written in the
+    // `global` block of `declare module "process"` and keyed `"process"` →
+    // `exit`, since that block is what publishes it.
     if (isAmbientBlock(node)) return node;
   }
   return undefined;

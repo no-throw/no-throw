@@ -64,10 +64,10 @@ export interface CarrierQuery {
    * publishes both addresses, and an entry under either was written about the
    * same member.
    *
-   * A function rather than a field, and memoized behind it, because answering
-   * it means walking a whole block's surface. A rung with no `modules` table
-   * has nothing to look up and does not ask; the walk is paid once per block
-   * either way, since the floor's message needs the key it produces.
+   * A function rather than a field, because answering it means walking a whole
+   * block's surface: a rung with no `modules` table has nothing to look one up
+   * in, and does not ask. The walk itself is held per block rather than per
+   * declaration, so a rung that does ask pays for it once.
    */
   moduleKey(): AmbientKey | undefined;
 }
@@ -119,22 +119,13 @@ export function createCarrier(
     if (known !== undefined) return known;
 
     const home = packageHomeOf(declaration.getSourceFile().fileName);
-
-    let ambient: AmbientKey | undefined;
-    let walked = false;
     const at: Located = {
       home,
       key:
         home === undefined
           ? undefined
           : exportSurfaceOf(home, program).keyOf(declaration),
-      moduleKey: () => {
-        if (!walked) {
-          walked = true;
-          ambient = ambientKeyOf(declaration, checker);
-        }
-        return ambient;
-      },
+      moduleKey: () => ambientKeyOf(declaration, checker),
     };
     located.set(declaration, at);
     return at;

@@ -84,10 +84,10 @@ export function surfaceOver(
       if (sourceFile === undefined) continue;
       for (const module of modulesIn(sourceFile, checker)) {
         for (const [declaration, symbolPath] of namepathsIn(module, checker)) {
-          // First path wins: a symbol two entry points both publish is one
-          // symbol with one color, and re-keying it would make the answer
-          // depend on order.
-          if (!keys.has(declaration)) keys.set(declaration, { subpath, symbolPath });
+          // First path wins across subpaths too, for the reason it wins within
+          // one: a symbol two entry points both publish is one symbol.
+          if (keys.has(declaration)) continue;
+          keys.set(declaration, { subpath, symbolPath });
         }
       }
     }

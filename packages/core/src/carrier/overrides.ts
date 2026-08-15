@@ -22,7 +22,7 @@ export const OVERRIDES = "nothrow.overrides.json";
 const PACKAGES: TablePath = ["packages", "*", "exports"];
 
 /** One table for every ambient module the file colors, at `modules`. */
-export const MODULES: TablePath = ["modules"];
+const MODULES: TablePath = ["modules"];
 
 /**
  * A carrier file the project wrote for itself and this release cannot honor.
@@ -174,16 +174,13 @@ function readOverrides(asking: PackageHome): OverridesState {
     return { kind: "refused", path, refusal: document.refusal };
   }
 
+  // A file holding neither table is still a file somebody wrote, and it is
+  // read as one: reporting it as absent would tell its author there is nothing
+  // there, which is exactly the reading a table spelled `packagez` needs the
+  // report *not* to give. The schema cannot say "one of these two" — its
+  // grammar has no such form — so the report is where that is caught.
   const packaged = document.value["packages"];
   const moduled = document.value["modules"];
-
-  // A file holding neither table asserts nothing, which is what an absent one
-  // does. An empty table is not that: it was written, so the file is read and
-  // reported as one that says nothing rather than as one that is not there.
-  if (!isRecord(packaged) && !isRecord(moduled)) {
-    return { kind: "absent", path };
-  }
-
   const packages = isRecord(packaged) ? Object.keys(packaged) : [];
   const modules = isRecord(moduled) ? Object.keys(moduled) : [];
 
