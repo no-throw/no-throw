@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.3](https://github.com/no-throw/no-throw/compare/v0.1.2...v0.1.3) (2026-08-15)
+
+
+### Bug Fixes
+
+* name the entry a schema rejects instead of calling it healthy ([#145](https://github.com/no-throw/no-throw/issues/145)) ([402aa9f](https://github.com/no-throw/no-throw/commit/402aa9f4cbe1bcfcb647e28581c11e0cedfe84fd))
+* read exactness off the declared type, never off a narrowing ([#138](https://github.com/no-throw/no-throw/issues/138)) ([d41b4dc](https://github.com/no-throw/no-throw/commit/d41b4dc7a44a7a9b29cb8f404246f4b99186148d)), closes [#137](https://github.com/no-throw/no-throw/issues/137)
+* read the definitions Bikeshed writes on a section heading ([#140](https://github.com/no-throw/no-throw/issues/140)) ([e98ffe2](https://github.com/no-throw/no-throw/commit/e98ffe25ef7848ae31ac976954c626149c35de29)), closes [#130](https://github.com/no-throw/no-throw/issues/130)
+
 ## [0.1.2](https://github.com/no-throw/no-throw/compare/v0.1.1...v0.1.2) (2026-08-15)
 
 

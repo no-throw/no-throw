@@ -1,6 +1,6 @@
 {
   "name": "no-throw",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "description": "Statically enforce that no throw escapes a function marked @nothrow.",

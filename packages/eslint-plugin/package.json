@@ -1,6 +1,6 @@
 {
   "name": "@no-throw/eslint-plugin",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "description": "The ESLint adapter for no-throw. Contains no analysis.",
   "license": "MIT",
