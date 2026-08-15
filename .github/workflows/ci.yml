@@ -73,6 +73,10 @@ jobs:
       # producer packages, and a consumer project reading what it wrote.
       - run: pnpm run conformance:cli
 
+      # The other host over the same fixtures: parity is the claim that makes
+      # the adapters adapters, so it is held wherever the suite runs.
+      - run: pnpm run conformance:oxlint
+
       # §H makes diagnostic text normative, so a reworded message is a spec
       # change. This is what makes that a build failure rather than a discovery.
       - name: Every §H clause has an asserting fixture
@@ -109,6 +113,32 @@ jobs:
 
       - name: Peer gate can fail
         run: pnpm run gate:peer:eslint -- --self-check
+
+  # The `oxlint` peer range is the same shape of claim, held the same two
+  # ways: a consumer on the floor and on today's resolution installs clean, and
+  # one just below the floor is refused over our peer.
+  oxlint-peer:
+    name: oxlint peer gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run build
+
+      - name: Peer gate
+        run: pnpm run gate:peer:oxlint
+
+      - name: Peer gate can fail
+        run: pnpm run gate:peer:oxlint -- --self-check
 
   # The `typescript` peer range is the same shape of claim, held the same two
   # ways. Its upper bound is the load-bearing half: TypeScript 7 ships no
@@ -161,6 +191,8 @@ jobs:
       - run: pnpm run conformance
 
       - run: pnpm run conformance:cli
+
+      - run: pnpm run conformance:oxlint
 
   typescript-peer:
     name: TypeScript peer gate

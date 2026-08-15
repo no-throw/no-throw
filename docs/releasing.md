@@ -1,20 +1,21 @@
 # Releasing
 
-Three packages, one version, and nobody types it.
+Four packages, one version, and nobody types it.
 
-`@no-throw/core`, `@no-throw/eslint-plugin` and `@no-throw/cli` are versioned in
-lockstep. That is not a convention here: `scripts/check-lockstep.mjs` fails the
-build on a mismatch, pins the internal dependencies to `workspace:*` so a
+`@no-throw/core`, `@no-throw/eslint-plugin`, `@no-throw/oxlint-plugin` and
+`@no-throw/cli` are versioned in lockstep. That is not a convention here:
+`scripts/check-lockstep.mjs` fails the build
+on a mismatch, pins the internal dependencies to `workspace:*` so a
 release cannot ship a package against a stale sibling, and refuses two packages
 that name the same peer differently.
 
 Releases are cut by
 [release-please](https://github.com/googleapis/release-please), configured in
 `release-please-config.json` with the last released version in
-`.release-please-manifest.json`. The three packages are not three release units:
+`.release-please-manifest.json`. The four packages are not four release units:
 the repository root is the single unit, and the config's `extra-files` writes
-its version into all three manifests. One tag, one changelog, and lockstep by
-construction rather than by something keeping three numbers in agreement.
+its version into all four manifests. One tag, one changelog, and lockstep by
+construction rather than by something keeping four numbers in agreement.
 
 ## The commit convention
 
@@ -57,13 +58,13 @@ Merging it is the release. On the push that follows, the workflow:
 1. Tags `v<version>` and creates the GitHub release from the changelog section.
 2. Runs the publish job, gated on the `release` environment: build, then
    **every** gate — the conformance suite, its declare-only superset run, the
-   CLI suite, the §H diagnostics audit, both peer gates, and the ES and DOM
-   fuzz, drift and deferred-invocation gates.
-3. `pnpm run check:packed` — packs all three and reads the tarballs, so a
+   CLI suite, the oxlint parity run, the §H diagnostics audit, all three peer
+   gates, and the ES and DOM fuzz, drift and deferred-invocation gates.
+3. `pnpm run check:packed` — packs all four and reads the tarballs, so a
    `files` list that forgot `baseline-data` is caught before publish rather than
    by the first consumer, whose symptom would be every builtin flooring.
-4. Publishes core first, then the two adapters — they name core as a dependency,
-   so an adapter reaching the registry ahead of core is unresolvable.
+4. Publishes core first, then the adapters and the CLI — they name core as a
+   dependency, so one reaching the registry ahead of core is unresolvable.
 
 The publish takes two tools because neither does both halves. **pnpm packs**:
 `workspace:*` is a pnpm protocol that npm would publish literally, which is a
@@ -102,11 +103,11 @@ releases that deserve more than a list of commit subjects.
 Four things live outside the repo. They are set up; this is what to check when
 one expires or a release fails at a step that used to work.
 
-- **A trusted publisher on each of the three packages** — set at
+- **A trusted publisher on each of the four packages** — set at
   `npmjs.com/package/<name>/access`, naming this repository, the workflow
   filename `release.yml`, and the `release` environment. npm trades the job's
   OIDC token for a short-lived credential, so there is no publish token stored
-  anywhere and nothing to rotate or leak. All three must be configured; the
+  anywhere and nothing to rotate or leak. All four must be configured; the
   publish stops at the first package that is not.
 - **The `release` environment** — a required reviewer, since the publish is the
   one step in this repo nothing can undo, and a branch policy admitting only

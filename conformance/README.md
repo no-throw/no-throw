@@ -295,3 +295,22 @@ design.
 A superset property passes vacuously if the lever never moved, so the run also
 checks that turning inference off floored *something*. If it did not, the pass
 fails rather than reporting a green it did not earn.
+
+## The oxlint parity pass
+
+`conformance:oxlint` runs the `rules` fixtures a third time, through the real
+`oxlint` binary and `@no-throw/oxlint-plugin`, and holds both hosts to the
+same diagnostics at the same places with the same text — the claim that makes
+the adapters adapters. The four preset fixtures stay with the ESLint passes,
+since their subject is an ESLint installation shape, and refusals surface here
+as per-file plugin errors carrying the same text at the same non-zero exit.
+
+Two things oxlint's CLI output cannot carry are held another way. Its JSON has
+no messageId, so the driver recovers one by matching the message against the
+plugin's own catalog; and it has no suggestions, so the offer's *content*
+stays pinned by the ESLint passes while its *plumbing* gets probes of its own:
+`oxlint --fix` over a fixture with offers must change nothing, and
+`--fix-suggestions` — the reader accepting the offer — must produce exactly
+the file the fixture pins. Two hosting probes assert the diagnostics this host
+alone owes, for a file with no project above it and a file its nearest project
+leaves out — shapes no fixture can hold, because a fixture *is* a project.

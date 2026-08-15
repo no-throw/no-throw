@@ -82,11 +82,16 @@ jobs:
 
       - run: pnpm run conformance:cli
 
+      - run: pnpm run conformance:oxlint
+
       - name: Diagnostics audit
         run: pnpm run audit:diagnostics
 
       - name: ESLint peer gate
         run: pnpm run gate:peer:eslint
+
+      - name: oxlint peer gate
+        run: pnpm run gate:peer:oxlint
 
       - name: TypeScript peer gate
         run: pnpm run gate:peer:typescript
@@ -129,7 +134,7 @@ jobs:
       # core is on the registry gets something unresolvable.
       - name: Publish
         run: |
-          for package in core eslint-plugin cli; do
+          for package in core eslint-plugin oxlint-plugin cli; do
             tarball=$(cd "packages/$package" && pnpm pack | tail -1)
             npm publish "packages/$package/$tarball" --access public --provenance
           done

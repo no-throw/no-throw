@@ -86,6 +86,11 @@ answers exactly one question, at compile time, for the functions you point it at
 Every rule here is type-aware: the analysis runs off the same `ts.Program` your
 editor and `tsc` already build.
 
+The ESLint rows are the ESLint host's. The same rules load into oxlint —
+`^1.78`, no ESLint and no typescript-eslint installed — and the conformance
+suite holds both hosts to the same diagnostics; see [hosting in
+oxlint](#hosting-in-oxlint).
+
 ## Quick start
 
 ### 1. Install the preset
@@ -126,6 +131,47 @@ because CI is where the guarantee lives — a warning enforces nothing.
 
 Prefer to wire the rules up yourself? They are `nothrow/no-escaping-throw` and
 `nothrow/valid-mark`, and neither takes options.
+
+#### Hosting in oxlint
+
+A project that lints with [oxlint](https://oxc.rs) installs the other adapter
+and writes the two rules into the config it already has — no ESLint, no
+`eslint.config.mjs`, no second lint command:
+
+```bash
+npm install --save-dev @no-throw/oxlint-plugin
+```
+
+```json
+{
+  "jsPlugins": ["@no-throw/oxlint-plugin"],
+  "rules": {
+    "nothrow/no-escaping-throw": "error",
+    "nothrow/valid-mark": "error"
+  }
+}
+```
+
+Same rule names, same messages, same suggestions in the language server — the
+adapters share one report layer in `@no-throw/core`, and [the conformance
+suite](#how-this-is-tested) runs the same fixtures through both binaries.
+Everything below this rung reads the same for either host.
+
+Three differences, all host-shaped. The rules are type-aware and oxlint hands
+a JS plugin no type information, so the plugin builds your program itself: the
+nearest `tsconfig.json` above each file, one program per config. A file no
+project includes — what the ESLint host surfaces as a `projectService` parse
+error — is here a diagnostic naming the `tsconfig.json` to fix: the same
+remedy, on the only channel a plugin has. And the preset's third rule is
+covered by oxlint itself: its type-aware mode carries
+`typescript/no-floating-promises`, so turn that on with `--type-aware` for the
+float hygiene the ESLint preset wires up.
+
+`oxlint --fix` never applies a bridge, exactly as `eslint --fix` never does.
+oxlint also has `--fix-suggestions`, which applies every offered edit in bulk
+— that is accepting every bridge blind, and the reason offers ride the
+suggestion channel is so that nothing does that without you typing the flag
+that says to.
 
 ### 2. Mark your first function
 
@@ -533,12 +579,14 @@ commit to keep it true.
 | package | what it is |
 | --- | --- |
 | [`@no-throw/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter and the preset. Contains no analysis. |
-| [`@no-throw/core`](packages/core) | the engine: color resolution, the SCC fixpoint, the escape-site walk, the resolver chain, the baselines. Knows nothing about ESLint. |
+| [`@no-throw/oxlint-plugin`](packages/oxlint-plugin) | the oxlint adapter. Contains no analysis. |
+| [`@no-throw/core`](packages/core) | the engine: color resolution, the SCC fixpoint, the escape-site walk, the resolver chain, the baselines, and the report layer both adapters speak. Knows nothing about any linter. |
 | [`@no-throw/cli`](packages/cli) | the `nothrow` binary. Builds a program and hands it to the core. |
 
-The three release in lockstep on one version. The seam is deliberate: driving the
+The four release in lockstep on one version. The seam is deliberate: driving the
 same analysis from a standalone checker or another linter means writing an
-adapter, not touching the engine.
+adapter, not touching the engine — the oxlint plugin is that sentence made
+good, and the conformance suite is what holds the two adapters to one behavior.
 
 ## How this is tested
 
@@ -555,6 +603,11 @@ framework. They are what your project looks like.
 
 Diagnostic text is normative, so this README is gated on it: every ` ```text `
 block above is a message some fixture asserts, character for character.
+
+The suite then runs the same fixtures through the real `oxlint` binary and
+holds both hosts to the same diagnostics — plus what oxlint's output cannot
+carry: `--fix` must change nothing, and `--fix-suggestions` must produce
+exactly the offer a fixture pins.
 
 ```bash
 pnpm install && pnpm test

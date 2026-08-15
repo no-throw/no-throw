@@ -35,6 +35,12 @@ const REQUIRED = {
     "LICENSE",
     "README.md",
   ],
+  "@no-throw/oxlint-plugin": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "LICENSE",
+    "README.md",
+  ],
   "@no-throw/cli": ["dist/bin.js", "LICENSE", "README.md"],
 };
 
