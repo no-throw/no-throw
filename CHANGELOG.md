@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.2](https://github.com/no-throw/no-throw/compare/v0.1.1...v0.1.2) (2026-08-15)
+
+
+### Bug Fixes
+
+* let a property key be any primitive ([#133](https://github.com/no-throw/no-throw/issues/133)) ([952089a](https://github.com/no-throw/no-throw/commit/952089adc56c0c262fad721b4d45f0651401eae4)), closes [#120](https://github.com/no-throw/no-throw/issues/120)
+* point a diagnostic at the member it names ([#134](https://github.com/no-throw/no-throw/issues/134)) ([6be35e3](https://github.com/no-throw/no-throw/commit/6be35e3f1e1388b5422af2f8f9213fe1c78bca02)), closes [#122](https://github.com/no-throw/no-throw/issues/122)
+* put ECMA-402 behind the positions ECMA-262 reserves for it ([#132](https://github.com/no-throw/no-throw/issues/132)) ([7e1c881](https://github.com/no-throw/no-throw/commit/7e1c881e4ae66b71b07880fcff70b818b338c99c)), closes [#121](https://github.com/no-throw/no-throw/issues/121)
+* the ES baseline says null is safe where ECMA-262 says only undefined is ([#135](https://github.com/no-throw/no-throw/issues/135)) ([45a14dd](https://github.com/no-throw/no-throw/commit/45a14dd2e147717f0d46d10fb838dc9288050368))
+
 ## [0.1.1](https://github.com/no-throw/no-throw/compare/v0.1.0...v0.1.1) (2026-08-14)
 
 
