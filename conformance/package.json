@@ -6,8 +6,10 @@
   "description": "The conformance suite: fixture projects on disk and the driver that runs them.",
   "dependencies": {
     "@no-throw/eslint-plugin": "workspace:*",
+    "@no-throw/oxlint-plugin": "workspace:*",
     "@typescript-eslint/typescript-estree": "^8.18.0",
     "eslint": "^9.17.0",
+    "oxlint": "^1.78.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.0"
   },
