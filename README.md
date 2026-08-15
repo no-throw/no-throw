@@ -439,7 +439,7 @@ npm install --save-dev @no-throw/cli
 ```
 nothrow emit [--project <path>]           lower verified marks into nothrow.json
 nothrow emit --check [--project <path>]   fail if the manifest has drifted
-nothrow check [--project <path>]          name every carrier entry that reaches nothing
+nothrow check [--project <path>]          name every carrier entry that colors nothing
 nothrow --help, nothrow -h                print the usage
 ```
 
@@ -448,7 +448,7 @@ the working directory. The manifest is written beside the first `package.json`
 above the project — which is where a consumer's walk-up finds it.
 
 Exit codes: **0** wrote, matched or found nothing to refuse · **1** refused,
-drifted or reaching nothing · **2** could not run. Exit code and stream are one
+drifted or coloring nothing · **2** could not run. Exit code and stream are one
 fact: a run that succeeded says so on stdout, and a run that did not says so on
 stderr.
 
@@ -471,10 +471,13 @@ flaky → "." → `Flaky#safeParse`
 
 It holds every entry the way the resolver chain holds it — against the same
 export surface, and against the package the *declaration* ships in rather than
-the one that re-exported it. One verdict is named and still passes: an entry for
-a package this project does not hold is **inert rather than wrong**, since a
-monorepo where one workspace has the dependency and another does not would
-otherwise fail over a file that is right.
+the one that re-exported it. An entry the **schema** rejects is named too, with
+the field that lost it: a misspelled `color` floors that one entry rather than
+refusing the file, and a floored entry keys as well as a correct one does, so
+nothing about the surface would catch it. One verdict is named and still passes:
+a **valid** entry for a package this project does not hold is **inert rather
+than wrong**, since a monorepo where one workspace has the dependency and another
+does not would otherwise fail over a file that is right.
 
 ## The `safely()` pattern
 
