@@ -6,7 +6,7 @@
       "line": 36,
       "column": 3,
       "endLine": 36,
-      "endColumn": 21,
+      "endColumn": 7,
       "messageId": "carriedConditionArgumentThrowing",
       "message": "Call to `each` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given `visit`, and the argument passed for `visit` is throwing — its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `visit`."
     }

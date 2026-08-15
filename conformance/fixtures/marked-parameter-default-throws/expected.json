@@ -6,7 +6,7 @@
       "line": 6,
       "column": 33,
       "endLine": 6,
-      "endColumn": 45,
+      "endColumn": 43,
       "messageId": "inferredThrowingCall",
       "message": "Call to `readFactor` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `readFactor` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     }

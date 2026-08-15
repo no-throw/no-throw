@@ -6,7 +6,7 @@
       "line": 13,
       "column": 10,
       "endLine": 13,
-      "endColumn": 36,
+      "endColumn": 25,
       "messageId": "carriedConditionArgumentPassed",
       "message": "Call to `a.localeCompare` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `locales`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.",
       "suggestions": [
@@ -49,7 +49,7 @@
       "line": 18,
       "column": 10,
       "endLine": 18,
-      "endColumn": 66,
+      "endColumn": 25,
       "messageId": "carriedConditionArgumentPassed",
       "message": "Call to `a.localeCompare` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `options`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
     },
@@ -58,7 +58,7 @@
       "line": 23,
       "column": 10,
       "endLine": 23,
-      "endColumn": 28,
+      "endColumn": 26,
       "messageId": "unbridgedCall",
       "message": "Call to `n.toLocaleString` escapes this `@nothrow` function: it is colored `throwing` by the shipped standard-library baseline, so calling it can throw. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
     }

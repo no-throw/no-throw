@@ -170,7 +170,11 @@ Sound, and cheaper to state than to hide:
 - **Members with no prose definition** — reflected ARIA attributes, specs that
   predate Bikeshed's `dfn` conventions (WebGL has 15 `<dfn>`s and zero
   `data-dfn-for` across ~1,150 members). #26 measured ~48.5%; this pass lands
-  near 38% of the IDL-backed surface.
+  near 38% of the IDL-backed surface. Part of that number is a defect rather
+  than a spec's silence: a definition Bikeshed promotes to a **section heading**
+  carries its `data-dfn-*` on the `<h4>`, and the extractor reads `<dfn>` tags
+  only, so every such member is invisible to it. The whole of `console.*` is —
+  see [#130](https://github.com/no-throw/no-throw/issues/130).
 - **Members the gate cannot reach**, which is jsdom's reach plus the members
   that would tear down the harness (`alert`, `close`, `submit`, …).
 - **Members holding a callback they never enter** — see the price above.

@@ -4,9 +4,9 @@
     {
       "file": "src/index.ts",
       "line": 30,
-      "column": 10,
+      "column": 14,
       "endLine": 30,
-      "endColumn": 26,
+      "endColumn": 17,
       "messageId": "carriedConditionArgumentPassed",
       "message": "Call to `Map` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `iterable`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.",
       "suggestions": [
@@ -64,9 +64,9 @@
     {
       "file": "src/index.ts",
       "line": 40,
-      "column": 10,
+      "column": 14,
       "endLine": 40,
-      "endColumn": 23,
+      "endColumn": 17,
       "messageId": "carriedConditionArgumentPassed",
       "message": "Call to `Map` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `iterable`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
     }

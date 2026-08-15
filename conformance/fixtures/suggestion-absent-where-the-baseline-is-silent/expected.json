@@ -6,7 +6,7 @@
       "line": 3,
       "column": 10,
       "endLine": 3,
-      "endColumn": 26,
+      "endColumn": 20,
       "messageId": "unbridgedCall",
       "suggestions": [
         {
@@ -33,7 +33,7 @@
       "line": 8,
       "column": 10,
       "endLine": 8,
-      "endColumn": 27,
+      "endColumn": 25,
       "messageId": "unbridgedCall",
       "message": "Call to `reference.deref` escapes this `@nothrow` function: it is declared in a `lib.*.d.ts` the shipped standard-library baseline has no entry for, and that baseline is the only carrier able to reach one, so nothing colors it and it is assumed to throw. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.",
       "suggestions": []

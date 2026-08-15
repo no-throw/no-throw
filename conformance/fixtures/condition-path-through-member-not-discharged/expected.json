@@ -6,7 +6,7 @@
       "line": 16,
       "column": 3,
       "endLine": 16,
-      "endColumn": 27,
+      "endColumn": 11,
       "messageId": "conditionArgumentThrowing",
       "message": "Call to `saveAllB` escapes this `@nothrow` function: it is non-throwing given `repo.save`, and the argument passed for `repo.save` is throwing — its body was analyzed and can throw. `saveAllB` enters `repo.save` at src/index.ts:11. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `repo.save`."
     }

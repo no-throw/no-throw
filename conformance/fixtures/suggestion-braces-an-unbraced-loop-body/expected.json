@@ -6,7 +6,7 @@
       "line": 5,
       "column": 31,
       "endLine": 5,
-      "endColumn": 43,
+      "endColumn": 36,
       "messageId": "unbridgedCall",
       "suggestions": [
         {
@@ -53,7 +53,7 @@
       "line": 10,
       "column": 29,
       "endLine": 10,
-      "endColumn": 39,
+      "endColumn": 34,
       "messageId": "unbridgedCall",
       "suggestions": [
         {
@@ -100,7 +100,7 @@
       "line": 15,
       "column": 46,
       "endLine": 15,
-      "endColumn": 58,
+      "endColumn": 51,
       "messageId": "unbridgedCall",
       "suggestions": [
         {
@@ -147,7 +147,7 @@
       "line": 20,
       "column": 16,
       "endLine": 20,
-      "endColumn": 28,
+      "endColumn": 21,
       "messageId": "unbridgedCall",
       "suggestions": [
         {
@@ -194,7 +194,7 @@
       "line": 25,
       "column": 6,
       "endLine": 25,
-      "endColumn": 18,
+      "endColumn": 11,
       "messageId": "unbridgedCall",
       "suggestions": [
         {
