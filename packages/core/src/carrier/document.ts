@@ -57,6 +57,23 @@ export interface ColorTable {
 export type ColorTables = ReadonlyMap<string, ColorTable>;
 
 /**
+ * The `modules` tables a rung holds, in the order it consults them. A list
+ * rather than a map, because one table already answers for every specifier it
+ * names: there is no package to file it under, which is the whole point of it.
+ */
+export type ModuleTables = readonly ColorTable[];
+
+/** What one rung of the chain has to look a declaration up in. */
+export interface CarrierTables {
+  /** Keyed by npm package, then export subpath, then namepath. */
+  readonly packages: ColorTables;
+  /** Keyed by ambient module specifier, then namepath. */
+  readonly modules: ModuleTables;
+}
+
+export const NO_TABLES: CarrierTables = { packages: new Map(), modules: [] };
+
+/**
  * Why a file that was there came to nothing. Which of the two happened is the
  * one thing a reader cannot recover from the outcome, and "the file is there
  * and is being ignored" is what every carrier owes its author.
@@ -82,11 +99,14 @@ export type ColorDocument =
       readonly kind: "read";
       readonly value: Record<string, unknown>;
       /**
-       * One table, named by filling in the wildcards of the document's
-       * `TablePath` — nothing for a manifest, the package name for the
-       * overrides file.
+       * One table, named by filling in the wildcards of one of the document's
+       * `TablePath`s — nothing for a manifest's `exports` or a `modules` table,
+       * the package name for the overrides file's.
        */
-      readonly tableAt: (names: readonly string[]) => ColorTable;
+      readonly tableAt: (
+        location: TablePath,
+        names: readonly string[],
+      ) => ColorTable;
     }
   | { readonly kind: "unreadable"; readonly version: unknown }
   | { readonly kind: "refused"; readonly refusal: DocumentRefusal };
@@ -97,10 +117,14 @@ const VERSION = 1;
 /**
  * Where a document's entry tables live, as a property path with `*` standing
  * for any one segment: `exports` in a manifest, `packages/<name>/exports` in
- * the overrides file. Everything that follows from the shape follows from this
- * one statement of it — which faults fall inside an entry rather than in the
- * envelope around them, and which entry each one falls in — so there is no
- * second statement to keep in step.
+ * the overrides file, `modules` in both. Everything that follows from the shape
+ * follows from this one statement of it — which faults fall inside an entry
+ * rather than in the envelope around them, and which entry each one falls in —
+ * so there is no second statement to keep in step.
+ *
+ * A file may hold tables at several of them, and the two halves of a key are
+ * always the last two segments of the path to an entry, whichever table it is
+ * in: an npm subpath and a namepath, or a module specifier and a namepath.
  */
 export type TablePath = readonly string[];
 
@@ -116,7 +140,7 @@ export function readColorDocument(
   path: string,
   schema: unknown,
   imported: readonly unknown[],
-  location: TablePath,
+  locations: readonly TablePath[],
 ): ColorDocument {
   const value = readJson(path);
   if (value === undefined) {
@@ -126,7 +150,10 @@ export function readColorDocument(
   const issues = validate(schema, value, imported);
   // A fault inside an entry floors that entry; anything shallower is a file
   // that does not describe what it claims to, and nothing is taken from it.
-  const envelope = issues.filter((issue) => !isEntryFault(issue.path, location));
+  const envelope = issues.filter(
+    (issue) =>
+      !locations.some((location) => isEntryFault(issue.path, location)),
+  );
   if (envelope.length > 0) {
     return { kind: "refused", refusal: { kind: "invalid", issues: envelope } };
   }
@@ -140,7 +167,7 @@ export function readColorDocument(
   return {
     kind: "read",
     value,
-    tableAt: (names) => {
+    tableAt: (location, names) => {
       const prefix = fill(location, names);
       const at = identityOf(prefix);
       const known = tables.get(at);

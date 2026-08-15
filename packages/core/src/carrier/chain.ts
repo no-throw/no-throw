@@ -1,7 +1,13 @@
 import ts from "typescript";
 import { baselineRung } from "../baseline/rung.js";
 import { hasDeclaredMark } from "../marks.js";
-import type { ColorTable, ColorTables, ManifestEntry } from "./document.js";
+import { ambientKeyOf, type AmbientKey } from "./ambient.js";
+import type {
+  CarrierTables,
+  ColorTable,
+  ColorTables,
+  ManifestEntry,
+} from "./document.js";
 import { manifestAt } from "./manifest.js";
 import { overlaysFor } from "./overlays.js";
 import { overridesIn } from "./overrides.js";
@@ -51,6 +57,19 @@ export interface CarrierQuery {
   readonly asking: PackageHome | undefined;
   /** Where the package's published surface reaches it, if it reaches it. */
   readonly key: ExportKey | undefined;
+  /**
+   * Where the ambient `declare module` block it is written in reaches it, if
+   * it is written in one. Asked before the package key, and not instead of it:
+   * a `@types` package whose entry point *is* the file holding the block
+   * publishes both addresses, and an entry under either was written about the
+   * same member.
+   *
+   * A function rather than a field, and memoized behind it, because answering
+   * it means walking a whole block's surface. A rung with no `modules` table
+   * has nothing to look up and does not ask; the walk is paid once per block
+   * either way, since the floor's message needs the key it produces.
+   */
+  moduleKey(): AmbientKey | undefined;
 }
 
 export type CarrierRung = (query: CarrierQuery) => CarrierAnswer | undefined;
@@ -89,22 +108,33 @@ export function createCarrier(
   interface Located {
     readonly home: PackageHome | undefined;
     readonly key: ExportKey | undefined;
+    moduleKey(): AmbientKey | undefined;
   }
   const located = new Map<ts.Declaration, Located>();
 
-  // Where the declaration ships and what its package publishes it as, which
-  // both questions below need and neither owns.
+  // Where the declaration ships and what publishes it as what, which every
+  // question below needs and none of them owns.
   const locate = (declaration: ts.Declaration): Located => {
     const known = located.get(declaration);
     if (known !== undefined) return known;
 
     const home = packageHomeOf(declaration.getSourceFile().fileName);
+
+    let ambient: AmbientKey | undefined;
+    let walked = false;
     const at: Located = {
       home,
       key:
         home === undefined
           ? undefined
           : exportSurfaceOf(home, program).keyOf(declaration),
+      moduleKey: () => {
+        if (!walked) {
+          walked = true;
+          ambient = ambientKeyOf(declaration, checker);
+        }
+        return ambient;
+      },
     };
     located.set(declaration, at);
     return at;
@@ -114,13 +144,14 @@ export function createCarrier(
     answerFor(declaration) {
       if (answers.has(declaration)) return answers.get(declaration);
 
-      const { home, key } = locate(declaration);
+      const { home, key, moduleKey } = locate(declaration);
       const query: CarrierQuery = {
         declaration,
         checker,
         home,
         asking,
         key,
+        moduleKey,
       };
 
       let answer: CarrierAnswer | undefined;
@@ -141,17 +172,48 @@ export function createCarrier(
  * makes the floor's outs a promise rather than a suggestion: whatever nobody
  * else has colored, you can color here, and nothing outranks you.
  */
-function overriddenBy(overrides: ColorTables): CarrierRung {
-  return (query) => answerFrom(tableFor(overrides, query.home), query.key);
+function overriddenBy(overrides: CarrierTables): CarrierRung {
+  return (query) => statedBy(overrides, query);
 }
 
 /**
- * What somebody else published about the package. Matched by the overlay's
- * manifest `package` field against the npm name of the package the declaration
- * ships in — the overlay's own name is never read.
+ * What somebody else published about the package, or about an ambient module.
+ * The package half is matched by the overlay's manifest `package` field against
+ * the npm name of the package the declaration ships in — the overlay's own name
+ * is never read; the module half is about no package and is read from every
+ * overlay installed.
  */
 const overlaid: CarrierRung = (query) =>
-  answerFrom(tableFor(overlaysFor(query.asking), query.home), query.key);
+  statedBy(overlaysFor(query.asking), query);
+
+/**
+ * One rung's answer, over both addresses a declaration can have.
+ *
+ * The module table is asked first, and that is an ordering rather than a
+ * preference: a declaration inside a `declare module` block is reached by its
+ * specifier everywhere, and by a package key only where that package's entry
+ * points happen to be the file the block is written in. Asking the narrower
+ * address first is what keeps one member from being answered out of two entries
+ * depending on which table the rung looked in.
+ */
+function statedBy(
+  tables: CarrierTables,
+  query: CarrierQuery,
+): CarrierAnswer | undefined {
+  // Asked only where this rung has a table to answer from, which is what keeps
+  // the block walk off the path of a project that colors no ambient module.
+  const moduleKey = tables.modules.length === 0 ? undefined : query.moduleKey();
+  if (moduleKey !== undefined) {
+    for (const table of tables.modules) {
+      const answer = answerFrom(table, {
+        subpath: moduleKey.module,
+        symbolPath: moduleKey.symbolPath,
+      });
+      if (answer !== undefined) return answer;
+    }
+  }
+  return answerFrom(tableFor(tables.packages, query.home), query.key);
+}
 
 /** The table a rung holds for the package this declaration ships in. */
 function tableFor(

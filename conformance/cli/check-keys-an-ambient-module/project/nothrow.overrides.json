@@ -1,0 +1,50 @@
+{
+  "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
+  "version": 1,
+  "packages": {
+    "node:path": {
+      "exports": {
+        ".": {
+          "join": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    },
+    "@types/node": {
+      "exports": {
+        ".": {
+          "join": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
+    }
+  },
+  "modules": {
+    "path": {
+      "join": {
+        "color": "non-throwing",
+        "conditions": []
+      },
+      "basename": {
+        "color": "non-throwing",
+        "conditions": []
+      }
+    },
+    "node:path": {
+      "resolve": {
+        "color": "non-throwing",
+        "conditions": []
+      }
+    },
+    "node:crypto": {
+      "hash": {
+        "color": "non-throwing",
+        "conditions": []
+      }
+    }
+  }
+}

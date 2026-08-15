@@ -269,6 +269,12 @@ claim that is not true:
 Nothing was written: 1 mark cannot be published as it stands.
 ```
 
+A [`modules` table](#ambient-modules) is the one thing emit refuses that is not a mark. Emit writes only what it verified against a body, and a
+`declare module` block has none, so no run could produce one — and rewriting the
+file would silently delete it. Both `emit` and `emit --check` stop instead and
+say where the table belongs: in a project's `nothrow.overrides.json`, or in an
+overlay, which are the carriers read for one.
+
 That refusal is what makes a published manifest true by construction rather than
 by discipline. Wire the check into `prepublishOnly` and a stale manifest can
 never ship:
@@ -461,6 +467,60 @@ An overlay is just a package whose `nothrow.json` names its target:
 
 It is matched by that `package` field, never by its own npm name.
 
+### Ambient modules
+
+**A floor over a Node builtin is keyed by module specifier, not by package.**
+`node:path` and its siblings are not npm packages: they are ambient `declare
+module` blocks inside `@types/node`, and the walk that assigns keys starts at a
+package's entry points — whose file is a hub of `/// <reference>` directives, so
+it reaches no block at all. The module name is not a package you hold, and the
+package that declares it publishes nothing to walk, so both package spellings
+fail and neither is worth writing.
+
+The block is its own surface, so the specifier is the address. Both the
+overrides file and an overlay carry a `modules` table beside their `packages`
+one, keyed by specifier and then by the same namepath:
+
+```json
+{
+  "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
+  "version": 1,
+  "modules": {
+    "path": { "join": { "color": "non-throwing", "conditions": [] } }
+  }
+}
+```
+
+The specifier is the one the block is **written under**, which is not always the
+one you imported — a carrier is matched by where a declaration ships, here as
+everywhere. `node:path` re-exports what `declare module "path"` declares, so
+`path` is the key. `process.stdout.write` is a third step removed again: written
+in `declare module "stream"`, reached through the type of a global that
+`declare module "process"` declares. So the floor spells the key out rather than
+leaving you to work it out:
+
+```text
+Call to `path.join` escapes this `@nothrow` function: it is declared without a
+body — an ambient declaration, a `.d.ts`, or a value known only by its function
+type — and no mark, manifest, overlay, override or baseline entry colors it, so
+it is assumed to throw. Your outs, in precedence order: bridge this call with
+`try`/`catch`; assert the color in `nothrow.overrides.json` under `modules` →
+"path" → `join`; or install or write an `@no-throw/*` overlay carrying that same
+key. It is declared in an ambient `declare module` block, which no package entry
+point publishes, so no manifest can key it.
+```
+
+The manifest is the one out that is missing, and deliberately: `nothrow emit`
+writes only marks it verified against a body, and a `declare module` block has
+none — so a `modules` table in a package's own `nothrow.json` is [refused rather
+than written over](#4-publishing-ship-a-manifest). Where the block publishes a
+declaration under no name at all, there is no key for anybody to write, and the
+message says the bridge is the only out rather than naming a carrier you would
+find nothing to key under.
+
+The same holds for any dependency whose types arrive as ambient declarations
+rather than as exports.
+
 ### Conditions
 
 Plenty of functions are clean *given* something about what you hand them —
@@ -525,6 +585,36 @@ nothing about the surface would catch it. One verdict is named and still passes:
 a **valid** entry for a package this project does not hold is **inert rather
 than wrong**, since a monorepo where one workspace has the dependency and another
 does not would otherwise fail over a file that is right.
+
+A [`modules`](#ambient-modules) entry is held the same way, against the block a
+declaration is *written in* rather than one that re-exports it — and the two
+package spellings a Node builtin invites are sorted out here, since neither
+reaches anything and neither says so at the call site:
+
+```text
+nothrow.overrides.json
+  node:path → "." → `join`
+    nothing of `node:path` is in this project, so there is no surface to hold
+    this against. Inert rather than wrong.
+  @types/node → "." → `join`
+    `@types/node` publishes nothing at ".", and nothing at any other subpath.
+    The walk from its entry points reached no name a carrier could key, so no
+    entry under this package reaches anything.
+  modules → "path" → `basename`
+    "path" declares no symbol at this key, so this entry colors nothing.
+    What it declares: `join`, `resolve`
+  modules → "node:path" → `resolve`
+    "node:path" publishes this key, and what it reaches is declared in "path" —
+    which is the block a carrier is matched by, so this entry is never
+    consulted.
+    Key it under "path" instead.
+  modules → "node:crypto" → `hash`
+    nothing here declares the ambient module "node:crypto", so there is no
+    surface to hold this against. Inert rather than wrong.
+```
+
+A specifier nothing here declares is inert for the same reason a package this
+project does not hold is.
 
 ## The `safely()` pattern
 

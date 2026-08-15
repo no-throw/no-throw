@@ -58,16 +58,20 @@ export type FloorReason =
   | "no-accessor-fact";
 
 /**
- * Where the declaration a floor is about lives, and — once it turns out to be
- * a first-party lib member — whether the baseline said anything about it.
+ * Where the declaration a floor is about lives, and so which outs it has.
  *
- * An out is only an out if the reader can reach it, and three of the four
- * cannot reach a `lib.*.d.ts`: an override and an overlay are keyed by npm
- * package name, and nobody owns TypeScript's libs to ship a manifest from. A
- * floor over one therefore names two outs rather than four, and the second of
- * them is us. The baseline is also the only rung that can answer for a lib
- * member at all, which is what lets the two lib cases be told apart by the
- * reason alone.
+ * An out is only an out if the reader can reach it. Three of the four cannot
+ * reach a `lib.*.d.ts`: an override and an overlay are keyed by npm package
+ * name, and nobody owns TypeScript's libs to ship a manifest from. A floor over
+ * one therefore names two outs rather than four, and the second of them is us.
+ * The baseline is also the only rung that can answer for a lib member at all,
+ * which is what lets the two lib cases be told apart by the reason alone.
+ *
+ * A declaration inside an ambient `declare module` block has the mirror
+ * problem: no package entry point publishes it, so the key a floor would send
+ * the reader to write is the block's specifier and not any package's. The out
+ * it *cannot* name is the manifest — emit writes only what it verified against
+ * a body, and a `declare module` block has none.
  */
 export type FloorSource =
   /** An ordinary declaration; every rung of the chain can reach it. */
@@ -81,6 +85,19 @@ export type FloorSource =
        * but only a color somebody wrote down is evidence a bridge is honest.
        */
       readonly stated: boolean;
+    }
+  | {
+      readonly reach: "ambient";
+      /** The specifier of the block it is written in. */
+      readonly module: string;
+      /**
+       * The namepath to write under that specifier, and nothing where the block
+       * publishes the declaration under no name at all. The second is the one
+       * floor in this design with a single out: nothing can key it, so the
+       * message says the bridge is all there is rather than naming a carrier
+       * the reader would find no key for.
+       */
+      readonly key: string | undefined;
     };
 
 /**

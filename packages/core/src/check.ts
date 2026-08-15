@@ -1,5 +1,10 @@
 import { dirname } from "node:path";
 import ts from "typescript";
+import {
+  ambientModuleOf,
+  ambientSurfaceOf,
+  type AmbientSurface,
+} from "./carrier/ambient.js";
 import type { ColorTable } from "./carrier/document.js";
 import { installedOverlaysFor } from "./carrier/overlays.js";
 import {
@@ -15,57 +20,110 @@ import {
 } from "./carrier/schemas.js";
 import { exportSurfaceOf } from "./carrier/surface.js";
 
-/** The three halves of a key, which is what a carrier writes an entry under. */
-export interface EntryKey {
+/** The three halves of a key into a package's published surface. */
+export interface PackageEntryKey {
+  readonly kind: "package";
   /** The npm package the entry colors. */
   readonly package: string;
   readonly subpath: string;
   readonly symbolPath: string;
 }
 
+/** The two halves of a key into an ambient `declare module` block. */
+export interface ModuleEntryKey {
+  readonly kind: "module";
+  /** The specifier of the block the entry colors. */
+  readonly module: string;
+  readonly symbolPath: string;
+}
+
+/**
+ * What a carrier writes an entry under. Two addresses, because there are two
+ * surfaces: what a package's entry points publish, and what an ambient block
+ * declares — and nothing a block declares is on any package's export surface,
+ * which is the whole reason the second exists.
+ */
+export type EntryKey = PackageEntryKey | ModuleEntryKey;
+
+/** The verdicts both addresses share, because both are surfaces. */
+type CommonVerdict =
+  | { readonly verdict: "reaches" }
+  /**
+   * Nothing of the package is in the program, or nothing declares the module,
+   * so there is no surface to hold the entry against either way.
+   */
+  | { readonly verdict: "unresolved" }
+  /**
+   * The entry is written and does not describe a color: the schema rejected
+   * something inside it, so the reader discarded it before any question of
+   * what it reaches. Asked first for that reason — a discarded entry keys as
+   * well as a correct one, and the surface would call it healthy — and it is
+   * asked of every entry, held package or not, because a file that departs
+   * from its schema does so on every machine.
+   *
+   * `faults` names the fields that lost it, since the carrier file is the
+   * only place the fix can be made. Which schema they lost against is the
+   * carrier's, not the entry's.
+   */
+  | { readonly verdict: "unusable"; readonly faults: readonly string[] }
+  /** The surface holds no such key; these are the ones it has. */
+  | { readonly verdict: "no-key"; readonly published: readonly string[] };
+
+type PackageVerdict =
+  | CommonVerdict
+  /** The package publishes no such subpath; these are the ones it has. */
+  | { readonly verdict: "no-subpath"; readonly subpaths: readonly string[] }
+  /**
+   * The key resolves, and what it resolves to ships somewhere else. A rung
+   * holds one table per package the *declaration* belongs to, so an entry
+   * written under the package that re-exported it is never consulted.
+   */
+  | { readonly verdict: "ships-elsewhere"; readonly shipsIn: string }
+  /**
+   * The key resolves, and what it resolves to is declared where no
+   * `package.json` names a package. A rung's table is matched by npm name, so
+   * this one has no name to be keyed under at all — which is the difference
+   * from `ships-elsewhere`, where there is a name and it is somebody else's.
+   * `declaredIn` is the directory a `package.json` naming it would go in,
+   * which is the walk's answer whether or not it found a file there.
+   */
+  | { readonly verdict: "unnamed-shipper"; readonly declaredIn: string };
+
+type ModuleVerdict =
+  | CommonVerdict
+  /**
+   * The key resolves, and what it resolves to is written in a different
+   * `declare module` block. The block a declaration ships in is what a rung
+   * looks it up under — `node:process` re-exports what `process` declares, and
+   * an entry under the re-exporting specifier is never consulted.
+   */
+  | { readonly verdict: "declared-elsewhere"; readonly declaredIn: string }
+  /**
+   * The key resolves, and what it resolves to is written in no ambient block
+   * at all: the block re-exports an ordinary module's symbol, which has a
+   * package address rather than a module one.
+   */
+  | {
+      readonly verdict: "not-ambient";
+      /** The npm package to key it under, where the walk found a name. */
+      readonly shipsIn: string | undefined;
+    };
+
+/** One address with one verdict, distributed so `verdict` still discriminates. */
+type Checked<Key, Verdict> = Verdict extends unknown ? Key & Verdict : never;
+
 /**
  * What became of one entry. `reaches` is the whole point of the others
  * existing: an entry that colors nothing is indistinguishable from a correct
  * one at a call site, because both come to the same silence.
+ *
+ * The two addresses carry different verdicts because they have different ways
+ * of being wrong, and pairing each with its own keeps a report from having to
+ * defend against a combination that cannot arise.
  */
-export type CheckedEntry = EntryKey &
-  (
-    | { readonly verdict: "reaches" }
-    /** Nothing of the package is in the program, so there is no surface. */
-    | { readonly verdict: "unresolved" }
-    /**
-     * The entry is written and does not describe a color: the schema rejected
-     * something inside it, so the reader discarded it before any question of
-     * what it reaches. Asked first for that reason — a discarded entry keys as
-     * well as a correct one, and the surface would call it healthy — and it is
-     * asked of every entry, held package or not, because a file that departs
-     * from its schema does so on every machine.
-     *
-     * `faults` names the fields that lost it, since the carrier file is the
-     * only place the fix can be made. Which schema they lost against is the
-     * carrier's, not the entry's.
-     */
-    | { readonly verdict: "unusable"; readonly faults: readonly string[] }
-    /** The package publishes no such subpath; these are the ones it has. */
-    | { readonly verdict: "no-subpath"; readonly subpaths: readonly string[] }
-    /** The subpath is published and holds no such key; these are its keys. */
-    | { readonly verdict: "no-key"; readonly published: readonly string[] }
-    /**
-     * The key resolves, and what it resolves to ships somewhere else. A rung
-     * holds one table per package the *declaration* belongs to, so an entry
-     * written under the package that re-exported it is never consulted.
-     */
-    | { readonly verdict: "ships-elsewhere"; readonly shipsIn: string }
-    /**
-     * The key resolves, and what it resolves to is declared where no
-     * `package.json` names a package. A rung's table is matched by npm name, so
-     * this one has no name to be keyed under at all — which is the difference
-     * from `ships-elsewhere`, where there is a name and it is somebody else's.
-     * `declaredIn` is the directory a `package.json` naming it would go in,
-     * which is the walk's answer whether or not it found a file there.
-     */
-    | { readonly verdict: "unnamed-shipper"; readonly declaredIn: string }
-  );
+export type CheckedEntry =
+  | Checked<PackageEntryKey, PackageVerdict>
+  | Checked<ModuleEntryKey, ModuleVerdict>;
 
 /**
  * Why nothing in a carrier was checked. A file that says nothing is not an
@@ -209,9 +267,12 @@ function overridesCarrier(
         name,
         path: state.path,
         schema,
-        entries: [...state.tables].flatMap(([owner, table]) =>
-          tableEntries(table, owner, packages, program),
-        ),
+        entries: [
+          ...[...state.tables.packages].flatMap(([owner, table]) =>
+            tableEntries(table, owner, packages, program),
+          ),
+          ...moduleEntries(state.tables.modules, program),
+        ],
       };
   }
 }
@@ -240,27 +301,42 @@ function overlayCarriers(
         entries: [],
       };
     }
+    const modules = moduleEntries(
+      state.modules === undefined ? [] : [state.modules],
+      program,
+    );
+
+    // An ambient module is nobody's export surface, so a `modules` table is not
+    // about the overlay's target — an overlay that carries one and names no
+    // package is coloring something, and reporting it as colorless would be
+    // wrong about the file in front of the reader.
     if (state.target === undefined) {
-      return {
-        name,
-        path,
-        schema,
-        problem: {
-          message:
-            "it names no `package`, and an overlay is matched by that field " +
-            "and by nothing else — never by the npm name it was published " +
-            "under — so it colors nothing.",
-          fatal: true,
-        },
-        entries: [],
-      };
+      return modules.length > 0
+        ? { name, path, schema, entries: modules }
+        : {
+            name,
+            path,
+            schema,
+            problem: {
+              message:
+                "it names no `package` and holds no `modules` table, and an " +
+                "overlay's `exports` are matched by that field and by nothing " +
+                "else — never by the npm name it was published under — so it " +
+                "colors nothing.",
+              fatal: true,
+            },
+            entries: [],
+          };
     }
 
     return {
       name,
       path,
       schema,
-      entries: tableEntries(state.table, state.target, packages, program),
+      entries: [
+        ...tableEntries(state.table, state.target, packages, program),
+        ...modules,
+      ],
     };
   });
 }
@@ -294,15 +370,81 @@ function tableEntries(
   program: ts.Program,
 ): readonly CheckedEntry[] {
   return table.written().map(({ subpath, key: symbolPath, state }) => {
-    const key = { package: packageName, subpath, symbolPath };
+    const key = {
+      kind: "package",
+      package: packageName,
+      subpath,
+      symbolPath,
+    } as const;
     return state.kind === "unusable"
       ? { ...key, verdict: "unusable" as const, faults: state.faults }
       : verdictFor(key, packages, program);
   });
 }
 
+/**
+ * Every entry of the `modules` tables a carrier holds, which is what the blocks
+ * it names declare. Read off the reader for the same reason a package's are:
+ * an entry the schema lost is one the file wrote and no key will ever reach.
+ *
+ * The surface is walked once for all of them, and only where there is an entry
+ * to hold against it — a carrier that colors no ambient module pays nothing.
+ */
+function moduleEntries(
+  tables: readonly ColorTable[],
+  program: ts.Program,
+): readonly CheckedEntry[] {
+  const written = tables.flatMap((table) => table.written());
+  if (written.length === 0) return [];
+
+  const ambient = ambientSurfaceOf(program);
+  return written.map(({ subpath: module, key: symbolPath, state }) => {
+    const key = { kind: "module", module, symbolPath } as const;
+    return state.kind === "unusable"
+      ? { ...key, verdict: "unusable" as const, faults: state.faults }
+      : moduleVerdictFor(module, symbolPath, ambient);
+  });
+}
+
+/**
+ * What one module entry came to. The same three questions the package side
+ * asks, of the surface that answers here: does the program hold it, does that
+ * surface publish this key, and is what the key reaches written in this block
+ * rather than merely re-exported through it.
+ */
+function moduleVerdictFor(
+  module: string,
+  symbolPath: string,
+  ambient: AmbientSurface,
+): CheckedEntry {
+  const key = { kind: "module", module, symbolPath } as const;
+
+  // Nothing here declares the block, so there is no surface to hold the entry
+  // against. Inert rather than wrong, exactly as a package nobody installed is:
+  // a project may carry colors for a `node:*` module it has not imported yet.
+  if (!ambient.declares(module)) return { ...key, verdict: "unresolved" };
+
+  const reached = ambient.declarationsIn(module, symbolPath);
+  const [first] = reached;
+  if (first === undefined) {
+    return { ...key, verdict: "no-key", published: ambient.publishedIn(module) };
+  }
+
+  // A rung looks a declaration up under the block it is *written in*, so a key
+  // this block only re-exports is never consulted under this specifier.
+  const elsewhere = reached.every(
+    (declaration) => ambientModuleOf(declaration) !== module,
+  );
+  if (!elsewhere) return { ...key, verdict: "reaches" };
+
+  const declaredIn = ambientModuleOf(first);
+  return declaredIn === undefined
+    ? { ...key, verdict: "not-ambient", shipsIn: shipperOf(first)?.name }
+    : { ...key, verdict: "declared-elsewhere", declaredIn };
+}
+
 function verdictFor(
-  key: EntryKey,
+  key: PackageEntryKey,
   packages: ReadonlyMap<string, PackageHome>,
   program: ts.Program,
 ): CheckedEntry {

@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs";
 import {
+  NO_TABLES,
   readColorDocument,
+  type CarrierTables,
   type ColorTable,
-  type ColorTables,
   type DocumentRefusal,
   type TablePath,
 } from "./document.js";
@@ -14,13 +15,14 @@ import {
   OVERRIDES_SCHEMA_FILE,
 } from "./schemas.js";
 
-const EMPTY: ColorTables = new Map();
-
 /** The name the file has, everywhere, by convention rather than by lookup. */
 export const OVERRIDES = "nothrow.overrides.json";
 
 /** One table per package, at `packages` → the package → `exports`. */
-const TABLES: TablePath = ["packages", "*", "exports"];
+const PACKAGES: TablePath = ["packages", "*", "exports"];
+
+/** One table for every ambient module the file colors, at `modules`. */
+export const MODULES: TablePath = ["modules"];
 
 /**
  * A carrier file the project wrote for itself and this release cannot honor.
@@ -60,14 +62,18 @@ export type OverridesState =
   | {
       readonly kind: "read";
       readonly path: string;
-      /** One per package named, in the order they were written. */
-      readonly tables: ColorTables;
+      /**
+       * One table per package named, in the order they were written, and one
+       * for the ambient modules the file colors.
+       */
+      readonly tables: CarrierTables;
     };
 
 const projects = new Map<string, OverridesState>();
 
 /**
- * What a project asserts for itself, by npm package name.
+ * What a project asserts for itself, by npm package name and by ambient module
+ * specifier.
  *
  * `nothrow.overrides.json` is the top of the chain and the one rung nobody else
  * has to act for you: a dependency ships the wrong colors, or none, and you
@@ -82,7 +88,7 @@ const projects = new Map<string, OverridesState>();
  * A file this release cannot honor throws rather than answering: see
  * `OverridesError`.
  */
-export function overridesIn(asking: PackageHome | undefined): ColorTables {
+export function overridesIn(asking: PackageHome | undefined): CarrierTables {
   const state = overridesStateIn(asking);
   if (state.kind === "refused") {
     // The path trails the sentence rather than opening it: what is wrong does
@@ -90,7 +96,7 @@ export function overridesIn(asking: PackageHome | undefined): ColorTables {
     // report does — has the sentence alone.
     throw new OverridesError(`${refusalMessage(state)}: ${state.path}`);
   }
-  return state.kind === "read" ? state.tables : EMPTY;
+  return state.kind === "read" ? state.tables : NO_TABLES;
 }
 
 /**
@@ -151,7 +157,7 @@ function readOverrides(asking: PackageHome): OverridesState {
     path,
     overridesSchema(),
     [manifestSchema()],
-    TABLES,
+    [PACKAGES, MODULES],
   );
 
   // A version this release cannot read leaves the rungs below to answer. An
@@ -168,12 +174,29 @@ function readOverrides(asking: PackageHome): OverridesState {
     return { kind: "refused", path, refusal: document.refusal };
   }
 
-  const packages = document.value["packages"];
-  if (!isRecord(packages)) return { kind: "absent", path };
+  const packaged = document.value["packages"];
+  const moduled = document.value["modules"];
 
-  const tables = new Map<string, ColorTable>();
-  for (const name of Object.keys(packages)) {
-    tables.set(name, document.tableAt([name]));
+  // A file holding neither table asserts nothing, which is what an absent one
+  // does. An empty table is not that: it was written, so the file is read and
+  // reported as one that says nothing rather than as one that is not there.
+  if (!isRecord(packaged) && !isRecord(moduled)) {
+    return { kind: "absent", path };
   }
-  return { kind: "read", path, tables };
+
+  const packages = isRecord(packaged) ? Object.keys(packaged) : [];
+  const modules = isRecord(moduled) ? Object.keys(moduled) : [];
+
+  const byPackage = new Map<string, ColorTable>();
+  for (const name of packages) {
+    byPackage.set(name, document.tableAt(PACKAGES, [name]));
+  }
+  return {
+    kind: "read",
+    path,
+    tables: {
+      packages: byPackage,
+      modules: modules.length === 0 ? [] : [document.tableAt(MODULES, [])],
+    },
+  };
 }

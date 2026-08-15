@@ -1,0 +1,26 @@
+{
+  "description": "A `modules` table in a package's own manifest is refused rather than overwritten. Emit writes only marks it verified against a body and an ambient `declare module` block has none, so no run could produce that table — and `--check` telling the reader to run emit would be telling them to delete it. Both paths refuse, and the `nonesuch` entry emit would never write is still there afterwards, which is how the case says the file was left alone rather than rewritten.",
+  "steps": [
+    {
+      "emit": [],
+      "expect": "refused",
+      "names": [
+        "was not written: it holds a `modules` table",
+        "no run of emit could produce that table and writing this file would discard it",
+        "`nothrow.overrides.json`, or in a `@no-throw/*` overlay"
+      ]
+    },
+    {
+      "emit": ["--check"],
+      "expect": "refused",
+      "names": ["was not written: it holds a `modules` table"]
+    },
+    {
+      "entries": {
+        ".": {
+          "nonesuch": { "color": "throwing" }
+        }
+      }
+    }
+  ]
+}

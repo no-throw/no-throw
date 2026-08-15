@@ -30,6 +30,7 @@ export function runCheck(options: CheckOptions): CommandResult {
   const { program, configPath } = opened.project;
   const { carriers } = checkCarriers(program, packageHomeOf(configPath));
   const entries = carriers.flatMap((carrier) => carrier.entries);
+  const inert = entries.filter((entry) => entry.verdict === "unresolved");
   const fatal = carriers.some((carrier) => carrier.problem?.fatal === true);
   const tally: Tally = {
     checked: entries.length,
@@ -41,7 +42,8 @@ export function runCheck(options: CheckOptions): CommandResult {
       (entry) => reachesNothing(entry) && entry.verdict !== "unusable",
     ).length,
     unusable: entries.filter((entry) => entry.verdict === "unusable").length,
-    inert: entries.filter((entry) => entry.verdict === "unresolved").length,
+    absentPackages: inert.filter((entry) => entry.kind === "package").length,
+    absentModules: inert.filter((entry) => entry.kind === "module").length,
   };
 
   const lines: string[] = [];
@@ -87,10 +89,18 @@ function entryLines(
 ): readonly string[] {
   const why = whyItReachesNothing(entry, schema, cwd);
   if (why.length === 0) return [];
-  return [
-    `  ${entry.package} → ${JSON.stringify(entry.subpath)} → \`${entry.symbolPath}\``,
-    ...why.map((line) => `    ${line}`),
-  ];
+  return [`  ${addressOf(entry)}`, ...why.map((line) => `    ${line}`)];
+}
+
+/**
+ * The entry as its author wrote it. A module entry has two halves rather than
+ * three, and reading its specifier as a subpath would print an address nobody
+ * could find in the file.
+ */
+function addressOf(entry: CheckedEntry): string {
+  return entry.kind === "package"
+    ? `${entry.package} → ${JSON.stringify(entry.subpath)} → \`${entry.symbolPath}\``
+    : `modules → ${JSON.stringify(entry.module)} → \`${entry.symbolPath}\``;
 }
 
 function whyItReachesNothing(
@@ -102,9 +112,31 @@ function whyItReachesNothing(
     case "reaches":
       return [];
     case "unresolved":
+      return entry.kind === "module"
+        ? [
+            `nothing here declares the ambient module ${JSON.stringify(entry.module)}, so ` +
+              "there is no surface to hold this against. Inert rather than wrong.",
+          ]
+        : [
+            `nothing of \`${entry.package}\` is in this project, so there is ` +
+              "no surface to hold this against. Inert rather than wrong.",
+          ];
+    case "declared-elsewhere":
       return [
-        `nothing of \`${entry.package}\` is in this project, so there is ` +
-          "no surface to hold this against. Inert rather than wrong.",
+        `${JSON.stringify(entry.module)} publishes this key, and what it reaches is ` +
+          `declared in ${JSON.stringify(entry.declaredIn)} — which is the block a ` +
+          "carrier is matched by, so this entry is never consulted.",
+        `Key it under ${JSON.stringify(entry.declaredIn)} instead.`,
+      ];
+    case "not-ambient":
+      return [
+        `${JSON.stringify(entry.module)} publishes this key, and what it reaches is ` +
+          "declared in no `declare module` block at all, so it has an export " +
+          "surface address rather than a module one.",
+        entry.shipsIn === undefined
+          ? "Nothing names the package it ships in, so nothing keyed anywhere " +
+            "reaches it until a `package.json` there names one."
+          : `Key it under \`packages\` → \`${entry.shipsIn}\` instead.`,
       ];
     case "unusable":
       return [
@@ -133,12 +165,31 @@ function whyItReachesNothing(
             `Its subpaths are: ${entry.subpaths.map((each) => JSON.stringify(each)).join(", ")}`,
           ];
     }
-    case "no-key":
+    case "no-key": {
+      if (entry.kind === "module") {
+        const publishes =
+          `${JSON.stringify(entry.module)} declares no symbol at this key, ` +
+          "so this entry colors nothing.";
+        // A block that declares nothing a carrier could key has no list to
+        // offer instead, and a label with nothing after it reads as a bug in
+        // the report rather than as the fact it is.
+        return entry.published.length === 0
+          ? [
+              publishes,
+              "The walk over what it declares reached no name a carrier could " +
+                "key, so no entry under this specifier reaches anything.",
+            ]
+          : [
+              publishes,
+              `What it declares: ${nearest(entry.published, entry.symbolPath)}`,
+            ];
+      }
       return [
         `\`${entry.package}\` publishes no symbol at this key, so this ` +
           "entry colors nothing.",
         `What it publishes at ${JSON.stringify(entry.subpath)}: ${nearest(entry.published, entry.symbolPath)}`,
       ];
+    }
     case "ships-elsewhere":
       return [
         `\`${entry.package}\` publishes this key, and what it reaches ` +
@@ -185,11 +236,17 @@ interface Tally {
   readonly checked: number;
   readonly dead: number;
   readonly unusable: number;
-  readonly inert: number;
+  /**
+   * The two addresses are counted apart because they are inert for two
+   * different reasons, and one clause covering both would tell a reader with
+   * only module entries that they named a package they never wrote.
+   */
+  readonly absentPackages: number;
+  readonly absentModules: number;
 }
 
 function summary(tally: Tally, fatal: boolean): string {
-  const { checked, dead, unusable, inert } = tally;
+  const { checked, dead, unusable, absentPackages, absentModules } = tally;
   if (checked === 0) {
     return fatal
       ? "Nothing was checked: a carrier above is not being honored."
@@ -201,10 +258,15 @@ function summary(tally: Tally, fatal: boolean): string {
     ...(unusable === 0
       ? []
       : [`${count(unusable, "does", "do")} not validate`]),
-    ...(inert === 0
+    ...(absentPackages === 0
       ? []
       : [
-          `${count(inert, "names", "name")} a package this project does not hold`,
+          `${count(absentPackages, "names", "name")} a package this project does not hold`,
+        ]),
+    ...(absentModules === 0
+      ? []
+      : [
+          `${count(absentModules, "names", "name")} an ambient module nothing here declares`,
         ]),
   ];
 

@@ -1,12 +1,10 @@
 import { readdirSync } from "node:fs";
 import { dirname } from "node:path";
-import type { ColorTable, ColorTables } from "./document.js";
+import { NO_TABLES, type CarrierTables, type ColorTable } from "./document.js";
 import { manifestAt, type ManifestState } from "./manifest.js";
 import { join, normalize, packageHomeOf, type PackageHome } from "./packages.js";
 
-const EMPTY: ColorTables = new Map();
-
-const scans = new Map<string, ColorTables>();
+const scans = new Map<string, CarrierTables>();
 
 /**
  * The overlays a project has installed, by the npm package each one colors.
@@ -25,8 +23,8 @@ const scans = new Map<string, ColorTables>();
  * major of its target still answers, and the mismatch warning #17 reserved is
  * not built. Overlay majors track target majors by `@types` convention.
  */
-export function overlaysFor(asking: PackageHome | undefined): ColorTables {
-  if (asking === undefined) return EMPTY;
+export function overlaysFor(asking: PackageHome | undefined): CarrierTables {
+  if (asking === undefined) return NO_TABLES;
 
   const known = scans.get(asking.directory);
   if (known !== undefined) return known;
@@ -58,8 +56,9 @@ export function installedOverlaysFor(
   }));
 }
 
-function scan(directory: string): ColorTables {
-  const overlays = new Map<string, ColorTable>();
+function scan(directory: string): CarrierTables {
+  const packages = new Map<string, ColorTable>();
+  const modules: ColorTable[] = [];
 
   for (const home of installedOverlays(directory)) {
     const state = manifestAt(home);
@@ -68,11 +67,19 @@ function scan(directory: string): ColorTables {
     // version this release cannot read has no field it may be trusted to name
     // a target in. Either way the rungs below it answer, which they are sound
     // by their own lights to do — an overlay supersedes no tag.
-    if (state.kind !== "valid" || state.target === undefined) continue;
-    if (!overlays.has(state.target)) overlays.set(state.target, state.table);
+    if (state.kind !== "valid") continue;
+
+    // An ambient module is nobody's export surface, so a `modules` table is not
+    // about the overlay's target and is read whether or not it names one. The
+    // scan's nearest-first order is what settles a specifier two overlays both
+    // color, exactly as it settles a package two of them both name.
+    if (state.modules !== undefined) modules.push(state.modules);
+
+    if (state.target === undefined) continue;
+    if (!packages.has(state.target)) packages.set(state.target, state.table);
   }
 
-  return overlays;
+  return { packages, modules };
 }
 
 /** Every `@no-throw/*` package on the `node_modules` chain, nearest first. */

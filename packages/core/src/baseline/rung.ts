@@ -1,5 +1,6 @@
 import ts from "typescript";
 
+import { ambientKeyOf, ambientModuleOf } from "../carrier/ambient.js";
 import type { CarrierAnswer, CarrierRung } from "../carrier/chain.js";
 import type { FloorSource } from "../colors.js";
 import { signatureSegment } from "../segments.js";
@@ -76,6 +77,11 @@ export type Stated = "stated" | "unstated";
  * project augmenting a lib type gives the member a second declaration outside
  * the libs, and reading the reach off the one overload resolution matched would
  * send the reader at the package rungs over a builtin none of them can key.
+ *
+ * The libs are asked first and an ambient block second, because the two never
+ * overlap and the libs are the commoner answer: `lib.*.d.ts` declares its types
+ * globally rather than inside a `declare module`, and a specifier reached that
+ * far would be one somebody wrote by hand.
  */
 export function floorSourceOf(
   declaration: ts.Declaration,
@@ -83,11 +89,20 @@ export function floorSourceOf(
   checker: ts.TypeChecker,
 ): FloorSource {
   const [declared] = libDeclarationsOf(declaration, checker);
-  if (declared === undefined) return PACKAGE_SOURCE;
+  if (declared !== undefined) {
+    return {
+      reach: "lib",
+      baseline: sourceOfLibTarget(declared.libTarget),
+      stated: stated === "stated",
+    };
+  }
+
+  const module = ambientModuleOf(declaration);
+  if (module === undefined) return PACKAGE_SOURCE;
   return {
-    reach: "lib",
-    baseline: sourceOfLibTarget(declared.libTarget),
-    stated: stated === "stated",
+    reach: "ambient",
+    module,
+    key: ambientKeyOf(declaration, checker)?.symbolPath,
   };
 }
 
