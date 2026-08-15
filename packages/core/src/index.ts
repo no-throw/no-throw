@@ -17,6 +17,7 @@ export type {
   Color,
   ConditionPath,
 } from "./baseline/types.js";
+export type { BridgeEdit, BridgeShape } from "./bridge.js";
 export { OverridesError } from "./carrier/overrides.js";
 export { packageHomeOf } from "./carrier/packages.js";
 export type { PackageHome } from "./carrier/packages.js";
@@ -45,6 +46,21 @@ export type {
   ManifestDocument,
   MarkRefusal,
 } from "./emit.js";
+export {
+  escapeMessages,
+  escapeReports,
+  markMessages,
+  markReports,
+} from "./report.js";
+export type {
+  EscapeDiagnosticId,
+  EscapeMessageId,
+  EscapeOffer,
+  EscapeOfferId,
+  EscapeReport,
+  MarkMessageId,
+  MarkReport,
+} from "./report.js";
 export { findMarks } from "./marks.js";
 export type { MarkProblem, MarkProblemKind, Marks, Span } from "./marks.js";
 export type { HiddenCallee, TransferSite } from "./transfers.js";
