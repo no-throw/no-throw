@@ -4,9 +4,14 @@ import { writeWorklist } from "../worklist.js";
 
 const report = await generateBaseline();
 
-const { shapes, topRules, ...counts } = report.summary;
+const LABEL = 22;
+
+const { shapes, topRules, memberDefinitionsByForm, ...counts } = report.summary;
 for (const [name, value] of Object.entries(counts)) {
-  console.log(`${name.padEnd(22)} ${value}`);
+  console.log(`${name.padEnd(LABEL)} ${value}`);
+}
+for (const [form, count] of memberDefinitionsByForm) {
+  console.log(`${`  member dfns, ${form}`.padEnd(LABEL)} ${count}`);
 }
 console.log(
   `gate sensitivity       ${report.gate.sensitivity.reproduced}/${report.gate.sensitivity.attempted}`,

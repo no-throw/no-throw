@@ -30,11 +30,29 @@ The pipeline:
    is `[EnforceRange]`, which the classifier records as a throwing site because
    TypeScript declares the parameter `number` and `number` bounds nothing.
 2. **Prose is the source.** Bikeshed's `data-dfn-for`/`data-dfn-type`/`data-lt`
-   give member attribution free. The graph they form is read under the three
-   rules #26 established — members are leaves; throws count from a member's own
-   region or a noun's steps only; calls count from the definitional sentence
-   plus the steps — which take a naive median of 131 definitions visited per
-   member down to a median of 10.
+   give member attribution free, and it writes them on a `<dfn>` **or on a
+   section heading** — the second wherever a definition *is* a section, with no
+   `<dfn>` emitted at all. Reading only the first made every such definition
+   invisible, all of `console` and the abstract operation its every member
+   delegates to among them (#130), so the generator now prints member
+   definitions **by markup form** every run, beside the extended-attribute
+   count: a form that reads zero is a form nobody is reading. The graph they
+   form is read under the three rules #26 established — members are leaves;
+   throws count from a member's own region or a noun's steps only; calls count
+   from the definitional sentence plus the steps — which take a naive median of
+   131 definitions visited per member down to a median of 10.
+
+   Reading the second form also moves prose that was already visible, which is
+   the half worth watching: a definitional heading ends the region of the
+   `<dfn>` before it, and 450 of the 477 name nouns rather than members. The
+   worst case was `handler-broadcastchannel-onmessageerror`, reading 98,380
+   characters — the whole of Workers — as one event-handler attribute's
+   algorithm. Nothing is dropped; it moves to the definitions that own it, and
+   is read there under the noun rule. Nine entries moved in the pass that
+   landed it: six clipboard members and `NavigationPreloadManager#getState`
+   from floor to throwing, `Notification#close` to floor, and the two
+   `select()`s to clean, which is what HTML says — `select()` returns early
+   where `setSelectionRange()` throws.
 3. **Gecko's `[Throws]` is a one-way oracle.** Presence is a sound *throwing*
    signal and adds a hazard site. Absence is one implementation's behavior and
    is never read at all: there is no function in `gecko.ts` that answers "is it
@@ -170,13 +188,20 @@ Sound, and cheaper to state than to hide:
 - **Members with no prose definition** — reflected ARIA attributes, specs that
   predate Bikeshed's `dfn` conventions (WebGL has 15 `<dfn>`s and zero
   `data-dfn-for` across ~1,150 members). #26 measured ~48.5%; this pass lands
-  near 38% of the IDL-backed surface. Part of that number is a defect rather
-  than a spec's silence: a definition Bikeshed promotes to a **section heading**
-  carries its `data-dfn-*` on the `<h4>`, and the extractor reads `<dfn>` tags
-  only, so every such member is invisible to it. The whole of `console.*` is —
-  see [#130](https://github.com/no-throw/no-throw/issues/130).
+  near 37% of the IDL-backed surface. Until #130 part of that number was a
+  defect rather than a spec's silence: a definition Bikeshed promotes to a
+  **section heading** carries its `data-dfn-*` on the `<h4>`, and the extractor
+  read `<dfn>` tags only, so every such member — the whole of `console.*` among
+  them — was invisible to it. Both forms are read now, so what is left really is
+  prose nobody wrote.
 - **Members the gate cannot reach**, which is jsdom's reach plus the members
-  that would tear down the harness (`alert`, `close`, `submit`, …).
+  that would tear down the harness (`alert`, `close`, `submit`, …). All of
+  `console` sits here: WebIDL declares it a `namespace`, so there is no
+  constructor and no prototype for the receiver pool to key an instance under,
+  and 19 members the prose now proposes clean go unprobed and ship floored.
+  That is the successor floor to the one #130 removed, and it is the sound
+  one — recorded in `unprobed`, where an unreached clean claim belongs, rather
+  than invisible.
 - **Members holding a callback they never enter** — see the price above.
 - **IDL-generated iteration members** — `entries`, `keys`, `values`, `forEach`
   and `@@iterator` on an interface declaring `iterable<>`. WebIDL generates them
