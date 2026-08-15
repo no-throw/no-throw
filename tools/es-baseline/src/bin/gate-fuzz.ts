@@ -26,7 +26,7 @@ if (selfCheck) {
   for (const key of PLANTED) {
     // Planted unconditioned on purpose: a claim that scoped itself away from
     // the refuting call would prove the opposite of what this is for.
-    claims.set(key, { cleanCall: true, cleanGet: false, absent: new Set() });
+    claims.set(key, { cleanCall: true, cleanGet: false, absent: new Map() });
   }
 }
 

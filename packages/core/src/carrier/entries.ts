@@ -76,9 +76,9 @@ function declaredConditions(
     const parsed = parseConditionPath(path);
     if (parsed === undefined) return undefined;
 
-    if (parsed.requires === "nullish") {
+    if (parsed.requires !== "entered") {
       conditions.push({
-        requires: "nullish",
+        requires: parsed.requires,
         path: { paramIndex: parsed.paramIndex, members: [] },
         owner: declaration,
         entry: undefined,

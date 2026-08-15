@@ -3,10 +3,22 @@ import type { ConditionPath } from "./types.js";
 /**
  * What the argument at a position has to be for the entry's color to hold.
  * `entered` is the ordinary reading — the member enters the path, so whatever
- * reaches it must itself be non-throwing. `nullish` is the other one: the
- * member enters nothing, because ECMA-262 returns before it can.
+ * reaches it must itself be non-throwing. The other two say the member enters
+ * nothing, because the owner returns before it can.
  */
-export type Requirement = "entered" | "nullish";
+export type Requirement = "entered" | Absence;
+
+/**
+ * The two ways a position can be required to hold nothing, which differ in one
+ * spelling. Both admit an omitted argument and the `undefined` spelling;
+ * `nullish` admits the `null` keyword as well, and `undefined` does not.
+ *
+ * They are two forms because ECMA-262 writes two guards. `If iterable is either
+ * undefined or null, return map` really does return on `null`, so `new
+ * Map(null)` is clean. `If precision is undefined, return ! ToString(x)` does
+ * not, and `(1).toPrecision(null)` throws a RangeError.
+ */
+export type Absence = "nullish" | "undefined";
 
 /**
  * A parsed condition path. The root is always a parameter position — a
@@ -23,7 +35,7 @@ export type ParsedConditionPath =
       readonly paramIndex: number;
       readonly segments: readonly PathSegment[];
     }
-  | { readonly requires: "nullish"; readonly paramIndex: number };
+  | { readonly requires: Absence; readonly paramIndex: number };
 
 export type PathSegment =
   | { readonly kind: "member"; readonly name: string }
@@ -33,6 +45,7 @@ export type PathSegment =
 const ROOT = /^param(0|[1-9]\d*)/;
 const SEGMENT = /^(?:\[\]|\.@@([A-Za-z_$][\w$]*)|\.([A-Za-z_$][\w$]*))/;
 const NULLISH = "=nullish";
+const UNDEFINED = "=undefined";
 
 /**
  * Parse a wire-format condition path. Returns `undefined` for anything outside
@@ -47,6 +60,7 @@ export function parseConditionPath(
   const paramIndex = Number(root[1]);
   let rest = path.slice(root[0].length);
   if (rest === NULLISH) return { requires: "nullish", paramIndex };
+  if (rest === UNDEFINED) return { requires: "undefined", paramIndex };
 
   const segments: PathSegment[] = [];
   while (rest.length > 0) {
@@ -64,7 +78,9 @@ export function parseConditionPath(
 
 export function formatConditionPath(parsed: ParsedConditionPath): ConditionPath {
   const root = `param${parsed.paramIndex}`;
-  if (parsed.requires === "nullish") return root + NULLISH;
+  if (parsed.requires !== "entered") {
+    return root + (parsed.requires === "nullish" ? NULLISH : UNDEFINED);
+  }
 
   let out = root;
   for (const segment of parsed.segments) {

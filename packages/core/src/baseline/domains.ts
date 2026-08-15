@@ -117,11 +117,16 @@ export class TypeDomains {
 
   /**
    * Some overload declares `null` at this position. The nullish halves read
-   * apart, and existential like `mayBeCallable`: a guard ECMA-262 spells
-   * `either undefined or null` rules out both spellings at once, while a rule
-   * that rules out only `undefined` leaves this one reachable — and a
-   * `param<N>=nullish` condition admits the `null` keyword, so stating one off
-   * the narrower rule needs the declaration to be unable to deliver it.
+   * apart, and existential like `mayBeCallable`: `isNonNullish` is universal
+   * and answers for `undefined` too, so this is not its negation.
+   *
+   * It asks what a call may *pass*, which makes it a question for whoever is
+   * choosing values to drive a position with — the fuzz gate, deciding whether
+   * `null` is a conformant argument there. No entry may rest on it. One that
+   * did would be true only relative to the declaration it was generated
+   * against, and false in a program that merges into that declaration or does
+   * not typecheck; where a claim needs to exclude `null`, the condition form
+   * says so and the discharge reads the syntax.
    */
   mayBeNull(types: readonly ts.Type[]): boolean {
     const { TypeFlags } = this.#ts;

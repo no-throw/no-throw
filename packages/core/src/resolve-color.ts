@@ -489,7 +489,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       ),
     recompute: (body, conditionsOf) => {
       const derived = new Map<string, Condition>();
-      // Only `entered` is ever derived: a `nullish` condition is a claim about
+      // Only `entered` is ever derived: an absence condition is a claim about
       // a body nobody can read, and propagation carries a path onward rather
       // than the absence of one.
       const add = (path: Condition["path"], entry: Transfer): void => {

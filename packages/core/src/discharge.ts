@@ -1,4 +1,5 @@
 import ts from "typescript";
+import type { Absence } from "./baseline/paths.js";
 import type {
   AbsenceReason,
   FloorSource,
@@ -29,7 +30,7 @@ import {
  */
 export type Outcome =
   | { readonly kind: "propagate"; readonly path: ParameterPath }
-  /** A `nullish` condition's only failure: the position is not empty. */
+  /** An absence condition's only failure: the position is not empty. */
   | { readonly kind: "present"; readonly reason: AbsenceReason }
   /** The argument resolved to a body, or to a carrier's entry for one. */
   | Extract<Target, { readonly kind: "function" | "carried" }>
@@ -54,18 +55,24 @@ export function dischargeAt(
   resolution: Resolution,
 ): readonly Outcome[] {
   const args = argumentsOf(transfer);
-  return condition.requires === "nullish"
-    ? absenceAt(args, condition.path.paramIndex, resolution.checker)
-    : enteredAt(args, condition.path, caller, resolution);
+  return condition.requires === "entered"
+    ? enteredAt(args, condition.path, caller, resolution)
+    : absenceAt(
+        args,
+        condition.path.paramIndex,
+        condition.requires,
+        resolution.checker,
+      );
 }
 
 /**
- * A `nullish` condition, which resolves nothing: the question is whether
+ * An absence condition, which resolves nothing: the question is whether
  * anything arrives at the position, never what.
  */
 function absenceAt(
   args: readonly ts.Expression[] | undefined,
   paramIndex: number,
+  requires: Absence,
   checker: ts.TypeChecker,
 ): readonly Outcome[] {
   // A tagged template's arguments are the template's own strings and
@@ -81,7 +88,7 @@ function absenceAt(
   }
 
   const argument = args[paramIndex];
-  return argument === undefined || namesNothing(argument, checker)
+  return argument === undefined || namesNothing(argument, requires, checker)
     ? []
     : [{ kind: "present", reason: "argument-passed" }];
 }
@@ -144,9 +151,12 @@ function enteredAt(
 }
 
 /**
- * Whether the argument is written as nothing — the guard ECMA-262 states is
- * `either undefined or null`, so `new Map(undefined)` is as clean as
- * `new Map()`.
+ * Whether the argument is written as the nothing this condition asks for.
+ * `new Map(undefined)` is as clean as `new Map()`, because the guard ECMA-262
+ * states there is `either undefined or null` — and `new Map(null)` is clean for
+ * the same reason. The guard behind `Number.prototype.toPrecision` is
+ * `If precision is undefined`, which is why `null` is admitted by requirement
+ * and not by spelling: `(1).toPrecision(null)` reaches the RangeError.
  *
  * Read off the syntax, and deliberately not off the type. A type here is the
  * checker's *narrowed* one, and narrowing a reassignable binding is unsound
@@ -156,9 +166,13 @@ function enteredAt(
  * Two spellings cannot be narrowed into: the `null` keyword, and the global
  * `undefined`, which is the one identifier with no declaration to shadow it.
  */
-function namesNothing(argument: ts.Expression, checker: ts.TypeChecker): boolean {
+function namesNothing(
+  argument: ts.Expression,
+  requires: Absence,
+  checker: ts.TypeChecker,
+): boolean {
   const written = skipParens(argument);
-  if (written.kind === ts.SyntaxKind.NullKeyword) return true;
+  if (written.kind === ts.SyntaxKind.NullKeyword) return requires === "nullish";
   if (!ts.isIdentifier(written) || written.text !== "undefined") return false;
   return checker.getSymbolAtLocation(written)?.valueDeclaration === undefined;
 }

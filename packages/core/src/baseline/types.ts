@@ -17,14 +17,17 @@ export type Color = "throwing" | "non-throwing";
  * `"param0.@@iterator"` — which says the member is non-throwing given whatever
  * reaches there is.
  *
- * `param<N>=nullish` is the other thing a condition can say: the member is
- * non-throwing given *nothing* reaches the position. ECMA-262 writes that guard
- * as an early return — `If iterable is either undefined or null, return map` —
- * and every hazard `new Map()` has sits behind one.
+ * `param<N>=nullish` and `param<N>=undefined` are the other thing a condition
+ * can say: the member is non-throwing given *nothing* reaches the position. A
+ * spec writes that guard as an early return, and the two forms are the two
+ * guards it writes — `If iterable is either undefined or null, return map`,
+ * which every hazard `new Map()` has sits behind and which `new Map(null)`
+ * satisfies, against `If precision is undefined, return ! ToString(x)`, which
+ * `(1).toPrecision(null)` does not. Both admit an omitted argument.
  *
  * The grammar is closed; anything else floors the entry. Which is why a new
  * form belongs here rather than in a field of its own: a reader that does not
- * know `=nullish` refuses the entry, where one that met an unknown *field*
+ * know `=undefined` refuses the entry, where one that met an unknown *field*
  * would read the color and drop the condition it holds.
  */
 export type ConditionPath = string;

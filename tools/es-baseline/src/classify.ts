@@ -172,7 +172,7 @@ export function classifyAgainstSpec(
     ),
   );
   if (ECMA_402.test(member.name)) {
-    sites.push(ecma402Site(spec, member, domains));
+    sites.push(ecma402Site(spec, member));
   }
 
   const worst = sites.reduce<SiteVerdict>(
@@ -192,7 +192,7 @@ export function classifyAgainstSpec(
 
   const required = sites.flatMap((site) => site.requires);
   const absent = new Set(
-    required.filter((one) => one.requires === "nullish").map((one) => one.paramIndex),
+    required.filter((one) => one.requires !== "entered").map((one) => one.paramIndex),
   );
 
   const conditions = [
@@ -202,7 +202,7 @@ export function classifyAgainstSpec(
         // entered at, so an `entered` condition rooted there states a second
         // requirement the first has already made unmeetable: the call site
         // would have to pass a clean function *and* pass nothing.
-        .filter((one) => one.requires === "nullish" || !absent.has(one.paramIndex))
+        .filter((one) => one.requires !== "entered" || !absent.has(one.paramIndex))
         .map(formatConditionPath),
     ),
   ].sort();
@@ -225,21 +225,24 @@ export function classifyAgainstSpec(
  * than extending it, so "the arguments are all it adds" is not something the
  * extraction shows — it is a claim, made narrow and then attacked.
  *
- * Narrow in two ways, one here and one at the `null` check below. The claim
- * rests on ECMA-262's own steps having been read, so it is made only where
- * there are steps: a prose-only clause — which is most of this family,
+ * Narrow, and in the way the claim itself is narrow. It rests on ECMA-262's own
+ * steps having been read, so it is made only where there are steps: a
+ * prose-only clause — which is most of this family,
  * `Number.prototype.toLocaleString` and the three `Date` ones among them — has
  * no algorithm to have read, and its zero hazards are zero for want of a corpus
  * rather than for want of a throw. That is the hole an alias left on eleven
  * typed-array members until the fuzzer found it, and conditioning the one
  * boundary this file can name would leave the wider one unnamed. Those clauses
  * keep a flat hazard and ship throwing.
+ *
+ * The requirement is `undefined` and not `nullish`, which is the whole content
+ * of the boundary rather than a detail of it: ECMA-402 writes no guard at all,
+ * and hands `null` to `CanonicalizeLocaleList`, which coerces it and throws.
+ * Stating the wider form and leaning on the declaration to be unable to deliver
+ * `null` would put the entry's truth in a fact the discharge deliberately never
+ * reads.
  */
-function ecma402Site(
-  spec: SpecBuiltin,
-  member: LibMember,
-  domains: TypeDomains,
-): ClassifiedSite {
+function ecma402Site(spec: SpecBuiltin, member: LibMember): ClassifiedSite {
   const site = {
     shape: "unknown",
     rootOp: "ECMA-402",
@@ -271,22 +274,6 @@ function ecma402Site(
     return param === undefined ? [] : [{ paramIndex, param }];
   });
 
-  // And narrow in the second way. `param<N>=nullish` admits the `null` keyword
-  // as well as absence, because the guard it was built for is ECMA-262's
-  // `either undefined or null` — which is why `new Map(null)` is clean. ECMA-402
-  // writes no such guard: it hands `null` to `CanonicalizeLocaleList`, which
-  // coerces it and throws. So the form says more here than the boundary does,
-  // and the entry is only true where the declaration cannot deliver `null` at
-  // the position. One that can keeps the hazard rather than understating it.
-  if (passable.some(({ param }) => domains.mayBeNull(param.types))) {
-    return {
-      ...site,
-      verdict: "type-reachable",
-      rule: "locale validation lives in ECMA-402, outside the extraction corpus, and a position it reads is declared able to be `null`, which is not absence there",
-      requires: [],
-    };
-  }
-
   if (passable.length === 0) {
     return {
       ...site,
@@ -301,7 +288,7 @@ function ecma402Site(
     verdict: "absent-conditional",
     rule: "locale validation lives in ECMA-402, outside the extraction corpus; unreachable where the positions it reserves are absent",
     requires: passable.map(({ paramIndex }) => ({
-      requires: "nullish" as const,
+      requires: "undefined" as const,
       paramIndex,
     })),
   };
@@ -312,7 +299,9 @@ function ecma402Site(
  * it. A hazard behind `If iterable is either undefined or null, return map` is
  * unreachable when the call passes nothing there, whatever the hazard is — and
  * a site the declared types already discharge needs no condition, so only the
- * ones that would otherwise make the member throwing are moved.
+ * ones that would otherwise make the member throwing are moved. Which nothing
+ * the call has to pass is the guard's to say and not this reading's: the
+ * condition states the spelling the extractor recorded.
  *
  * Every guarding name must be a parameter of the member. Requiring all of them
  * rather than any is over-strict where two guards protect one site — the site
@@ -328,10 +317,16 @@ function behindAnEarlyReturn(
     return site;
   }
 
-  const positions = hazard.given.map((name) => spec.params.indexOf(name));
+  const guarded = hazard.given.map((guard) => ({
+    requires: guard.requires,
+    paramIndex: spec.params.indexOf(guard.name),
+  }));
   if (
-    positions.length === 0 ||
-    positions.some((index) => index < 0 || member.params?.[index] === undefined)
+    guarded.length === 0 ||
+    guarded.some(
+      ({ paramIndex }) =>
+        paramIndex < 0 || member.params?.[paramIndex] === undefined,
+    )
   ) {
     return site;
   }
@@ -339,11 +334,8 @@ function behindAnEarlyReturn(
   return {
     ...site,
     verdict: "absent-conditional",
-    rule: `${site.rule}; unreachable where ${hazard.given.join(" and ")} is absent`,
-    requires: positions.map((paramIndex) => ({
-      requires: "nullish" as const,
-      paramIndex,
-    })),
+    rule: `${site.rule}; unreachable where ${hazard.given.map((guard) => guard.name).join(" and ")} is absent`,
+    requires: guarded,
   };
 }
 

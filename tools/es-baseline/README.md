@@ -59,8 +59,19 @@ The pipeline:
    run; one it cannot reach ships **floored**, and is listed under `unprobed`.
 
 A member whose every reachable hazard sits behind an early return is clean
-**given the position gets nothing**, which the entry states as a
-`param<N>=nullish` condition and the call site discharges.
+**given the position gets nothing**, which the entry states as a condition the
+call site discharges. Which nothing is the guard's to say, so the extractor
+records the spelling ECMA-262 used rather than flattening the two into one:
+`If iterable is either undefined or null, return map` becomes
+`param<N>=nullish`, which `new Map(null)` satisfies, and `If precision is
+undefined, return ! ToString(x)` becomes `param<N>=undefined`, which
+`(1).toPrecision(null)` does not — that call throws a RangeError.
+
+ECMA-262's third spelling, `If x is null, return`, is read as no guard at all,
+so a member behind one ships throwing. It would need a third condition form to
+state truthfully, no builtin needs one, and matching it under either existing
+form would claim the guard covers an omitted argument — the direction that
+lies.
 
 ECMA-402 reaches the same form from the other side. It is a different document
 and its validation is structurally invisible here, but *which arguments it
@@ -75,18 +86,20 @@ it. That leaves `localeCompare` the one member of the family it colors, and
 `Number.prototype.toLocaleString`, the three `Date` ones and the rest shipping
 throwing as before.
 
-The second narrowing is about the form rather than the boundary.
-`param<N>=nullish` admits the `null` keyword as well as absence, because the
-guard it was built for is ECMA-262's `either undefined or null` — which is why
-`new Map(null)` is clean. ECMA-402 writes no such guard: `null` reaches
-`CanonicalizeLocaleList`, which coerces it and throws. So the reading states a
-condition only where the declaration cannot deliver `null` at the position, and
-a position that can keeps the hazard instead. What that leans on is the
-declaration, the way every domain judgment here does.
+ECMA-402 writes no early return at all, so what its boundary admits is absence
+and the `undefined` spelling and nothing else: `null` reaches
+`CanonicalizeLocaleList`, which coerces it and throws. `param<N>=undefined`
+states exactly that. It is the form that made the second narrowing this reading
+used to carry unnecessary — stating `=nullish` and leaning on the declaration to
+be unable to deliver `null` put the entry's truth in a fact the discharge
+deliberately never reads, and a position declared able to be `null` had to keep
+its hazard rather than understate it. Both go away: the condition says what the
+boundary says, whatever the declaration happens to be.
 
-Eleven entries carry a `=nullish` condition: the four collection constructors
-and `String.prototype.localeCompare` under both lib targets that declare them,
-and `Number.prototype.toPrecision`.
+Eleven entries carry an absence condition. `=nullish`, the wider form: the four
+collection constructors under both lib targets that declare them.
+`=undefined`, the narrow one: `Number.prototype.toPrecision`, and
+`String.prototype.localeCompare` under both lib targets.
 
 ## The gates
 
@@ -100,10 +113,13 @@ pnpm --filter @no-throw/es-baseline-tools run gate:drift -- --against /path/to/o
 
 **The hostile fuzz gate.** Every proposed-clean entry — conditional ones
 included — faces a type-conformant but hostile refutation attempt, inside the
-scope the entry claims: a position conditioned `=nullish` is driven with
-`undefined` and with nothing, because a color stated for `new Map()` says
-nothing about `new Map(iterable)` and refuting it there would refute a sentence
-nobody wrote. The pool is
+scope the entry claims: a conditioned position is driven with nothing, with
+`undefined`, and — where the condition is `=nullish` and the declared type
+admits it — with `null`, because a color stated for `new Map()` says nothing
+about `new Map(iterable)` and refuting it there would refute a sentence nobody
+wrote. `null` where the type does not admit it is such a sentence, so that is
+one more claim the gate leaves partly undriven rather than attacking out of
+scope. The pool is
 detached and shrunk buffers, a throwing-`Symbol.species` subclass, and
 `Object.create(null)`; `Proxy` is excluded because it is trust base. A construct
 signature is entered with `new` on two NewTargets — the constructor and a

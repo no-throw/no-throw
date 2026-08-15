@@ -21,6 +21,11 @@ export function explicitlyNothing(): Map<string, string> {
 }
 
 /** @nothrow */
+export function explicitlyNull(): Map<string, string> {
+  return new Map<string, string>(null);
+}
+
+/** @nothrow */
 export function fromEntries(entries: Entries): Map<string, string> {
   return new Map(entries);
 }

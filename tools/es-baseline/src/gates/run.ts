@@ -1,5 +1,10 @@
 import { parseConditionPath } from "@no-throw/core/baseline";
-import type { BaselineData, LibMember, LibProgram } from "@no-throw/core/baseline";
+import type {
+  Absence,
+  BaselineData,
+  LibMember,
+  LibProgram,
+} from "@no-throw/core/baseline";
 
 import { HostileFuzzer, type Counterexample, type ProbeResult } from "./fuzz.js";
 
@@ -11,12 +16,15 @@ export interface Claim {
   readonly cleanCall: boolean;
   readonly cleanGet: boolean;
   /**
-   * Positions the clean call claim is conditioned on getting no argument. The
-   * gate has to hold the claim to its own scope: an entry saying `new Map()`
-   * is clean says nothing about `new Map(iterable)`, and probing the second
-   * would refute a sentence nobody wrote.
+   * Positions the clean call claim is conditioned on getting no argument, and
+   * which nothing each one admits. The gate has to hold the claim to its own
+   * scope: an entry saying `new Map()` is clean says nothing about
+   * `new Map(iterable)`, and probing the second would refute a sentence nobody
+   * wrote. The requirement is the scope's other edge — `new Map(null)` is
+   * inside what the collection constructors claim and outside what a
+   * `=undefined` entry claims.
    */
-  readonly absent: ReadonlySet<number>;
+  readonly absent: ReadonlyMap<number, Absence>;
 }
 
 export interface GateReport {
@@ -44,19 +52,31 @@ export interface GateReport {
 }
 
 /**
- * The `param<N>=nullish` conditions of an entry, as positions. Absence of the
- * whole field means maximally conditioned, which conditions nothing on being
- * absent — every callable parameter is conditioned on being *entered*.
+ * The absence conditions of an entry, as positions and what each admits.
+ * Absence of the whole field means maximally conditioned, which conditions
+ * nothing on being absent — every callable parameter is conditioned on being
+ * *entered*.
  */
 export function absentPositions(
   conditions: readonly string[] | undefined,
-): ReadonlySet<number> {
-  const positions = new Set<number>();
+): ReadonlyMap<number, Absence> {
+  const positions = new Map<number, Absence>();
   for (const condition of conditions ?? []) {
     const parsed = parseConditionPath(condition);
-    if (parsed?.requires === "nullish") positions.add(parsed.paramIndex);
+    if (parsed === undefined || parsed.requires === "entered") continue;
+    positions.set(parsed.paramIndex, narrower(positions.get(parsed.paramIndex), parsed.requires));
   }
   return positions;
+}
+
+/**
+ * Two absence requirements on one position, joined to what both admit. Only
+ * `=nullish` admits `null`, so a position either claim spells `=undefined` is
+ * one the gate must not drive with `null` — the value would be outside the
+ * narrower claim, and a counterexample there refutes nothing anyone wrote.
+ */
+function narrower(left: Absence | undefined, right: Absence): Absence {
+  return left === "undefined" || right === "undefined" ? "undefined" : "nullish";
 }
 
 export function claimsOf(data: BaselineData): ReadonlyMap<string, Claim> {
@@ -82,9 +102,15 @@ export function claimsOf(data: BaselineData): ReadonlyMap<string, Claim> {
               cleanGet: existing.cleanGet || claim.cleanGet,
               // One member, several lib versions of its entry. The gate drives
               // what every one of them claims, so a position only one of them
-              // conditions is still driven with a value for the others.
-              absent: new Set(
-                [...claim.absent].filter((at) => existing.absent.has(at)),
+              // conditions is still driven with a value for the others, and a
+              // position both condition is held to what both admit.
+              absent: new Map(
+                [...claim.absent].flatMap(([at, requires]) => {
+                  const other = existing.absent.get(at);
+                  return other === undefined
+                    ? []
+                    : [[at, narrower(other, requires)] as const];
+                }),
               ),
             },
       );

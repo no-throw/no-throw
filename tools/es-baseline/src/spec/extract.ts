@@ -9,6 +9,8 @@ import {
   type Clause,
   type Step,
 } from "./parse.js";
+import type { Absence } from "@no-throw/core/baseline";
+
 import { liftOperand, OperandTrace, type Operand } from "./operands.js";
 
 /**
@@ -26,17 +28,28 @@ export interface Hazard {
   readonly via: readonly string[];
   readonly operand: Operand;
   /**
-   * Names the builtin's own steps established are neither `undefined` nor
-   * `null` before this hazard can be reached, by returning early where they
-   * are. Every hazard `new Map()` has is one of these: ECMA-262 returns at
-   * step 4 when `iterable` is absent, and steps 5 to 7 hold the rest.
+   * Names the builtin's own steps established hold a value before this hazard
+   * can be reached, by returning early where they do not. Every hazard
+   * `new Map()` has is one of these: ECMA-262 returns at step 4 when `iterable`
+   * is absent, and steps 5 to 7 hold the rest.
    *
    * The builtin's own namespace, so a name here is a parameter of the member
    * itself and the classifier can turn it into a condition on that position.
    * Nothing lifted from a callee carries one — a fact about the callee's own
    * locals is not a fact any call site could discharge.
    */
-  readonly given: readonly string[];
+  readonly given: readonly Guard[];
+}
+
+/**
+ * One name an early return has ruled out, and *which* nothing it ruled out.
+ * The two guards are not interchangeable and flattening them into one
+ * requirement overclaims: `Number.prototype.toPrecision` returns on `undefined`
+ * alone, so an entry saying `null` is fine there says more than ECMA-262 does.
+ */
+export interface Guard {
+  readonly name: string;
+  readonly requires: Absence;
 }
 
 export interface SpecBuiltin {
@@ -176,19 +189,38 @@ function objectsEstablishedBy(
  * The return has to be unconditional in the same step. `If x is undefined,
  * then` opening a sub-list establishes the fact for that list and not for what
  * follows it, and that shape is the enclosing-guard reading's business.
+ *
+ * The spelling is captured rather than flattened away, because it is the whole
+ * content of the condition the entry ships: the first alternative admits `null`
+ * at the call site and the second does not. ECMA-262's third spelling, `If x is
+ * null, return`, is deliberately absent — a member behind one is simply not
+ * read as guarded, so it ships throwing. Recognizing it would need a third
+ * condition form to state truthfully, and no builtin needs one today; matching
+ * it under either existing form would claim the guard covers an omitted
+ * argument, which is the direction that lies.
  */
-const RETURNS_IF_NULLISH =
-  /^If (\w+) is (?:either undefined or null|undefined|null), return\b/;
+const RETURNS_IF_ABSENT =
+  /^If (\w+) is (either undefined or null|undefined), return\b/;
 
 /**
- * The names an early return has ruled out by the time this step runs. A fact
+ * Which nothing `RETURNS_IF_ABSENT` matched, as the condition grammar spells
+ * it. Only the exact prose that returns on `null` earns the form admitting it,
+ * so anything else falls to the narrow one — which is over-strict at the call
+ * site rather than a lie about it.
+ */
+function absenceOf(spelling: string): Absence {
+  return spelling === "either undefined or null" ? "nullish" : "undefined";
+}
+
+/**
+ * The guards an early return has established by the time this step runs. A fact
  * holds for the steps *after* the return in the same list, and for everything
  * nested under them: those are exactly the steps the return can skip.
  */
 function establishedBefore(
   step: Step,
-  returns: readonly { name: string; path: readonly number[] }[],
-): readonly string[] {
+  returns: readonly (Guard & { path: readonly number[] })[],
+): readonly Guard[] {
   return returns
     .filter(({ path }) => {
       const depth = path.length - 1;
@@ -198,7 +230,7 @@ function establishedBefore(
         (step.path[depth] ?? -1) > (path[depth] ?? 0)
       );
     })
-    .map(({ name }) => name);
+    .map(({ name, requires }) => ({ name, requires }));
 }
 
 /** A throw condition that fires only on something that is not an Object. */
@@ -280,10 +312,10 @@ export function extractSpec(html: string): SpecCorpus {
     // an enclosing guard's cannot: the value at the later step may not be the
     // one that was tested.
     const earlyReturns = steps.flatMap((step) => {
-      const name = RETURNS_IF_NULLISH.exec(step.text)?.[1];
-      return name === undefined || reassigned.has(name)
-        ? []
-        : [{ name, path: step.path }];
+      const match = RETURNS_IF_ABSENT.exec(step.text);
+      const name = match?.[1];
+      if (name === undefined || reassigned.has(name)) return [];
+      return [{ name, requires: absenceOf(match?.[2] ?? ""), path: step.path }];
     });
 
     for (const step of steps) {
@@ -529,11 +561,18 @@ function dedupeHazards(hazards: readonly Hazard[]): readonly Hazard[] {
     }
     // The same cause at two steps is reachable however either one is guarded,
     // so what survives is what both agree on. Keeping the first would let a
-    // step behind an early return answer for one that is not.
-    const shared = known.given.filter((name) => hazard.given.includes(name));
-    if (shared.length !== known.given.length) {
-      seen.set(key, { ...known, given: shared });
-    }
+    // step behind an early return answer for one that is not. Where both guard
+    // a name but spell the nothing differently, what they agree on is the
+    // narrower spelling — the cause is skipped only by a call the *both* of
+    // them return for.
+    const shared = known.given.flatMap((guard) => {
+      const other = hazard.given.find(({ name }) => name === guard.name);
+      if (other === undefined) return [];
+      return other.requires === guard.requires
+        ? [guard]
+        : [{ ...guard, requires: "undefined" as const }];
+    });
+    seen.set(key, { ...known, given: shared });
   }
   return [...seen.values()];
 }
