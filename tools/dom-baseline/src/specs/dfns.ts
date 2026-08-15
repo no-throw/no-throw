@@ -6,10 +6,10 @@ import { loadCachedSpecs, loadSpecIndex, type CachedSpec, type SpecTarget } from
  * anchors and hyperlinks, and **says nothing about which links are calls**. A
  * hyperlink is a call, a cross-reference, or a noun.
  *
- * An anchor comes in two markups — a `<dfn>`, or the `data-dfn-*` attributes
- * on a section heading where the definition *is* a section — and both are read
- * here, identically. Reading one of them is how the whole of `console.*` went
- * missing (#130).
+ * An anchor is a `<dfn>` *or a heading* — Bikeshed writes the `data-dfn-*`
+ * attributes on the heading and emits no `<dfn>` wherever a definition is a
+ * whole section. Reading only `<dfn>` made every such definition invisible, and
+ * invisible all the way down: no prose, so no proposal, so no entry (#130).
  *
  * Read naively the graph is useless — #26 measured a median of 131 definitions
  * visited per member and `Element.getAttribute` reported throwing. Three rules
@@ -52,18 +52,20 @@ export interface ProseThrow {
 }
 
 /**
- * Which markup a definition was written in. Bikeshed writes most as `<dfn>`,
- * but a definition that *is* a section carries its `data-dfn-*` on the section
- * heading and gets no `<dfn>` at all.
+ * Which markup Bikeshed wrote a definition in. Where a definition *is* a
+ * section it puts the `data-dfn-*` attributes on the heading and emits no
+ * `<dfn>` at all, and a reader of `<dfn>` alone sees none of those definitions —
+ * #130, where the whole of `console` was invisible and `Logger`, the abstract
+ * operation its every member delegates to, with it.
  */
-export type MarkupForm = "dfn" | "heading";
+export type Form = "dfn" | "heading";
 
 export interface Dfn {
   /** `dom#dom-element-matches` — spec shortname plus anchor. */
   readonly key: string;
   readonly spec: string;
   readonly id: string;
-  readonly form: MarkupForm;
+  readonly form: Form;
   readonly dfnFor: readonly string[];
   readonly dfnType: string | undefined;
   readonly lt: readonly string[];
@@ -85,11 +87,11 @@ export interface DfnGraph {
     readonly definitions: number;
     readonly memberDefinitions: number;
     /**
-     * The same count split by the markup it was written in. Printed every run:
-     * #130 was a whole markup form going unread, and the only trace it left was
-     * members quietly flooring. A form that drops to zero says so here.
+     * The control on {@link Form}: a form nobody reads is a silent floor, and a
+     * count that names the forms apart is the only thing that would have shown
+     * #130 the day the corpus first contained one.
      */
-    readonly memberDefinitionsByForm: Readonly<Record<MarkupForm, number>>;
+    readonly memberDefinitionsByForm: readonly (readonly [form: Form, count: number])[];
     readonly throwSites: number;
     readonly aliasRuns: number;
     readonly calleeLinks: number;
@@ -104,17 +106,24 @@ export const MEMBER_DFN_TYPES: ReadonlySet<string> = new Set([
   "constructor",
 ]);
 
-const DFN_TAG = /<dfn\b([^>]*)>/g;
 /**
- * The other half of the answer to "where is a definition written". Bikeshed
- * does not always emit a `<dfn>`: where a definition *is* a section, it puts
- * `data-dfn-type`, `data-dfn-for` and `data-lt` on the heading element and
- * writes no `<dfn>` at all. Reading only `<dfn>` left every such definition
- * invisible: 27 members outright, and — the unsafe half — 168 propagating
- * concepts, among them HTML's `StructuredSerialize`, so `structuredClone` read
- * clean of the `DataCloneError`s written into it (#130).
+ * A definition is a `<dfn>`, or a heading carrying the same `data-dfn-*`
+ * attributes. Bikeshed writes the second form whenever a definition *is* a
+ * section, and a heading without `data-dfn-type` is not a definition at all: it
+ * is left out entirely rather than treated as an empty one, so that a plain
+ * section heading goes on not bounding anybody's region.
+ *
+ * A *definitional* heading does bound one, and that reaches further than the
+ * 27 members it makes visible: 450 of the 477 name nouns and abstract
+ * operations, and each now ends the region of the `<dfn>` before it.
+ * `handler-broadcastchannel-onmessageerror` was reading 98,380 characters —
+ * the whole of Workers — as one event-handler attribute's algorithm, under the
+ * member rule that reads a region in full. None of that prose is dropped; it
+ * moves to the definitions that own it, where the noun rule reads its steps
+ * instead. That is a narrowing, so it is the direction to be careful about,
+ * and every entry it moved is in the pass that landed it.
  */
-const HEADING_TAG = /<h([1-6])\b([^>]*)>/g;
+const DEFINITION_TAG = /<(dfn|h[1-6])\b([^>]*)>/g;
 const LINK = /<a\b[^>]*href="([^"]+)"/g;
 
 /**
@@ -135,7 +144,12 @@ const EXCEPTION_BEFORE =
 const PROSE_ALGORITHM =
   /\b(steps are|steps,? given|steps for|must return|must run|getter steps|setter steps|is to return|are to return|run these steps|following steps)\b/i;
 
-/** A region past this is a section, not a definition; the cap bounds the work. */
+/**
+ * The cap on a region no later definition ends. Past this much prose the text
+ * has stopped being one definition's, so reading on files hazards under
+ * whichever definition came last rather than under the one that owns them. It
+ * bounds the work too.
+ */
 const MAX_REGION = 40_000;
 /**
  * Below this much text between two `<dfn>`s, the first is an alias stub rather
@@ -152,7 +166,7 @@ const MAX_THROWS_PER_DFN = 40;
 const MAX_CALLEES_PER_DFN = 200;
 
 interface RawDfn {
-  readonly form: MarkupForm;
+  readonly form: Form;
   readonly tag: string;
   readonly start: number;
   readonly bodyStart: number;
@@ -160,8 +174,7 @@ interface RawDfn {
 
 /**
  * Where the prose comes from. Generation reads the cache; the self-check reads
- * hand-written fixtures, which is what lets it run in CI without the 420 MB
- * corpus.
+ * hand-written fixtures, which is what lets it run without the 420 MB corpus.
  */
 export interface SpecSource {
   readonly specs: Iterable<CachedSpec>;
@@ -188,7 +201,39 @@ export function buildDfnGraph(source?: SpecSource): DfnGraph {
 
   for (const { key: shortname, html } of cached) {
     specs++;
-    const raw = rawDefinitions(html);
+    const raw: RawDfn[] = [];
+    // Where the definitional heading being read ends, so a `<dfn>` rendered
+    // inside its own title can be told from one that follows it.
+    let titleEnd = 0;
+    DEFINITION_TAG.lastIndex = 0;
+    for (
+      let match = DEFINITION_TAG.exec(html);
+      match !== null;
+      match = DEFINITION_TAG.exec(html)
+    ) {
+      const form: Form = match[1] === "dfn" ? "dfn" : "heading";
+      const tag = match[2] ?? "";
+      if (form === "heading") {
+        if (attribute(tag, "data-dfn-type") === undefined) continue;
+        titleEnd = html.indexOf(`</${match[1] ?? ""}>`, match.index + match[0].length);
+      } else if (match.index < titleEnd && attribute(tag, "id") === undefined) {
+        // Six headings in HTML render a bare `<dfn>` inside their own title.
+        // It anchors nothing — no `id`, so it was never read as a definition —
+        // but admitting it ends the heading's region at its own title, and the
+        // algorithm below goes to a definition that is then dropped for want of
+        // an `id`, so nobody reads it: `StructuredSerialize` and its five
+        // neighbours, whose `DataCloneError`s reach whatever calls them. One
+        // that *did* carry an `id` would be a definition links point at, so it
+        // is kept and the heading gives way to it instead.
+        continue;
+      }
+      raw.push({
+        form,
+        tag,
+        start: match.index,
+        bodyStart: match.index + match[0].length,
+      });
+    }
 
     for (const [index, dfn] of raw.entries()) {
       const id = attribute(dfn.tag, "id");
@@ -204,11 +249,14 @@ export function buildDfnGraph(source?: SpecSource): DfnGraph {
   let calleeLinks = 0;
   let resolvedCalleeLinks = 0;
   let memberDefinitions = 0;
-  const memberDefinitionsByForm: Record<MarkupForm, number> = { dfn: 0, heading: 0 };
+  const byForm = new Map<Form, number>([
+    ["dfn", 0],
+    ["heading", 0],
+  ]);
   for (const node of nodes.values()) {
     if (MEMBER_DFN_TYPES.has(node.dfnType ?? "") && node.dfnFor.length > 0) {
       memberDefinitions++;
-      memberDefinitionsByForm[node.form]++;
+      byForm.set(node.form, (byForm.get(node.form) ?? 0) + 1);
     }
     for (const callee of node.callees) {
       calleeLinks++;
@@ -222,7 +270,7 @@ export function buildDfnGraph(source?: SpecSource): DfnGraph {
       specs,
       definitions: nodes.size,
       memberDefinitions,
-      memberDefinitionsByForm,
+      memberDefinitionsByForm: [...byForm],
       throwSites,
       aliasRuns,
       calleeLinks,
@@ -232,67 +280,9 @@ export function buildDfnGraph(source?: SpecSource): DfnGraph {
 }
 
 /**
- * Every definition a spec writes, in document order, in either markup form.
- *
- * The two forms are read identically past this point, which is the whole of the
- * fix: a heading carries the same `id` and `data-*`, so it needs no rule of its
- * own. The one place they interact is nesting — six definition headings in HTML
- * render a bare `<dfn>` inside their own title, and admitting one would end the
- * heading's region at its own title.
- *
- * Putting headings in `raw` also *narrows* the regions around them: a `<dfn>`
- * whose region ran past a definition heading now stops there. That is the right
- * attribution — prose under a definition's own heading is that definition's —
- * but it is the one part of this that moves toward clean, so it is stated here
- * rather than left to be found. It moved two entries, both `select()`, which
- * reached a promise rejection five hops out because `implied-document`'s region
- * had swallowed the event-loop section following it. The hostile gate probes
- * both and refuted neither.
- */
-function rawDefinitions(html: string): RawDfn[] {
-  const headings: RawDfn[] = [];
-  const titles: (readonly [start: number, end: number])[] = [];
-  HEADING_TAG.lastIndex = 0;
-  for (let match = HEADING_TAG.exec(html); match !== null; match = HEADING_TAG.exec(html)) {
-    const tag = match[2] ?? "";
-    // A heading with no `data-dfn-type` is a section title and nothing more.
-    if (attribute(tag, "data-dfn-type") === undefined) continue;
-    const bodyStart = match.index + match[0].length;
-    const close = html.indexOf(`</h${match[1] ?? ""}>`, bodyStart);
-    headings.push({ form: "heading", tag, start: match.index, bodyStart });
-    titles.push([match.index, close < 0 ? bodyStart : close]);
-  }
-
-  const raw: RawDfn[] = [];
-  let title = 0;
-  DFN_TAG.lastIndex = 0;
-  for (let match = DFN_TAG.exec(html); match !== null; match = DFN_TAG.exec(html)) {
-    const tag = match[1] ?? "";
-    // Headings do not nest, so one pointer walking forwards decides this.
-    while (title < titles.length && (titles[title]?.[1] ?? 0) < match.index) title++;
-    const within = titles[title];
-    const nested =
-      within !== undefined && match.index > within[0] && match.index < within[1];
-    // The absence of an `id` is what says the inner tag restates the heading
-    // rather than defining something of its own — all six in the corpus today.
-    // One that carried an `id` would be a definition links can point at, and
-    // dropping it would take its hazards out of reach of everything that calls
-    // it: silence in the unsafe direction, which is the shape of #130 itself.
-    if (nested && attribute(tag, "id") === undefined) continue;
-    raw.push({
-      form: "dfn",
-      tag,
-      start: match.index,
-      bodyStart: match.index + match[0].length,
-    });
-  }
-
-  return [...headings, ...raw].sort((left, right) => left.start - right.start);
-}
-
-/**
- * A definition's region runs to the next definition — except across a run of
- * alias stubs, which share the region that follows the last of them.
+ * A definition's region runs to the next definition, of either form — except
+ * across a run of alias stubs, which share the region that follows the last of
+ * them.
  */
 function regionOf(
   html: string,
@@ -326,11 +316,14 @@ function regionOf(
  * Two definitions are aliases only if they define the *same kind of thing for
  * the same interface*. Without that, a run merges unrelated neighbors and the
  * graph comes out denser than the naive reading the merge exists to fix.
+ *
+ * Only `<dfn>`s can form a run. An alias stub is an *inline* pattern — one
+ * sentence naming two spellings of one algorithm — and two section headings are
+ * never in one sentence. Reading a run across them would hand the first
+ * heading's member the second's region, which is a member losing its own prose:
+ * the unsafe direction.
  */
 function aliases(left: RawDfn, right: RawDfn): boolean {
-  // Only `<dfn>`s run in aliases. A heading opens a section of its own, and
-  // Bikeshed writes a heading's alternates into one `data-lt` rather than as
-  // a stub beside it, so there is nothing there to merge.
   if (left.form !== "dfn" || right.form !== "dfn") return false;
   const type = attribute(left.tag, "data-dfn-type");
   return (
@@ -344,11 +337,10 @@ function aliases(left: RawDfn, right: RawDfn): boolean {
 function readDfn(
   shortname: string,
   id: string,
-  raw: RawDfn,
+  { form, tag }: RawDfn,
   region: string,
   originToSpec: ReadonlyMap<string, string>,
 ): Dfn {
-  const { tag } = raw;
   const dfnType = attribute(tag, "data-dfn-type");
   const dfnFor = (attribute(tag, "data-dfn-for") ?? "").split(/[\s,]+/).filter(Boolean);
   const lt = (attribute(tag, "data-lt") ?? "").split("|").filter(Boolean);
@@ -376,7 +368,7 @@ function readDfn(
     key: `${shortname}#${id}`,
     spec: shortname,
     id,
-    form: raw.form,
+    form,
     dfnFor,
     dfnType,
     lt,

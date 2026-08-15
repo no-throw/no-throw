@@ -1,19 +1,17 @@
-import { buildDfnGraph, type MarkupForm } from "./dfns.js";
+import { buildDfnGraph, type Form } from "./dfns.js";
 import { hazardsOf, memberDfnIndex } from "./hazards.js";
 import type { CachedSpec } from "./source.js";
 
 /**
- * The control on the extractor itself. #130 was a markup form the pipeline
- * never read: `console.*` is defined on section headings, so it was invisible
- * from extraction all the way down to the entry, and nothing anywhere said so —
- * the members simply floored, which is the safe direction and therefore silent.
+ * The control on {@link Form} that the count cannot be. A count says how much
+ * of each form the corpus holds; it cannot say the form is read *correctly*,
+ * and #130 was a form read not at all — which the members answered by
+ * flooring, the safe direction and therefore a silent one.
  *
- * The by-form count the generator prints says *how much* of each form the
- * corpus holds. It cannot say the reading is right, so each form also faces the
- * same two members here: one whose prose throws and one whose prose does not.
- * A form that stops being read fails this rather than going quiet.
- *
- * The fixtures are hand-written, so this needs no corpus and runs anywhere.
+ * So each form faces the same two members here, one whose prose throws and one
+ * whose does not, and has to carry both through the member index and the
+ * hazard closure. A form that stops being read fails this rather than going
+ * quiet. The fixtures are hand-written, so it needs no corpus.
  */
 
 const DFN_FORM = `
@@ -36,13 +34,27 @@ const HEADING_FORM = `
  "<code>TypeError</code>".</p></li></ol>
 `;
 
-const FIXTURES: readonly (readonly [MarkupForm, CachedSpec])[] = [
+/**
+ * The nesting case, which is the one place the two forms interact: HTML renders
+ * a bare `<dfn>` inside six definitional headings' own titles. The heading is
+ * what carries the `id`, so it is the definition, and the algorithm below the
+ * title has to be read under it.
+ */
+const NESTED_FORM = `
+<h4 id="dom-fixture-serialize" data-dfn-type="abstract-op" data-lt="Serialize"><span class="secno">2.7.4</span>
+ <dfn>Serialize</dfn> ( <var>value</var> )</h4>
+<ol><li><p>If <var>value</var> is a Symbol, then
+ <a href="https://webidl.spec.whatwg.org/#dfn-throw">throw</a> a
+ "<code>DataCloneError</code>" DOMException.</p></li></ol>
+`;
+
+const FIXTURES: readonly (readonly [Form, CachedSpec])[] = [
   ["dfn", { key: "fixture-dfn", html: DFN_FORM }],
   ["heading", { key: "fixture-heading", html: HEADING_FORM }],
 ];
 
 export interface FormCheck {
-  readonly form: MarkupForm;
+  readonly form: Form;
   /** How many member definitions the extractor read out of the fixture. */
   readonly memberDefinitions: number;
   /** `raises()`, whose throw has to survive the hazard closure. */
@@ -54,15 +66,17 @@ export interface FormCheck {
 
 export function checkMarkupForms(): readonly FormCheck[] {
   return FIXTURES.map(([form, spec]) => {
-    const graph = buildDfnGraph({ specs: [spec], index: [{ key: spec.key, urls: [] }] });
+    const graph = graphOf(spec);
     const index = memberDfnIndex(graph);
     const hazardsFor = (name: string): number | undefined => {
       const key = index.get(`fixture.${name}`)?.key;
       return key === undefined ? undefined : hazardsOf(graph, key)?.hazards.length;
     };
+    const counted =
+      graph.stats.memberDefinitionsByForm.find(([which]) => which === form)?.[1] ?? 0;
     const check = {
       form,
-      memberDefinitions: graph.stats.memberDefinitionsByForm[form],
+      memberDefinitions: counted,
       sawHazard: (hazardsFor("raises") ?? 0) > 0,
       sawCleanMember: hazardsFor("quiet") === 0,
     };
@@ -71,4 +85,15 @@ export function checkMarkupForms(): readonly FormCheck[] {
       passed: check.memberDefinitions === 2 && check.sawHazard && check.sawCleanMember,
     };
   });
+}
+
+/** Whether a definitional heading keeps the algorithm written below its title. */
+export function checkNestedAnchor(): { readonly hazards: number; readonly passed: boolean } {
+  const graph = graphOf({ key: "fixture-nested", html: NESTED_FORM });
+  const hazards = hazardsOf(graph, "fixture-nested#dom-fixture-serialize")?.hazards.length ?? 0;
+  return { hazards, passed: hazards > 0 };
+}
+
+function graphOf(spec: CachedSpec) {
+  return buildDfnGraph({ specs: [spec], index: [{ key: spec.key, urls: [] }] });
 }

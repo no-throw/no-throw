@@ -25,8 +25,6 @@ export type ManifestState =
        * by — never the npm name the overlay itself was published under.
        */
       readonly target: string | undefined;
-      /** The file as it was written, for a reader that reports on it. */
-      readonly document: Record<string, unknown>;
     }
   | { readonly kind: "stale"; readonly file: string }
   | { readonly kind: "unreadable" }
@@ -77,7 +75,6 @@ function readManifest(home: PackageHome): ManifestState {
     kind: "valid",
     table: document.tableAt([]),
     target: typeof target === "string" ? target : undefined,
-    document: document.value,
   };
 }
 

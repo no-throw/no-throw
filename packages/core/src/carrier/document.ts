@@ -22,11 +22,35 @@ export interface ManifestEntry {
  */
 export type EntryState =
   | { readonly kind: "entry"; readonly entry: ManifestEntry }
-  | { readonly kind: "unusable" };
+  /**
+   * `faults` names where inside the entry the schema rejected it, as the
+   * property paths past the entry an author would point at. A resolver has no
+   * use for them — the entry floors whatever it was going to say — but the
+   * reader checking a carrier does: the file is the only place a fix can be
+   * made, and an entry discarded without saying which field lost it is the
+   * silent no-op again, one level down.
+   */
+  | { readonly kind: "unusable"; readonly faults: readonly string[] };
+
+/** One entry, at the key the file wrote it under. */
+export interface WrittenEntry {
+  readonly subpath: string;
+  readonly key: string;
+  readonly state: EntryState;
+}
 
 /** One `exports` table — subpath, then symbol path — as something to ask. */
 export interface ColorTable {
   entryFor(subpath: string, key: string): EntryState | undefined;
+  /**
+   * Every entry written under this table, in the order the file wrote them.
+   * A resolver asks by key and never needs this; a reader reporting on the
+   * file has no key to ask by — the entries *are* the question — and walking
+   * the document for them would be a second statement of the shape `TablePath`
+   * exists to state once, one that could not see the entries this reader
+   * discarded.
+   */
+  written(): readonly WrittenEntry[];
 }
 
 /** Tables by the npm package each one colors, which is how a rung holds them. */
@@ -150,23 +174,42 @@ function indexTable(
   prefix: readonly string[],
   issues: readonly SchemaIssue[],
 ): ColorTable {
-  const unusable = new Set(
-    issues
-      .filter((issue) => startsWith(issue.path, prefix))
-      .map((issue) =>
-        identityOf(issue.path.slice(prefix.length, prefix.length + 2)),
-      ),
-  );
+  const unusable = new Map<string, Set<string>>();
+  for (const issue of issues) {
+    if (!startsWith(issue.path, prefix)) continue;
+    const at = identityOf(issue.path.slice(prefix.length, prefix.length + 2));
+    const faults = unusable.get(at) ?? new Set<string>();
+    // Deduped, because one value can depart from a schema more than once — a
+    // `oneOf` reports the branch and the whole — and a field named twice reads
+    // as two faults to fix.
+    faults.add(issue.path.slice(prefix.length + 2).join("."));
+    unusable.set(at, faults);
+  }
   const table = valueAt(value, prefix);
 
+  const entryFor = (subpath: string, key: string): EntryState | undefined => {
+    const faults = unusable.get(identityOf([subpath, key]));
+    if (faults !== undefined) return { kind: "unusable", faults: [...faults] };
+    const entries = isRecord(table) ? table[subpath] : undefined;
+    const entry = isRecord(entries) ? entries[key] : undefined;
+    return isRecord(entry)
+      ? { kind: "entry", entry: entry as ManifestEntry }
+      : undefined;
+  };
+
   return {
-    entryFor: (subpath, key) => {
-      if (unusable.has(identityOf([subpath, key]))) return { kind: "unusable" };
-      const entries = isRecord(table) ? table[subpath] : undefined;
-      const entry = isRecord(entries) ? entries[key] : undefined;
-      return isRecord(entry)
-        ? { kind: "entry", entry: entry as ManifestEntry }
-        : undefined;
+    entryFor,
+    written: () => {
+      if (!isRecord(table)) return [];
+      const written: WrittenEntry[] = [];
+      for (const [subpath, keys] of Object.entries(table)) {
+        if (!isRecord(keys)) continue;
+        for (const key of Object.keys(keys)) {
+          const state = entryFor(subpath, key);
+          if (state !== undefined) written.push({ subpath, key, state });
+        }
+      }
+      return written;
     },
   };
 }

@@ -25,7 +25,7 @@ import { loadIdlCorpus } from "./idl/corpus.js";
 import { joinToIdl, type Structure } from "./join.js";
 import { attachProse } from "./prose.js";
 import { REFUTED_KEYS } from "./refutations.js";
-import { buildDfnGraph, type MarkupForm } from "./specs/dfns.js";
+import { buildDfnGraph, type DfnGraph } from "./specs/dfns.js";
 import { buildWorklist, type Worklist } from "./worklist.js";
 
 const OUTPUT = new URL(
@@ -68,12 +68,11 @@ export interface GenerationReport {
     readonly unprobed: number;
     readonly throwBearingExtAttrs: number;
     /**
-     * Member definitions by the markup Bikeshed wrote them in. A form the
-     * extractor stops reading costs precision and nothing else — the members
-     * floor — so it leaves no trace anywhere but here (#130).
+     * Passed through from {@link DfnGraph.stats}, and printed beside the
+     * extended-attribute count: the other number kept for what its *absence*
+     * would mean rather than for its value.
      */
-    readonly memberDfnsInDfnTag: number;
-    readonly memberDfnsInHeading: number;
+    readonly memberDefinitionsByForm: DfnGraph["stats"]["memberDefinitionsByForm"];
   };
 }
 
@@ -381,7 +380,7 @@ function summarize(
   geckoThrows: number,
   unprobed: number,
   throwBearingExtAttrs: number,
-  memberDfnsByForm: Readonly<Record<MarkupForm, number>>,
+  memberDefinitionsByForm: DfnGraph["stats"]["memberDefinitionsByForm"],
 ): GenerationReport["summary"] {
   const entries = [...byMember.values()];
   const facts = [...accessors.values()].map((record) => record.fact);
@@ -416,8 +415,7 @@ function summarize(
     geckoThrows,
     unprobed,
     throwBearingExtAttrs,
-    memberDfnsInDfnTag: memberDfnsByForm.dfn,
-    memberDfnsInHeading: memberDfnsByForm.heading,
+    memberDefinitionsByForm,
   };
 }
 

@@ -26,19 +26,19 @@ gates run over the generated data.
 pnpm run dom:generate -- --self-check
 ```
 
-The extractor's own control, over hand-written fixtures rather than the corpus,
-so it runs anywhere. Bikeshed writes a definition in **two markups** — a `<dfn>`,
-or the `data-dfn-*` attributes on the section heading where the definition *is*
-a section — and each form here has to carry a member with a throw in its prose
-and a member without, all the way to the hazard set.
+The control the by-form count cannot be. A count says how much of each form the
+corpus holds; it cannot say the form is read *correctly*, and #130 was a form
+read not at all — which the members answered by flooring, the safe direction and
+therefore a silent one. Each form here carries two members through the member
+index and the hazard closure, one whose prose throws and one whose does not.
 
-Reading only the first form is #130. Its visible half was 27 members, the whole
-of `console.*` among them, flooring for want of prose — the safe direction, and
-therefore silent. Its other half was not safe: 168 *concepts* were unread too,
-so every call into one of them dangled, and a member reaching a throw through
-one read clean. `structuredClone` is the case — HTML defines
-`StructuredSerialize` on an `<h4>`, and the `DataCloneError`s written into it
-reached nothing.
+A third fixture holds the one place the forms interact. HTML renders a bare
+`<dfn>` inside six definitional headings' own titles; read as a definition of its
+own it ends the heading's region at that title, and the algorithm below goes to a
+definition dropped for want of an `id` — so `StructuredSerialize` and its five
+neighbours were read by nobody, and the `DataCloneError`s they are written around
+reached nothing that calls them. The fixtures are hand-written, so this needs no
+corpus and runs in CI beside the three gate self-checks.
 
 The pipeline:
 
@@ -48,13 +48,29 @@ The pipeline:
    is `[EnforceRange]`, which the classifier records as a throwing site because
    TypeScript declares the parameter `number` and `number` bounds nothing.
 2. **Prose is the source.** Bikeshed's `data-dfn-for`/`data-dfn-type`/`data-lt`
-   give member attribution free, in either of the two markups it writes a
-   definition in — the generator prints the member count by form every run, and
-   it is 6,784 in a `<dfn>` against 27 on a section heading. The graph they form
-   is read under the three rules #26 established — members are leaves; throws
-   count from a member's own region or a noun's steps only; calls count from the
-   definitional sentence plus the steps — which take a naive median of 131
-   definitions visited per member down to a median of 10.
+   give member attribution free, and it writes them on a `<dfn>` **or on a
+   section heading** — the second wherever a definition *is* a section, with no
+   `<dfn>` emitted at all. Reading only the first made every such definition
+   invisible, all of `console` and the abstract operation its every member
+   delegates to among them (#130), so the generator now prints member
+   definitions **by markup form** every run, beside the extended-attribute
+   count: a form that reads zero is a form nobody is reading. The graph they
+   form is read under the three rules #26 established — members are leaves;
+   throws count from a member's own region or a noun's steps only; calls count
+   from the definitional sentence plus the steps — which take a naive median of
+   131 definitions visited per member down to a median of 10.
+
+   Reading the second form also moves prose that was already visible, which is
+   the half worth watching: a definitional heading ends the region of the
+   `<dfn>` before it, and 450 of the 477 name nouns rather than members. The
+   worst case was `handler-broadcastchannel-onmessageerror`, reading 98,380
+   characters — the whole of Workers — as one event-handler attribute's
+   algorithm. Nothing is dropped; it moves to the definitions that own it, and
+   is read there under the noun rule. Nine entries moved in the pass that
+   landed it: six clipboard members and `NavigationPreloadManager#getState`
+   from floor to throwing, `Notification#close` to floor, and the two
+   `select()`s to clean, which is what HTML says — `select()` returns early
+   where `setSelectionRange()` throws.
 3. **Gecko's `[Throws]` is a one-way oracle.** Presence is a sound *throwing*
    signal and adds a hazard site. Absence is one implementation's behavior and
    is never read at all: there is no function in `gecko.ts` that answers "is it
@@ -190,17 +206,20 @@ Sound, and cheaper to state than to hide:
 - **Members with no prose definition** — reflected ARIA attributes, specs that
   predate Bikeshed's `dfn` conventions (WebGL has 15 `<dfn>`s and zero
   `data-dfn-for` across ~1,150 members). #26 measured ~48.5%; this pass lands
-  near 37% of the IDL-backed surface. What is left is a spec's silence rather
-  than a defect: until [#130](https://github.com/no-throw/no-throw/issues/130)
-  the share was inflated by a markup form the extractor did not read, and both
-  forms are read now.
+  near 37% of the IDL-backed surface. Until #130 part of that number was a
+  defect rather than a spec's silence: a definition Bikeshed promotes to a
+  **section heading** carries its `data-dfn-*` on the `<h4>`, and the extractor
+  read `<dfn>` tags only, so every such member — the whole of `console.*` among
+  them — was invisible to it. Both forms are read now, so what is left really is
+  prose nobody wrote.
 - **Members the gate cannot reach**, which is jsdom's reach plus the members
-  that would tear down the harness (`alert`, `close`, `submit`, …). The whole of
-  `console.*` is here: its prose is read and proposes clean, but jsdom exposes
-  `console` without a `Console` interface object, so the probe can build no
-  receiver and an unprobed clean claim ships floored. It floors either way — the
-  difference #130 made is that it now says so, in `unprobed`, instead of
-  vanishing before the classifier ever saw it.
+  that would tear down the harness (`alert`, `close`, `submit`, …). All of
+  `console` sits here: WebIDL declares it a `namespace`, so there is no
+  constructor and no prototype for the receiver pool to key an instance under,
+  and 19 members the prose now proposes clean go unprobed and ship floored.
+  That is the successor floor to the one #130 removed, and it is the sound
+  one — recorded in `unprobed`, where an unreached clean claim belongs, rather
+  than invisible.
 - **Members holding a callback they never enter** — see the price above.
 - **IDL-generated iteration members** — `entries`, `keys`, `values`, `forEach`
   and `@@iterator` on an interface declaring `iterable<>`. WebIDL generates them
