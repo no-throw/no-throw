@@ -312,10 +312,47 @@ const EXACT_TYPE =
  * can hold — so `k.startsWith` on `K extends string` resolves like `string`'s.
  */
 function hasExactType(expr: ts.Expression, checker: ts.TypeChecker): boolean {
-  const type = checker.getTypeAtLocation(expr);
+  const type = assignableType(expr, checker);
   if (isExactType(type)) return true;
   const constraint = checker.getBaseConstraintOfType(type);
   return constraint !== undefined && isExactType(constraint);
+}
+
+/**
+ * The type every value the expression can arrive as satisfies — which is not
+ * the checker's type *at* it wherever something can assign to it.
+ *
+ * A narrowing is a fact about one path, and an assignment the checker did not
+ * follow outruns it: TypeScript keeps `let v: string | Bag` narrowed to
+ * `string` across a call that writes `v` from a closure, and the member run
+ * there is `Bag`'s. What the binding was *declared* as is the one thing every
+ * value it can hold really keeps, so exactness is read off that — which leaves
+ * `let text = input` on a `string` exact, as it should be, and puts
+ * `let v: string | Bag` back on the floor it had before access paths reached
+ * primitives at all.
+ *
+ * A `const` needs none of this. Nothing can write one, so a narrowing of it is
+ * the whole truth about it, and reading past that would give up precision for
+ * nothing.
+ */
+function assignableType(
+  expr: ts.Expression,
+  checker: ts.TypeChecker,
+): ts.Type {
+  const declaration = ts.isIdentifier(expr)
+    ? checker.getSymbolAtLocation(expr)?.valueDeclaration
+    : undefined;
+  return declaration !== undefined && isWritable(declaration)
+    ? checker.getTypeAtLocation(declaration)
+    : checker.getTypeAtLocation(expr);
+}
+
+function isWritable(declaration: ts.Declaration): boolean {
+  if (ts.isParameter(declaration)) return true;
+  return (
+    ts.isVariableDeclaration(declaration) &&
+    (ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const) === 0
+  );
 }
 
 /** A union is exact only where every arm is: the member lookup is joined. */
@@ -328,6 +365,10 @@ function isExactType(type: ts.Type): boolean {
  * The target a member of a value names, joined over its declarations. Which
  * function a member holds is answered by the checker's symbol for it, which is
  * the whole reason a condition can reach past depth 0 at all.
+ *
+ * The walk starts where exactness was decided, or a declared `string | number`
+ * narrowed to `string` would resolve `String#toString` and never meet the
+ * `Number#toString` the value may really carry.
  */
 export function memberTargets(
   value: ts.Expression,
@@ -335,7 +376,7 @@ export function memberTargets(
   resolution: Resolution,
 ): readonly Target[] {
   const { checker } = resolution;
-  let type = checker.getTypeAtLocation(value);
+  let type = assignableType(value, checker);
   let symbol: ts.Symbol | undefined;
 
   for (const member of members) {

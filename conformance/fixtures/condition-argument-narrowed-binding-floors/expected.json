@@ -1,0 +1,23 @@
+{
+  "description": "Exactness is read off what a binding was declared as, never off a narrowing of it. `value` reads `string` at both calls and holds something else by the time they run, because a closure wrote it and the checker kept the narrowing anyway: the first goes back to its `let` floor, and the second meets the `Number#toString` its declared union really admits. The `const` discharges, since nothing can write one and its narrowing is the whole truth.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 29,
+      "column": 10,
+      "endLine": 29,
+      "endColumn": 32,
+      "messageId": "conditionArgumentFloored",
+      "message": "Call to `beginsWith` escapes this `@nothrow` function: it is non-throwing given `value.startsWith`, and the argument passed for it is a `let`, whose value the engine does not yet track across assignments. `beginsWith` enters `value.startsWith` at src/index.ts:13. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 40,
+      "column": 10,
+      "endLine": 40,
+      "endColumn": 22,
+      "messageId": "conditionArgumentFloored",
+      "message": "Call to `label` escapes this `@nothrow` function: it is non-throwing given `value.toString`, and the argument passed for it is colored `throwing` by the shipped standard-library baseline, so calling it can throw. `label` enters `value.toString` at src/index.ts:18. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+    }
+  ]
+}
