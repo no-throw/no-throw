@@ -97,6 +97,7 @@
     "Body#bodyUsed",
     "BroadcastChannel#name",
     "BroadcastChannel#onmessage",
+    "BroadcastChannel#onmessageerror",
     "ByteLengthQueuingStrategy.new()",
     "CSSContainerRule#containerName",
     "CSSContainerRule#containerQuery",
@@ -236,9 +237,31 @@
     "CaretPosition#offset",
     "CaretPosition#offsetNode",
     "ClipboardEvent#clipboardData",
+    "ClipboardItem#presentationStyle",
+    "ClipboardItem#types",
+    "ClipboardItem.supports",
     "CloseEvent.new()",
     "CompositionEvent.new()",
     "CompressionStream#readable",
+    "Console#assert",
+    "Console#clear",
+    "Console#count",
+    "Console#countReset",
+    "Console#debug",
+    "Console#dir",
+    "Console#dirxml",
+    "Console#error",
+    "Console#group",
+    "Console#groupCollapsed",
+    "Console#groupEnd",
+    "Console#info",
+    "Console#log",
+    "Console#table",
+    "Console#time",
+    "Console#timeEnd",
+    "Console#timeLog",
+    "Console#trace",
+    "Console#warn",
     "ConstantSourceNode#offset",
     "ConstantSourceNode.new()",
     "ContentVisibilityAutoStateChangeEvent#skipped",
@@ -411,6 +434,7 @@
     "External#AddSearchProvider",
     "External#IsSearchProviderInstalled",
     "File#name",
+    "File#webkitRelativePath",
     "FileList#item",
     "FileList#length",
     "FileReader.new()",
@@ -443,6 +467,7 @@
     "FontFaceSet#onloadingerror",
     "FontFaceSet#status",
     "FontFaceSetLoadEvent.new()",
+    "FormDataEvent#formData",
     "GPUError#message",
     "GainNode#gain",
     "GenericTransformStream#readable",
@@ -634,10 +659,10 @@
     "NavigationActivation#from",
     "NavigationActivation#navigationType",
     "NavigationHistoryEntry#ondispose",
-    "NavigationPreloadManager#getState",
     "NavigatorLogin#setStatus",
     "Notification#badge",
     "Notification#body",
+    "Notification#close",
     "Notification#data",
     "Notification#dir",
     "Notification#icon",
@@ -819,7 +844,6 @@
     "Request#headers",
     "Request#integrity",
     "Request#keepalive",
-    "Request#redirect",
     "Request#referrer",
     "Request#referrerPolicy",
     "Request#url",
@@ -832,11 +856,9 @@
     "ResizeObserverSize#inlineSize",
     "Response#headers",
     "Response#ok",
-    "Response#redirected",
     "Response#status",
     "Response#statusText",
     "Response#type",
-    "Response#url",
     "SVGClipPathElement#clipPathUnits",
     "SVGClipPathElement#transform",
     "SVGComponentTransferFunctionElement#amplitude",
@@ -1115,6 +1137,7 @@
     "VTTRegion#viewportAnchorY",
     "VTTRegion#width",
     "ValidityState#badInput",
+    "ValidityState#customError",
     "ValidityState#patternMismatch",
     "ValidityState#rangeOverflow",
     "ValidityState#rangeUnderflow",
@@ -1168,7 +1191,6 @@
     "XMLHttpRequest#onreadystatechange",
     "XMLHttpRequest#readyState",
     "XMLHttpRequest#responseType",
-    "XMLHttpRequest#responseURL",
     "XMLHttpRequest#timeout",
     "XMLHttpRequest#withCredentials",
     "XPathEvaluator.new()",
@@ -4177,6 +4199,26 @@
       "ClientQueryOptions#type": {
         "accessor": false
       },
+      "Clipboard#read": {
+        "color": "throwing",
+        "spec": "clipboard-apis#dom-clipboard-read",
+        "runtime": "Clipboard.prototype.read"
+      },
+      "Clipboard#readText": {
+        "color": "throwing",
+        "spec": "clipboard-apis#dom-clipboard-readtext",
+        "runtime": "Clipboard.prototype.readText"
+      },
+      "Clipboard#write": {
+        "color": "throwing",
+        "spec": "clipboard-apis#dom-clipboard-write",
+        "runtime": "Clipboard.prototype.write"
+      },
+      "Clipboard#writeText": {
+        "color": "throwing",
+        "spec": "clipboard-apis#dom-clipboard-writetext",
+        "runtime": "Clipboard.prototype.writeText"
+      },
       "ClipboardEvent.new()": {
         "color": "throwing",
         "spec": "clipboard-apis#dom-clipboardevent-clipboardevent",
@@ -4198,11 +4240,17 @@
         "spec": "clipboard-apis#dom-clipboarditem-clipboarditem",
         "runtime": "new ClipboardItem"
       },
+      "ClipboardItem#getType": {
+        "color": "throwing",
+        "spec": "clipboard-apis#dom-clipboarditem-gettype",
+        "runtime": "ClipboardItem.prototype.getType"
+      },
       "ClipboardItem#presentationStyle": {
         "accessor": {
           "get": "throwing",
           "set": "throwing"
         },
+        "spec": "clipboard-apis#dom-clipboarditem-presentationstyle",
         "runtime": "ClipboardItem.prototype.presentationStyle"
       },
       "ClipboardItem#types": {
@@ -4210,6 +4258,7 @@
           "get": "throwing",
           "set": "throwing"
         },
+        "spec": "clipboard-apis#dom-clipboarditem-types",
         "runtime": "ClipboardItem.prototype.types"
       },
       "ClipboardItemOptions#presentationStyle": {
@@ -17968,7 +18017,8 @@
         "runtime": "HTMLInputElement.prototype.required"
       },
       "HTMLInputElement#select": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "html#dom-textarea/input-select",
         "runtime": "HTMLInputElement.prototype.select"
       },
@@ -20741,7 +20791,8 @@
         "runtime": "HTMLTextAreaElement.prototype.rows"
       },
       "HTMLTextAreaElement#select": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "html#dom-textarea/input-select",
         "runtime": "HTMLTextAreaElement.prototype.select"
       },
@@ -24603,6 +24654,11 @@
         "spec": "service-workers#dom-navigationpreloadmanager-enable",
         "runtime": "NavigationPreloadManager.prototype.enable"
       },
+      "NavigationPreloadManager#getState": {
+        "color": "throwing",
+        "spec": "service-workers#dom-navigationpreloadmanager-getstate",
+        "runtime": "NavigationPreloadManager.prototype.getState"
+      },
       "NavigationPreloadManager#setHeaderValue": {
         "color": "throwing",
         "spec": "service-workers#dom-navigationpreloadmanager-setheadervalue",
@@ -25415,11 +25471,6 @@
         },
         "spec": "notifications#dom-notification-body",
         "runtime": "Notification.prototype.body"
-      },
-      "Notification#close": {
-        "color": "throwing",
-        "spec": "notifications#dom-notification-close",
-        "runtime": "Notification.prototype.close"
       },
       "Notification#data": {
         "accessor": {

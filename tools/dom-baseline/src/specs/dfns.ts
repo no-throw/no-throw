@@ -2,9 +2,14 @@ import { loadCachedSpecs, loadSpecIndex } from "./source.js";
 
 /**
  * The Bikeshed analogue of the ecmarkup extractor. ECMA-262 hands you `?`/`!`
- * abrupt markers and `aoid=` cross-references; Bikeshed hands you `<dfn>`
+ * abrupt markers and `aoid=` cross-references; Bikeshed hands you definition
  * anchors and hyperlinks, and **says nothing about which links are calls**. A
  * hyperlink is a call, a cross-reference, or a noun.
+ *
+ * An anchor is a `<dfn>` *or a heading* — Bikeshed writes the `data-dfn-*`
+ * attributes on the heading and emits no `<dfn>` wherever a definition is a
+ * whole section. Reading only `<dfn>` made every such definition invisible, and
+ * invisible all the way down: no prose, so no proposal, so no entry (#130).
  *
  * Read naively the graph is useless — #26 measured a median of 131 definitions
  * visited per member and `Element.getAttribute` reported throwing. Three rules
@@ -46,11 +51,21 @@ export interface ProseThrow {
   readonly phase: "get" | "set" | "both";
 }
 
+/**
+ * Which markup Bikeshed wrote a definition in. Where a definition *is* a
+ * section it puts the `data-dfn-*` attributes on the heading and emits no
+ * `<dfn>` at all, and a reader of `<dfn>` alone sees none of those definitions —
+ * #130, where the whole of `console` was invisible and `Logger`, the abstract
+ * operation its every member delegates to, with it.
+ */
+export type Form = "dfn" | "heading";
+
 export interface Dfn {
   /** `dom#dom-element-matches` — spec shortname plus anchor. */
   readonly key: string;
   readonly spec: string;
   readonly id: string;
+  readonly form: Form;
   readonly dfnFor: readonly string[];
   readonly dfnType: string | undefined;
   readonly lt: readonly string[];
@@ -71,6 +86,12 @@ export interface DfnGraph {
     readonly specs: number;
     readonly definitions: number;
     readonly memberDefinitions: number;
+    /**
+     * The control on {@link Form}: a form nobody reads is a silent floor, and a
+     * count that names the forms apart is the only thing that would have shown
+     * #130 the day the corpus first contained one.
+     */
+    readonly memberDefinitionsByForm: readonly (readonly [form: Form, count: number])[];
     readonly throwSites: number;
     readonly aliasRuns: number;
     readonly calleeLinks: number;
@@ -85,7 +106,24 @@ export const MEMBER_DFN_TYPES: ReadonlySet<string> = new Set([
   "constructor",
 ]);
 
-const DFN_TAG = /<dfn\b([^>]*)>/g;
+/**
+ * A definition is a `<dfn>`, or a heading carrying the same `data-dfn-*`
+ * attributes. Bikeshed writes the second form whenever a definition *is* a
+ * section, and a heading without `data-dfn-type` is not a definition at all: it
+ * is left out entirely rather than treated as an empty one, so that a plain
+ * section heading goes on not bounding anybody's region.
+ *
+ * A *definitional* heading does bound one, and that reaches further than the
+ * 27 members it makes visible: 450 of the 477 name nouns and abstract
+ * operations, and each now ends the region of the `<dfn>` before it.
+ * `handler-broadcastchannel-onmessageerror` was reading 98,380 characters —
+ * the whole of Workers — as one event-handler attribute's algorithm, under the
+ * member rule that reads a region in full. None of that prose is dropped; it
+ * moves to the definitions that own it, where the noun rule reads its steps
+ * instead. That is a narrowing, so it is the direction to be careful about,
+ * and every entry it moved is in the pass that landed it.
+ */
+const DEFINITION_TAG = /<(dfn|h[1-6])\b([^>]*)>/g;
 const LINK = /<a\b[^>]*href="([^"]+)"/g;
 
 /**
@@ -106,7 +144,12 @@ const EXCEPTION_BEFORE =
 const PROSE_ALGORITHM =
   /\b(steps are|steps,? given|steps for|must return|must run|getter steps|setter steps|is to return|are to return|run these steps|following steps)\b/i;
 
-/** A region past this is a section, not a definition; the cap bounds the work. */
+/**
+ * The cap on a region no later definition ends. Past this much prose the text
+ * has stopped being one definition's, so reading on files hazards under
+ * whichever definition came last rather than under the one that owns them. It
+ * bounds the work too.
+ */
 const MAX_REGION = 40_000;
 /**
  * Below this much text between two `<dfn>`s, the first is an alias stub rather
@@ -123,6 +166,7 @@ const MAX_THROWS_PER_DFN = 40;
 const MAX_CALLEES_PER_DFN = 200;
 
 interface RawDfn {
+  readonly form: Form;
   readonly tag: string;
   readonly start: number;
   readonly bodyStart: number;
@@ -144,10 +188,18 @@ export function buildDfnGraph(): DfnGraph {
   for (const { key: shortname, html } of loadCachedSpecs()) {
     specs++;
     const raw: RawDfn[] = [];
-    DFN_TAG.lastIndex = 0;
-    for (let match = DFN_TAG.exec(html); match !== null; match = DFN_TAG.exec(html)) {
+    DEFINITION_TAG.lastIndex = 0;
+    for (
+      let match = DEFINITION_TAG.exec(html);
+      match !== null;
+      match = DEFINITION_TAG.exec(html)
+    ) {
+      const form: Form = match[1] === "dfn" ? "dfn" : "heading";
+      const tag = match[2] ?? "";
+      if (form === "heading" && attribute(tag, "data-dfn-type") === undefined) continue;
       raw.push({
-        tag: match[1] ?? "",
+        form,
+        tag,
         start: match.index,
         bodyStart: match.index + match[0].length,
       });
@@ -158,7 +210,7 @@ export function buildDfnGraph(): DfnGraph {
       if (id === undefined) continue;
       const { region, runLength } = regionOf(html, raw, index);
       if (runLength > 1) aliasRuns++;
-      const node = readDfn(shortname, id, dfn.tag, region, originToSpec);
+      const node = readDfn(shortname, id, dfn, region, originToSpec);
       throwSites += node.throws.length;
       if (!nodes.has(node.key)) nodes.set(node.key, node);
     }
@@ -167,9 +219,14 @@ export function buildDfnGraph(): DfnGraph {
   let calleeLinks = 0;
   let resolvedCalleeLinks = 0;
   let memberDefinitions = 0;
+  const byForm = new Map<Form, number>([
+    ["dfn", 0],
+    ["heading", 0],
+  ]);
   for (const node of nodes.values()) {
     if (MEMBER_DFN_TYPES.has(node.dfnType ?? "") && node.dfnFor.length > 0) {
       memberDefinitions++;
+      byForm.set(node.form, (byForm.get(node.form) ?? 0) + 1);
     }
     for (const callee of node.callees) {
       calleeLinks++;
@@ -183,6 +240,7 @@ export function buildDfnGraph(): DfnGraph {
       specs,
       definitions: nodes.size,
       memberDefinitions,
+      memberDefinitionsByForm: [...byForm],
       throwSites,
       aliasRuns,
       calleeLinks,
@@ -192,8 +250,9 @@ export function buildDfnGraph(): DfnGraph {
 }
 
 /**
- * A definition's region runs to the next `<dfn>` — except across a run of
- * alias stubs, which share the region that follows the last of them.
+ * A definition's region runs to the next definition, of either form — except
+ * across a run of alias stubs, which share the region that follows the last of
+ * them.
  */
 function regionOf(
   html: string,
@@ -205,7 +264,7 @@ function regionOf(
     const next = raw[last + 1];
     const current = raw[last];
     if (next === undefined || current === undefined) break;
-    if (!aliases(current.tag, next.tag)) break;
+    if (!aliases(current, next)) break;
     // Only an immediate neighbor is an alias: `matches(selectors)</dfn> and
     // <dfn>webkitMatchesSelector(selectors)`. Anything with a step list, a
     // paragraph break or more than a clause of prose between them is a
@@ -227,21 +286,28 @@ function regionOf(
  * Two definitions are aliases only if they define the *same kind of thing for
  * the same interface*. Without that, a run merges unrelated neighbors and the
  * graph comes out denser than the naive reading the merge exists to fix.
+ *
+ * Only `<dfn>`s can form a run. An alias stub is an *inline* pattern — one
+ * sentence naming two spellings of one algorithm — and two section headings are
+ * never in one sentence. Reading a run across them would hand the first
+ * heading's member the second's region, which is a member losing its own prose:
+ * the unsafe direction.
  */
-function aliases(left: string, right: string): boolean {
-  const type = attribute(left, "data-dfn-type");
+function aliases(left: RawDfn, right: RawDfn): boolean {
+  if (left.form !== "dfn" || right.form !== "dfn") return false;
+  const type = attribute(left.tag, "data-dfn-type");
   return (
     type !== undefined &&
     MEMBER_DFN_TYPES.has(type) &&
-    type === attribute(right, "data-dfn-type") &&
-    attribute(left, "data-dfn-for") === attribute(right, "data-dfn-for")
+    type === attribute(right.tag, "data-dfn-type") &&
+    attribute(left.tag, "data-dfn-for") === attribute(right.tag, "data-dfn-for")
   );
 }
 
 function readDfn(
   shortname: string,
   id: string,
-  tag: string,
+  { form, tag }: RawDfn,
   region: string,
   originToSpec: ReadonlyMap<string, string>,
 ): Dfn {
@@ -272,6 +338,7 @@ function readDfn(
     key: `${shortname}#${id}`,
     spec: shortname,
     id,
+    form,
     dfnFor,
     dfnType,
     lt,
