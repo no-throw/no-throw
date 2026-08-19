@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/no-throw/no-throw/compare/v0.1.3...v0.2.0) (2026-08-19)
+
+
+### Features
+
+* host the rules in oxlint, held to the same fixtures ([#149](https://github.com/no-throw/no-throw/issues/149)) ([40416cc](https://github.com/no-throw/no-throw/commit/40416cc666e9781eaf7f298f1343223acb7bdbd5))
+
+
+### Bug Fixes
+
+* keep the algorithm under a heading that renders its own &lt;dfn&gt; ([#148](https://github.com/no-throw/no-throw/issues/148)) ([fee0669](https://github.com/no-throw/no-throw/commit/fee066907bbf8c92aa3d50eee41c0af04554f184))
+
 ## [0.1.3](https://github.com/no-throw/no-throw/compare/v0.1.2...v0.1.3) (2026-08-15)
 
 
