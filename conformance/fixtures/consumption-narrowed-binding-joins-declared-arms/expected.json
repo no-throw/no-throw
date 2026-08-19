@@ -1,0 +1,14 @@
+{
+  "description": "A consumption joins the constituents the value was declared with rather than the one a guard picked: a closure writes `Broken` into the `let` narrowed to `Clean`, and the checker keeps that narrowing across the write, so the loop meets the protocol member that really throws. The `const` stays clean, since nothing can write one.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 22,
+      "column": 23,
+      "endLine": 22,
+      "endColumn": 29,
+      "messageId": "inferredThrowingConsumption",
+      "message": "Consuming this iterator escapes this `@nothrow` function: the body producing its values was analyzed and can throw. Your outs: bridge this consumption with `try`/`catch`, or make that producer non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

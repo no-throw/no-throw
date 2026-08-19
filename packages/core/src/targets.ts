@@ -312,7 +312,7 @@ const EXACT_TYPE =
  * can hold — so `k.startsWith` on `K extends string` resolves like `string`'s.
  */
 function hasExactType(expr: ts.Expression, checker: ts.TypeChecker): boolean {
-  const type = assignableType(expr, checker);
+  const type = settledType(expr, checker);
   if (isExactType(type)) return true;
   const constraint = checker.getBaseConstraintOfType(type);
   return constraint !== undefined && isExactType(constraint);
@@ -326,31 +326,81 @@ function hasExactType(expr: ts.Expression, checker: ts.TypeChecker): boolean {
  * follow outruns it: TypeScript keeps `let v: string | Bag` narrowed to
  * `string` across a call that writes `v` from a closure, and the member run
  * there is `Bag`'s. What the binding was *declared* as is the one thing every
- * value it can hold really keeps, so exactness is read off that — which leaves
- * `let text = input` on a `string` exact, as it should be, and puts
- * `let v: string | Bag` back on the floor it had before access paths reached
- * primitives at all.
+ * value it can hold really keeps, so every question about what a value does is
+ * asked of that — which leaves `let text = input` on a `string` exact, as it
+ * should be, and puts `let v: string | Bag` back on the floor it had before
+ * access paths reached primitives at all.
+ *
+ * A member access is settled the same way, and for a stronger reason: a
+ * property is writable by anything holding the object, so *any* call outruns a
+ * narrowing of one, and TypeScript keeps that narrowing across calls too. The
+ * receiver is settled first, so a path is read off the arms its root was
+ * declared with rather than the arm a guard picked.
  *
  * A `const` needs none of this. Nothing can write one, so a narrowing of it is
  * the whole truth about it, and reading past that would give up precision for
  * nothing.
  */
-function assignableType(
-  expr: ts.Expression,
+export function settledType(node: ts.Node, checker: ts.TypeChecker): ts.Type {
+  if (ts.isIdentifier(node)) {
+    const declaration = writableDeclarationOf(node, checker);
+    if (declaration !== undefined) return checker.getTypeAtLocation(declaration);
+  } else if (ts.isPropertyAccessExpression(node)) {
+    const declared = memberTypeOf(
+      settledType(node.expression, checker),
+      node.name.text,
+      checker,
+    );
+    if (declared !== undefined) return declared;
+  }
+  return checker.getTypeAtLocation(node);
+}
+
+/**
+ * A member's declared type, where every value the receiver admits carries the
+ * member. A union missing it on one arm has no declared type to read — the
+ * access compiles only because something narrowed the receiver — and the
+ * caller falls back to what the checker says rather than inventing one.
+ */
+export function memberTypeOf(
+  receiver: ts.Type,
+  name: string,
   checker: ts.TypeChecker,
-): ts.Type {
-  const declaration = ts.isIdentifier(expr)
-    ? checker.getSymbolAtLocation(expr)?.valueDeclaration
-    : undefined;
+): ts.Type | undefined {
+  const symbol = checker.getPropertyOfType(
+    checker.getApparentType(receiver),
+    name,
+  );
+  return symbol === undefined ? undefined : checker.getTypeOfSymbol(symbol);
+}
+
+/**
+ * The declaration this identifier binds, where something can write it. An
+ * `import` is followed to what it names: the binding is immutable here, but an
+ * `export let` is writable in the module that declared it, and a narrowing of
+ * one is outrun by a call into that module.
+ */
+function writableDeclarationOf(
+  identifier: ts.Identifier,
+  checker: ts.TypeChecker,
+): ts.Declaration | undefined {
+  const symbol = checker.getSymbolAtLocation(identifier);
+  if (symbol === undefined) return undefined;
+  const bound =
+    (symbol.flags & ts.SymbolFlags.Alias) === 0
+      ? symbol
+      : checker.getAliasedSymbol(symbol);
+  const declaration = bound.valueDeclaration;
   return declaration !== undefined && isWritable(declaration)
-    ? checker.getTypeAtLocation(declaration)
-    : checker.getTypeAtLocation(expr);
+    ? declaration
+    : undefined;
 }
 
 function isWritable(declaration: ts.Declaration): boolean {
   if (ts.isParameter(declaration)) return true;
   return (
-    ts.isVariableDeclaration(declaration) &&
+    (ts.isVariableDeclaration(declaration) ||
+      ts.isBindingElement(declaration)) &&
     (ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const) === 0
   );
 }
@@ -376,7 +426,7 @@ export function memberTargets(
   resolution: Resolution,
 ): readonly Target[] {
   const { checker } = resolution;
-  let type = assignableType(value, checker);
+  let type = settledType(value, checker);
   let symbol: ts.Symbol | undefined;
 
   for (const member of members) {
