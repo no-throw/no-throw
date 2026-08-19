@@ -65,6 +65,37 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
+      # npm configures trusted publishing per package, and there is nothing to
+      # configure until a package exists — so a package new to this repository
+      # cannot be published by OIDC at all. Reaching that at its turn in the
+      # loop below costs a partial release: the packages published before it are
+      # on the registry and nothing takes them back. Reaching it here costs a
+      # failed run and nothing else, which is why this runs before the gates
+      # rather than beside the publish. No amount of proving the tree changes
+      # the answer.
+      - name: The registry has heard of every package
+        run: |
+          unknown=""
+          for package in core eslint-plugin oxlint-plugin cli; do
+            name=$(node -p "require('./packages/$package/package.json').name")
+            if answer=$(npm view "$name" name 2>&1); then
+              continue
+            fi
+            # A registry that cannot be reached is not a registry saying "no
+            # such package", and reporting it as one would send a maintainer off
+            # to hand-publish something that is already there.
+            case "$answer" in
+              *E404*) unknown="$unknown $name" ;;
+              *) printf '%s\n' "$answer" >&2; exit 1 ;;
+            esac
+          done
+          if [ -n "$unknown" ]; then
+            echo "::error::Not on the registry, so nothing here can publish it:$unknown"
+            echo "A new package's first version goes up by hand; its trusted publisher"
+            echo "is configured after that. The procedure is in docs/releasing.md."
+            exit 1
+          fi
+
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm run build
@@ -132,9 +163,27 @@ jobs:
       # Order matters for the same reason it always did: the adapters name
       # `@no-throw/core` as a dependency, and a consumer installing one before
       # core is on the registry gets something unresolvable.
+      #
+      # A package already on the registry at this version is skipped, which is
+      # what lets the `workflow_dispatch` re-run finish a release that stopped
+      # halfway: npm refuses a version it already holds, so a restart would die
+      # on the first package rather than reach the ones that never went out.
+      # Only an exact version match skips. Any other answer is a publish
+      # attempt, so a registry that is merely unreachable cannot quietly turn
+      # into a release that shipped nothing and said it was fine.
       - name: Publish
         run: |
           for package in core eslint-plugin oxlint-plugin cli; do
+            manifest="packages/$package/package.json"
+            name=$(node -p "require('./$manifest').name")
+            version=$(node -p "require('./$manifest').version")
+
+            published=$(npm view "$name@$version" version 2>/dev/null || true)
+            if [ "$published" = "$version" ]; then
+              echo "$name@$version is already on the registry."
+              continue
+            fi
+
             tarball=$(cd "packages/$package" && pnpm pack | tail -1)
             npm publish "packages/$package/$tarball" --access public --provenance
           done
