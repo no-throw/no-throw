@@ -22,6 +22,24 @@ Writes `packages/core/baseline-data/dom.json` (the baseline) and
 plus `deferred-worklist.json` here. Only generation needs the corpora; all three
 gates run over the generated data.
 
+```sh
+pnpm run dom:generate -- --self-check
+```
+
+The control the by-form count cannot be. A count says how much of each form the
+corpus holds; it cannot say the form is read *correctly*, and #130 was a form
+read not at all — which the members answered by flooring, the safe direction and
+therefore a silent one. Each form here carries two members through the member
+index and the hazard closure, one whose prose throws and one whose does not.
+
+A third fixture holds the one place the forms interact. HTML renders a bare
+`<dfn>` inside six definitional headings' own titles; read as a definition of its
+own it ends the heading's region at that title, and the algorithm below goes to a
+definition dropped for want of an `id` — so `StructuredSerialize` and its five
+neighbours were read by nobody, and the `DataCloneError`s they are written around
+reached nothing that calls them. The fixtures are hand-written, so this needs no
+corpus and runs in CI beside the three gate self-checks.
+
 The pipeline:
 
 1. **WebIDL, for the symbol set only.** Across 329 specs, not one extended

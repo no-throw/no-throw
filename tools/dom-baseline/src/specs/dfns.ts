@@ -1,4 +1,4 @@
-import { loadCachedSpecs, loadSpecIndex } from "./source.js";
+import { loadCachedSpecs, loadSpecIndex, type CachedSpec, type SpecTarget } from "./source.js";
 
 /**
  * The Bikeshed analogue of the ecmarkup extractor. ECMA-262 hands you `?`/`!`
@@ -172,9 +172,23 @@ interface RawDfn {
   readonly bodyStart: number;
 }
 
-export function buildDfnGraph(): DfnGraph {
+/**
+ * Where the prose comes from. Generation reads the cache; the self-check reads
+ * hand-written fixtures, which is what lets it run without the 420 MB corpus.
+ */
+export interface SpecSource {
+  readonly specs: Iterable<CachedSpec>;
+  readonly index: readonly SpecTarget[];
+}
+
+export function buildDfnGraph(source?: SpecSource): DfnGraph {
+  const { specs: cached, index: targets } = source ?? {
+    specs: loadCachedSpecs(),
+    index: loadSpecIndex(),
+  };
+
   const originToSpec = new Map<string, string>();
-  for (const target of loadSpecIndex()) {
+  for (const target of targets) {
     for (const url of target.urls) {
       originToSpec.set(url.replace(/#.*$/, ""), target.key);
     }
@@ -185,9 +199,12 @@ export function buildDfnGraph(): DfnGraph {
   let throwSites = 0;
   let aliasRuns = 0;
 
-  for (const { key: shortname, html } of loadCachedSpecs()) {
+  for (const { key: shortname, html } of cached) {
     specs++;
     const raw: RawDfn[] = [];
+    // Where the definitional heading being read ends, so a `<dfn>` rendered
+    // inside its own title can be told from one that follows it.
+    let titleEnd = 0;
     DEFINITION_TAG.lastIndex = 0;
     for (
       let match = DEFINITION_TAG.exec(html);
@@ -196,7 +213,20 @@ export function buildDfnGraph(): DfnGraph {
     ) {
       const form: Form = match[1] === "dfn" ? "dfn" : "heading";
       const tag = match[2] ?? "";
-      if (form === "heading" && attribute(tag, "data-dfn-type") === undefined) continue;
+      if (form === "heading") {
+        if (attribute(tag, "data-dfn-type") === undefined) continue;
+        titleEnd = html.indexOf(`</${match[1] ?? ""}>`, match.index + match[0].length);
+      } else if (match.index < titleEnd && attribute(tag, "id") === undefined) {
+        // Six headings in HTML render a bare `<dfn>` inside their own title.
+        // It anchors nothing — no `id`, so it was never read as a definition —
+        // but admitting it ends the heading's region at its own title, and the
+        // algorithm below goes to a definition that is then dropped for want of
+        // an `id`, so nobody reads it: `StructuredSerialize` and its five
+        // neighbours, whose `DataCloneError`s reach whatever calls them. One
+        // that *did* carry an `id` would be a definition links point at, so it
+        // is kept and the heading gives way to it instead.
+        continue;
+      }
       raw.push({
         form,
         tag,

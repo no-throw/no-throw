@@ -260,3 +260,10 @@ jobs:
 
       - name: Drift gate reports an injected diff
         run: pnpm run dom:gate:drift -- --self-check
+
+      # The three gates above run over the committed data, so none of them can
+      # see a definition the extractor never read: #130 was a whole markup form
+      # going unread, and the members floored, which is silent. This runs over
+      # fixtures rather than the corpus, so it belongs in the same job.
+      - name: Both markup forms reach a member's hazards
+        run: pnpm run dom:generate -- --self-check
