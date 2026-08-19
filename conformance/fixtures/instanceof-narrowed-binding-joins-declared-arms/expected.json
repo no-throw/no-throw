@@ -1,0 +1,14 @@
+{
+  "description": "The constructor an `instanceof` consults is the declared one: a closure writes `Hostile` into the `let` the guard narrowed to `Plain`, and the checker keeps that narrowing across the write, so the check meets the `[Symbol.hasInstance]` the declaration really admits. The `const` stays clean, since nothing can write one.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 19,
+      "column": 10,
+      "endLine": 19,
+      "endColumn": 38,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Checking `value instanceof constructor` escapes this `@nothrow` function: it runs the method `[Symbol.hasInstance]`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the method `[Symbol.hasInstance]` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}

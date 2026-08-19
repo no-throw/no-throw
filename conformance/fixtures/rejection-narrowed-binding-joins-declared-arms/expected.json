@@ -1,0 +1,23 @@
+{
+  "description": "Whether a value can reject is asked of the declared type too: a closure writes a rejected promise into the `let` the guard narrowed to `number`, and the checker keeps that narrowing across the write, so the `await` and the `return` are promise sites after all — and both land on the `let` floor, which is where a binding the engine does not track across assignments belongs. The `const` stays clean, since nothing can write one.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 9,
+      "column": 10,
+      "endLine": 9,
+      "endColumn": 21,
+      "messageId": "unbridgedAwait",
+      "message": "Awaiting `value` escapes this `@nothrow` function: the promise is reached through a `let`, whose value the engine does not yet track across assignments — a refinement not yet made rather than something unknowable from here. Your outs, in precedence order: bridge it with `try { await … } catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 18,
+      "column": 10,
+      "endLine": 18,
+      "endColumn": 15,
+      "messageId": "unprovableReturnedPromise",
+      "message": "This `@nothrow` function returns a promise, so the mark covers its rejection too: the promise is reached through a `let`, whose value the engine does not yet track across assignments — a refinement not yet made rather than something unknowable from here. Your outs, in precedence order: `await` it inside a `try`/`catch` and return a value instead; assert the producer's color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

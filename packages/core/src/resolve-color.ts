@@ -52,6 +52,7 @@ import {
   declarationTarget,
   declaredTarget,
   resolveValue,
+  settledType,
   type DeclaredTarget,
   type Resolution,
   type Target,
@@ -921,16 +922,14 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   /**
    * What consuming a site enters, joined over every type the value can have: a
    * union runs whichever protocol the value turns out to carry, so resolving
-   * one constituent would answer by coin toss.
+   * one constituent would answer by coin toss — and a narrowing is a coin toss
+   * with the arms hidden, so the join is over what the value was *settled* as.
    */
   function consumedBy(site: Consumption, body: Bodied): readonly Consumed[] {
     const known = consumedAt.get(site.node);
     if (known !== undefined) return known;
 
-    const types = constituentsOf(
-      checker.getTypeAtLocation(site.typeAt),
-      checker,
-    );
+    const types = constituentsOf(settledType(site.typeAt, checker), checker);
     const consumed = types.flatMap((type) =>
       constituentConsumed(site, type, body),
     );
@@ -1131,8 +1130,10 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   function resolveRejection(expr: ts.Expression, body: Bodied): Rejection {
     const expression = skipParens(expr);
     // Nothing that is not a promise can reject, and saying so here is what
-    // keeps every site that asks free of the question.
-    if (!isPromiseType(checker.getTypeAtLocation(expression), checker)) {
+    // keeps every site that asks free of the question. It is asked of the
+    // settled type: a narrowing that dropped the promise arm of a
+    // `Promise<T> | T` would answer "not a promise" for a value that is one.
+    if (!isPromiseType(settledType(expression, checker), checker)) {
       return REJECTION_CLEAN;
     }
 

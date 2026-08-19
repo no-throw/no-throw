@@ -9,7 +9,7 @@ import type {
   Escape,
 } from "./escapes.js";
 import { signatureSegment } from "./segments.js";
-import type { Resolution } from "./targets.js";
+import { memberTypeOf, settledType, type Resolution } from "./targets.js";
 
 /** How a hidden transfer reads in a diagnostic: the verb the site is. */
 export type TransferSite =
@@ -166,24 +166,39 @@ function accessTransfers(
   const half: Half =
     site === "read" ? "get" : site === "write" ? "set" : "both";
   const targets = ts.isPropertyAccessExpression(node)
-    ? namedMemberTargets(node, half, resolution)
+    ? namedMemberTargets(receiver, node.name, half, resolution)
     : keyedMemberTargets(receiver, node.argumentExpression, half, resolution);
 
   return targets.length === 0 ? [] : [{ node, site, text, targets }];
 }
 
 /**
- * A property access whose symbol the checker cannot produce resolves through an
- * index signature, and an index signature can only ever declare data: an
- * accessor has to be written out as a member to exist.
+ * A member the receiver names, looked up on the receiver rather than read off
+ * the checker's symbol for the access — which is the member of the arm a
+ * narrowing picked, and so the same fault the settled receiver exists to
+ * undo, one level along.
+ *
+ * A name the type does not carry resolves through an index signature, and an
+ * index signature can only ever declare data: an accessor has to be written
+ * out as a member to exist.
  */
 function namedMemberTargets(
-  node: ts.PropertyAccessExpression,
+  receiver: ts.Type,
+  name: ts.MemberName,
   half: Half,
   resolution: Resolution,
 ): readonly TransferTarget[] {
-  const symbol = resolution.checker.getSymbolAtLocation(node);
-  return symbol === undefined ? [] : accessorTargets(symbol, half, resolution);
+  const { checker } = resolution;
+  // A `#private` name is not a member a type can be asked for — it is spelled
+  // with an id only the checker knows — and only the class body declaring it
+  // can hold the receiver, so no narrowing is at stake there either.
+  if (ts.isPrivateIdentifier(name)) {
+    const symbol = checker.getSymbolAtLocation(name.parent);
+    return symbol === undefined ? [] : accessorTargets(symbol, half, resolution);
+  }
+  return memberNamed(receiver, name.text, checker).flatMap((symbol) =>
+    accessorTargets(symbol, half, resolution),
+  );
 }
 
 /**
@@ -210,7 +225,7 @@ function narrowKey(
   key: ts.Expression,
   checker: ts.TypeChecker,
 ): readonly string[] | undefined {
-  const type = checker.getTypeAtLocation(key);
+  const type = settledType(key, checker);
   const names: string[] = [];
 
   for (const part of constituentsOf(type)) {
@@ -353,7 +368,7 @@ function bindingTargets(
   resolution: Resolution,
 ): readonly TransferTarget[] | undefined {
   const { checker } = resolution;
-  const source = receiverType(element.parent, checker);
+  const source = patternSource(element.parent, checker);
   if (source === undefined) return undefined;
   if (element.dotDotDotToken !== undefined) {
     return ownEnumerableTargets(source, resolution);
@@ -376,8 +391,10 @@ function bindingTargets(
 /**
  * A destructuring assignment reads its source exactly as a binding pattern
  * does, but the pattern is spelled as an object literal whose own type says
- * nothing about where the values come from. The checker answers the named case
- * directly; the rest floors.
+ * nothing about where the values come from. What the assignment names is read
+ * where the syntax names it; a pattern nested inside another has the checker
+ * answer for it, as it did before there was a settled type to prefer. The rest
+ * floors.
  */
 function assignmentTargets(
   element: Exclude<DestructuringElement, ts.BindingElement>,
@@ -393,8 +410,49 @@ function assignmentTargets(
 
   const { name } = element;
   if (!ts.isIdentifier(name)) return undefined;
+  const source = assignedSource(element.parent, checker);
+  if (source !== undefined) {
+    return memberNamed(source, name.text, checker).flatMap((symbol) =>
+      accessorTargets(symbol, "get", resolution),
+    );
+  }
   const symbol = checker.getPropertySymbolOfDestructuringAssignment(name);
   return symbol === undefined ? [] : accessorTargets(symbol, "get", resolution);
+}
+
+/**
+ * The value a binding pattern takes apart, settled. The checker's type *at* a
+ * pattern is the one it took from what fed the pattern as narrowed, so what
+ * the syntax names is read instead wherever it names anything: the
+ * declaration's initializer, or, for a nested pattern, the member of its own
+ * source that spells it. A pattern nothing names — a parameter's, a `for…of`
+ * element's — is already declared rather than narrowed, and answers for
+ * itself.
+ */
+function patternSource(
+  pattern: ts.BindingPattern,
+  checker: ts.TypeChecker,
+): ts.Type | undefined {
+  return fedFrom(pattern, checker) ?? receiverType(pattern, checker);
+}
+
+function fedFrom(
+  pattern: ts.BindingPattern,
+  checker: ts.TypeChecker,
+): ts.Type | undefined {
+  const { parent } = pattern;
+  if (ts.isBindingElement(parent)) {
+    const outer = fedFrom(parent.parent, checker);
+    const name = parent.propertyName ?? parent.name;
+    if (outer === undefined || !ts.isIdentifier(name)) return undefined;
+    const member = memberTypeOf(outer, name.text, checker);
+    return member === undefined ? undefined : readable(member, checker);
+  }
+  // A parameter's initializer is its *default* — it runs only when the
+  // argument is missing, so it does not name what the pattern destructures.
+  return ts.isVariableDeclaration(parent) && parent.initializer !== undefined
+    ? receiverType(parent.initializer, checker)
+    : undefined;
 }
 
 /** The value a destructuring pattern is assigned, where the syntax says. */
@@ -482,7 +540,7 @@ function coercionTransfers(
   checker: ts.TypeChecker,
 ): readonly Transfer[] {
   const text = textOf(value);
-  const type = checker.getTypeAtLocation(value);
+  const type = settledType(value, checker);
   if ((type.flags & OPAQUE_TYPE) !== 0) {
     return [unnameable(value, "coercion", text)];
   }
@@ -517,7 +575,7 @@ function instanceCheckTransfers(
   checker: ts.TypeChecker,
 ): readonly Transfer[] {
   const text = textOf(node);
-  const constructor = checker.getTypeAtLocation(node.right);
+  const constructor = settledType(node.right, checker);
   if ((constructor.flags & OPAQUE_TYPE) !== 0) {
     return [unnameable(node, "instance-check", text)];
   }
@@ -654,13 +712,25 @@ function memberNamed(
   );
 }
 
-/** The apparent type of a receiver, or nothing when it cannot be read. */
+/**
+ * The apparent type of a receiver, or nothing when it cannot be read. It is
+ * the *settled* type: a hidden transfer is not a question the reader wrote, so
+ * the arm a guard picked is no answer to which body it enters.
+ */
 function receiverType(
   node: ts.Node,
   checker: ts.TypeChecker,
 ): ts.Type | undefined {
-  const type = checker.getApparentType(checker.getTypeAtLocation(node));
-  return (type.flags & OPAQUE_TYPE) === 0 ? type : undefined;
+  return readable(settledType(node, checker), checker);
+}
+
+/** A type as a member lookup sees it, or nothing where it says nothing. */
+function readable(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): ts.Type | undefined {
+  const apparent = checker.getApparentType(type);
+  return (apparent.flags & OPAQUE_TYPE) === 0 ? apparent : undefined;
 }
 
 function constituentsOf(type: ts.Type): readonly ts.Type[] {
