@@ -18,6 +18,11 @@
         },
         {
           "type": "json",
+          "path": "packages/oxlint-plugin/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
           "path": "packages/cli/package.json",
           "jsonpath": "$.version"
         }
