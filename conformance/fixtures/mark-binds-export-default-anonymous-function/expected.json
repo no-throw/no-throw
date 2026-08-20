@@ -1,0 +1,13 @@
+{
+  "description": "The other anonymous default export. `export default function () {}` is a function declaration rather than an export assignment — a body of its own rather than a value — so it binds by the first half of the rule, and is keyed `default` all the same.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}

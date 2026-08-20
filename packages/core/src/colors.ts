@@ -1,3 +1,5 @@
+import type { BaselineSource } from "./baseline/data.js";
+
 /**
  * Why a callee resolved to `throwing` with nothing to read. A floor has to say
  * which: "not yet analyzed" and "unknowable from here" are different problems
@@ -45,7 +47,41 @@ export type FloorReason =
    * shape outside the schema, or a condition path with no engine form. The
    * fact it was stating is the one that would have made it clean.
    */
-  | "unusable-entry";
+  | "unusable-entry"
+  /**
+   * A `lib.*.d.ts` member the baseline states no accessor fact for. The libs
+   * declare real getters as plain properties, so the declaration is no oracle
+   * there — and unlike a third-party `.d.ts`, an enumeration of them exists,
+   * which is why they are not trust base. Absence therefore floors instead of
+   * being read as "it is only a property".
+   */
+  | "no-accessor-fact";
+
+/**
+ * Where the declaration a floor is about lives, and — once it turns out to be
+ * a first-party lib member — whether the baseline said anything about it.
+ *
+ * An out is only an out if the reader can reach it, and three of the four
+ * cannot reach a `lib.*.d.ts`: an override and an overlay are keyed by npm
+ * package name, and nobody owns TypeScript's libs to ship a manifest from. A
+ * floor over one therefore names two outs rather than four, and the second of
+ * them is us. The baseline is also the only rung that can answer for a lib
+ * member at all, which is what lets the two lib cases be told apart by the
+ * reason alone.
+ */
+export type FloorSource =
+  /** An ordinary declaration; every rung of the chain can reach it. */
+  | { readonly reach: "package" }
+  | {
+      readonly reach: "lib";
+      /** Which of the two shipped baselines answers for it. */
+      readonly baseline: BaselineSource;
+      /**
+       * Whether that baseline stated a color. Absence is a floor either way,
+       * but only a color somebody wrote down is evidence a bridge is honest.
+       */
+      readonly stated: boolean;
+    };
 
 /**
  * Why a callee is throwing. `inferred` is the one answer that is not a floor:
@@ -65,6 +101,17 @@ export type UndischargedReason =
   | "missing-argument"
   /** Propagating it would produce a path deeper than the engine follows. */
   | "beyond-depth";
+
+/**
+ * Why a position a condition asks to be empty is not. Its own union rather
+ * than more `UndischargedReason`s: nothing here is a fact about an argument's
+ * *color*, because the claim was that no argument reaches the position at all.
+ */
+export type AbsenceReason =
+  /** Something is written at the position, and it is not `undefined` or `null`. */
+  | "argument-passed"
+  /** A spread reaches it, so whether anything arrives is a runtime question. */
+  | "unresolvable";
 
 /**
  * Why a promise can reject. Reject-ness rides our color and nothing else — a
@@ -110,6 +157,8 @@ export interface Rejects {
   readonly subject: RejectionSubject;
   /** The file whose hash drifted; only `stale-manifest` carries one. */
   readonly staleFile?: string | undefined;
+  /** Absent where the subject is not a standard-library declaration. */
+  readonly source?: FloorSource | undefined;
 }
 
 /**

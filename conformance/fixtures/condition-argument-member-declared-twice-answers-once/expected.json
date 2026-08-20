@@ -1,0 +1,23 @@
+{
+  "description": "One member declared twice is one answer. `String#normalize` is an overload pair and `String#split` is declared in two libs that merge, but each names one runtime function the chain colors once — so the join over a symbol's declarations reports the call once, not once per declaration.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 21,
+      "column": 10,
+      "endLine": 21,
+      "endColumn": 20,
+      "messageId": "conditionArgumentFloored",
+      "message": "Call to `normalized` escapes this `@nothrow` function: it is non-throwing given `s.normalize`, and the argument passed for it is colored `throwing` by the shipped standard-library baseline, so calling it can throw. `normalized` enters `s.normalize` at src/index.ts:11. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 26,
+      "column": 10,
+      "endLine": 26,
+      "endColumn": 15,
+      "messageId": "conditionArgumentFloored",
+      "message": "Call to `parts` escapes this `@nothrow` function: it is non-throwing given `s.split`, and the argument passed for it is colored `throwing` by the shipped standard-library baseline, so calling it can throw. `parts` enters `s.split` at src/index.ts:16. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+    }
+  ]
+}

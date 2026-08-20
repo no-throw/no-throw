@@ -1,13 +1,14 @@
 import {
   emitManifest,
   manifestDrift,
-  type EmitRefusal,
+  OverridesError,
   type EmitSite,
   type ManifestDocument,
-} from "@nothrow/core";
+  type MarkRefusal,
+} from "@no-throw/core";
 import { readFileSync, writeFileSync } from "node:fs";
-import { relative, sep } from "node:path";
 import { openProject } from "./project.js";
+import { CANNOT_RUN, display, REFUSED, type CommandResult } from "./result.js";
 
 export interface EmitOptions {
   /** Compare rather than write: the `prepublishOnly` shape. */
@@ -15,18 +16,6 @@ export interface EmitOptions {
   readonly project: string | undefined;
   readonly cwd: string;
 }
-
-/** What the command has to say, and what it exits with. */
-export interface CommandResult {
-  readonly code: number;
-  readonly out: string;
-  readonly err: string;
-}
-
-/** Nothing could be analyzed: a bad invocation or project, not a bad package. */
-export const CANNOT_RUN = 2;
-/** The package was read, and what it says cannot be published as it stands. */
-const REFUSED = 1;
 
 /**
  * `nothrow emit`, and `nothrow emit --check`.
@@ -43,7 +32,27 @@ export function runEmit(options: EmitOptions): CommandResult {
   }
 
   const { program, commandLine } = opened.project;
-  const outcome = emitManifest(program, commandLine);
+
+  // The package's own `nothrow.overrides.json` is read before any color is
+  // resolved, and one this release cannot honor stops everything. That is a
+  // broken project rather than an unpublishable package, so it exits as one
+  // — and as a sentence, not a stack trace.
+  let outcome;
+  try {
+    outcome = emitManifest(program, commandLine);
+  } catch (error) {
+    if (!(error instanceof OverridesError)) throw error;
+    return { code: CANNOT_RUN, out: "", err: `nothrow: ${error.message}\n` };
+  }
+
+  // Nothing was read, so there is nothing to refuse: no `tsconfig.json`, no
+  // build on disk, nowhere a manifest would be found. That is the same stop as
+  // a project that would not open, and exits as one — a publishing script that
+  // could not tell it from an unpublishable package would be reading a verdict
+  // out of a run that never reached one.
+  if (outcome.kind === "blocked") {
+    return { code: CANNOT_RUN, out: "", err: `nothrow: ${outcome.message}\n` };
+  }
 
   if (outcome.kind === "refused") {
     return {
@@ -118,13 +127,11 @@ function count(n: number, noun: string): string {
 }
 
 function refusalReport(
-  refusals: readonly EmitRefusal[],
+  refusals: readonly MarkRefusal[],
   options: EmitOptions,
 ): string {
   const lines = refusals.flatMap((refusal) => [
-    refusal.at === undefined
-      ? `nothrow: ${refusal.message}`
-      : `${place(options.cwd, refusal.at)}: ${refusal.message}`,
+    `${place(options.cwd, refusal.at)}: ${refusal.message}`,
     ...refusal.sites.map((site) => `    ${place(options.cwd, site)}: ${site.what}`),
   ]);
 
@@ -139,11 +146,4 @@ function refusalReport(
 
 function place(cwd: string, site: EmitSite): string {
   return `${display(cwd, site.fileName)}:${site.line}:${site.column}`;
-}
-
-function display(cwd: string, path: string): string {
-  const relativePath = relative(cwd, path).split(sep).join("/");
-  return relativePath === "" || relativePath.startsWith("..")
-    ? path
-    : relativePath;
 }

@@ -1,0 +1,21 @@
+{
+  "description": "An initializer is read through parentheses, `as` and `satisfies`: a type-only wrapper changes nothing about which body is there, so both of these are the single-declarator variable statement the rule already covered.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 5,
+      "column": 3,
+      "endLine": 5,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow"
+    },
+    {
+      "file": "src/index.ts",
+      "line": 10,
+      "column": 3,
+      "endLine": 10,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow"
+    }
+  ]
+}

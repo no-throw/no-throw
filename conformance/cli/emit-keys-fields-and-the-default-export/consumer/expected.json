@@ -1,0 +1,4 @@
+{
+  "description": "The keys only the rule can produce, read back by the reader a user's ESLint runs: a default-exported arrow, an instance field and a `static` field all answer across the `.d.ts` boundary, where declaration emit has turned every one of them into a property whose type is a bare function type.",
+  "diagnostics": []
+}

@@ -15,6 +15,19 @@ const WELL_KNOWN_MEMBER = /^__@(\w+)@\d+$/u;
 /** `any` and `unknown` say nothing about what runs, so they cannot be read. */
 const OPAQUE_TYPE = ts.TypeFlags.Any | ts.TypeFlags.Unknown;
 
+/**
+ * The types with exactly one prototype behind them. `null`, `undefined` and
+ * `void` are primitive too, but they carry no member to look up at all, so
+ * reading them as exact would turn "this receiver has no members" into an
+ * answer about one.
+ */
+const EXACT_TYPE =
+  ts.TypeFlags.StringLike |
+  ts.TypeFlags.NumberLike |
+  ts.TypeFlags.BigIntLike |
+  ts.TypeFlags.BooleanLike |
+  ts.TypeFlags.ESSymbolLike;
+
 /** Types that run no user code when coerced. */
 const PRIMITIVE_TYPE =
   ts.TypeFlags.StringLike |
@@ -88,6 +101,8 @@ export function typeFactsOf(checker: ts.TypeChecker): TypeFacts {
     isUnion: (target) => type(target).isUnion(),
     callSignaturesOf: (target) =>
       type(target).getCallSignatures().map(asSignature),
+    constructSignaturesOf: (target) =>
+      type(target).getConstructSignatures().map(asSignature),
     propertyOfType: (target, name) =>
       maybeSymbol(checker.getPropertyOfType(type(target), name)),
     propertiesOfType: (target) =>
@@ -106,6 +121,7 @@ export function typeFactsOf(checker: ts.TypeChecker): TypeFacts {
       return value.isStringLiteral() ? value.value : undefined;
     },
     isOpaque: (target) => (type(target).flags & OPAQUE_TYPE) !== 0,
+    isExact: (target) => (type(target).flags & EXACT_TYPE) !== 0,
     isPrimitive: (target) => (type(target).flags & PRIMITIVE_TYPE) !== 0,
 
     typeOfSymbol: (target) => asType(checker.getTypeOfSymbol(symbol(target))),

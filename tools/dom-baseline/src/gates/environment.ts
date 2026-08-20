@@ -1,4 +1,4 @@
-import type { DomMember } from "@nothrow/core/baseline";
+import type { DomMember } from "@no-throw/core/baseline";
 import { JSDOM, VirtualConsole } from "jsdom";
 
 /**

@@ -1,37 +1,15 @@
-# `@nothrow/eslint-plugin`
+# `@no-throw/eslint-plugin`
 
-The ESLint adapter for `no-throw`. It translates findings from
-[`@nothrow/core`](../core) into ESLint diagnostics and suggestions, and contains
-no analysis.
+The ESLint adapter for `no-throw`. It turns findings from
+[`@no-throw/core`](../core) into diagnostics and suggestions, and contains no
+analysis.
 
-`nothrow/no-escaping-throw` carries the entire invariant. Escape kinds are
-`messageId`s inside it, never separate rules. `nothrow/valid-mark` is annotation
-hygiene alongside it: a `@nothrow` that binds to nothing. Neither takes options,
-and `configs.recommended` turns on both plus
-`@typescript-eslint/no-floating-promises`.
+It ships `nothrow/no-escaping-throw`, `nothrow/valid-mark` and the
+`configs.recommended` preset, which turns both on plus
+`@typescript-eslint/no-floating-promises`. The preset is a function taking
+typescript-eslint's plugin object — `nothrow.configs.recommended(tseslint.plugin)`
+— because it registers that object rather than resolving one of its own.
 
-## Suggestions, never fixes
-
-A diagnostic whose remedy is a mechanical bridge carries an ESLint suggestion
-offering it, shaped by where it lands: `try`/`catch` around the statement, or
-`try { await … } catch` where what escapes is a rejection — and, for a `catch`
-that cannot fire because nothing is awaited, the missing `await` alone.
-
-Nothing here is ever an ESLint **fix**. Wrapping a call in a bridge changes what
-the program does with an error, so the edit is always the reader's to accept;
-`--fix` would otherwise rewrite a codebase into one that swallows everything and
-reports nothing.
-
-An offer is made only where the edit is both mechanical and honest. Where the
-way out is something else — moving a mark, returning the error instead of
-throwing it — there is none. Nor is one made where the wrap would break code
-that has nothing to do with the escape, or would reach past a function
-boundary: wrapping `const value = risky()` moves the binding out of the scope
-that reads it, and wrapping around a callback would be the fake bridge these
-rules exist to report.
-
-Wrapping a `return` *is* offered, and it leaves you a compiler error. That is
-the point: the bridge is complete, and what is left is the one thing no tool
-can decide — what the function returns now that it does not throw.
-
-See the [root README](../../README.md).
+The documentation is [the root README](../../README.md) — [installing the
+preset](../../README.md#1-install-the-preset), what each rule holds you to, and
+why an offered bridge is never an autofix.

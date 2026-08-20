@@ -1,0 +1,66 @@
+{
+  "description": "Every hazard `String.prototype.localeCompare` has past its declared types is ECMA-402's, and ECMA-262 hands that document the two positions it names `reserved1` and `reserved2`. So the entry is clean given both get nothing — stated as `=undefined`, the narrow absence form, because ECMA-402 writes no guard and hands `null` to `CanonicalizeLocaleList`, which coerces it and throws — and the call site decides: comparing two strings is green, an explicit `undefined` for the locale is green too, and a locale or an options bag floors the position that carries it. `spelled` is the boundary of that reading and why it is narrow — ECMA-262 writes no algorithm for `Number.prototype.toLocaleString`, so there are no steps to have read there and its silence is not evidence. It floors, and a change that colored it green off the same rule would be reading absence of a corpus as absence of a throw.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 13,
+      "column": 10,
+      "endLine": 13,
+      "endColumn": 25,
+      "messageId": "carriedConditionArgumentPassed",
+      "message": "Call to `a.localeCompare` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `locales`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.",
+      "suggestions": [
+        {
+          "desc": "Bridge this with `try`/`catch`.",
+          "output": [
+            "/** @nothrow */",
+            "export function sameString(a: string, b: string): boolean {",
+            "  return a.localeCompare(b) === 0;",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function explicitlyNoLocale(a: string, b: string): number {",
+            "  return a.localeCompare(b, undefined);",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function inLocale(a: string, b: string, locale: string): number {",
+            "  try {",
+            "    return a.localeCompare(b, locale);",
+            "  } catch {}",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function ignoringCase(a: string, b: string): number {",
+            "  return a.localeCompare(b, undefined, { sensitivity: \"accent\" });",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function spelled(n: number): string {",
+            "  return n.toLocaleString();",
+            "}",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "line": 18,
+      "column": 10,
+      "endLine": 18,
+      "endColumn": 25,
+      "messageId": "carriedConditionArgumentPassed",
+      "message": "Call to `a.localeCompare` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `options`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 23,
+      "column": 10,
+      "endLine": 23,
+      "endColumn": 26,
+      "messageId": "unbridgedCall",
+      "message": "Call to `n.toLocaleString` escapes this `@nothrow` function: it is colored `throwing` by the shipped standard-library baseline, so calling it can throw. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+    }
+  ]
+}

@@ -5,16 +5,16 @@ function eachOf<T>(xs: readonly T[], cb: (t: T) => void): void {
 /** @nothrow */
 export function record(inputs: readonly string[]): void {
   eachOf(inputs, (text) => {
-    seen[seen.length] = text;
+    seen.last = text;
   });
 }
 
 /** @nothrow */
 export function parse(inputs: readonly string[]): void {
   eachOf(inputs, (text) => {
-    parsed[parsed.length] = JSON.parse(text);
+    parsed.last = JSON.parse(text);
   });
 }
 
-const seen: string[] = [];
-const parsed: unknown[] = [];
+const seen = { last: "" };
+const parsed: { last: unknown } = { last: undefined };

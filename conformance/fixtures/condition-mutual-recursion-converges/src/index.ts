@@ -20,16 +20,16 @@ export function walk(root: Node, cb: (n: Node) => void): void {
 /** @nothrow */
 export function collect(root: Node): void {
   walk(root, (n) => {
-    seen[seen.length] = n.value;
+    seen.last = n.value;
   });
 }
 
 /** @nothrow */
 export function parse(root: Node): void {
   walk(root, (n) => {
-    parsed[parsed.length] = JSON.parse(n.value);
+    parsed.last = JSON.parse(n.value);
   });
 }
 
-const seen: string[] = [];
-const parsed: unknown[] = [];
+const seen = { last: "" };
+const parsed: { last: unknown } = { last: undefined };

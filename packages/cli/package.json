@@ -1,20 +1,41 @@
 {
-  "name": "@nothrow/cli",
-  "version": "0.1.0",
+  "name": "@no-throw/cli",
+  "version": "0.2.0",
   "type": "module",
   "description": "The no-throw command line tool. Hosts `nothrow emit`.",
   "license": "MIT",
+  "keywords": [
+    "nothrow",
+    "no-throw",
+    "eslint",
+    "typescript",
+    "errors",
+    "exceptions",
+    "checked-exceptions"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/no-throw/no-throw.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/no-throw/no-throw#readme",
+  "bugs": "https://github.com/no-throw/no-throw/issues",
   "bin": {
     "nothrow": "./dist/bin.js"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "files": [
+    "LICENSE",
     "dist"
   ],
   "dependencies": {
-    "@nothrow/core": "workspace:*"
+    "@no-throw/core": "workspace:*"
   },
   "peerDependencies": {
-    "typescript": ">=5.0.0"
+    "typescript": ">=5.0.0 <7.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

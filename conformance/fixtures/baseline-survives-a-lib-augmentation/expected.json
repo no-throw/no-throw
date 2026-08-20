@@ -1,0 +1,14 @@
+{
+  "description": "A project augmenting a lib type still gets the baseline's answer about the builtin. Declaration merging gives `Array#push` and `Math#max` a second declaration in the project's own file, and overload resolution may hand back either — so the baseline is asked wherever the libs declare the member. `push` stays `throwing` and is reported; `max` stays clean and needs no bridge. Reading the answer off the declaration that happened to match instead made the first silently pass, which is the direction the soundness doctrine does not allow.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 10,
+      "messageId": "unbridgedCall",
+      "message": "Call to `xs.push` escapes this `@nothrow` function: it is colored `throwing` by the shipped standard-library baseline, so calling it can throw. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+    }
+  ]
+}

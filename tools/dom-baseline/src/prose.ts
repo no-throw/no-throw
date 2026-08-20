@@ -1,3 +1,5 @@
+import { CONSTRUCT_SEGMENT } from "@no-throw/core/baseline";
+
 import type { IdlCorpus } from "./idl/corpus.js";
 import type { JoinedMember, RuntimeOwner } from "./join.js";
 import type { Dfn, DfnGraph } from "./specs/dfns.js";
@@ -80,7 +82,7 @@ function lookup(
       index.get("cssstyledeclaration.camel_cased_attribute")?.key
     );
   }
-  const name = member.name === "new" ? "constructor" : member.name;
+  const name = member.name === CONSTRUCT_SEGMENT ? "constructor" : member.name;
   const owners = [
     ...(idl === undefined ? [] : [idl.viaMixin ?? idl.owner, idl.owner]),
     member.owner,

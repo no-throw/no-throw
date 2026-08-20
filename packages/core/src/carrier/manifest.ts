@@ -61,6 +61,9 @@ function readManifest(home: PackageHome): ManifestState {
 
   const document = readColorDocument(path, manifestSchema(), [], TABLES);
   if (document.kind !== "read") {
+    // A manifest that does not describe what it claims to hands the package
+    // back to its surviving tags, which is what an absent one does — so the
+    // two are one state here, and only a future wire version is kept apart.
     return document.kind === "unreadable" ? { kind: "unreadable" } : ABSENT;
   }
 

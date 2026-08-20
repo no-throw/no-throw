@@ -3,27 +3,21 @@
   "unprobed": [
     "AsyncDisposableStack#disposeAsync",
     "AsyncDisposableStack#disposed",
+    "AsyncDisposableStackConstructor#new()",
     "Atomics#pause",
     "DisposableStack#dispose",
     "DisposableStack#disposed",
+    "DisposableStackConstructor#new()",
     "ErrorConstructor#isError",
     "FinalizationRegistry#@@toStringTag",
-    "Map#delete",
-    "Map#get",
-    "Map#has",
-    "Map#set",
+    "Float16Array#@@toStringTag",
+    "Float16Array#buffer",
+    "Float16Array#byteLength",
+    "Float16Array#byteOffset",
+    "Float16Array#length",
     "Math#f16round",
-    "ObjectConstructor#entries",
-    "ObjectConstructor#getOwnPropertyDescriptors",
-    "ObjectConstructor#values",
-    "ProxyConstructor#new",
-    "ProxyConstructor#revocable",
-    "ReadonlyMap#get",
-    "ReadonlyMap#has",
-    "ReadonlySet#has",
-    "Set#add",
-    "Set#delete",
-    "Set#has",
+    "SuppressedErrorConstructor#()",
+    "SuppressedErrorConstructor#new()",
     "WeakRef#@@toStringTag",
     "WeakRef#deref"
   ],
@@ -37,6 +31,8 @@
         "runtime": "Map.prototype.clear"
       },
       "Map#delete": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.delete",
         "runtime": "Map.prototype.delete"
@@ -51,16 +47,22 @@
         "runtime": "Map.prototype.forEach"
       },
       "Map#get": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.get",
         "runtime": "Map.prototype.get"
       },
       "Map#has": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.has",
         "runtime": "Map.prototype.has"
       },
       "Map#set": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.set",
         "runtime": "Map.prototype.set"
@@ -73,8 +75,11 @@
         "spec": "Map.prototype.size",
         "runtime": "Map.prototype.size"
       },
-      "MapConstructor#new": {
-        "color": "throwing",
+      "MapConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "Map",
         "runtime": "Map"
       },
@@ -88,11 +93,15 @@
         "runtime": "Map.prototype.forEach"
       },
       "ReadonlyMap#get": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.get",
         "runtime": "Map.prototype.get"
       },
       "ReadonlyMap#has": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Map.prototype.has",
         "runtime": "Map.prototype.has"
@@ -132,12 +141,17 @@
         "spec": "WeakMap.prototype.set",
         "runtime": "WeakMap.prototype.set"
       },
-      "WeakMapConstructor#new": {
-        "color": "throwing",
+      "WeakMapConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "WeakMap",
         "runtime": "WeakMap"
       },
       "Set#add": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Set.prototype.add",
         "runtime": "Set.prototype.add"
@@ -150,6 +164,8 @@
         "runtime": "Set.prototype.clear"
       },
       "Set#delete": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Set.prototype.delete",
         "runtime": "Set.prototype.delete"
@@ -164,6 +180,8 @@
         "runtime": "Set.prototype.forEach"
       },
       "Set#has": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Set.prototype.has",
         "runtime": "Set.prototype.has"
@@ -176,8 +194,11 @@
         "spec": "Set.prototype.size",
         "runtime": "Set.prototype.size"
       },
-      "SetConstructor#new": {
-        "color": "throwing",
+      "SetConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "Set",
         "runtime": "Set"
       },
@@ -191,6 +212,8 @@
         "runtime": "Set.prototype.forEach"
       },
       "ReadonlySet#has": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Set.prototype.has",
         "runtime": "Set.prototype.has"
@@ -223,8 +246,11 @@
         "spec": "WeakSet.prototype.has",
         "runtime": "WeakSet.prototype.has"
       },
-      "WeakSetConstructor#new": {
-        "color": "throwing",
+      "WeakSetConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "WeakSet",
         "runtime": "WeakSet"
       }
@@ -237,12 +263,12 @@
         "spec": "Object.keys",
         "runtime": "Object.keys"
       },
-      "DateConstructor#new": {
+      "DateConstructor#new()": {
         "color": "throwing",
         "spec": "Date",
         "runtime": "Date"
       },
-      "RegExpConstructor#new": {
+      "RegExpConstructor#new()": {
         "color": "throwing",
         "spec": "RegExp",
         "runtime": "RegExp"
@@ -628,13 +654,15 @@
         "runtime": "String.prototype.codePointAt"
       },
       "String#includes": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "String.prototype.includes",
         "runtime": "String.prototype.includes"
       },
       "String#endsWith": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "String.prototype.endsWith",
         "runtime": "String.prototype.endsWith"
@@ -652,7 +680,8 @@
         "runtime": "String.prototype.repeat"
       },
       "String#startsWith": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "String.prototype.startsWith",
         "runtime": "String.prototype.startsWith"
@@ -736,7 +765,7 @@
       }
     },
     "es2015.iterable": {
-      "Int8ArrayConstructor#new": {
+      "Int8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int8Array",
         "runtime": "Int8Array"
@@ -747,7 +776,7 @@
         "spec": "Int8Array.from",
         "runtime": "Int8Array.from"
       },
-      "Uint8ArrayConstructor#new": {
+      "Uint8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8Array",
         "runtime": "Uint8Array"
@@ -758,7 +787,7 @@
         "spec": "Uint8Array.from",
         "runtime": "Uint8Array.from"
       },
-      "Uint8ClampedArrayConstructor#new": {
+      "Uint8ClampedArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8ClampedArray",
         "runtime": "Uint8ClampedArray"
@@ -769,7 +798,7 @@
         "spec": "Uint8ClampedArray.from",
         "runtime": "Uint8ClampedArray.from"
       },
-      "Int16ArrayConstructor#new": {
+      "Int16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int16Array",
         "runtime": "Int16Array"
@@ -780,7 +809,7 @@
         "spec": "Int16Array.from",
         "runtime": "Int16Array.from"
       },
-      "Uint16ArrayConstructor#new": {
+      "Uint16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint16Array",
         "runtime": "Uint16Array"
@@ -791,7 +820,7 @@
         "spec": "Uint16Array.from",
         "runtime": "Uint16Array.from"
       },
-      "Int32ArrayConstructor#new": {
+      "Int32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int32Array",
         "runtime": "Int32Array"
@@ -802,7 +831,7 @@
         "spec": "Int32Array.from",
         "runtime": "Int32Array.from"
       },
-      "Uint32ArrayConstructor#new": {
+      "Uint32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint32Array",
         "runtime": "Uint32Array"
@@ -813,7 +842,7 @@
         "spec": "Uint32Array.from",
         "runtime": "Uint32Array.from"
       },
-      "Float32ArrayConstructor#new": {
+      "Float32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float32Array",
         "runtime": "Float32Array"
@@ -824,7 +853,7 @@
         "spec": "Float32Array.from",
         "runtime": "Float32Array.from"
       },
-      "Float64ArrayConstructor#new": {
+      "Float64ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float64Array",
         "runtime": "Float64Array"
@@ -841,23 +870,35 @@
         "spec": "Array.from",
         "runtime": "Array.from"
       },
-      "MapConstructor#new": {
-        "color": "throwing",
+      "MapConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "Map",
         "runtime": "Map"
       },
-      "WeakMapConstructor#new": {
-        "color": "throwing",
+      "WeakMapConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "WeakMap",
         "runtime": "WeakMap"
       },
-      "SetConstructor#new": {
-        "color": "throwing",
+      "SetConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "Set",
         "runtime": "Set"
       },
-      "WeakSetConstructor#new": {
-        "color": "throwing",
+      "WeakSetConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [
+          "param0=nullish"
+        ],
         "spec": "WeakSet",
         "runtime": "WeakSet"
       },
@@ -1286,7 +1327,7 @@
         "spec": "Promise.race",
         "runtime": "Promise.race"
       },
-      "PromiseConstructor#new": {
+      "PromiseConstructor#new()": {
         "color": "throwing",
         "spec": "Promise",
         "runtime": "Promise"
@@ -1306,14 +1347,23 @@
     },
     "es2015.proxy": {
       "ProxyConstructor#revocable": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Proxy.revocable",
         "runtime": "Proxy.revocable"
+      },
+      "ProxyConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
+        "spec": "Proxy",
+        "runtime": "Proxy"
       }
     },
     "es2015.symbol": {
       "SymbolConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "Symbol",
         "runtime": "Symbol"
       },
@@ -1603,7 +1653,7 @@
       },
       "Int8Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int8Array.prototype [ %Symbol.toStringTag% ]",
@@ -1611,7 +1661,7 @@
       },
       "Uint8Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8Array.prototype [ %Symbol.toStringTag% ]",
@@ -1619,7 +1669,7 @@
       },
       "Uint8ClampedArray#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8ClampedArray.prototype [ %Symbol.toStringTag% ]",
@@ -1627,7 +1677,7 @@
       },
       "Int16Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int16Array.prototype [ %Symbol.toStringTag% ]",
@@ -1635,7 +1685,7 @@
       },
       "Uint16Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint16Array.prototype [ %Symbol.toStringTag% ]",
@@ -1643,7 +1693,7 @@
       },
       "Int32Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int32Array.prototype [ %Symbol.toStringTag% ]",
@@ -1651,7 +1701,7 @@
       },
       "Uint32Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint32Array.prototype [ %Symbol.toStringTag% ]",
@@ -1659,7 +1709,7 @@
       },
       "Float32Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float32Array.prototype [ %Symbol.toStringTag% ]",
@@ -1667,7 +1717,7 @@
       },
       "Float64Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float64Array.prototype [ %Symbol.toStringTag% ]",
@@ -1708,13 +1758,15 @@
     },
     "es2016.array.include": {
       "Array#includes": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.includes",
         "runtime": "Array.prototype.includes"
       },
       "ReadonlyArray#includes": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.includes",
         "runtime": "Array.prototype.includes"
@@ -1775,7 +1827,7 @@
       }
     },
     "es2017.arraybuffer": {
-      "ArrayBufferConstructor#new": {
+      "ArrayBufferConstructor#new()": {
         "color": "throwing",
         "spec": "ArrayBuffer",
         "runtime": "ArrayBuffer"
@@ -1783,7 +1835,8 @@
     },
     "es2017.date": {
       "DateConstructor#UTC": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.UTC",
         "runtime": "Date.UTC"
@@ -1791,16 +1844,21 @@
     },
     "es2017.object": {
       "ObjectConstructor#values": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Object.values",
         "runtime": "Object.values"
       },
       "ObjectConstructor#entries": {
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Object.entries",
         "runtime": "Object.entries"
       },
       "ObjectConstructor#getOwnPropertyDescriptors": {
+        "color": "throwing",
         "accessor": false,
         "spec": "Object.getOwnPropertyDescriptors",
         "runtime": "Object.getOwnPropertyDescriptors"
@@ -1829,7 +1887,7 @@
         "spec": "SharedArrayBuffer.prototype [ %Symbol.toStringTag% ]",
         "runtime": "SharedArrayBuffer.prototype[Symbol.toStringTag]"
       },
-      "SharedArrayBufferConstructor#new": {
+      "SharedArrayBufferConstructor#new()": {
         "color": "throwing",
         "spec": "SharedArrayBuffer",
         "runtime": "SharedArrayBuffer"
@@ -1939,47 +1997,47 @@
       }
     },
     "es2017.typedarrays": {
-      "Int8ArrayConstructor#new": {
+      "Int8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int8Array",
         "runtime": "Int8Array"
       },
-      "Uint8ArrayConstructor#new": {
+      "Uint8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8Array",
         "runtime": "Uint8Array"
       },
-      "Uint8ClampedArrayConstructor#new": {
+      "Uint8ClampedArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8ClampedArray",
         "runtime": "Uint8ClampedArray"
       },
-      "Int16ArrayConstructor#new": {
+      "Int16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int16Array",
         "runtime": "Int16Array"
       },
-      "Uint16ArrayConstructor#new": {
+      "Uint16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint16Array",
         "runtime": "Uint16Array"
       },
-      "Int32ArrayConstructor#new": {
+      "Int32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int32Array",
         "runtime": "Int32Array"
       },
-      "Uint32ArrayConstructor#new": {
+      "Uint32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint32Array",
         "runtime": "Uint32Array"
       },
-      "Float32ArrayConstructor#new": {
+      "Float32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float32Array",
         "runtime": "Float32Array"
       },
-      "Float64ArrayConstructor#new": {
+      "Float64ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float64Array",
         "runtime": "Float64Array"
@@ -2138,7 +2196,7 @@
       },
       "BigInt64Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigInt64Array.prototype.buffer",
@@ -2146,7 +2204,7 @@
       },
       "BigInt64Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigInt64Array.prototype.byteLength",
@@ -2154,7 +2212,7 @@
       },
       "BigInt64Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigInt64Array.prototype.byteOffset",
@@ -2240,7 +2298,7 @@
       },
       "BigInt64Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigInt64Array.prototype.length",
@@ -2331,13 +2389,13 @@
       },
       "BigInt64Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigInt64Array.prototype [ %Symbol.toStringTag% ]",
         "runtime": "BigInt64Array.prototype[Symbol.toStringTag]"
       },
-      "BigInt64ArrayConstructor#new": {
+      "BigInt64ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "BigInt64Array",
         "runtime": "BigInt64Array"
@@ -2372,7 +2430,7 @@
       },
       "BigUint64Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigUint64Array.prototype.buffer",
@@ -2380,7 +2438,7 @@
       },
       "BigUint64Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigUint64Array.prototype.byteLength",
@@ -2388,7 +2446,7 @@
       },
       "BigUint64Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigUint64Array.prototype.byteOffset",
@@ -2474,7 +2532,7 @@
       },
       "BigUint64Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigUint64Array.prototype.length",
@@ -2565,13 +2623,13 @@
       },
       "BigUint64Array#@@toStringTag": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "BigUint64Array.prototype [ %Symbol.toStringTag% ]",
         "runtime": "BigUint64Array.prototype[Symbol.toStringTag]"
       },
-      "BigUint64ArrayConstructor#new": {
+      "BigUint64ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "BigUint64Array",
         "runtime": "BigUint64Array"
@@ -2727,7 +2785,11 @@
     },
     "es2020.string": {
       "String#localeCompare": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param1=undefined",
+          "param2=undefined"
+        ],
         "accessor": false,
         "spec": "String.prototype.localeCompare",
         "runtime": "String.prototype.localeCompare"
@@ -2768,7 +2830,7 @@
       }
     },
     "es2021.promise": {
-      "AggregateErrorConstructor#new": {
+      "AggregateErrorConstructor#new()": {
         "color": "throwing",
         "spec": "AggregateError",
         "runtime": "AggregateError"
@@ -2807,7 +2869,7 @@
         "spec": "WeakRef.prototype.deref",
         "runtime": "WeakRef.prototype.deref"
       },
-      "WeakRefConstructor#new": {
+      "WeakRefConstructor#new()": {
         "color": "throwing",
         "spec": "WeakRef",
         "runtime": "WeakRef"
@@ -2832,8 +2894,9 @@
         "spec": "FinalizationRegistry.prototype.unregister",
         "runtime": "FinalizationRegistry.prototype.unregister"
       },
-      "FinalizationRegistryConstructor#new": {
-        "color": "throwing",
+      "FinalizationRegistryConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "FinalizationRegistry",
         "runtime": "FinalizationRegistry"
       }
@@ -2921,77 +2984,91 @@
       }
     },
     "es2022.error": {
-      "ErrorConstructor#new": {
-        "color": "throwing",
+      "ErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "Error",
         "runtime": "Error"
       },
       "ErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "Error",
         "runtime": "Error"
       },
-      "EvalErrorConstructor#new": {
-        "color": "throwing",
+      "EvalErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "EvalError",
         "runtime": "EvalError"
       },
       "EvalErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "EvalError",
         "runtime": "EvalError"
       },
-      "RangeErrorConstructor#new": {
-        "color": "throwing",
+      "RangeErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "RangeError",
         "runtime": "RangeError"
       },
       "RangeErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "RangeError",
         "runtime": "RangeError"
       },
-      "ReferenceErrorConstructor#new": {
-        "color": "throwing",
+      "ReferenceErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "ReferenceError",
         "runtime": "ReferenceError"
       },
       "ReferenceErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "ReferenceError",
         "runtime": "ReferenceError"
       },
-      "SyntaxErrorConstructor#new": {
-        "color": "throwing",
+      "SyntaxErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "SyntaxError",
         "runtime": "SyntaxError"
       },
       "SyntaxErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "SyntaxError",
         "runtime": "SyntaxError"
       },
-      "TypeErrorConstructor#new": {
-        "color": "throwing",
+      "TypeErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "TypeError",
         "runtime": "TypeError"
       },
       "TypeErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "TypeError",
         "runtime": "TypeError"
       },
-      "URIErrorConstructor#new": {
-        "color": "throwing",
+      "URIErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "URIError",
         "runtime": "URIError"
       },
       "URIErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "URIError",
         "runtime": "URIError"
       },
-      "AggregateErrorConstructor#new": {
+      "AggregateErrorConstructor#new()": {
         "color": "throwing",
         "spec": "AggregateError",
         "runtime": "AggregateError"
@@ -3004,7 +3081,8 @@
     },
     "es2022.object": {
       "ObjectConstructor#hasOwn": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Object.hasOwn",
         "runtime": "Object.hasOwn"
@@ -3446,7 +3524,7 @@
       }
     },
     "es2024.arraybuffer": {
-      "ArrayBufferConstructor#new": {
+      "ArrayBufferConstructor#new()": {
         "color": "throwing",
         "spec": "ArrayBuffer",
         "runtime": "ArrayBuffer"
@@ -3529,7 +3607,7 @@
       }
     },
     "es2024.sharedmemory": {
-      "SharedArrayBufferConstructor#new": {
+      "SharedArrayBufferConstructor#new()": {
         "color": "throwing",
         "spec": "SharedArrayBuffer",
         "runtime": "SharedArrayBuffer"
@@ -3587,7 +3665,8 @@
         "runtime": "eval"
       },
       "parseInt": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "parseInt",
         "runtime": "parseInt"
@@ -3687,7 +3766,8 @@
         "runtime": "Object.prototype.valueOf"
       },
       "Object#hasOwnProperty": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Object.prototype.hasOwnProperty",
         "runtime": "Object.prototype.hasOwnProperty"
@@ -3700,18 +3780,21 @@
         "runtime": "Object.prototype.isPrototypeOf"
       },
       "Object#propertyIsEnumerable": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Object.prototype.propertyIsEnumerable",
         "runtime": "Object.prototype.propertyIsEnumerable"
       },
-      "ObjectConstructor#new": {
-        "color": "throwing",
+      "ObjectConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "Object",
         "runtime": "Object"
       },
       "ObjectConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "Object",
         "runtime": "Object"
       },
@@ -3845,7 +3928,7 @@
         "spec": "Function.prototype.caller",
         "runtime": "Function.prototype.caller"
       },
-      "FunctionConstructor#new": {
+      "FunctionConstructor#new()": {
         "color": "throwing",
         "spec": "Function",
         "runtime": "Function"
@@ -3884,19 +3967,25 @@
         "runtime": "String.prototype.concat"
       },
       "String#indexOf": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "String.prototype.indexOf",
         "runtime": "String.prototype.indexOf"
       },
       "String#lastIndexOf": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "String.prototype.lastIndexOf",
         "runtime": "String.prototype.lastIndexOf"
       },
       "String#localeCompare": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param1=undefined",
+          "param2=undefined"
+        ],
         "accessor": false,
         "spec": "String.prototype.localeCompare",
         "runtime": "String.prototype.localeCompare"
@@ -3920,7 +4009,8 @@
         "runtime": "String.prototype.search"
       },
       "String#slice": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "String.prototype.slice",
         "runtime": "String.prototype.slice"
@@ -3932,7 +4022,8 @@
         "runtime": "String.prototype.split"
       },
       "String#substring": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "String.prototype.substring",
         "runtime": "String.prototype.substring"
@@ -3990,7 +4081,7 @@
         "spec": "String.prototype.valueOf",
         "runtime": "String.prototype.valueOf"
       },
-      "StringConstructor#new": {
+      "StringConstructor#new()": {
         "color": "throwing",
         "spec": "String",
         "runtime": "String"
@@ -4014,13 +4105,15 @@
         "spec": "Boolean.prototype.valueOf",
         "runtime": "Boolean.prototype.valueOf"
       },
-      "BooleanConstructor#new": {
-        "color": "throwing",
+      "BooleanConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "Boolean",
         "runtime": "Boolean"
       },
       "BooleanConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "Boolean",
         "runtime": "Boolean"
       },
@@ -4043,7 +4136,10 @@
         "runtime": "Number.prototype.toExponential"
       },
       "Number#toPrecision": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [
+          "param0=undefined"
+        ],
         "accessor": false,
         "spec": "Number.prototype.toPrecision",
         "runtime": "Number.prototype.toPrecision"
@@ -4055,7 +4151,7 @@
         "spec": "Number.prototype.valueOf",
         "runtime": "Number.prototype.valueOf"
       },
-      "NumberConstructor#new": {
+      "NumberConstructor#new()": {
         "color": "throwing",
         "spec": "Number",
         "runtime": "Number"
@@ -4489,37 +4585,43 @@
         "runtime": "Date.prototype.setUTCMilliseconds"
       },
       "Date#setSeconds": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.prototype.setSeconds",
         "runtime": "Date.prototype.setSeconds"
       },
       "Date#setUTCSeconds": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.prototype.setUTCSeconds",
         "runtime": "Date.prototype.setUTCSeconds"
       },
       "Date#setMinutes": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.prototype.setMinutes",
         "runtime": "Date.prototype.setMinutes"
       },
       "Date#setUTCMinutes": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.prototype.setUTCMinutes",
         "runtime": "Date.prototype.setUTCMinutes"
       },
       "Date#setHours": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.prototype.setHours",
         "runtime": "Date.prototype.setHours"
       },
       "Date#setUTCHours": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.prototype.setUTCHours",
         "runtime": "Date.prototype.setUTCHours"
@@ -4539,25 +4641,29 @@
         "runtime": "Date.prototype.setUTCDate"
       },
       "Date#setMonth": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.prototype.setMonth",
         "runtime": "Date.prototype.setMonth"
       },
       "Date#setUTCMonth": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.prototype.setUTCMonth",
         "runtime": "Date.prototype.setUTCMonth"
       },
       "Date#setFullYear": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.prototype.setFullYear",
         "runtime": "Date.prototype.setFullYear"
       },
       "Date#setUTCFullYear": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.prototype.setUTCFullYear",
         "runtime": "Date.prototype.setUTCFullYear"
@@ -4581,7 +4687,7 @@
         "spec": "Date.prototype.toJSON",
         "runtime": "Date.prototype.toJSON"
       },
-      "DateConstructor#new": {
+      "DateConstructor#new()": {
         "color": "throwing",
         "spec": "Date",
         "runtime": "Date"
@@ -4599,7 +4705,8 @@
         "runtime": "Date.parse"
       },
       "DateConstructor#UTC": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Date.UTC",
         "runtime": "Date.UTC"
@@ -4660,7 +4767,7 @@
         "spec": "RegExp.prototype.compile",
         "runtime": "RegExp.prototype.compile"
       },
-      "RegExpConstructor#new": {
+      "RegExpConstructor#new()": {
         "color": "throwing",
         "spec": "RegExp",
         "runtime": "RegExp"
@@ -4832,73 +4939,87 @@
         "spec": "Error.prototype.message",
         "runtime": "Error.prototype.message"
       },
-      "ErrorConstructor#new": {
-        "color": "throwing",
+      "ErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "Error",
         "runtime": "Error"
       },
       "ErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "Error",
         "runtime": "Error"
       },
-      "EvalErrorConstructor#new": {
-        "color": "throwing",
+      "EvalErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "EvalError",
         "runtime": "EvalError"
       },
       "EvalErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "EvalError",
         "runtime": "EvalError"
       },
-      "RangeErrorConstructor#new": {
-        "color": "throwing",
+      "RangeErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "RangeError",
         "runtime": "RangeError"
       },
       "RangeErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "RangeError",
         "runtime": "RangeError"
       },
-      "ReferenceErrorConstructor#new": {
-        "color": "throwing",
+      "ReferenceErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "ReferenceError",
         "runtime": "ReferenceError"
       },
       "ReferenceErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "ReferenceError",
         "runtime": "ReferenceError"
       },
-      "SyntaxErrorConstructor#new": {
-        "color": "throwing",
+      "SyntaxErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "SyntaxError",
         "runtime": "SyntaxError"
       },
       "SyntaxErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "SyntaxError",
         "runtime": "SyntaxError"
       },
-      "TypeErrorConstructor#new": {
-        "color": "throwing",
+      "TypeErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "TypeError",
         "runtime": "TypeError"
       },
       "TypeErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "TypeError",
         "runtime": "TypeError"
       },
-      "URIErrorConstructor#new": {
-        "color": "throwing",
+      "URIErrorConstructor#new()": {
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "URIError",
         "runtime": "URIError"
       },
       "URIErrorConstructor#()": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "spec": "URIError",
         "runtime": "URIError"
       },
@@ -4950,13 +5071,15 @@
         "runtime": "Array.prototype.slice"
       },
       "ReadonlyArray#indexOf": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.indexOf",
         "runtime": "Array.prototype.indexOf"
       },
       "ReadonlyArray#lastIndexOf": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.lastIndexOf",
         "runtime": "Array.prototype.lastIndexOf"
@@ -5090,13 +5213,15 @@
         "runtime": "Array.prototype.unshift"
       },
       "Array#indexOf": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.indexOf",
         "runtime": "Array.prototype.indexOf"
       },
       "Array#lastIndexOf": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.prototype.lastIndexOf",
         "runtime": "Array.prototype.lastIndexOf"
@@ -5152,7 +5277,7 @@
         "spec": "Array.prototype.reduceRight",
         "runtime": "Array.prototype.reduceRight"
       },
-      "ArrayConstructor#new": {
+      "ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Array",
         "runtime": "Array"
@@ -5163,7 +5288,8 @@
         "runtime": "Array"
       },
       "ArrayConstructor#isArray": {
-        "color": "throwing",
+        "color": "non-throwing",
+        "conditions": [],
         "accessor": false,
         "spec": "Array.isArray",
         "runtime": "Array.isArray"
@@ -5194,7 +5320,7 @@
         "spec": "ArrayBuffer.prototype.slice",
         "runtime": "ArrayBuffer.prototype.slice"
       },
-      "ArrayBufferConstructor#new": {
+      "ArrayBufferConstructor#new()": {
         "color": "throwing",
         "spec": "ArrayBuffer",
         "runtime": "ArrayBuffer"
@@ -5326,7 +5452,7 @@
         "spec": "DataView.prototype.setUint32",
         "runtime": "DataView.prototype.setUint32"
       },
-      "DataViewConstructor#new": {
+      "DataViewConstructor#new()": {
         "color": "throwing",
         "spec": "DataView",
         "runtime": "DataView"
@@ -5341,7 +5467,7 @@
       },
       "Int8Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int8Array.prototype.buffer",
@@ -5349,7 +5475,7 @@
       },
       "Int8Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int8Array.prototype.byteLength",
@@ -5357,7 +5483,7 @@
       },
       "Int8Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int8Array.prototype.byteOffset",
@@ -5425,7 +5551,7 @@
       },
       "Int8Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int8Array.prototype.length",
@@ -5502,7 +5628,7 @@
         "spec": "Int8Array.prototype.valueOf",
         "runtime": "Int8Array.prototype.valueOf"
       },
-      "Int8ArrayConstructor#new": {
+      "Int8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int8Array",
         "runtime": "Int8Array"
@@ -5537,7 +5663,7 @@
       },
       "Uint8Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8Array.prototype.buffer",
@@ -5545,7 +5671,7 @@
       },
       "Uint8Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8Array.prototype.byteLength",
@@ -5553,7 +5679,7 @@
       },
       "Uint8Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8Array.prototype.byteOffset",
@@ -5621,7 +5747,7 @@
       },
       "Uint8Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8Array.prototype.length",
@@ -5698,7 +5824,7 @@
         "spec": "Uint8Array.prototype.valueOf",
         "runtime": "Uint8Array.prototype.valueOf"
       },
-      "Uint8ArrayConstructor#new": {
+      "Uint8ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8Array",
         "runtime": "Uint8Array"
@@ -5733,7 +5859,7 @@
       },
       "Uint8ClampedArray#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8ClampedArray.prototype.buffer",
@@ -5741,7 +5867,7 @@
       },
       "Uint8ClampedArray#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8ClampedArray.prototype.byteLength",
@@ -5749,7 +5875,7 @@
       },
       "Uint8ClampedArray#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8ClampedArray.prototype.byteOffset",
@@ -5817,7 +5943,7 @@
       },
       "Uint8ClampedArray#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint8ClampedArray.prototype.length",
@@ -5894,7 +6020,7 @@
         "spec": "Uint8ClampedArray.prototype.valueOf",
         "runtime": "Uint8ClampedArray.prototype.valueOf"
       },
-      "Uint8ClampedArrayConstructor#new": {
+      "Uint8ClampedArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint8ClampedArray",
         "runtime": "Uint8ClampedArray"
@@ -5929,7 +6055,7 @@
       },
       "Int16Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int16Array.prototype.buffer",
@@ -5937,7 +6063,7 @@
       },
       "Int16Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int16Array.prototype.byteLength",
@@ -5945,7 +6071,7 @@
       },
       "Int16Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int16Array.prototype.byteOffset",
@@ -6013,7 +6139,7 @@
       },
       "Int16Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int16Array.prototype.length",
@@ -6090,7 +6216,7 @@
         "spec": "Int16Array.prototype.valueOf",
         "runtime": "Int16Array.prototype.valueOf"
       },
-      "Int16ArrayConstructor#new": {
+      "Int16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int16Array",
         "runtime": "Int16Array"
@@ -6125,7 +6251,7 @@
       },
       "Uint16Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint16Array.prototype.buffer",
@@ -6133,7 +6259,7 @@
       },
       "Uint16Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint16Array.prototype.byteLength",
@@ -6141,7 +6267,7 @@
       },
       "Uint16Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint16Array.prototype.byteOffset",
@@ -6209,7 +6335,7 @@
       },
       "Uint16Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint16Array.prototype.length",
@@ -6286,7 +6412,7 @@
         "spec": "Uint16Array.prototype.valueOf",
         "runtime": "Uint16Array.prototype.valueOf"
       },
-      "Uint16ArrayConstructor#new": {
+      "Uint16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint16Array",
         "runtime": "Uint16Array"
@@ -6321,7 +6447,7 @@
       },
       "Int32Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int32Array.prototype.buffer",
@@ -6329,7 +6455,7 @@
       },
       "Int32Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int32Array.prototype.byteLength",
@@ -6337,7 +6463,7 @@
       },
       "Int32Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int32Array.prototype.byteOffset",
@@ -6405,7 +6531,7 @@
       },
       "Int32Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Int32Array.prototype.length",
@@ -6482,7 +6608,7 @@
         "spec": "Int32Array.prototype.valueOf",
         "runtime": "Int32Array.prototype.valueOf"
       },
-      "Int32ArrayConstructor#new": {
+      "Int32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Int32Array",
         "runtime": "Int32Array"
@@ -6517,7 +6643,7 @@
       },
       "Uint32Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint32Array.prototype.buffer",
@@ -6525,7 +6651,7 @@
       },
       "Uint32Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint32Array.prototype.byteLength",
@@ -6533,7 +6659,7 @@
       },
       "Uint32Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint32Array.prototype.byteOffset",
@@ -6601,7 +6727,7 @@
       },
       "Uint32Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Uint32Array.prototype.length",
@@ -6678,7 +6804,7 @@
         "spec": "Uint32Array.prototype.valueOf",
         "runtime": "Uint32Array.prototype.valueOf"
       },
-      "Uint32ArrayConstructor#new": {
+      "Uint32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Uint32Array",
         "runtime": "Uint32Array"
@@ -6713,7 +6839,7 @@
       },
       "Float32Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float32Array.prototype.buffer",
@@ -6721,7 +6847,7 @@
       },
       "Float32Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float32Array.prototype.byteLength",
@@ -6729,7 +6855,7 @@
       },
       "Float32Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float32Array.prototype.byteOffset",
@@ -6797,7 +6923,7 @@
       },
       "Float32Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float32Array.prototype.length",
@@ -6874,7 +7000,7 @@
         "spec": "Float32Array.prototype.valueOf",
         "runtime": "Float32Array.prototype.valueOf"
       },
-      "Float32ArrayConstructor#new": {
+      "Float32ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float32Array",
         "runtime": "Float32Array"
@@ -6909,7 +7035,7 @@
       },
       "Float64Array#buffer": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float64Array.prototype.buffer",
@@ -6917,7 +7043,7 @@
       },
       "Float64Array#byteLength": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float64Array.prototype.byteLength",
@@ -6925,7 +7051,7 @@
       },
       "Float64Array#byteOffset": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float64Array.prototype.byteOffset",
@@ -6993,7 +7119,7 @@
       },
       "Float64Array#length": {
         "accessor": {
-          "get": "throwing",
+          "get": "non-throwing",
           "set": "throwing"
         },
         "spec": "Float64Array.prototype.length",
@@ -7070,7 +7196,7 @@
         "spec": "Float64Array.prototype.valueOf",
         "runtime": "Float64Array.prototype.valueOf"
       },
-      "Float64ArrayConstructor#new": {
+      "Float64ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float64Array",
         "runtime": "Float64Array"
@@ -7223,16 +7349,6 @@
         "spec": "Symbol.asyncDispose",
         "runtime": "Symbol.asyncDispose"
       },
-      "SuppressedErrorConstructor#new": {
-        "color": "throwing",
-        "spec": "SuppressedError",
-        "runtime": "SuppressedError"
-      },
-      "SuppressedErrorConstructor#()": {
-        "color": "throwing",
-        "spec": "SuppressedError",
-        "runtime": "SuppressedError"
-      },
       "DisposableStack#disposed": {
         "accessor": {
           "get": "throwing",
@@ -7261,11 +7377,6 @@
         "spec": "DisposableStack.prototype.move",
         "runtime": "DisposableStack.prototype.move"
       },
-      "DisposableStackConstructor#new": {
-        "color": "throwing",
-        "spec": "DisposableStack",
-        "runtime": "DisposableStack"
-      },
       "AsyncDisposableStack#disposed": {
         "accessor": {
           "get": "throwing",
@@ -7293,14 +7404,33 @@
         "color": "throwing",
         "spec": "AsyncDisposableStack.prototype.move",
         "runtime": "AsyncDisposableStack.prototype.move"
-      },
-      "AsyncDisposableStackConstructor#new": {
-        "color": "throwing",
-        "spec": "AsyncDisposableStack",
-        "runtime": "AsyncDisposableStack"
       }
     },
     "esnext.float16": {
+      "Float16Array#buffer": {
+        "accessor": {
+          "get": "throwing",
+          "set": "throwing"
+        },
+        "spec": "Float16Array.prototype.buffer",
+        "runtime": "Float16Array.prototype.buffer"
+      },
+      "Float16Array#byteLength": {
+        "accessor": {
+          "get": "throwing",
+          "set": "throwing"
+        },
+        "spec": "Float16Array.prototype.byteLength",
+        "runtime": "Float16Array.prototype.byteLength"
+      },
+      "Float16Array#byteOffset": {
+        "accessor": {
+          "get": "throwing",
+          "set": "throwing"
+        },
+        "spec": "Float16Array.prototype.byteOffset",
+        "runtime": "Float16Array.prototype.byteOffset"
+      },
       "Float16Array#at": {
         "color": "throwing",
         "spec": "Float16Array.prototype.at",
@@ -7370,6 +7500,14 @@
         "color": "throwing",
         "spec": "Float16Array.prototype.lastIndexOf",
         "runtime": "Float16Array.prototype.lastIndexOf"
+      },
+      "Float16Array#length": {
+        "accessor": {
+          "get": "throwing",
+          "set": "throwing"
+        },
+        "spec": "Float16Array.prototype.length",
+        "runtime": "Float16Array.prototype.length"
       },
       "Float16Array#map": {
         "color": "throwing",
@@ -7461,7 +7599,15 @@
         "spec": "Float16Array.prototype.values",
         "runtime": "Float16Array.prototype.values"
       },
-      "Float16ArrayConstructor#new": {
+      "Float16Array#@@toStringTag": {
+        "accessor": {
+          "get": "throwing",
+          "set": "throwing"
+        },
+        "spec": "Float16Array.prototype [ %Symbol.toStringTag% ]",
+        "runtime": "Float16Array.prototype[Symbol.toStringTag]"
+      },
+      "Float16ArrayConstructor#new()": {
         "color": "throwing",
         "spec": "Float16Array",
         "runtime": "Float16Array"

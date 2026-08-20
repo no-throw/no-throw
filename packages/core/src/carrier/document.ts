@@ -22,21 +22,60 @@ export interface ManifestEntry {
  */
 export type EntryState =
   | { readonly kind: "entry"; readonly entry: ManifestEntry }
-  | { readonly kind: "unusable" };
+  /**
+   * `faults` names where inside the entry the schema rejected it, as the
+   * property paths past the entry an author would point at. A resolver has no
+   * use for them — the entry floors whatever it was going to say — but the
+   * reader checking a carrier does: the file is the only place a fix can be
+   * made, and an entry discarded without saying which field lost it is the
+   * silent no-op again, one level down.
+   */
+  | { readonly kind: "unusable"; readonly faults: readonly string[] };
+
+/** One entry, at the key the file wrote it under. */
+export interface WrittenEntry {
+  readonly subpath: string;
+  readonly key: string;
+  readonly state: EntryState;
+}
 
 /** One `exports` table — subpath, then symbol path — as something to ask. */
 export interface ColorTable {
   entryFor(subpath: string, key: string): EntryState | undefined;
+  /**
+   * Every entry written under this table, in the order the file wrote them.
+   * A resolver asks by key and never needs this; a reader reporting on the
+   * file has no key to ask by — the entries *are* the question — and walking
+   * the document for them would be a second statement of the shape `TablePath`
+   * exists to state once, one that could not see the entries this reader
+   * discarded.
+   */
+  written(): readonly WrittenEntry[];
 }
 
 /** Tables by the npm package each one colors, which is how a rung holds them. */
 export type ColorTables = ReadonlyMap<string, ColorTable>;
 
 /**
+ * Why a file that was there came to nothing. Which of the two happened is the
+ * one thing a reader cannot recover from the outcome, and "the file is there
+ * and is being ignored" is what every carrier owes its author.
+ */
+export type DocumentRefusal =
+  /** Unreadable, unparseable, or parsing to something that is not an object. */
+  | { readonly kind: "not-an-object" }
+  /** Where the envelope departs from the schema. */
+  | { readonly kind: "invalid"; readonly issues: readonly SchemaIssue[] };
+
+/**
  * A colors document, read and validated. The three states are the ones every
- * carrier file shares: it says nothing, it says something, or it says its facts
- * need a reader this release does not have. What each caller *does* with
- * "unreadable" differs, so the reading stops here and the rungs decide.
+ * carrier file shares: it says something, it says its facts need a reader this
+ * release does not have, or it does not describe what it claims to. What each
+ * caller *does* with the last two differs, so the reading stops here and the
+ * rungs decide.
+ *
+ * There is no state for a file that is not there: every caller looks first, and
+ * a document nobody wrote is not a document that came to nothing.
  */
 export type ColorDocument =
   | {
@@ -49,10 +88,8 @@ export type ColorDocument =
        */
       readonly tableAt: (names: readonly string[]) => ColorTable;
     }
-  | { readonly kind: "unreadable" }
-  | { readonly kind: "absent" };
-
-const ABSENT: ColorDocument = { kind: "absent" };
+  | { readonly kind: "unreadable"; readonly version: unknown }
+  | { readonly kind: "refused"; readonly refusal: DocumentRefusal };
 
 /** The wire version this release understands. */
 const VERSION = 1;
@@ -82,16 +119,21 @@ export function readColorDocument(
   location: TablePath,
 ): ColorDocument {
   const value = readJson(path);
-  if (value === undefined) return ABSENT;
+  if (value === undefined) {
+    return { kind: "refused", refusal: { kind: "not-an-object" } };
+  }
 
   const issues = validate(schema, value, imported);
   // A fault inside an entry floors that entry; anything shallower is a file
   // that does not describe what it claims to, and nothing is taken from it.
-  if (issues.some((issue) => !isEntryFault(issue.path, location))) {
-    return ABSENT;
+  const envelope = issues.filter((issue) => !isEntryFault(issue.path, location));
+  if (envelope.length > 0) {
+    return { kind: "refused", refusal: { kind: "invalid", issues: envelope } };
   }
 
-  if (value["version"] !== VERSION) return { kind: "unreadable" };
+  if (value["version"] !== VERSION) {
+    return { kind: "unreadable", version: value["version"] };
+  }
 
   const tables = new Map<string, ColorTable>();
 
@@ -132,23 +174,42 @@ function indexTable(
   prefix: readonly string[],
   issues: readonly SchemaIssue[],
 ): ColorTable {
-  const unusable = new Set(
-    issues
-      .filter((issue) => startsWith(issue.path, prefix))
-      .map((issue) =>
-        identityOf(issue.path.slice(prefix.length, prefix.length + 2)),
-      ),
-  );
+  const unusable = new Map<string, Set<string>>();
+  for (const issue of issues) {
+    if (!startsWith(issue.path, prefix)) continue;
+    const at = identityOf(issue.path.slice(prefix.length, prefix.length + 2));
+    const faults = unusable.get(at) ?? new Set<string>();
+    // Deduped, because one value can depart from a schema more than once — a
+    // `oneOf` reports the branch and the whole — and a field named twice reads
+    // as two faults to fix.
+    faults.add(issue.path.slice(prefix.length + 2).join("."));
+    unusable.set(at, faults);
+  }
   const table = valueAt(value, prefix);
 
+  const entryFor = (subpath: string, key: string): EntryState | undefined => {
+    const faults = unusable.get(identityOf([subpath, key]));
+    if (faults !== undefined) return { kind: "unusable", faults: [...faults] };
+    const entries = isRecord(table) ? table[subpath] : undefined;
+    const entry = isRecord(entries) ? entries[key] : undefined;
+    return isRecord(entry)
+      ? { kind: "entry", entry: entry as ManifestEntry }
+      : undefined;
+  };
+
   return {
-    entryFor: (subpath, key) => {
-      if (unusable.has(identityOf([subpath, key]))) return { kind: "unusable" };
-      const entries = isRecord(table) ? table[subpath] : undefined;
-      const entry = isRecord(entries) ? entries[key] : undefined;
-      return isRecord(entry)
-        ? { kind: "entry", entry: entry as ManifestEntry }
-        : undefined;
+    entryFor,
+    written: () => {
+      if (!isRecord(table)) return [];
+      const written: WrittenEntry[] = [];
+      for (const [subpath, keys] of Object.entries(table)) {
+        if (!isRecord(keys)) continue;
+        for (const key of Object.keys(keys)) {
+          const state = entryFor(subpath, key);
+          if (state !== undefined) written.push({ subpath, key, state });
+        }
+      }
+      return written;
     },
   };
 }

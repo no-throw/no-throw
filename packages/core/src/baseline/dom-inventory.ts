@@ -1,5 +1,6 @@
 import type ts from "typescript";
 
+import { CALL_SEGMENT, CONSTRUCT_SEGMENT } from "../segments.js";
 import type { LibParam, MemberKind } from "./inventory.js";
 import { libTargetOfFileName, memberKey, staticMemberKey, symbolMemberName } from "./keys.js";
 import type { LibProgram } from "./program.js";
@@ -300,8 +301,8 @@ function draft(tsApi: typeof ts, slot: Slot): Draft | undefined {
   if (tsApi.isConstructSignatureDeclaration(member)) {
     return {
       ...shared,
-      key: staticMemberKey(owner, "new"),
-      name: "new",
+      key: staticMemberKey(owner, CONSTRUCT_SEGMENT),
+      name: CONSTRUCT_SEGMENT,
       kind: "construct",
       runtimePath: `new ${owner}`,
       signature: member,
@@ -310,8 +311,8 @@ function draft(tsApi: typeof ts, slot: Slot): Draft | undefined {
   if (tsApi.isCallSignatureDeclaration(member)) {
     return {
       ...shared,
-      key: staticMemberKey(owner, "()"),
-      name: "()",
+      key: staticMemberKey(owner, CALL_SEGMENT),
+      name: CALL_SEGMENT,
       kind: "call",
       runtimePath: owner,
       signature: member,

@@ -2,6 +2,7 @@ node_modules/
 # A fixture's `node_modules` is the fixture: the resolver chain can only be
 # exercised at the seam by a dependency that is really on disk.
 !conformance/fixtures/*/node_modules/
+!conformance/cli/*/project/node_modules/
 dist/
 # A CLI producer's `dist` is the package it publishes: the manifest emit writes
 # hashes it and the consumer resolves it, so it is fixture data rather than

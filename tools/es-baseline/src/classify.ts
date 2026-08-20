@@ -1,10 +1,11 @@
-import { formatConditionPath } from "@nothrow/core/baseline";
+import { formatConditionPath } from "@no-throw/core/baseline";
 import type {
   Color,
   ConditionPath,
   LibMember,
+  ParsedConditionPath,
   TypeDomains,
-} from "@nothrow/core/baseline";
+} from "@no-throw/core/baseline";
 import type ts from "typescript";
 
 import { DIALS, type DialValue, type Dials } from "./dials.js";
@@ -17,6 +18,13 @@ export type SiteVerdict =
   | "type-excluded"
   | "trust-base"
   | "conditional"
+  /**
+   * Reachable on its own terms, and behind an early return on an absent
+   * argument, so the position it names must get nothing for the entry's color
+   * to hold. A verdict rather than a shape: it says nothing about what the
+   * hazard *is*, only that ECMA-262 returns before it.
+   */
+  | "absent-conditional"
   | "type-reachable"
   | "review";
 
@@ -26,7 +34,8 @@ export interface ClassifiedSite {
   readonly rootOp: string;
   readonly rule: string;
   readonly dial: keyof Dials | undefined;
-  readonly path: ConditionPath | undefined;
+  /** What this site needs of the call to be unreachable; empty where nothing does. */
+  readonly requires: readonly ParsedConditionPath[];
   readonly condition: string;
 }
 
@@ -42,10 +51,22 @@ export interface Proposal {
 
 /**
  * ECMA-402 is a *different* specification document — ECMA-262 defers to it in
- * prose, so its validation is structurally invisible to this corpus. The whole
- * family ships throwing. That is a coverage boundary, not a judgment call.
+ * prose, so its validation is structurally invisible to this corpus. That is a
+ * coverage boundary, not a judgment call.
+ *
+ * What is not invisible is *which arguments* the other document reads: ECMA-262
+ * reserves the positions for it in the clause heading and names them there. So
+ * the boundary is a site like any other, and one a call can be on the far side
+ * of.
  */
 const ECMA_402 = /^(toLocale|localeCompare$)/;
+
+/**
+ * `String.prototype.localeCompare ( that [ , reserved1 [ , reserved2 ] ] )`.
+ * The numbering is how ECMA-262 tells two reserved positions apart rather than
+ * part of the word, so a lone `reserved` counts as one too.
+ */
+const RESERVED_PARAM = /^reserved\d*$/;
 
 /** Interfaces that describe a primitive: their receiver runs no user code. */
 const PRIMITIVE_OWNERS = new Set(["String", "Number", "Boolean", "BigInt", "Symbol"]);
@@ -63,8 +84,9 @@ const OBJECT_SHAPED = new Set<Shape["id"]>([
 ]);
 
 const RANK: Record<SiteVerdict, number> = {
-  "type-reachable": 4,
-  review: 3,
+  "type-reachable": 5,
+  review: 4,
+  "absent-conditional": 3,
   conditional: 2,
   "trust-base": 1,
   "type-excluded": 0,
@@ -81,16 +103,26 @@ export function classifyMembers(
   return members.map((member) => classifyMember(member, corpus, domains, dials));
 }
 
+/**
+ * An accessor clause is named `get X` / `set X`, and the two family rewrites
+ * below are about `X`. Splitting the prefix off is what lets
+ * `get Uint8Array.prototype.length` reach `get %TypedArray%.prototype.length`,
+ * which is where ECMA-262 actually defines the four typed-array getters.
+ */
+const ACCESSOR_CLAUSE = /^(get |set )/;
+
 export function specFor(corpus: SpecCorpus, specKey: string): SpecBuiltin | undefined {
+  const prefix = ACCESSOR_CLAUSE.exec(specKey)?.[1] ?? "";
+  const name = specKey.slice(prefix.length);
   return (
     corpus.builtins.get(specKey) ??
-    corpus.builtins.get(toTypedArrayIntrinsic(specKey)) ??
-    corpus.builtins.get(specKey.replace(NATIVE_ERROR, "NativeError"))
+    corpus.builtins.get(prefix + toTypedArrayIntrinsic(name)) ??
+    corpus.builtins.get(prefix + name.replace(NATIVE_ERROR, "NativeError"))
   );
-  // Deliberately no `get X` fallback here: reading a property is not a call, so
-  // an accessor's color belongs in the accessor fact and nowhere else. Giving
-  // the member a color from its getter's clause would ship a call claim about
-  // something that cannot be called.
+  // Deliberately no `get X` fallback for a member's *own* key: reading a
+  // property is not a call, so an accessor's color belongs in the accessor fact
+  // and nowhere else. Giving the member a color from its getter's clause would
+  // ship a call claim about something that cannot be called.
 }
 
 function classifyMember(
@@ -132,18 +164,15 @@ export function classifyAgainstSpec(
   dials: Dials,
 ): SpecVerdict {
   const sites = spec.hazards.map((hazard) =>
-    classifySite(hazard, member, domains, dials),
+    behindAnEarlyReturn(
+      classifySite(hazard, member, domains, dials),
+      hazard,
+      spec,
+      member,
+    ),
   );
   if (ECMA_402.test(member.name)) {
-    sites.push({
-      verdict: "type-reachable",
-      shape: "unknown",
-      rootOp: "ECMA-402",
-      rule: "locale validation lives in ECMA-402, outside the extraction corpus",
-      dial: undefined,
-      path: undefined,
-      condition: "(no ECMA-262 algorithm covers the locale arguments)",
-    });
+    sites.push(ecma402Site(spec, member));
   }
 
   const worst = sites.reduce<SiteVerdict>(
@@ -161,19 +190,154 @@ export function classifyAgainstSpec(
     };
   }
 
+  const required = sites.flatMap((site) => site.requires);
+  const absent = new Set(
+    required.filter((one) => one.requires !== "entered").map((one) => one.paramIndex),
+  );
+
   const conditions = [
     ...new Set(
-      sites
-        .filter((site) => site.verdict === "conditional")
-        .map((site) => site.path)
-        .filter((path): path is ConditionPath => path !== undefined),
+      required
+        // A position nothing reaches is a position no path through it is
+        // entered at, so an `entered` condition rooted there states a second
+        // requirement the first has already made unmeetable: the call site
+        // would have to pass a clean function *and* pass nothing.
+        .filter((one) => one.requires !== "entered" || !absent.has(one.paramIndex))
+        .map(formatConditionPath),
     ),
   ].sort();
 
   return { sites, color: "non-throwing", conditions, reviewSites: 0 };
 }
 
+/**
+ * The site ECMA-402 is, for a member ECMA-262 defers to it about. Every hazard
+ * the other document adds is behind an argument — a locale to canonicalize, an
+ * options bag to validate — and ECMA-262 says which positions those are by
+ * writing `reserved1` and `reserved2` into the clause heading. A call that puts
+ * nothing there gets the default service, so the member is clean *given the
+ * reserved positions get nothing*, which is the sentence `behindAnEarlyReturn`
+ * already has a form for.
+ *
+ * That last step is a judgment about a document this corpus cannot read, and
+ * the only thing holding it is the fuzz gate, which drives every conditioned
+ * entry inside the scope it claims. ECMA-402 *supersedes* the algorithm rather
+ * than extending it, so "the arguments are all it adds" is not something the
+ * extraction shows — it is a claim, made narrow and then attacked.
+ *
+ * Narrow, and in the way the claim itself is narrow. It rests on ECMA-262's own
+ * steps having been read, so it is made only where there are steps: a
+ * prose-only clause — which is most of this family,
+ * `Number.prototype.toLocaleString` and the three `Date` ones among them — has
+ * no algorithm to have read, and its zero hazards are zero for want of a corpus
+ * rather than for want of a throw. That is the hole an alias left on eleven
+ * typed-array members until the fuzzer found it, and conditioning the one
+ * boundary this file can name would leave the wider one unnamed. Those clauses
+ * keep a flat hazard and ship throwing.
+ *
+ * The requirement is `undefined` and not `nullish`, which is the whole content
+ * of the boundary rather than a detail of it: ECMA-402 writes no guard at all,
+ * and hands `null` to `CanonicalizeLocaleList`, which coerces it and throws.
+ * Stating the wider form and leaning on the declaration to be unable to deliver
+ * `null` would put the entry's truth in a fact the discharge deliberately never
+ * reads.
+ */
+function ecma402Site(spec: SpecBuiltin, member: LibMember): ClassifiedSite {
+  const site = {
+    shape: "unknown",
+    rootOp: "ECMA-402",
+    dial: undefined,
+    condition: "(ECMA-402 validates the arguments at the positions ECMA-262 reserves for it)",
+  } as const;
 
+  const reserved = spec.params.flatMap((name, index) =>
+    RESERVED_PARAM.test(name) ? [index] : [],
+  );
+  if (reserved.length === 0 || !spec.hasAlgorithm) {
+    return {
+      ...site,
+      verdict: "type-reachable",
+      rule: "locale validation lives in ECMA-402, outside the extraction corpus",
+      requires: [],
+    };
+  }
+
+  // A position nothing declares cannot receive an argument, so it is already
+  // absent and states no requirement. This is where the reading parts company
+  // with `behindAnEarlyReturn`, which bails instead: what that one holds is a
+  // name out of the algorithm's own namespace, so a position the declaration
+  // does not have leaves the name-to-position mapping itself in doubt. These
+  // positions come off the clause heading, where an undeclared one is not a
+  // doubtful mapping but an argument no call can pass.
+  const passable = reserved.flatMap((paramIndex) => {
+    const param = member.params?.[paramIndex];
+    return param === undefined ? [] : [{ paramIndex, param }];
+  });
+
+  if (passable.length === 0) {
+    return {
+      ...site,
+      verdict: "type-excluded",
+      rule: `ECMA-402 reads ${reserved.map((index) => `param${index}`).join(" and ")}, which the declaration does not declare`,
+      requires: [],
+    };
+  }
+
+  return {
+    ...site,
+    verdict: "absent-conditional",
+    rule: "locale validation lives in ECMA-402, outside the extraction corpus; unreachable where the positions it reserves are absent",
+    requires: passable.map(({ paramIndex }) => ({
+      requires: "undefined" as const,
+      paramIndex,
+    })),
+  };
+}
+
+/**
+ * The early-return reading, applied over the shape reading rather than inside
+ * it. A hazard behind `If iterable is either undefined or null, return map` is
+ * unreachable when the call passes nothing there, whatever the hazard is — and
+ * a site the declared types already discharge needs no condition, so only the
+ * ones that would otherwise make the member throwing are moved. Which nothing
+ * the call has to pass is the guard's to say and not this reading's: the
+ * condition states the spelling the extractor recorded.
+ *
+ * Every guarding name must be a parameter of the member. Requiring all of them
+ * rather than any is over-strict where two guards protect one site — the site
+ * needs only one of them to fire — and over-strict is the safe direction.
+ */
+function behindAnEarlyReturn(
+  site: ClassifiedSite,
+  hazard: Hazard,
+  spec: SpecBuiltin,
+  member: LibMember,
+): ClassifiedSite {
+  if (site.verdict !== "type-reachable" && site.verdict !== "review") {
+    return site;
+  }
+
+  const guarded = hazard.given.map((guard) => ({
+    requires: guard.requires,
+    paramIndex: spec.params.indexOf(guard.name),
+  }));
+  if (
+    guarded.length === 0 ||
+    guarded.some(
+      ({ paramIndex }) =>
+        paramIndex < 0 || member.params?.[paramIndex] === undefined,
+    )
+  ) {
+    return site;
+  }
+
+  return {
+    ...site,
+    verdict: "absent-conditional",
+    rule: `${site.rule}; unreachable where ${hazard.given.map((guard) => guard.name).join(" and ")} is absent`,
+    requires: guarded,
+  };
+}
 
 function classifySite(
   hazard: Hazard,
@@ -191,13 +355,13 @@ function classifySite(
   const verdict = (
     value: SiteVerdict,
     rule: string,
-    extra: { dial?: keyof Dials; path?: ConditionPath } = {},
+    extra: { dial?: keyof Dials; path?: ParsedConditionPath } = {},
   ): ClassifiedSite => ({
     ...base,
     verdict: value,
     rule,
     dial: extra.dial,
-    path: extra.path,
+    requires: extra.path === undefined ? [] : [extra.path],
   });
 
   const fromDial = (dial: keyof Dials, rule: string): ClassifiedSite => {
@@ -219,7 +383,7 @@ function classifySite(
   switch (shape.id) {
     case "usercall":
       if (operand.path !== undefined && domains.isCallable(operand.types)) {
-        return verdict("conditional", `enters ${operand.path}`, {
+        return verdict("conditional", `enters ${formatConditionPath(operand.path)}`, {
           path: operand.path,
         });
       }
@@ -311,7 +475,7 @@ interface ResolvedOperand {
   readonly kind: "param" | "receiver" | "static-receiver" | "unresolved";
   readonly types: readonly ts.Type[];
   /** Set only when the operand is expressible as a condition on a parameter. */
-  readonly path: ConditionPath | undefined;
+  readonly path: ParsedConditionPath | undefined;
   readonly primitive: boolean;
   readonly optional: boolean;
   readonly describe: string;
@@ -392,12 +556,13 @@ function walkSegments(
   return current;
 }
 
-function conditionPathOf(operand: Operand): ConditionPath | undefined {
+function conditionPathOf(operand: Operand): ParsedConditionPath | undefined {
   if (operand.root !== "param" || operand.index < 0) return undefined;
-  return formatConditionPath({
+  return {
+    requires: "entered",
     paramIndex: operand.index,
     segments: operand.segments,
-  });
+  };
 }
 
 function describeSegments(operand: Operand): string {

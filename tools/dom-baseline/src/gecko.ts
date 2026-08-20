@@ -2,7 +2,11 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { memberKey, staticMemberKey } from "@nothrow/core/baseline";
+import {
+  CONSTRUCT_SEGMENT,
+  memberKey,
+  staticMemberKey,
+} from "@no-throw/core/baseline";
 
 /**
  * Gecko's `.webidl` annotates operations and attributes it can throw from with
@@ -143,7 +147,7 @@ export function geckoThrowingKeys(): ReadonlySet<string> {
 
       keys.add(
         member === "constructor"
-          ? staticMemberKey(owner, "new")
+          ? staticMemberKey(owner, CONSTRUCT_SEGMENT)
           : /\bstatic\b/.test(declaration)
             ? staticMemberKey(owner, member)
             : memberKey(owner, member),

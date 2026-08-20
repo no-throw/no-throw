@@ -1,0 +1,4 @@
+{
+  "description": "Iterating a builtin resolves to its `[Symbol.iterator]` entry, and one color covers the whole surface: `for…of` over an array, a `Map` and a string are green, and so is spreading an array.",
+  "diagnostics": []
+}

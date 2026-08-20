@@ -56,6 +56,7 @@ function maximallyConditioned(
     if (parameter.dotDotDotToken !== undefined) return;
     if (!isCallable(facts.typeAt(parameter), facts)) return;
     conditions.push({
+      requires: "entered",
       path: { paramIndex, members: [] },
       owner: declaration,
       entry: undefined,
@@ -75,6 +76,16 @@ function declaredConditions(
     const parsed = parseConditionPath(path);
     if (parsed === undefined) return undefined;
 
+    if (parsed.requires !== "entered") {
+      conditions.push({
+        requires: parsed.requires,
+        path: { paramIndex: parsed.paramIndex, members: [] },
+        owner: declaration,
+        entry: undefined,
+      });
+      continue;
+    }
+
     const members: string[] = [];
     for (const segment of parsed.segments) {
       // `[]` and `.@@name` are in the wire grammar and have no engine form
@@ -84,6 +95,7 @@ function declaredConditions(
     }
 
     conditions.push({
+      requires: "entered",
       path: { paramIndex: parsed.paramIndex, members },
       owner: declaration,
       entry: undefined,

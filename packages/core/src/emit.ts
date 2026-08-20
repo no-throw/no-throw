@@ -19,7 +19,7 @@ import {
   type ExportSurface,
 } from "./carrier/surface.js";
 import type { Condition } from "./conditions.js";
-import { findMarks, type MarkProblemKind } from "./marks.js";
+import { findMarks, seedDeclaration, type MarkProblemKind } from "./marks.js";
 import { isVisiblyAsync } from "./promises.js";
 import { createColorResolver, type BodyEscape } from "./resolve-color.js";
 import type { TypeFacts } from "./type-facts.js";
@@ -50,15 +50,15 @@ export interface EmitSite {
 }
 
 /**
- * One reason nothing was written. A refusal is the whole of emit's contract:
- * a published manifest is true by construction, so a mark the engine cannot
- * verify — or cannot lower into a shape emit is allowed to write — stops the
- * file rather than being quietly left out of it.
+ * One mark nothing can be published for. A refusal is the whole of emit's
+ * contract: a published manifest is true by construction, so a mark the engine
+ * cannot verify — or cannot lower into a shape emit is allowed to write — stops
+ * the file rather than being quietly left out of it.
  */
-export interface EmitRefusal {
+export interface MarkRefusal {
   readonly message: string;
-  /** Where the mark is; absent for a refusal about the package as a whole. */
-  readonly at?: EmitSite;
+  /** Where the mark is. */
+  readonly at: EmitSite;
   /** The places the message refers to. */
   readonly sites: readonly EmitSite[];
 }
@@ -72,14 +72,23 @@ export type EmitOutcome =
       /** The bytes to write, canonical, so two runs of one source agree. */
       readonly text: string;
     }
-  | { readonly kind: "refused"; readonly refusals: readonly EmitRefusal[] };
+  /**
+   * Nothing was read, so nothing was written: no `tsconfig.json`, no build on
+   * disk, nowhere a `nothrow.json` would be found. Apart from `refused`
+   * because it says nothing about the package — emit never got as far as a
+   * mark — and a host that reported it as a verdict would be inventing one.
+   * One reason, because the first of them stops everything.
+   */
+  | { readonly kind: "blocked"; readonly message: string }
+  /** Nothing was written, and the reasons are marks. Never empty. */
+  | { readonly kind: "refused"; readonly refusals: readonly MarkRefusal[] };
 
 /**
  * Lower a package's verified marks into a manifest.
  *
  * The host builds the program; everything else is the engine's, because what
  * a mark comes to is the same question the enforcement walk asks and there
- * must not be a second answer to it. Marks are found by the binding whitelist,
+ * must not be a second answer to it. Marks are found by the binding rule,
  * verified by the color resolver, and keyed by the export surface the package
  * publishes — the same three pieces the consumer's side of the wire uses,
  * turned around.
@@ -248,8 +257,8 @@ function collectEntries(
   facts: TypeFacts,
 ):
   | { readonly kind: "exports"; readonly exports: ManifestDocument["exports"] }
-  | { readonly kind: "refused"; readonly refusals: readonly EmitRefusal[] } {
-  const refusals: EmitRefusal[] = [];
+  | { readonly kind: "refused"; readonly refusals: readonly MarkRefusal[] } {
+  const refusals: MarkRefusal[] = [];
   const entries = new Map<string, Map<string, ManifestEntry>>();
 
   for (const sourceFile of sources) {
@@ -337,6 +346,10 @@ function entryFor(
     conditions: conditions
       .map(({ path }) =>
         formatConditionPath({
+          // A body's conditions are all paths it enters: an absence form is a
+          // claim about a body nobody can read, which is why only a carrier
+          // states one and emit never writes one.
+          requires: "entered",
           paramIndex: path.paramIndex,
           segments: path.members.map(
             (name) => ({ kind: "member", name }) as const,
@@ -349,20 +362,17 @@ function entryFor(
 
 /**
  * Where the package's surface reaches a seed. A mark on an arrow binds to the
- * arrow, and what a consumer names is the `const` it initializes, so the key
- * is looked up for the declaration the surface actually walked.
+ * arrow, and what a consumer names is the declaration it initializes — a
+ * `const`, a class field, a default export — so the key is looked up for the
+ * declaration the surface actually walked, through the same type-only wrappers
+ * the binder read the initializer past.
  */
 function keyOf(
   seed: ts.FunctionLikeDeclaration,
   surface: ExportSurface,
 ): ExportKey | undefined {
-  const direct = surface.keyOf(seed);
-  if (direct !== undefined) return direct;
-
-  const { parent } = seed;
-  return ts.isVariableDeclaration(parent) || ts.isPropertyAssignment(parent)
-    ? surface.keyOf(parent)
-    : undefined;
+  const declaration = seedDeclaration(seed);
+  return declaration === undefined ? undefined : surface.keyOf(declaration);
 }
 
 /** The package's own source: what a mark can be written in and verified against. */
@@ -463,7 +473,7 @@ function unverifiedRefusal(
   seed: ts.FunctionLikeDeclaration,
   escapes: readonly BodyEscape[],
   at: EmitSite,
-): EmitRefusal {
+): MarkRefusal {
   return {
     message:
       `${describe(seed)} is marked \`@nothrow\`, and its body escapes. A ` +
@@ -476,14 +486,14 @@ function unverifiedRefusal(
   };
 }
 
-function accessorRefusal(key: ExportKey, at: EmitSite): EmitRefusal {
+function accessorRefusal(key: ExportKey, at: EmitSite): MarkRefusal {
   return {
     message:
       `\`${key.symbolPath}\` is marked \`@nothrow\` on an accessor, and a ` +
       "manifest states an accessor's color only as an accessor fact — a " +
       "shape `nothrow emit` never writes. Declaration emit preserves `get` " +
       "and `set`, so consumers already see the accessor; its color belongs " +
-      "in their `nothrow.overrides.json`, or in an `@nothrow/*` overlay.",
+      "in their `nothrow.overrides.json`, or in an `@no-throw/*` overlay.",
     at,
     sites: [],
   };
@@ -495,7 +505,7 @@ function accessorRefusal(key: ExportKey, at: EmitSite): EmitRefusal {
  * merging can put two bodies behind one published name, and dropping one of
  * two disagreeing colors silently is the one thing emit must not do.
  */
-function conflictRefusal(key: ExportKey, at: EmitSite): EmitRefusal {
+function conflictRefusal(key: ExportKey, at: EmitSite): MarkRefusal {
   return {
     message:
       `\`${key.symbolPath}\` is published once and marked twice, with ` +
@@ -515,6 +525,11 @@ const UNBOUND: Record<MarkProblemKind, string> = {
   "multi-declarator":
     "a variable statement declaring more than one variable would leave which " +
     "one is marked a guess",
+  "non-function-value":
+    "this declaration's value is not a function written at it",
+  "mark-on-call-argument":
+    "a function written as a call argument has no declaration to bind to",
+  "mark-on-assignment": "an assignment is not a declaration",
   "ambient-declaration":
     "an ambient declaration has no body to verify it against",
   "interface-member": "an interface member has no body to verify it against",
@@ -527,7 +542,7 @@ function unboundRefusal(
   sourceFile: ts.SourceFile,
   kind: MarkProblemKind,
   start: number,
-): EmitRefusal {
+): MarkRefusal {
   return {
     message:
       `\`@nothrow\` binds to nothing here: ${UNBOUND[kind]}. Every mark in ` +
@@ -550,6 +565,8 @@ const ESCAPES: Record<BodyEscape["kind"], string> = {
     "an argument that does not discharge the callee's condition",
   "argument-floored":
     "an argument that does not discharge the callee's condition",
+  "argument-present":
+    "an argument at a position the callee is only clean without",
   consumption: "consuming an iterator that can throw",
   "iterator-throw": "`.throw()` on an iterator",
   "returned-iterator": "an iterator handed out that can throw when consumed",
@@ -583,7 +600,7 @@ function siteOf(
 }
 
 function blocked(message: string): EmitOutcome {
-  return { kind: "refused", refusals: [{ message, sites: [] }] };
+  return { kind: "blocked", message };
 }
 
 /** The schema's own `$id`, so what a manifest points at cannot drift from it. */

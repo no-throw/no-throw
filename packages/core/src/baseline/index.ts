@@ -14,6 +14,7 @@ export type { LibMember, LibParam, MemberKind } from "./inventory.js";
 export { collectDomMembers } from "./dom-inventory.js";
 export type { DomInventory, DomMember } from "./dom-inventory.js";
 export { TypeDomains } from "./domains.js";
+export { CALL_SEGMENT, CONSTRUCT_SEGMENT } from "../segments.js";
 export {
   libTargetOfFileName,
   memberKey,
@@ -21,7 +22,12 @@ export {
   symbolMemberName,
 } from "./keys.js";
 export { formatConditionPath, parseConditionPath } from "./paths.js";
-export type { ParsedConditionPath, PathSegment } from "./paths.js";
+export type {
+  Absence,
+  ParsedConditionPath,
+  PathSegment,
+  Requirement,
+} from "./paths.js";
 export {
   baselineData,
   lookupBaselineEntry,

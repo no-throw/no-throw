@@ -1,14 +1,14 @@
 {
-  "description": "A derived class that declares no constructor still runs its base's: the implicit `super()` is an edge the syntax does not show, and a throwing base constructor is reported at the `new`.",
+  "description": "A derived class that declares no constructor still runs its base's: the implicit `super()` is an edge the syntax does not show, and a throwing base constructor is reported at the `new` — with the out that is actually reachable, since a mark on the class itself would bind to nothing.",
   "diagnostics": [
     {
       "file": "src/index.ts",
       "line": 13,
-      "column": 10,
+      "column": 14,
       "endLine": 13,
-      "endColumn": 23,
-      "messageId": "inferredThrowingCall",
-      "message": "Call to `Derived` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `Derived` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+      "endColumn": 21,
+      "messageId": "inferredThrowingConstruction",
+      "message": "Construction of `Derived` escapes this `@nothrow` function: what runs — its field initializers and the `super()` it does not write — was analyzed and can throw. Your outs: bridge this construction with `try`/`catch`, or make `Derived` non-throwing by declaring a constructor and marking that `@nothrow`, since a mark on a class binds to nothing."
     }
   ]
 }

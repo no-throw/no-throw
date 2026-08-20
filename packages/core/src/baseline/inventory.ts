@@ -1,5 +1,6 @@
 import type ts from "typescript";
 
+import { CALL_SEGMENT, CONSTRUCT_SEGMENT } from "../segments.js";
 import { libTargetOfFileName, memberKey, symbolMemberName } from "./keys.js";
 import type { LibProgram } from "./program.js";
 
@@ -246,7 +247,8 @@ function draftMember(
   ) {
     // A constructor interface's own call/construct signature *is* the global:
     // spec clause `Object ( . . . )`, runtime `Object`.
-    const name = tsApi.isConstructSignatureDeclaration(member) ? "new" : "()";
+    const construct = tsApi.isConstructSignatureDeclaration(member);
+    const name = construct ? CONSTRUCT_SEGMENT : CALL_SEGMENT;
     return {
       key: memberKey(slot.owner, name),
       specKey: slot.specOwner,
@@ -254,7 +256,7 @@ function draftMember(
       holderPath: "",
       owner: slot.owner,
       name,
-      kind: tsApi.isConstructSignatureDeclaration(member) ? "construct" : "call",
+      kind: construct ? "construct" : "call",
       isStatic: true,
       receiverType: slot.receiverType,
       receiverOwner: slot.receiverOwner,

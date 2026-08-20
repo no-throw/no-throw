@@ -1,14 +1,21 @@
 import ts from "typescript";
 import type {
+  AbsenceReason,
   ConsumptionReason,
   FloorReason,
+  FloorSource,
   Rejects,
   RejectionReason,
   RejectionSubject,
   ThrowingReason,
   UndischargedReason,
 } from "./colors.js";
-import { pathKey, skipParens, type Condition } from "./conditions.js";
+import {
+  conditionKey,
+  pathKey,
+  skipParens,
+  type Condition,
+} from "./conditions.js";
 import { dischargeAt, type Outcome } from "./discharge.js";
 import {
   baseClassExpression,
@@ -41,7 +48,7 @@ import {
 } from "./promises.js";
 import {
   calleeTargets,
-  constructedTarget,
+  constructedTargets,
   declarationTarget,
   declaredTarget,
   resolveValue,
@@ -52,6 +59,7 @@ import {
 import {
   hiddenTransfersOf,
   type HiddenCallee,
+  type TransferColor,
   type TransferSite,
 } from "./transfers.js";
 import {
@@ -71,8 +79,16 @@ export type BodyEscape =
       readonly kind: "callee";
       readonly node: Transfer;
       readonly reason: ThrowingReason;
+      /**
+       * The body read is a class that declares no constructor of its own, so
+       * there is no declaration a mark could bind to and "mark it" is not an
+       * out. Only an inferred reason ever offers one.
+       */
+      readonly constructorless?: boolean;
       /** The file whose hash drifted; only `stale-manifest` carries one. */
       readonly staleFile?: string | undefined;
+      /** Absent where the callee is not a standard-library declaration. */
+      readonly source?: FloorSource | undefined;
     }
   /** A condition whose argument was read and can throw — a true positive. */
   | {
@@ -86,6 +102,21 @@ export type BodyEscape =
       readonly condition: Condition;
       readonly reason: UndischargedReason;
       readonly staleFile?: string | undefined;
+      /** Absent where the argument is not a standard-library declaration. */
+      readonly source?: FloorSource | undefined;
+    }
+  /**
+   * A condition asking for no argument at the position, and a call that puts
+   * one there. The remedy is to stop passing rather than to pass something
+   * else, so what floored is the *call* — which is why the source here is the
+   * callee's declaration and not the argument's.
+   */
+  | {
+      readonly kind: "argument-present";
+      readonly node: Transfer;
+      readonly condition: Condition;
+      readonly reason: AbsenceReason;
+      readonly source?: FloorSource | undefined;
     }
   /** A `for…of`, spread, destructuring, `.next()` or `yield*`. */
   | {
@@ -93,6 +124,7 @@ export type BodyEscape =
       readonly node: ts.Node;
       readonly reason: ConsumptionReason;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     }
   /** `.throw()`: the consumer throwing, with a detour through the iterator. */
   | { readonly kind: "iterator-throw"; readonly node: ts.Node }
@@ -102,6 +134,7 @@ export type BodyEscape =
       readonly node: ts.Expression;
       readonly reason: ConsumptionReason;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     }
   /**
    * A rejection reaching the body: at an `await`, at a statement-position
@@ -131,6 +164,7 @@ export type BodyEscape =
       readonly target: HiddenCallee | undefined;
       readonly reason: ThrowingReason;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     };
 
 /**
@@ -219,6 +253,7 @@ type Consumed =
       readonly kind: "floor";
       readonly reason: ConsumptionReason;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     };
 
 const CONSUMED_CLEAN: Consumed = { kind: "clean" };
@@ -241,6 +276,7 @@ type Rejection =
       readonly reason: RejectionReason;
       readonly subject: RejectionSubject;
       readonly staleFile?: string | undefined;
+      readonly source?: FloorSource | undefined;
     }
   | { readonly kind: "join"; readonly parts: readonly Rejection[] }
   | {
@@ -301,20 +337,31 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
         text: transfer.text,
         targets: transfer.targets.map((entry) => ({
           named: entry.target,
-          // An accessor fact colors a half of a member the declaration says is
-          // data, so there is no body behind it to read — the fact is all of it.
-          target:
-            entry.carried === undefined
-              ? declaredTarget(entry.declaration, resolution)
-              : {
-                  kind: "carried" as const,
-                  color: entry.carried,
-                  async: false,
-                  conditions: [],
-                },
+          target: hiddenColor(entry.color),
         })),
       })),
   );
+
+  /**
+   * What colors one half of one hidden site. An accessor fact colors a half of
+   * a member the declaration says is data, so there is no body behind it to
+   * read — the fact is all of it — and a lib member with no fact has neither.
+   */
+  function hiddenColor(color: TransferColor): DeclaredTarget {
+    if (color.kind === "floor") {
+      return { kind: "floor", reason: color.reason, source: color.source };
+    }
+    if (color.kind === "carried") {
+      return {
+        kind: "carried",
+        color: color.color,
+        async: false,
+        conditions: [],
+        source: color.source,
+      };
+    }
+    return declaredTarget(color.declaration, resolution);
+  }
 
   function hiddenIn(body: Bodied, phase: Phase): readonly HiddenSite[] {
     return escapesOf(body, phase).flatMap((escape) => hiddenAt(escape));
@@ -395,7 +442,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     outcomesAt.set(site, byPath);
 
     return conditions.flatMap((condition) => {
-      const key = pathKey(condition.path);
+      const key = conditionKey(condition);
       let outcomes = byPath.get(key);
       if (outcomes === undefined) {
         outcomes = dischargeAt(site, condition, body, resolution);
@@ -422,13 +469,15 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   /**
    * A class stands for a constructor it does not declare, and the implicit
    * `constructor(...args) { super(...args) }` still runs the base's effective
-   * body. There is no `super()` in the syntax for the walk to have found.
+   * body. There is no `super()` in the syntax for the walk to have found — and
+   * so no argument list to pick an overload with, which is why a base known
+   * only by its construct signatures answers with all of them.
    */
-  function implicitSuper(body: Bodied): Target | undefined {
-    if (!ts.isClassLike(body)) return undefined;
+  const implicitSupers = memoize((body: Bodied): readonly Target[] => {
+    if (!ts.isClassLike(body)) return [];
     const base = baseClassExpression(body);
-    return base === undefined ? undefined : constructedTarget(base, resolution);
-  }
+    return base === undefined ? [] : constructedTargets(base, resolution);
+  });
 
   /**
    * The condition set, resolved over the same graph as the color. It reads no
@@ -445,9 +494,14 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       ),
     recompute: (body, conditionsOf) => {
       const derived = new Map<string, Condition>();
+      // Only `entered` is ever derived: an absence condition is a claim about
+      // a body nobody can read, and propagation carries a path onward rather
+      // than the absence of one.
       const add = (path: Condition["path"], entry: Transfer): void => {
         const key = pathKey(path);
-        if (!derived.has(key)) derived.set(key, { path, owner: body, entry });
+        if (!derived.has(key)) {
+          derived.set(key, { requires: "entered", path, owner: body, entry });
+        }
       };
 
       for (const { site, target } of targetsIn(body, "all")) {
@@ -467,7 +521,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
 
       return [...derived.values()];
     },
-    settled: samePaths,
+    settled: sameConditions,
   });
 
   const settledConditions: Conditions = (body) => conditions.valueOf(body);
@@ -513,9 +567,10 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     const phase = phaseOf(node);
 
     if (node.facet === "call") {
-      const followed = implicitSuper(declaration);
-      if (followed?.kind === "function" && !followed.marked) {
-        dependencies.push(nodeFor(followed.declaration, "call"));
+      for (const followed of implicitSupers(declaration)) {
+        if (followed.kind === "function" && !followed.marked) {
+          dependencies.push(nodeFor(followed.declaration, "call"));
+        }
       }
     }
 
@@ -570,14 +625,14 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     body: Bodied,
     throwingOf: (callee: ColorNode) => boolean,
   ): boolean {
-    const target = implicitSuper(body);
-    if (target === undefined) return false;
-    if (target.kind === "carried") return carriedReason(target) !== undefined;
-    if (target.kind !== "function") return true;
-    return (
-      flooredCallee(target, throwingOf) !== undefined ||
-      conditions.valueOf(target.declaration).length > 0
-    );
+    return implicitSupers(body).some((target) => {
+      if (target.kind === "carried") return carriedReason(target) !== undefined;
+      if (target.kind !== "function") return true;
+      return (
+        flooredCallee(target, throwingOf) !== undefined ||
+        conditions.valueOf(target.declaration).length > 0
+      );
+    });
   }
 
   function conditionedTargetsIn(
@@ -620,6 +675,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
             node: escape.site.node,
             reason: consumed.reason,
             staleFile: consumed.staleFile,
+            source: consumed.source,
           });
         }
         continue;
@@ -680,6 +736,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
           node: site,
           reason: target.reason,
           staleFile: target.staleFile,
+          source: target.source,
         });
       }
       return;
@@ -692,7 +749,12 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     if (target.kind === "carried") {
       if (target.color === "throwing") {
         if (!target.async && !awaitedDirectly(site)) {
-          found.push({ kind: "callee", node: site, reason: "carried-throwing" });
+          found.push({
+            kind: "callee",
+            node: site,
+            reason: "carried-throwing",
+            source: target.source,
+          });
         }
         return;
       }
@@ -704,18 +766,30 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
         // the discard instead; and where the call *is* the awaited expression,
         // the `await` is already the one site for both channels.
         if (!isVisiblyAsync(target.declaration) && !awaitedDirectly(site)) {
-          found.push({ kind: "callee", node: site, reason: floored });
+          found.push({
+            kind: "callee",
+            node: site,
+            reason: floored,
+            constructorless: ts.isClassLike(target.declaration),
+          });
         }
         return;
       }
     }
 
+    const calleeSource = target.kind === "carried" ? target.source : undefined;
     for (const { condition, outcome } of dischargesAt(
       site,
       conditionsOfTarget(target, settledConditions),
       body,
     )) {
-      const escape = undischarged(site, condition, outcome, throwingOf);
+      const escape = undischarged(
+        site,
+        condition,
+        outcome,
+        calleeSource,
+        throwingOf,
+      );
       if (escape !== undefined) found.push(escape);
     }
   }
@@ -741,6 +815,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
         target: named,
         reason: reason.reason,
         staleFile: reason.staleFile,
+        source: reason.source,
       });
       return;
     }
@@ -749,14 +824,26 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   function hiddenReason(
     target: DeclaredTarget,
     throwingOf: (callee: ColorNode) => boolean,
-  ): { reason: ThrowingReason; staleFile?: string | undefined } | undefined {
+  ):
+    | {
+        reason: ThrowingReason;
+        staleFile?: string | undefined;
+        source?: FloorSource | undefined;
+      }
+    | undefined {
     if (target.kind === "floor") {
-      return { reason: target.reason, staleFile: target.staleFile };
+      return {
+        reason: target.reason,
+        staleFile: target.staleFile,
+        source: target.source,
+      };
     }
 
     if (target.kind === "carried") {
       const reason = carriedReason(target);
-      return reason === undefined ? undefined : { reason };
+      return reason === undefined
+        ? undefined
+        : { reason, source: target.source };
     }
 
     const floored = flooredCallee(target, throwingOf);
@@ -784,28 +871,42 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     site: Transfer,
     condition: Condition,
     outcome: Outcome,
+    calleeSource: FloorSource | undefined,
     throwingOf: (callee: ColorNode) => boolean,
   ): BodyEscape | undefined {
     const floored = (
       reason: UndischargedReason,
       staleFile?: string | undefined,
+      source?: FloorSource | undefined,
     ): BodyEscape => ({
       kind: "argument-floored",
       node: site,
       condition,
       reason,
       staleFile,
+      source,
     });
 
     if (outcome.kind === "propagate") return undefined;
+    if (outcome.kind === "present") {
+      return {
+        kind: "argument-present",
+        node: site,
+        condition,
+        reason: outcome.reason,
+        source: calleeSource,
+      };
+    }
     if (outcome.kind === "floor") {
-      return floored(outcome.reason, outcome.staleFile);
+      return floored(outcome.reason, outcome.staleFile, outcome.source);
     }
 
     // An argument the carrier colors is answered by what it says.
     if (outcome.kind === "carried") {
       const reason = carriedReason(outcome);
-      return reason === undefined ? undefined : floored(reason);
+      return reason === undefined
+        ? undefined
+        : floored(reason, undefined, outcome.source);
     }
 
     if (!outcome.marked) {
@@ -937,13 +1038,15 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       return floorConsumed("conditioned-producer");
     }
     if (target.kind === "floor") {
-      return floorConsumed(target.reason, target.staleFile);
+      return floorConsumed(target.reason, target.staleFile, target.source);
     }
     // One color, full surface: a carrier calling the producer non-throwing is
     // saying consuming what it hands back is clean too.
     if (target.kind === "carried") {
       const reason = carriedReason(target);
-      return reason === undefined ? CONSUMED_CLEAN : floorConsumed(reason);
+      return reason === undefined
+        ? CONSUMED_CLEAN
+        : floorConsumed(reason, undefined, target.source);
     }
     if (target.marked) return CONSUMED_CLEAN;
     if (policy === "declare") return floorConsumed("unmarked");
@@ -990,10 +1093,20 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   function consumedReason(
     consumed: readonly Consumed[],
     throwingOf: (callee: ColorNode) => boolean,
-  ): { reason: ConsumptionReason; staleFile?: string | undefined } | undefined {
+  ):
+    | {
+        reason: ConsumptionReason;
+        staleFile?: string | undefined;
+        source?: FloorSource | undefined;
+      }
+    | undefined {
     for (const part of consumed) {
       if (part.kind === "floor") {
-        return { reason: part.reason, staleFile: part.staleFile };
+        return {
+          reason: part.reason,
+          staleFile: part.staleFile,
+          source: part.source,
+        };
       }
     }
     return consumed.some(
@@ -1109,13 +1222,18 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
         : floorRejection("conditioned-handler", "handler");
     }
     if (target.kind === "floor") {
-      return floorRejection(target.reason, subject, target.staleFile);
+      return floorRejection(
+        target.reason,
+        subject,
+        target.staleFile,
+        target.source,
+      );
     }
     if (target.kind === "carried") {
       const reason = carriedReason(target);
       return reason === undefined
         ? REJECTION_CLEAN
-        : floorRejection(reason, subject);
+        : floorRejection(reason, subject, undefined, target.source);
     }
     if (target.marked) return REJECTION_CLEAN;
     if (policy === "declare") return floorRejection("unmarked", subject);
@@ -1151,6 +1269,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
           reason: rejection.reason,
           subject: rejection.subject,
           staleFile: rejection.staleFile,
+          source: rejection.source,
         };
       case "color":
         return throwingOf(rejection.node)
@@ -1307,10 +1426,10 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       // A mark covers both surfaces, so enforcement reads the whole body
       // however lazily a call reaches it, and asks after the iterator the body
       // hands out on top of that.
-      return [
+      return subsumedByThrow([
         ...bodyEscapes(body, "all", throwingOf),
         ...returnedIterators(body, throwingOf),
-      ];
+      ]);
     },
     conditionsIn: settledConditions,
   };
@@ -1339,6 +1458,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
           node: expression,
           reason: consumed.reason,
           staleFile: consumed.staleFile,
+          source: consumed.source,
         });
       }
     }
@@ -1346,19 +1466,58 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   }
 }
 
+/**
+ * One `throw`, one report. What builds the value a `throw` hands out cannot be
+ * answered for on its own: bridging `new MyError(…)` leaves the `throw` it feeds
+ * exactly where it was, and removing the `throw` takes its operand with it. So
+ * the escapes inside one are subsumed by the `uncaughtThrow` that already names
+ * the problem, rather than reported beside it with an out that is not one.
+ *
+ * Filtered here rather than in the walk, which inference reads: a body's color
+ * is what it does, and dropping an edge to tidy a message would be answering a
+ * different question in the two places.
+ */
+function subsumedByThrow(
+  escapes: readonly BodyEscape[],
+): readonly BodyEscape[] {
+  const thrown = escapes.flatMap((escape) =>
+    escape.kind === "throw" ? [escape.node.expression] : [],
+  );
+  if (thrown.length === 0) return escapes;
+
+  return escapes.filter(
+    (escape) =>
+      escape.kind === "throw" ||
+      !thrown.some((operand) => contains(operand, escape.node)),
+  );
+}
+
+function contains(ancestor: ts.Node, node: ts.Node): boolean {
+  for (
+    let current: ts.Node | undefined = node;
+    current !== undefined;
+    current = current.parent
+  ) {
+    if (current === ancestor) return true;
+  }
+  return false;
+}
+
 function floorConsumed(
   reason: ConsumptionReason,
   staleFile?: string | undefined,
+  source?: FloorSource | undefined,
 ): Consumed {
-  return { kind: "floor", reason, staleFile };
+  return { kind: "floor", reason, staleFile, source };
 }
 
 function floorRejection(
   reason: RejectionReason,
   subject: RejectionSubject,
   staleFile?: string | undefined,
+  source?: FloorSource | undefined,
 ): Rejection {
-  return { kind: "floor", reason, subject, staleFile };
+  return { kind: "floor", reason, subject, staleFile, source };
 }
 
 /** A join of one is that one: a tree with no branch reads better in a message. */
@@ -1387,10 +1546,10 @@ function untracedReason(
     : "untraced";
 }
 
-function samePaths(a: readonly Condition[], b: readonly Condition[]): boolean {
+function sameConditions(a: readonly Condition[], b: readonly Condition[]): boolean {
   if (a.length !== b.length) return false;
-  const keys = new Set(b.map((condition) => pathKey(condition.path)));
-  return a.every((condition) => keys.has(pathKey(condition.path)));
+  const keys = new Set(b.map(conditionKey));
+  return a.every((condition) => keys.has(conditionKey(condition)));
 }
 
 function memoize<K extends object, V>(compute: (key: K) => V): (key: K) => V {

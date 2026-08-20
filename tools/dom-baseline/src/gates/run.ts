@@ -1,4 +1,4 @@
-import type { BaselineData, DomMember, LibProgram } from "@nothrow/core/baseline";
+import type { BaselineData, DomMember, LibProgram } from "@no-throw/core/baseline";
 
 import { createDomEnvironment, type DomEnvironment } from "./environment.js";
 import { HostileFuzzer, type Counterexample, type ProbeResult } from "./fuzz.js";

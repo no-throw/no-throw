@@ -1,0 +1,4 @@
+{
+  "description": "The most markable code there is — string parsing into a `Map` — is green: `Map`/`Set` membership and mutation, `Object.entries`, the `String` methods that take an optional parameter, and `new Map()` itself all carry a clean color.",
+  "diagnostics": []
+}

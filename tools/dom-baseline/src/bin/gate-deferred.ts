@@ -1,4 +1,4 @@
-import { baselineData, collectDomMembers } from "@nothrow/core/baseline";
+import { baselineData, collectDomMembers } from "@no-throw/core/baseline";
 import ts from "typescript";
 
 import { DeferredProbe, type Adjudication } from "../gates/deferred.js";

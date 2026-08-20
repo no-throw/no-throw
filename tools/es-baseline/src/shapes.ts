@@ -107,7 +107,7 @@ const RULES: readonly ShapeRule[] = [
   },
   {
     id: "brand",
-    test: /RequireInternalSlot|does not have an? \[\[|Validate(TypedArray|IntegerTypedArray|NonRevokedProxy)\b|This(Number|String|BigInt|Time|Symbol|Boolean)Value|IsPromise\(\w+\) is false|IsRegExp/,
+    test: /RequireInternalSlot|does not have an? \[\[|Validate(TypedArray|IntegerTypedArray)\b|This(Number|String|BigInt|Time|Symbol|Boolean)Value|IsPromise\(\w+\) is false|IsRegExp/,
     domain: "brand",
   },
   { id: "isRegExp", test: /isRegexp is true|IsRegExp\(\w+\)/, domain: "string" },
@@ -131,9 +131,6 @@ const RULES: readonly ShapeRule[] = [
     on: "root",
     test: /^(Set|CreateDataPropertyOrThrow|DefinePropertyOrThrow|DeletePropertyOrThrow|SetIntegrityLevel|CreateMethodProperty|ArrayCreate|FlattenIntoArray|ArraySetLength|AddValueToKeyedGroup)$/,
   },
-  // A property key may be *any* primitive — `o[sym]` is not a coercion hazard —
-  // so this one discharges wider than the numeric and string coercions do.
-  { id: "propertyKey", on: "root", test: /^ToPropertyKey$/, domain: "primitive" },
   {
     id: "coerce",
     on: "root",
@@ -165,21 +162,55 @@ export interface Shape {
  * its target, so "might this be a Proxy?" has no static answer for any object
  * and flooring on it would color nothing.
  *
- * Only the internal methods themselves qualify. The abstract operations that
- * *call* them — `GetV` coerces first, `RegExpExec` checks a user-supplied
- * `exec`'s result, `OrdinaryHasInstance` checks `C.prototype` — have throws of
+ * Only the internal methods themselves qualify, and one operation that is
+ * definitionally about a Proxy: `ValidateNonRevokedProxy` takes a Proxy exotic
+ * object and its single throw is that the Proxy was revoked, so a chain
+ * reaching it went through one just as surely as a trap does. The abstract
+ * operations that merely *call* internal methods do not qualify — `GetV`
+ * coerces first, `RegExpExec` checks a user-supplied `exec`'s result,
+ * `OrdinaryHasInstance` checks `C.prototype` — because they have throws of
  * their own that are nothing to do with a trap, and swallowing those is
  * unsound. Their trap-derived causes still carry an internal method in the
  * chain, so nothing is lost by naming this set narrowly.
  */
-const TRAP_DISPATCH = /^\[\[\w+\]\]$/;
+const PROXY_DISPATCH = /^(\[\[\w+\]\]|ValidateNonRevokedProxy)$/;
+
+/**
+ * Which coercion a coercion cause belongs to, which the cause itself cannot
+ * say: `ToPropertyKey`'s only abrupt step is `? ToPrimitive(arg, string)`, so
+ * its causes are lifted out of `ToPrimitive` carrying *that* name, and the
+ * coercion rule then asks a `PropertyKey` to be neither Symbol nor BigInt —
+ * refusing exactly what `Object.hasOwn(o, key)` accepts.
+ *
+ * A property key may be *any* primitive: `ToPrimitive` hands a primitive back
+ * untouched, a Symbol returns at step 2, and the `ToString` that finishes the
+ * algorithm is marked `!`. So both causes `ToPrimitive` has — the exotic
+ * `@@toPrimitive` and the ordinary `valueOf`/`toString` pair — sit under its
+ * `If input is an Object` guard, and a declared primitive is not an Object.
+ *
+ * Read over the shape rather than ahead of them, because it is a statement
+ * about a *coercion* and has nothing to say about the other shapes a key's
+ * chain can reach: a trap stays trap behavior, and a call into user code stays
+ * the dials' question.
+ */
+const PROPERTY_KEY_COERCION = "ToPropertyKey";
 
 export function shapeOf(hazard: Hazard): Shape {
   const { rootOp, condition } = hazard;
+  const chain = [...hazard.via, rootOp];
 
-  if ([...hazard.via, rootOp].some((op) => TRAP_DISPATCH.test(op))) {
+  if (chain.some((op) => PROXY_DISPATCH.test(op))) {
     return { id: "proxy", domain: undefined, rootOp, condition };
   }
+
+  const shape = ruleFor(hazard);
+  return shape.id === "coerce" && chain.includes(PROPERTY_KEY_COERCION)
+    ? { ...shape, id: "propertyKey", domain: "primitive" }
+    : shape;
+}
+
+function ruleFor(hazard: Hazard): Shape {
+  const { rootOp, condition } = hazard;
 
   for (const rule of RULES) {
     const subject = rule.on === "root" ? rootOp : condition;

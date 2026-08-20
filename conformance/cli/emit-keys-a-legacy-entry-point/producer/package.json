@@ -1,0 +1,6 @@
+{
+  "name": "legacy",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "out/index.js"
+}

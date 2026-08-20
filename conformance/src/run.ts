@@ -5,7 +5,7 @@ import {
   section,
   type Diagnostic,
 } from "./diagnostics.js";
-import { runFixture } from "./driver-eslint.js";
+import { presetArgumentReport, runFixture } from "./driver-eslint.js";
 import { loadFixtures, type Fixture } from "./fixtures.js";
 
 /** What one pass makes of one fixture: the lines explaining why it failed. */
@@ -16,6 +16,8 @@ type Check = (
 
 const fixturesRoot = fileURLToPath(new URL("../fixtures/", import.meta.url));
 const fixtures = loadFixtures(fixturesRoot);
+
+checkPresetArgument();
 
 const hybrid = await pass(
   "Hybrid inference — the shipped configuration, against `expected.json`.",
@@ -43,6 +45,21 @@ if (total(declareOnly) <= total(hybrid)) {
   process.exitCode = 1;
 }
 
+function checkPresetArgument(): void {
+  const { checked, problems } = presetArgumentReport();
+
+  if (problems.length === 0) {
+    console.log(
+      `\nPreset OK: ${checked} wrong arguments refused by name, and typescript-eslint's own plugin accepted.`,
+    );
+    return;
+  }
+
+  console.log("\nThe preset's argument check is not holding:\n");
+  for (const problem of problems) console.log(`        ${problem}`);
+  process.exitCode = 1;
+}
+
 /**
  * Run every fixture once, print a verdict per fixture, and hand back what was
  * reported so a later pass can be checked against it.
@@ -63,12 +80,15 @@ async function pass(
       const actual = await runFixture(fixture.directory, fixture.config);
       // Only a fixture that ran has a result a later pass can be held to.
       reported.set(fixture.name, actual);
-      report = check(fixture, actual);
+      report =
+        fixture.refuses.length > 0
+          ? [
+              "this fixture asserts the run refuses, naming " +
+                `${fixture.refuses.map((text) => JSON.stringify(text)).join(", ")}, and it completed`,
+            ]
+          : check(fixture, actual);
     } catch (error) {
-      report = [
-        "the driver could not run this fixture:",
-        `  ${error instanceof Error ? error.message : String(error)}`,
-      ];
+      report = refusalReport(fixture, error);
     }
 
     console.log(
@@ -89,6 +109,30 @@ async function pass(
   }
 
   return reported;
+}
+
+/**
+ * What a run that died has to say. A fixture that asserts a refusal is passing
+ * exactly when the refusal names what it says it names; for every other
+ * fixture, a run that did not finish is a failure however it read.
+ */
+function refusalReport(fixture: Fixture, error: unknown): readonly string[] {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (fixture.refuses.length === 0) {
+    return ["the driver could not run this fixture:", `  ${message}`];
+  }
+
+  const unnamed = fixture.refuses.filter((text) => !message.includes(text));
+  return unnamed.length === 0
+    ? []
+    : [
+        ...unnamed.map(
+          (text) => `the refusal never names ${JSON.stringify(text)}`,
+        ),
+        "what it said:",
+        `  ${message}`,
+      ];
 }
 
 function total(reported: Map<string, readonly Diagnostic[]>): number {

@@ -1,11 +1,14 @@
 import ts from "typescript";
-import { libTargetOfFileName, memberKey } from "./baseline/keys.js";
+import { libDeclarationsOf, memberKey } from "./baseline/keys.js";
+import { baselineEnumerates, floorSourceOf } from "./baseline/rung.js";
 import type { AccessorFact, Color } from "./baseline/types.js";
+import type { FloorReason, FloorSource } from "./colors.js";
 import type {
   AccessExpression,
   DestructuringElement,
   Escape,
 } from "./escapes.js";
+import { signatureSegment } from "./segments.js";
 import type { Resolution } from "./targets.js";
 import {
   resolvedDeclaration,
@@ -30,17 +33,37 @@ export interface HiddenCallee {
   readonly name: string;
 }
 
+/**
+ * What answers for one half of one member.
+ *
+ * `carried` is how a declared *property* that is really a getter gets a color
+ * at all: there is no accessor declaration to read, so the carrier's fact is
+ * the whole answer. `floor` is the other side of that coin — a lib member the
+ * baseline states no fact about, where absence may not be read as data.
+ */
+export type TransferColor =
+  | {
+      readonly kind: "declaration";
+      /** The body to read a color off, or absent when there is none. */
+      readonly declaration: ts.SignatureDeclaration | undefined;
+    }
+  | {
+      readonly kind: "carried";
+      readonly color: Color;
+      /** Absent where the declaration is not a standard-library one. */
+      readonly source?: FloorSource | undefined;
+    }
+  | {
+      readonly kind: "floor";
+      readonly reason: FloorReason;
+      /** Absent where the declaration is not a standard-library one. */
+      readonly source?: FloorSource | undefined;
+    };
+
 export interface TransferTarget {
   /** Absent when the type cannot even name what runs. */
   readonly target: HiddenCallee | undefined;
-  /** The body to read a color off, or absent when there is none. */
-  readonly declaration: ts.SignatureDeclaration | undefined;
-  /**
-   * The color a carrier's accessor fact gives this half. A declared *property*
-   * that is really a getter has no accessor declaration to read, so the fact is
-   * the only thing that can say a body runs here at all.
-   */
-  readonly carried?: Color;
+  readonly color: TransferColor;
 }
 
 /**
@@ -59,6 +82,14 @@ export interface Transfer {
 
 /** Which half of an accessor pair a site consults. */
 type Half = "get" | "set" | "both";
+
+/**
+ * What the carrier chain has to say about a member's accessor-ness: the fact
+ * itself, or which of the two things silence means here — the enumeration was
+ * owed an answer and gave none, so the site floors, or nothing was owed and the
+ * declaration answers.
+ */
+type AccessorAnswer = AccessorFact | "floors" | "declaration";
 
 /**
  * The hidden transfers at one escape site, resolved through the static type.
@@ -189,22 +220,30 @@ function accessorTargets(
   const targets: TransferTarget[] = [];
 
   for (const declaration of resolution.facts.declarationsOf(symbol)) {
-    const fact = accessorFactOf(declaration, resolution);
-    if (fact !== undefined) {
-      targets.push(...factTargets(symbol, half, fact, resolution.facts));
+    const answer = accessorAnswerFor(declaration, resolution);
+    if (answer !== "declaration") {
+      targets.push(
+        ...statedTargets(symbol, half, answer, declaration, resolution.facts),
+      );
       continue;
     }
 
     if (half !== "set" && ts.isGetAccessorDeclaration(declaration)) {
       targets.push({
-        target: { kind: "getter", name: memberName(symbol, resolution.facts) },
-        declaration,
+        target: {
+          kind: "getter",
+          name: memberName(symbol, resolution.facts),
+        },
+        color: { kind: "declaration", declaration },
       });
     }
     if (half !== "get" && ts.isSetAccessorDeclaration(declaration)) {
       targets.push({
-        target: { kind: "setter", name: memberName(symbol, resolution.facts) },
-        declaration,
+        target: {
+          kind: "setter",
+          name: memberName(symbol, resolution.facts),
+        },
+        color: { kind: "declaration", declaration },
       });
     }
   }
@@ -213,42 +252,78 @@ function accessorTargets(
 }
 
 /**
- * The accessor fact a carrier states for one declaration. `false` is a
- * *positive* record that the member really is data, which is why absence is not
- * that record and cannot be read as one — but absence here leaves the
- * declaration to answer, which for a hand-written `.d.ts` is the trust base
- * (#30 §C), not a floor.
+ * What the chain makes of one declaration's accessor-ness.
+ *
+ * `false` is a *positive* record that the member really is data, which is why
+ * absence is not that record and cannot be read as one. What absence leaves
+ * behind depends on who declared the member: a hand-written `.d.ts` is the
+ * trust base (#30 §C) and its declaration answers, but the first-party libs are
+ * *not* — an enumeration of their real accessors exists, which is the whole
+ * reason #29 §4 makes a missing fact floor there rather than read as data.
  */
-function accessorFactOf(
+function accessorAnswerFor(
   declaration: ts.Declaration,
   resolution: Resolution,
-): AccessorFact | undefined {
+): AccessorAnswer {
   const answer = resolution.carrier.answerFor(declaration);
-  return answer?.kind === "entry" ? answer.entry.accessor : undefined;
+  const fact = answer?.kind === "entry" ? answer.entry.accessor : undefined;
+  if (fact !== undefined) return fact;
+  return isUnstatedLibProperty(declaration, resolution.facts)
+    ? "floors"
+    : "declaration";
 }
 
-/** The halves a site consults, colored by the fact rather than by a body. */
-function factTargets(
+/**
+ * A member the baseline's enumeration was owed an answer about and gave none.
+ * Only a *property* asks the accessor question at all — a method is a data
+ * property on the prototype by construction, and reading one is a read whatever
+ * else the member does — and only a type the enumeration reaches was owed one.
+ */
+function isUnstatedLibProperty(
+  declaration: ts.Declaration,
+  facts: TypeFacts,
+): boolean {
+  return (
+    (ts.isPropertySignature(declaration) ||
+      ts.isPropertyDeclaration(declaration)) &&
+    baselineEnumerates(declaration, facts)
+  );
+}
+
+/** The halves a site consults, colored by what the chain stated about them. */
+function statedTargets(
   symbol: SymbolRef,
   half: Half,
-  fact: AccessorFact,
+  fact: AccessorFact | "floors",
+  declaration: ts.Declaration,
   facts: TypeFacts,
 ): readonly TransferTarget[] {
   if (fact === false) return [];
 
   const targets: TransferTarget[] = [];
+  const colorOf = (which: "get" | "set"): TransferColor =>
+    fact === "floors"
+      ? {
+          kind: "floor",
+          reason: "no-accessor-fact",
+          source: floorSourceOf(declaration, "unstated", facts),
+        }
+      : {
+          kind: "carried",
+          color: fact[which],
+          source: floorSourceOf(declaration, "stated", facts),
+        };
+
   if (half !== "set") {
     targets.push({
       target: { kind: "getter", name: memberName(symbol, facts) },
-      declaration: undefined,
-      carried: fact.get,
+      color: colorOf("get"),
     });
   }
   if (half !== "get") {
     targets.push({
       target: { kind: "setter", name: memberName(symbol, facts) },
-      declaration: undefined,
-      carried: fact.set,
+      color: colorOf("set"),
     });
   }
   return targets;
@@ -355,10 +430,12 @@ function ownEnumerableTargets(
   const { facts } = resolution;
   return membersOf(source, facts).flatMap((symbol) =>
     facts.declarationsOf(symbol).flatMap((declaration) => {
-      if (!mayBeOwn(declaration)) return [];
+      if (!mayBeOwn(declaration, facts)) return [];
 
-      const fact = accessorFactOf(declaration, resolution);
-      if (fact !== undefined) return factTargets(symbol, "get", fact, facts);
+      const answer = accessorAnswerFor(declaration, resolution);
+      if (answer !== "declaration") {
+        return statedTargets(symbol, "get", answer, declaration, facts);
+      }
       return ts.isGetAccessorDeclaration(declaration)
         ? [
             {
@@ -366,7 +443,7 @@ function ownEnumerableTargets(
                 kind: "getter" as const,
                 name: memberName(symbol, facts),
               },
-              declaration,
+              color: { kind: "declaration" as const, declaration },
             },
           ]
         : [];
@@ -376,12 +453,16 @@ function ownEnumerableTargets(
 
 /**
  * A member written in a class body and not `static` lives on the prototype, so
- * an instance does not own it — which is why spreading a DOM element touches
- * nothing. That is the one case where own-ness has an answer: a member declared
- * on an interface or a type literal could describe either an object literal or
- * a class instance, and the sound reading of that is that it is own.
+ * an instance does not own it. A member of a `lib.*.d.ts` interface is the same
+ * thing said differently: the libs describe built-in objects, whose accessors
+ * both ECMA-262 and WebIDL put on the prototype — which is exactly why the
+ * baseline's own derivation reads them off one — so spreading a DOM element
+ * touches nothing (#29 §1). Anywhere else own-ness has no answer: a member
+ * declared on an interface or a type literal could describe either an object
+ * literal or a class instance, and the sound reading of that is that it is own.
  */
-function mayBeOwn(declaration: ts.Declaration): boolean {
+function mayBeOwn(declaration: ts.Declaration, facts: TypeFacts): boolean {
+  if (libDeclarationsOf(declaration, facts).length > 0) return false;
   return (
     !ts.isClassLike(declaration.parent) ||
     (ts.getCombinedModifierFlags(declaration) & ts.ModifierFlags.Static) !== 0
@@ -475,20 +556,18 @@ function libCalleeKey(
   call: ts.CallExpression,
   facts: TypeFacts,
 ): string | undefined {
-  const declaration = resolvedDeclaration(call, facts);
-  if (
-    declaration === undefined ||
-    libTargetOfFileName(declaration.getSourceFile().fileName) === undefined
-  ) {
-    return undefined;
-  }
+  const resolved = resolvedDeclaration(call, facts);
+  if (resolved === undefined) return undefined;
 
-  const owner = declaration.parent;
-  if (!ts.isInterfaceDeclaration(owner)) return undefined;
-  const name = ts.isCallSignatureDeclaration(declaration)
-    ? "()"
-    : ts.getNameOfDeclaration(declaration)?.getText();
-  return name === undefined ? undefined : memberKey(owner.name.text, name);
+  for (const { declaration } of libDeclarationsOf(resolved, facts)) {
+    const owner = declaration.parent;
+    if (!ts.isInterfaceDeclaration(owner)) continue;
+    const name =
+      signatureSegment(ts, declaration) ??
+      ts.getNameOfDeclaration(declaration)?.getText();
+    if (name !== undefined) return memberKey(owner.name.text, name);
+  }
+  return undefined;
 }
 
 /**
@@ -533,13 +612,18 @@ function methodTargets(
     name: memberName(symbol, facts),
   };
   const declarations = facts.declarationsOf(symbol);
-  if (declarations.length === 0) return [{ target, declaration: undefined }];
+  if (declarations.length === 0) {
+    return [{ target, color: { kind: "declaration", declaration: undefined } }];
+  }
 
   return declarations.map((declaration) => ({
     target,
-    // A conversion member declared as data — `toString: () => string` — names
-    // no body to read a color off.
-    declaration: ts.isFunctionLike(declaration) ? declaration : undefined,
+    color: {
+      kind: "declaration" as const,
+      // A conversion member declared as data — `toString: () => string` — names
+      // no body to read a color off.
+      declaration: ts.isFunctionLike(declaration) ? declaration : undefined,
+    },
   }));
 }
 
@@ -590,7 +674,7 @@ function memberName(symbol: SymbolRef, facts: TypeFacts): string {
 
 const UNNAMEABLE: TransferTarget = {
   target: undefined,
-  declaration: undefined,
+  color: { kind: "declaration", declaration: undefined },
 };
 
 /** A site that runs *something* the type cannot name, so it floors. */

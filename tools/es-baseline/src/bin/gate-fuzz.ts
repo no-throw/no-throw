@@ -2,10 +2,10 @@ import {
   baselineData,
   collectLibMembers,
   createLibProgram,
-} from "@nothrow/core/baseline";
+} from "@no-throw/core/baseline";
 import ts from "typescript";
 
-import { formatCounterexample } from "../gates/fuzz.js";
+import { formatCounterexample, formatUnrefuted } from "../gates/fuzz.js";
 import { claimsOf, runFuzzGate, type Claim } from "../gates/run.js";
 
 /**
@@ -24,7 +24,9 @@ const members = collectLibMembers(lib);
 const claims = new Map<string, Claim>(claimsOf(data));
 if (selfCheck) {
   for (const key of PLANTED) {
-    claims.set(key, { cleanCall: true, cleanGet: false });
+    // Planted unconditioned on purpose: a claim that scoped itself away from
+    // the refuting call would prove the opposite of what this is for.
+    claims.set(key, { cleanCall: true, cleanGet: false, absent: new Map() });
   }
 }
 
@@ -49,6 +51,7 @@ if (!selfCheck) {
   console.log(
     `sensitivity:           ${reproduced}/${attempted} (${percent}%) — a green gate is the absence of a refutation, not evidence of cleanliness`,
   );
+  for (const line of formatUnrefuted(report.unrefuted)) console.log(line);
 }
 
 if (selfCheck) {

@@ -1,0 +1,4 @@
+{
+  "description": "A queued callback is not invoked by the call, and the relaxation entry says so with `conditions: []`: passing a throwing handler to `addEventListener` needs no bridge, wrapping the same call in a `try`/`catch` neutralizes nothing and is reported as nothing, and a wrapper that only hands its own callback on derives no condition of its own — which its caller witnesses by passing that same throwing handler and staying green.",
+  "diagnostics": []
+}

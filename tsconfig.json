@@ -3,9 +3,11 @@
   "references": [
     { "path": "packages/core" },
     { "path": "packages/eslint-plugin" },
+    { "path": "packages/oxlint-plugin" },
     { "path": "packages/cli" },
     { "path": "conformance" },
     { "path": "tools/es-baseline" },
-    { "path": "tools/dom-baseline" }
+    { "path": "tools/dom-baseline" },
+    { "path": "tools/dogfood" }
   ]
 }

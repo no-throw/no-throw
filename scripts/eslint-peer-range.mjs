@@ -1,4 +1,4 @@
-// The `eslint` peer range on `@nothrow/eslint-plugin` names the ESLint majors a
+// The `eslint` peer range on `@no-throw/eslint-plugin` names the ESLint majors a
 // consumer may install the plugin against. Everything that holds the claim true
 // enumerates it from here rather than restating it, so widening the claim
 // widens what has to pass.

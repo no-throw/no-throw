@@ -1,10 +1,13 @@
 import ts from "typescript";
+import { floorSourceOf } from "./baseline/rung.js";
 import type { Color } from "./baseline/types.js";
 import type { Carrier } from "./carrier/chain.js";
 import { carriedFacts } from "./carrier/entries.js";
-import type { FloorReason } from "./colors.js";
+import type { FloorReason, FloorSource } from "./colors.js";
 import {
+  conditionKey,
   parameterRoot,
+  pathKey,
   pathOf,
   skipParens,
   type Condition,
@@ -25,6 +28,7 @@ import {
   resolvedDeclaration,
   type SymbolRef,
   type TypeFacts,
+  type TypeRef,
 } from "./type-facts.js";
 
 /**
@@ -68,12 +72,16 @@ export type Target =
       readonly async: boolean;
       /** Empty on a throwing entry: nothing to discharge. */
       readonly conditions: readonly Condition[];
+      /** Absent where the declaration is not a standard-library one. */
+      readonly source?: FloorSource | undefined;
     }
   | {
       readonly kind: "floor";
       readonly reason: FloorReason;
       /** The file whose hash drifted; only `stale-manifest` carries one. */
       readonly staleFile?: string | undefined;
+      /** Absent where the declaration is not a standard-library one. */
+      readonly source?: FloorSource | undefined;
     };
 
 /**
@@ -111,11 +119,42 @@ export function calleeTargets(
   resolution: Resolution,
 ): readonly Target[] {
   const resolved = resolveValue(calleeExpression(transfer), body, resolution);
-  if (resolved.kind === "targets") return resolved.targets;
   // The signature is the function *type*, which is what a reassignable binding
   // resolves to and is one of the values it can hold, not the one that runs.
   if (resolved.kind === "mutable") return [floor("mutable-binding")];
-  return [transferTarget(transfer, resolution)];
+  if (resolved.kind !== "targets") return [transferTarget(transfer, resolution)];
+
+  const stated = resolved.targets.some((target) => target.kind === "condition")
+    ? statedTarget(transfer, resolution)
+    : undefined;
+  return stated === undefined ? resolved.targets : [...resolved.targets, stated];
+}
+
+/**
+ * What a carrier says about the member a path names, where one says anything.
+ *
+ * `users.map(cb)` is two facts at once: the body enters a member of its own
+ * parameter, which is a condition its caller discharges, *and* the static type
+ * names `Array#map`, which the baseline colors and conditions on the callback
+ * written right here. Taking only the first loses the second, and the second is
+ * the whole of stories 32–33 — the same call judged on the callback actually
+ * passed. Both are reported, so this can only ever tighten: the condition still
+ * covers whatever function really turns up at the path.
+ *
+ * Nothing is stated for a member no carrier answers for — `repo.save` on an
+ * interface you wrote is exactly the shape #23's paths exist for, and floors
+ * here would make every one of them unusable.
+ */
+function statedTarget(
+  transfer: Transfer,
+  resolution: Resolution,
+): Target | undefined {
+  const declaration = targetOf(transfer, resolution.facts);
+  if (declaration === undefined || hasVisibleBody(declaration)) return undefined;
+  const keyedBy = keyDeclarationFor(declaration, transfer, resolution);
+  return resolution.carrier.answerFor(keyedBy) === undefined
+    ? undefined
+    : carriedTarget(declaration, resolution, keyedBy);
 }
 
 /**
@@ -204,7 +243,15 @@ function resolveBinding(
  * Follow an expression to the values it can hold, for a path that has to be
  * walked *through* it rather than entered. A binding's declared type is only a
  * supertype's promise — a subclass can override the very member the path names
- * — so the walk starts at the value in hand, whose own type is exact.
+ * — so the walk starts at the value in hand, whose own type is exact. An object
+ * literal, an array literal and a `new` are each a value in hand.
+ *
+ * A primitive type is where that promise is already a certainty, whatever the
+ * expression carrying it: no subtype of `string` exists to override
+ * `startsWith`, so every value the type admits looks the member up on the one
+ * prototype the libs declare. Without this, `f(s: string)` calling
+ * `s.startsWith` conditions on a path no call site could ever answer, and the
+ * obligation is deferred forever rather than ever discharged.
  */
 export function resolveReceiver(
   expr: ts.Expression,
@@ -213,8 +260,13 @@ export function resolveReceiver(
 ): ReceiverResolution {
   const expression = skipParens(expr);
 
+  if (hasExactType(expression, facts)) {
+    return { kind: "values", values: [expression] };
+  }
+
   if (
     ts.isObjectLiteralExpression(expression) ||
+    ts.isArrayLiteralExpression(expression) ||
     ts.isNewExpression(expression)
   ) {
     return { kind: "values", values: [expression] };
@@ -247,9 +299,64 @@ export function resolveReceiver(
 }
 
 /**
+ * Whether the expression's type settles the member lookup by itself. A type
+ * parameter is not a primitive, but a constraint that is bounds every value it
+ * can hold — so `k.startsWith` on `K extends string` resolves like `string`'s.
+ */
+function hasExactType(expr: ts.Expression, facts: TypeFacts): boolean {
+  const type = assignableType(expr, facts);
+  if (isExactType(type, facts)) return true;
+  const constraint = facts.baseConstraintOf(type);
+  return constraint !== undefined && isExactType(constraint, facts);
+}
+
+/**
+ * The type every value the expression can arrive as satisfies — which is not
+ * the checker's type *at* it wherever something can assign to it.
+ *
+ * A narrowing is a fact about one path, and an assignment the checker did not
+ * follow outruns it: TypeScript keeps `let v: string | Bag` narrowed to
+ * `string` across a call that writes `v` from a closure, and the member run
+ * there is `Bag`'s. What the binding was *declared* as is the one thing every
+ * value it can hold really keeps, so exactness is read off that — which leaves
+ * `let text = input` on a `string` exact, as it should be, and puts
+ * `let v: string | Bag` back on the floor it had before access paths reached
+ * primitives at all.
+ *
+ * A `const` needs none of this. Nothing can write one, so a narrowing of it is
+ * the whole truth about it, and reading past that would give up precision for
+ * nothing.
+ */
+function assignableType(expr: ts.Expression, facts: TypeFacts): TypeRef {
+  const declaration = ts.isIdentifier(expr)
+    ? boundDeclaration(expr, facts)
+    : undefined;
+  return declaration !== undefined && isWritable(declaration)
+    ? facts.typeAt(declaration)
+    : facts.typeAt(expr);
+}
+
+function isWritable(declaration: ts.Declaration): boolean {
+  if (ts.isParameter(declaration)) return true;
+  return (
+    ts.isVariableDeclaration(declaration) &&
+    (ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const) === 0
+  );
+}
+
+/** A union is exact only where every arm is: the member lookup is joined. */
+function isExactType(type: TypeRef, facts: TypeFacts): boolean {
+  return facts.constituentsOf(type).every((part) => facts.isExact(part));
+}
+
+/**
  * The target a member of a value names, joined over its declarations. Which
  * function a member holds is answered by the checker's symbol for it, which is
  * the whole reason a condition can reach past depth 0 at all.
+ *
+ * The walk starts where exactness was decided, or a declared `string | number`
+ * narrowed to `string` would resolve `String#toString` and never meet the
+ * `Number#toString` the value may really carry.
  */
 export function memberTargets(
   value: ts.Expression,
@@ -257,7 +364,7 @@ export function memberTargets(
   resolution: Resolution,
 ): readonly Target[] {
   const { facts } = resolution;
-  let type = facts.typeAt(value);
+  let type = assignableType(value, facts);
   let symbol: SymbolRef | undefined;
 
   for (const member of members) {
@@ -268,7 +375,59 @@ export function memberTargets(
 
   const declarations = symbol === undefined ? [] : facts.declarationsOf(symbol);
   if (declarations.length === 0) return [floor("unresolvable")];
-  return declarations.map((declaration) => memberTarget(declaration, resolution));
+  return distinct(
+    declarations.map((declaration) => memberTarget(declaration, resolution)),
+  );
+}
+
+/**
+ * The join, less the answers it says twice. One member is routinely declared
+ * several times over — an overload pair, an interface the libs merge across two
+ * `lib.*.d.ts` files — and each of those declarations names the same runtime
+ * function, so the chain answers for all of them alike and reporting each would
+ * report one call twice. Only a union's members are genuinely several functions,
+ * and those answer for themselves.
+ */
+function distinct(targets: readonly Target[]): readonly Target[] {
+  const byKey = new Map<string | Bodied, Target>();
+  for (const target of targets) {
+    const key = targetKey(target);
+    if (!byKey.has(key)) byKey.set(key, target);
+  }
+  return [...byKey.values()];
+}
+
+/**
+ * What makes two targets the same answer. A body is identified by its node,
+ * since two bodies are two functions however alike they read; everything else is
+ * identified by what it states, since a stated color has no other content.
+ *
+ * The return type is written out so that a target kind added later fails to
+ * compile here rather than keying as nothing and quietly collapsing onto some
+ * other answer.
+ */
+function targetKey(target: Target): string | Bodied {
+  switch (target.kind) {
+    case "function":
+      return target.declaration;
+    case "condition":
+      return JSON.stringify(["condition", pathKey(target.path)]);
+    case "carried":
+      return JSON.stringify([
+        "carried",
+        target.color,
+        target.async,
+        target.source,
+        target.conditions.map(conditionKey),
+      ]);
+    case "floor":
+      return JSON.stringify([
+        "floor",
+        target.reason,
+        target.staleFile,
+        target.source,
+      ]);
+  }
 }
 
 function memberTarget(
@@ -295,7 +454,10 @@ function memberTarget(
   }
   // A property holding a function type names no parameter list a condition
   // could be a path over, so nothing keyed on it could be discharged here.
-  return floor(ts.isPropertySignature(declaration) ? "bodyless" : "unresolvable");
+  return floor(
+    ts.isPropertySignature(declaration) ? "bodyless" : "unresolvable",
+    floorSourceOf(declaration, "unstated", resolution.facts),
+  );
 }
 
 function initializerOf(declaration: ts.Declaration): ts.Expression | undefined {
@@ -320,50 +482,135 @@ function transferTarget(transfer: Transfer, resolution: Resolution): Target {
   if (target === undefined) return floor("unresolvable");
   return hasVisibleBody(target)
     ? functionTarget(target)
-    : carriedTarget(target, resolution);
+    : carriedTarget(
+        target,
+        resolution,
+        keyDeclarationFor(target, transfer, resolution),
+      );
+}
+
+/**
+ * Which declaration a carrier is asked about, where that is not the one whose
+ * parameter list runs.
+ *
+ * A binding typed with a *named* function type — `red: Formatter`, the shape
+ * much of npm's declarations take — resolves to the function type written in
+ * the alias, and that node is shared by every binding the alias types. It
+ * cannot carry a key: keying it would color `green` with whatever was said
+ * about `red`. What a consumer names is the binding, so the binding is what the
+ * chain is asked about, and the signature still supplies the facts.
+ *
+ * Only asked where the signature itself keys nothing, so a declaration the
+ * surface already reaches is never re-keyed through the site that reached it.
+ * Keys nothing, rather than *answers* nothing: `interface Risky { (…): … }` is
+ * reachable as `Risky#()` whether or not anybody wrote that entry, and falling
+ * through to the property over an unwritten key would color a call from an
+ * entry written for a member no call enters. A bare `type Paint = (…) => …` is
+ * the shape that really carries no key, and it is the one this is for.
+ *
+ * And only of a callee written as a name: `new` resolves to a class rather than
+ * to a signature, and `super` names nothing at all.
+ */
+function keyDeclarationFor(
+  declaration: ts.Declaration,
+  transfer: Transfer,
+  resolution: Resolution,
+): ts.Declaration {
+  const { carrier } = resolution;
+  if (
+    ts.isNewExpression(transfer) ||
+    carrier.answerFor(declaration) !== undefined ||
+    carrier.keyFor(declaration) !== undefined
+  ) {
+    return declaration;
+  }
+
+  const callee = calleeExpression(transfer);
+  if (
+    !ts.isIdentifier(callee) &&
+    !ts.isPropertyAccessExpression(callee) &&
+    !ts.isElementAccessExpression(callee)
+  ) {
+    return declaration;
+  }
+
+  // Through the import, because what the consumer named is the package's
+  // declaration and the specifier is only how it got here.
+  const { facts } = resolution;
+  const named = facts.symbolAt(callee);
+  if (named === undefined) return declaration;
+  const resolved = facts.isAlias(named) ? facts.aliasedSymbol(named) : named;
+
+  return facts.declarationsOf(resolved)[0] ?? declaration;
 }
 
 /**
  * What the carrier chain makes of a declaration with no body to read. Module
  * resolution has already decided this is the chain's question rather than the
  * program's: source resolves to a visible body and never arrives here.
+ *
+ * The key and the facts can come from two declarations: what a consumer names
+ * is not always what holds the parameter list a condition is a path over.
  */
 function carriedTarget(
   declaration: ts.SignatureDeclaration | ts.ClassLikeDeclaration,
   resolution: Resolution,
+  keyedBy: ts.Declaration = declaration,
 ): DeclaredTarget {
-  const answer = resolution.carrier.answerFor(declaration);
-  if (answer === undefined) return floor("bodyless");
+  // Every floor below is the chain declining to state a color, whatever its
+  // reason for declining, so all of them read `stated` the same way.
+  const unstated = floorSourceOf(declaration, "unstated", resolution.facts);
+
+  const answer = resolution.carrier.answerFor(keyedBy);
+  if (answer === undefined) return floor("bodyless", unstated);
   if (answer.kind === "floor") {
-    return { kind: "floor", reason: answer.reason, staleFile: answer.staleFile };
+    return {
+      kind: "floor",
+      reason: answer.reason,
+      staleFile: answer.staleFile,
+      source: unstated,
+    };
   }
   // An entry that carries only an accessor fact says nothing about calling it,
   // and an unanswered question is the ordinary floor.
-  if (answer.entry.color === undefined) return floor("bodyless");
+  if (answer.entry.color === undefined) return floor("bodyless", unstated);
 
   const carried = carriedFacts(declaration, answer.entry, resolution.facts);
-  if (carried === undefined) return floor("unusable-entry");
+  if (carried === undefined) return floor("unusable-entry", unstated);
   return {
     kind: "carried",
     color: carried.color,
     async: carried.async,
     conditions: carried.color === "throwing" ? [] : carried.conditions,
+    source: floorSourceOf(declaration, "stated", resolution.facts),
   };
 }
 
 /**
- * The body `new` on a constructor-position expression enters, as a target. The
+ * The bodies `new` on a constructor-position expression enters, as targets. The
  * implicit `constructor(...args) { super(...args) }` a class does not declare
  * has no syntax for the walk to find, so its edge is asked for by name.
+ *
+ * A join rather than one answer, because with no argument list written there is
+ * no overload resolution either: a base known only by its construct signatures
+ * — `declare var Error: ErrorConstructor` is the one every project meets — has
+ * every one of them within reach of the arguments the implicit constructor
+ * forwards, so every one of them answers.
  */
-export function constructedTarget(
+export function constructedTargets(
   expression: ts.Expression,
   resolution: Resolution,
-): DeclaredTarget {
-  return declaredTarget(
-    constructedBodyAt(expression, resolution.facts),
-    resolution,
-  );
+): readonly DeclaredTarget[] {
+  const { facts } = resolution;
+  const body = constructedBodyAt(expression, facts);
+  if (body !== undefined) return [declarationTarget(body, resolution)];
+
+  const signatures = bodylessConstructSignatures(expression, facts);
+  return signatures.length === 0
+    ? [floor("unresolvable")]
+    : signatures.map((declaration) =>
+        declarationTarget(declaration, resolution),
+      );
 }
 
 /**
@@ -390,7 +637,10 @@ function targetOf(transfer: Transfer, facts: TypeFacts): Bodied | undefined {
   }
   if (calleeExpression(transfer).kind === ts.SyntaxKind.SuperKeyword) {
     const base = inheritedFrom(transfer);
-    return base === undefined ? undefined : constructedBodyAt(base, facts);
+    return (
+      (base === undefined ? undefined : constructedBodyAt(base, facts)) ??
+      constructSignatureOf(transfer, facts)
+    );
   }
 
   const declaration = resolvedDeclaration(transfer, facts);
@@ -423,12 +673,38 @@ function constructedBodyAt(
  * resolved. Only a bodyless one is taken: a bodied signature the class lookup
  * missed means the expression was not one class, and reading a single branch of
  * it would be a guess.
+ *
+ * `super(...)` is the same construction under another spelling, and reaches the
+ * same base the same way. Nothing about the base being named by `extends` makes
+ * it any more resolvable than a `new` on it, so the two ask this one question.
  */
 function constructSignatureOf(
-  construction: ts.NewExpression,
+  construction: Transfer,
   facts: TypeFacts,
 ): ts.SignatureDeclaration | undefined {
-  const declaration = resolvedDeclaration(construction, facts);
+  return bodylessSignature(resolvedDeclaration(construction, facts));
+}
+
+/**
+ * Every construct signature of a type that has no body behind it. What answers
+ * where no argument list picked one — the implicit `super()`.
+ */
+function bodylessConstructSignatures(
+  expression: ts.Expression,
+  facts: TypeFacts,
+): readonly ts.SignatureDeclaration[] {
+  return facts
+    .constructSignaturesOf(facts.typeAt(expression))
+    .flatMap((signature) => {
+      const bodyless = bodylessSignature(facts.declarationOf(signature));
+      return bodyless === undefined ? [] : [bodyless];
+    });
+}
+
+/** The declaration, where it is a signature with no body, and nothing else. */
+function bodylessSignature(
+  declaration: ts.Declaration | undefined,
+): ts.SignatureDeclaration | undefined {
   return declaration !== undefined &&
     ts.isFunctionLike(declaration) &&
     bodyOf(declaration) === undefined
@@ -457,6 +733,9 @@ function functionTarget(declaration: Bodied): DeclaredTarget {
   };
 }
 
-function floor(reason: FloorReason): DeclaredTarget {
-  return { kind: "floor", reason };
+function floor(
+  reason: FloorReason,
+  source?: FloorSource | undefined,
+): DeclaredTarget {
+  return { kind: "floor", reason, source };
 }

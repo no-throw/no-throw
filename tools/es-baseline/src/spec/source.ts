@@ -31,7 +31,7 @@ export function loadSpecHtml(): string {
     return readFileSync(CACHE_FILE, "utf8");
   } catch {
     throw new Error(
-      `No cached ECMA-262 spec at ${specCachePath()}. Run \`pnpm --filter @nothrow/es-baseline-tools run fetch-spec\` first.`,
+      `No cached ECMA-262 spec at ${specCachePath()}. Run \`pnpm --filter @no-throw/es-baseline-tools run fetch-spec\` first.`,
     );
   }
 }

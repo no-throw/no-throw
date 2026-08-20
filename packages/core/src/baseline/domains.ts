@@ -115,6 +115,29 @@ export class TypeDomains {
     return this.#all(types, (type) => (type.flags & mask) !== 0);
   }
 
+  /**
+   * Some overload declares `null` at this position. The nullish halves read
+   * apart, and existential like `mayBeCallable`: `isNonNullish` is universal
+   * and answers for `undefined` too, so this is not its negation.
+   *
+   * It asks what a call may *pass*, which makes it a question for whoever is
+   * choosing values to drive a position with — the fuzz gate, deciding whether
+   * `null` is a conformant argument there. No entry may rest on it. One that
+   * did would be true only relative to the declaration it was generated
+   * against, and false in a program that merges into that declaration or does
+   * not typecheck; where a claim needs to exclude `null`, the condition form
+   * says so and the discharge reads the syntax.
+   */
+  mayBeNull(types: readonly ts.Type[]): boolean {
+    const { TypeFlags } = this.#ts;
+    for (const declared of types) {
+      for (const constituent of this.#constituents(declared)) {
+        if ((constituent.flags & TypeFlags.Null) !== 0) return true;
+      }
+    }
+    return false;
+  }
+
   isNonNullish(types: readonly ts.Type[]): boolean {
     const { TypeFlags } = this.#ts;
     const nullish = TypeFlags.Undefined | TypeFlags.Null | TypeFlags.Void;
@@ -221,6 +244,12 @@ export class TypeDomains {
         if ((constituent.flags & (TypeFlags.Any | TypeFlags.Unknown)) !== 0) {
           return false;
         }
+        // An unconstrained type parameter carries none of the flags a
+        // predicate tests, so one phrased as an *absence* — `isNonNullish` —
+        // would read it as holding. The caller picks the instantiation:
+        // `Object.getOwnPropertyDescriptors<T>(o: T)` is `T = undefined` for
+        // anyone who passes `undefined`, and that throws.
+        if (constituent.isTypeParameter()) return false;
         if (!predicate(constituent)) return false;
       }
     }
@@ -233,9 +262,9 @@ export class TypeDomains {
   }
 
   /**
-   * A bare type parameter is whatever its constraint says and nothing more —
-   * reading it as its default `unknown` is the safe direction and falls out of
-   * `#all`'s any/unknown rejection.
+   * A bare type parameter is whatever its constraint says and nothing more. One
+   * with no constraint has nothing to resolve to and is left as itself, which
+   * is why `#all` has to reject it by name.
    */
   #apparent(type: ts.Type): ts.Type {
     if (type.isTypeParameter()) {

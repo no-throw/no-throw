@@ -49,6 +49,7 @@ export interface TypeFacts {
    */
   isUnion(type: TypeRef): boolean;
   callSignaturesOf(type: TypeRef): readonly SignatureRef[];
+  constructSignaturesOf(type: TypeRef): readonly SignatureRef[];
   propertyOfType(type: TypeRef, name: string): SymbolRef | undefined;
   propertiesOfType(type: TypeRef): readonly SymbolRef[];
   /**
@@ -68,6 +69,13 @@ export interface TypeFacts {
   stringLiteralValue(type: TypeRef): string | undefined;
   /** `any` or `unknown`: a type that says nothing about what runs. */
   isOpaque(type: TypeRef): boolean;
+  /**
+   * Whether exactly one prototype stands behind the type, so that naming the
+   * type names the declaration a member lookup lands on. Asked of one type at
+   * a time: a union is exact only where every arm is, and that join is the
+   * engine's to make.
+   */
+  isExact(type: TypeRef): boolean;
   /** Runs no user code when coerced. */
   isPrimitive(type: TypeRef): boolean;
 

@@ -1,0 +1,38 @@
+{
+  "description": "ECMA-262 returns from `Number.prototype.toPrecision` at `If precision is undefined`, and at nothing else, so the entry is conditioned on the position getting nothing and the call site decides. The narrow form is what keeps that entry honest: `=nullish` here would bless `(1).toPrecision(null)`, which throws a RangeError, and would be true only because the declared type happens to exclude `null` — a fact the discharge deliberately never reads.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 13,
+      "column": 10,
+      "endLine": 13,
+      "endColumn": 27,
+      "messageId": "carriedConditionArgumentPassed",
+      "message": "Call to `value.toPrecision` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `precision`, and this call passes something. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.",
+      "suggestions": [
+        {
+          "desc": "Bridge this with `try`/`catch`.",
+          "output": [
+            "/** @nothrow */",
+            "export function digitsOf(value: number): string {",
+            "  return value.toPrecision();",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function explicitlyNothing(value: number): string {",
+            "  return value.toPrecision(undefined);",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function toThreeDigits(value: number): string {",
+            "  try {",
+            "    return value.toPrecision(3);",
+            "  } catch {}",
+            "}",
+            ""
+          ]
+        }
+      ]
+    }
+  ]
+}

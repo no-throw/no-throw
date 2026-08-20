@@ -1,0 +1,18 @@
+The `preset` arm, which is `configs.recommended` dropped into the target's own
+config untouched. It does not load, so it has no timings; this is the whole of
+its result. Filed as #89.
+
+$ cat dogfood.preset.eslint.config.mjs
+import base from "./eslint.config.mjs";
+import nothrow from "file:///C:/Users/rgott/Projects/no-throw/.claude/worktrees/sharp-mclean-0bc7b6/packages/eslint-plugin/dist/index.js";
+
+export default [...base, nothrow.configs.recommended];
+
+$ node node_modules/eslint/bin/eslint.js --config dogfood.preset.eslint.config.mjs src/compiler/corePublic.ts
+
+
+Oops! Something went wrong! :(
+
+ESLint: 10.1.0
+
+ConfigError: Config "nothrow/recommended": Key "plugins": Cannot redefine plugin "@typescript-eslint".

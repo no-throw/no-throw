@@ -5,8 +5,8 @@
       "file": "src/index.ts",
       "line": 14,
       "column": 3,
-      "endLine": 16,
-      "endColumn": 5,
+      "endLine": 14,
+      "endColumn": 9,
       "messageId": "conditionArgumentThrowing",
       "message": "Call to `eachOf` escapes this `@nothrow` function: it is non-throwing given `cb`, and the argument passed for `cb` is throwing — its body was analyzed and can throw. `eachOf` enters `cb` at src/index.ts:2. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `cb`."
     }

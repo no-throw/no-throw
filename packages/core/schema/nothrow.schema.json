@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://midnightdesign.github.io/no-throw/nothrow.schema.json",
+  "$id": "https://no-throw.github.io/no-throw/schema/v1/nothrow.schema.json",
   "title": "no-throw manifest",
   "description": "Colors a package's exported surface. `nothrow.json` sits beside a package's `package.json`; the same shape minus `files` and `package`, nested under a `packages` key, is `nothrow.overrides.json`. Readers ignore unknown fields, and absence of a fact always means the strict reading.",
   "type": "object",
@@ -31,11 +31,11 @@
     },
     "subpath": {
       "type": "object",
-      "patternProperties": { "^[A-Za-z_$][A-Za-z0-9_$]*([.#][A-Za-z_$][A-Za-z0-9_$]*)*$": { "$ref": "#/$defs/entry" } },
+      "patternProperties": { "^[A-Za-z_$][A-Za-z0-9_$]*([.#](new\\(\\)|\\(\\)|[A-Za-z_$][A-Za-z0-9_$]*))*$": { "$ref": "#/$defs/entry" } },
       "additionalProperties": false
     },
     "entry": {
-      "description": "One symbol, covering all of its overloads. Keys are public export names post-aliasing, in a strict JSDoc-namepath subset.",
+      "description": "One symbol, covering all of its overloads. Keys are public export names post-aliasing, in a strict JSDoc-namepath subset: `name`, then `#` for an instance member and `.` for a static or namespace one. Two members have no name of their own and are keyed `()` for a call signature and `new()` for a construct signature or a class constructor — never `new`, which a real property may already be called.",
       "type": "object",
       "properties": {
         "color": { "$ref": "#/$defs/color" },
@@ -44,7 +44,7 @@
           "type": "boolean"
         },
         "conditions": {
-          "description": "The access paths over this symbol's own parameters it is non-throwing given. Absence means maximally conditioned; unconditional cleanliness is recorded positively as [].",
+          "description": "The preconditions on this symbol's own parameters it is non-throwing given. Absence means maximally conditioned; unconditional cleanliness is recorded positively as [].",
           "type": "array",
           "items": { "$ref": "#/$defs/conditionPath" }
         },
@@ -57,9 +57,9 @@
     },
     "color": { "enum": ["throwing", "non-throwing"] },
     "conditionPath": {
-      "description": "Root `param<N>`, then `.member`, `[]` for element access, `.@@name` for a well-known symbol. The grammar is closed.",
+      "description": "One precondition on a parameter position. An access path — root `param<N>`, then `.member`, `[]` for element access, `.@@name` for a well-known symbol — says the symbol is non-throwing given whatever reaches there is. `param<N>=nullish` and `param<N>=undefined` say the opposite: it is non-throwing given nothing reaches the position, which is how a hazard guarded by an early return on an absent argument is stated. The two differ in one spelling — both admit an omitted argument and `undefined`, and only `=nullish` admits `null` — so state the one the guard you are describing actually writes. The grammar is closed, so a reader that does not know a form floors the entry rather than dropping the condition it holds.",
       "type": "string",
-      "pattern": "^param(0|[1-9][0-9]*)(\\[\\]|\\.@@[A-Za-z_$][A-Za-z0-9_$]*|\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"
+      "pattern": "^param(0|[1-9][0-9]*)(=nullish|=undefined|(\\[\\]|\\.@@[A-Za-z_$][A-Za-z0-9_$]*|\\.[A-Za-z_$][A-Za-z0-9_$]*)*)$"
     },
     "accessor": {
       "description": "`false` is a positive record that a declared property really is data. Absence is not that record.",

@@ -1,0 +1,14 @@
+{
+  "description": "The drift guarantee, asserted as behavior: a lib member the baseline states no color for floors. `WeakRef.prototype.deref` is one — the gate cannot construct a `WeakRef` to probe, and an unprobed clean claim ships with its color absent rather than asserted — so `reference.deref()` is reported, and a TypeScript release landing ahead of a `@no-throw/core` release floors its newcomers the same way.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 10,
+      "endLine": 3,
+      "endColumn": 25,
+      "messageId": "unbridgedCall",
+      "message": "Call to `reference.deref` escapes this `@nothrow` function: it is declared in a `lib.*.d.ts` the shipped standard-library baseline has no entry for, and that baseline is the only carrier able to reach one, so nothing colors it and it is assumed to throw. Your outs: bridge this call with `try`/`catch`; or, if it cannot throw, report it against the shipped standard-library baseline at https://github.com/no-throw/no-throw/issues — the other three carriers are keyed by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member."
+    }
+  ]
+}

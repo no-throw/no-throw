@@ -1,0 +1,4 @@
+{
+  "description": "Spread consults the source's own enumerable members, and a DOM element owns none of them — the libs describe built-in objects, whose accessors live on the prototype — so `{ ...el }` touches no getter at all.",
+  "diagnostics": []
+}

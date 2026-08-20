@@ -1,0 +1,45 @@
+{
+  "description": "The two absence forms differ in exactly one spelling, and a carrier states the one its guard actually writes. Both admit an omitted argument and `undefined`; only `=nullish` admits `null`, which is why `untilUndefined(null)` is reported and `untilNullish(null)` beside it is not. Without the second form an overlay author describing `if (x === undefined) return` had to write `=nullish` and claim more than the body does.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 15,
+      "column": 3,
+      "endLine": 15,
+      "endColumn": 17,
+      "messageId": "carriedConditionArgumentPassed",
+      "message": "Call to `untilUndefined` escapes this `@nothrow` function: the carrier that colors it declares it non-throwing given nothing is passed for `limit`, and this call passes something. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`.",
+      "suggestions": [
+        {
+          "desc": "Bridge this with `try`/`catch`.",
+          "output": [
+            "import { untilNullish, untilUndefined } from \"flaky\";",
+            "",
+            "/** @nothrow */",
+            "export function omitted(): void {",
+            "  untilUndefined();",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function spelledUndefined(): void {",
+            "  untilUndefined(undefined);",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function spelledNull(): void {",
+            "  try {",
+            "    untilUndefined(null);",
+            "  } catch {}",
+            "}",
+            "",
+            "/** @nothrow */",
+            "export function nullishTakesNull(): void {",
+            "  untilNullish(null);",
+            "}",
+            ""
+          ]
+        }
+      ]
+    }
+  ]
+}

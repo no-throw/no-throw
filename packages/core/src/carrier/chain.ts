@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { baselineRung } from "../baseline/rung.js";
 import { hasDeclaredMark } from "../marks.js";
 import type { TypeFacts } from "../type-facts.js";
 import type { ColorTable, ColorTables, ManifestEntry } from "./document.js";
@@ -38,6 +39,13 @@ export type CarrierAnswer =
  */
 export interface CarrierQuery {
   readonly declaration: ts.Declaration;
+  /**
+   * What the program knows about the declaration beyond where it was written.
+   * A rung needs it wherever one declaration is not the whole member — a lib
+   * type the project augments has two, and which one arrives here is overload
+   * resolution's business rather than a fact about the member.
+   */
+  readonly facts: TypeFacts;
   /** The package the declaration ships in. */
   readonly home: PackageHome | undefined;
   /** The package the file being analyzed ships in. */
@@ -60,12 +68,17 @@ export type CarrierRung = (query: CarrierQuery) => CarrierAnswer | undefined;
  * The opaque-resolution seam. Everything the engine cannot read a body for
  * comes through here, and precedence *is* the order of the rungs — there is no
  * separate precedence engine to keep in step with them.
- *
- * The baseline goes behind the three composed here, as one more `CarrierRung`
- * and nothing else.
  */
 export interface Carrier {
   answerFor(declaration: ts.Declaration): CarrierAnswer | undefined;
+  /**
+   * Where the published surface reaches the declaration, if it reaches it —
+   * whether a consumer *could* have keyed it, which is a different question
+   * from whether anybody did. A caller deciding to ask about something else
+   * instead needs the first: a key nobody wrote is still that member's key,
+   * and reaching past it would answer for one member out of another's entry.
+   */
+  keyFor(declaration: ts.Declaration): ExportKey | undefined;
 }
 
 export function createCarrier(
@@ -74,36 +87,65 @@ export function createCarrier(
   facts: TypeFacts,
 ): Carrier {
   const asking = packageHomeOf(sourceFile.fileName);
+  // The one rung whose file belongs to the project doing the asking, so it is
+  // read once here rather than per query — and a file this release cannot
+  // honor therefore refuses before any declaration is looked up, rather than
+  // at whichever call happened to reach the chain first.
+  const rungs = [overriddenBy(overridesIn(asking)), ...RUNGS];
+
   const answers = new Map<ts.Declaration, CarrierAnswer | undefined>();
+
+  interface Located {
+    readonly home: PackageHome | undefined;
+    key(): ExportKey | undefined;
+  }
+  const located = new Map<ts.Declaration, Located>();
+
+  // Where the declaration ships and what its package publishes it as, which
+  // both questions below need and neither owns. The home is a walk up the
+  // file's directories; the key is a walk of the package's whole export
+  // surface, so it is asked at most once per declaration and only by a caller
+  // that has something to look it up in. Absence is an answer, so the flag
+  // rather than the value is what records that it has been asked.
+  const locate = (declaration: ts.Declaration): Located => {
+    const known = located.get(declaration);
+    if (known !== undefined) return known;
+
+    const home = packageHomeOf(declaration.getSourceFile().fileName);
+    let asked = false;
+    let key: ExportKey | undefined;
+    const at: Located = {
+      home,
+      key: () => {
+        if (!asked) {
+          asked = true;
+          key =
+            home === undefined
+              ? undefined
+              : exportSurfaceOf(home, program, facts).keyOf(declaration);
+        }
+        return key;
+      },
+    };
+    located.set(declaration, at);
+    return at;
+  };
 
   return {
     answerFor(declaration) {
       if (answers.has(declaration)) return answers.get(declaration);
 
-      const home = packageHomeOf(declaration.getSourceFile().fileName);
-      // Asked at most once per declaration, and only by a rung that has
-      // something to look the key up in. Absence is an answer, so the flag
-      // rather than the value is what records that it has been asked.
-      let asked = false;
-      let key: ExportKey | undefined;
+      const { home, key } = locate(declaration);
       const query: CarrierQuery = {
         declaration,
+        facts,
         home,
         asking,
-        key: () => {
-          if (!asked) {
-            asked = true;
-            key =
-              home === undefined
-                ? undefined
-                : exportSurfaceOf(home, program, facts).keyOf(declaration);
-          }
-          return key;
-        },
+        key,
       };
 
       let answer: CarrierAnswer | undefined;
-      for (const rung of RUNGS) {
+      for (const rung of rungs) {
         answer = rung(query);
         if (answer !== undefined) break;
       }
@@ -111,6 +153,7 @@ export function createCarrier(
       answers.set(declaration, answer);
       return answer;
     },
+    keyFor: (declaration) => locate(declaration).key(),
   };
 }
 
@@ -119,8 +162,9 @@ export function createCarrier(
  * makes the floor's outs a promise rather than a suggestion: whatever nobody
  * else has colored, you can color here, and nothing outranks you.
  */
-const overridden: CarrierRung = (query) =>
-  answerFrom(tableFor(overridesIn(query.asking), query.home), query);
+function overriddenBy(overrides: ColorTables): CarrierRung {
+  return (query) => answerFrom(tableFor(overrides, query.home), query);
+}
 
 /**
  * What somebody else published about the package. Matched by the overlay's
@@ -204,5 +248,8 @@ const shipped: CarrierRung = (query) => {
     : undefined;
 };
 
-/** The chain, in precedence order. First answer wins, per key. */
-const RUNGS: readonly CarrierRung[] = [overridden, overlaid, shipped];
+/**
+ * The chain below the overrides, in precedence order. First answer wins, per
+ * key. The overrides rung is built per carrier and sits above these.
+ */
+const RUNGS: readonly CarrierRung[] = [overlaid, shipped, baselineRung];

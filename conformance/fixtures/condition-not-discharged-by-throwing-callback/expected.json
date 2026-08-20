@@ -5,8 +5,8 @@
       "file": "src/index.ts",
       "line": 12,
       "column": 3,
-      "endLine": 14,
-      "endColumn": 5,
+      "endLine": 12,
+      "endColumn": 9,
       "messageId": "conditionArgumentThrowing",
       "message": "Call to `myEach` escapes this `@nothrow` function: it is non-throwing given `cb`, and the argument passed for `cb` is throwing — its body was analyzed and can throw. `myEach` enters `cb` at src/index.ts:7. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `cb`."
     }

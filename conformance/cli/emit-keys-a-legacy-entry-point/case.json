@@ -1,0 +1,14 @@
+{
+  "description": "A package predating `exports` names its entry point the way npm has always spelled it — `\"main\": \"out/index.js\"`, no leading `./`. That is the only place emit can read a published key off, so a reader holding the legacy trio to the `exports` spelling would key nothing at all and write an empty `exports` while exiting 0: a manifest that publishes a package's colors and colors none of it.",
+  "steps": [
+    { "emit": [], "expect": "ok" },
+    {
+      "entries": {
+        ".": {
+          "clamp": { "color": "non-throwing", "conditions": [] }
+        }
+      }
+    },
+    { "consumer": "consumer" }
+  ]
+}

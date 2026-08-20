@@ -8,14 +8,14 @@
       "endLine": 1,
       "endColumn": 13,
       "messageId": "ineffectiveMark",
-      "message": "`@nothrow` binds to nothing here. The nearest valid site is the method `fail` on line 3. A mark binds on a function declaration, a single-declarator variable statement with a function or arrow initializer, a class method or constructor, an accessor, or an object-literal method or function-valued property."
+      "message": "`@nothrow` binds to nothing here. The nearest valid site is the method `fail` on line 3. A mark binds on a declaration whose own body — or whose initializer, read through parentheses, `as` and `satisfies` — is exactly one function literal."
     },
     {
       "file": "src/index.ts",
       "line": 12,
       "column": 3,
       "endLine": 12,
-      "endColumn": 17,
+      "endColumn": 15,
       "messageId": "inferredThrowingCall",
       "message": "Call to `service.fail` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `service.fail` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
     }

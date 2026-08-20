@@ -1,0 +1,14 @@
+{
+  "description": "A dual-published package drops a `{ \"type\": \"module\" }` file beside its ESM build, and every declaration it ships is under it. That file names no package, so it marks a module *format* scope and not a package boundary — the walk that decides which npm package a declaration ships in reads past it to the one that names itself, or a carrier written under `dual` would match nothing `dual` declares.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 10,
+      "column": 3,
+      "endLine": 10,
+      "endColumn": 7,
+      "messageId": "unbridgedCall",
+      "message": "Call to `boom` escapes this `@nothrow` function: it is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, or an override — so calling it can throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "description": "The mark on a field is the same mark to a caller: `isMarkedFunction` has to accept every position the binder does, or the two disagree about one file — the field is reported for lying while its caller has its body inferred behind its back.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 4,
+      "column": 5,
+      "endLine": 4,
+      "endColumn": 18,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { ColorTable, ColorTables } from "./document.js";
-import { manifestAt } from "./manifest.js";
+import { manifestAt, type ManifestState } from "./manifest.js";
 import { join, normalize, packageHomeOf, type PackageHome } from "./packages.js";
 
 const EMPTY: ColorTables = new Map();
@@ -12,7 +12,7 @@ const scans = new Map<string, ColorTables>();
  * The overlays a project has installed, by the npm package each one colors.
  *
  * An overlay is matched by its manifest's `package` field and by nothing else.
- * The `@nothrow/foo__bar` spelling a scoped target gets is cosmetic convention
+ * The `@no-throw/foo__bar` spelling a scoped target gets is cosmetic convention
  * — npm has no nested scopes, so the name has to be mangled somehow — and a
  * resolver that parsed it would be deriving a fact it can simply read.
  *
@@ -36,12 +36,34 @@ export function overlaysFor(asking: PackageHome | undefined): ColorTables {
   return found;
 }
 
+/** One installed overlay, as something to report on rather than to ask. */
+export interface InstalledOverlay {
+  readonly home: PackageHome;
+  readonly state: ManifestState;
+}
+
+/**
+ * Every `@no-throw/*` package a project has installed, with what its
+ * `nothrow.json` came to — including the ones the scan passed over, which is
+ * the half a resolver never has to name and a reader checking their setup
+ * always does.
+ */
+export function installedOverlaysFor(
+  asking: PackageHome | undefined,
+): readonly InstalledOverlay[] {
+  if (asking === undefined) return [];
+  return installedOverlays(asking.directory).map((home) => ({
+    home,
+    state: manifestAt(home),
+  }));
+}
+
 function scan(directory: string): ColorTables {
   const overlays = new Map<string, ColorTable>();
 
   for (const home of installedOverlays(directory)) {
     const state = manifestAt(home);
-    // A `@nothrow/*` package with no usable manifest colors nothing: the three
+    // A `@no-throw/*` package with no usable manifest colors nothing: the three
     // shipped packages are the ordinary case, and one written against a wire
     // version this release cannot read has no field it may be trusted to name
     // a target in. Either way the rungs below it answer, which they are sound
@@ -53,12 +75,12 @@ function scan(directory: string): ColorTables {
   return overlays;
 }
 
-/** Every `@nothrow/*` package on the `node_modules` chain, nearest first. */
+/** Every `@no-throw/*` package on the `node_modules` chain, nearest first. */
 function installedOverlays(directory: string): readonly PackageHome[] {
   const found: PackageHome[] = [];
 
   for (let current = directory; ; current = dirname(current)) {
-    const scope = join(current, "node_modules/@nothrow");
+    const scope = join(current, "node_modules/@no-throw");
     for (const name of entriesIn(scope)) {
       const home = homeExactlyAt(join(scope, name));
       if (home !== undefined) found.push(home);

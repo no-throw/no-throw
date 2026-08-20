@@ -4,11 +4,11 @@
     {
       "file": "src/index.ts",
       "line": 11,
-      "column": 10,
+      "column": 14,
       "endLine": 11,
-      "endColumn": 22,
-      "messageId": "inferredThrowingCall",
-      "message": "Call to `Config` escapes this `@nothrow` function: its body was analyzed and can throw. Your outs: bridge this call with `try`/`catch`, or make `Config` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+      "endColumn": 20,
+      "messageId": "inferredThrowingConstruction",
+      "message": "Construction of `Config` escapes this `@nothrow` function: what runs — its field initializers and the `super()` it does not write — was analyzed and can throw. Your outs: bridge this construction with `try`/`catch`, or make `Config` non-throwing by declaring a constructor and marking that `@nothrow`, since a mark on a class binds to nothing."
     }
   ]
 }

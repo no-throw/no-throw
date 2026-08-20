@@ -5,8 +5,8 @@
       "file": "src/index.ts",
       "line": 29,
       "column": 3,
-      "endLine": 31,
-      "endColumn": 5,
+      "endLine": 29,
+      "endColumn": 7,
       "messageId": "conditionArgumentThrowing",
       "message": "Call to `walk` escapes this `@nothrow` function: it is non-throwing given `cb`, and the argument passed for `cb` is throwing — its body was analyzed and can throw. `walk` enters `cb` at src/index.ts:17. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `cb`."
     }

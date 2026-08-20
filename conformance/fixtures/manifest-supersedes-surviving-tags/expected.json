@@ -6,18 +6,18 @@
       "line": 5,
       "column": 10,
       "endLine": 5,
-      "endColumn": 25,
+      "endColumn": 19,
       "messageId": "unbridgedCall",
-      "message": "Call to `safeParse` escapes this `@nothrow` function: it carries a `@nothrow` tag that its package's own `nothrow.json` supersedes — a valid manifest answers for the whole package — and that manifest has no entry for it. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Call to `safeParse` escapes this `@nothrow` function: it carries a `@nothrow` tag that its package's own `nothrow.json` supersedes — a valid manifest answers for the whole package — and that manifest has no entry for it. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     },
     {
       "file": "src/index.ts",
       "line": 10,
       "column": 3,
       "endLine": 10,
-      "endColumn": 9,
+      "endColumn": 7,
       "messageId": "unbridgedCall",
-      "message": "Call to `boom` escapes this `@nothrow` function: it is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay or an override — so calling it can throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Call to `boom` escapes this `@nothrow` function: it is colored `throwing` by the carrier that answers for it — a shipped manifest, an overlay, or an override — so calling it can throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

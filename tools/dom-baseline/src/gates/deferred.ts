@@ -1,5 +1,5 @@
-import type { ConditionPath, DomMember, LibProgram } from "@nothrow/core/baseline";
-import { formatConditionPath } from "@nothrow/core/baseline";
+import type { ConditionPath, DomMember, LibProgram } from "@no-throw/core/baseline";
+import { formatConditionPath } from "@no-throw/core/baseline";
 
 import { Arbitrary } from "./arbitrary.js";
 import { receiverFor, type DomEnvironment } from "./environment.js";
@@ -73,7 +73,11 @@ export class DeferredProbe {
     member: DomMember,
     paramIndex: number,
   ): Promise<DeferredVerdict> {
-    const path = formatConditionPath({ paramIndex, segments: [] });
+    const path = formatConditionPath({
+      requires: "entered",
+      paramIndex,
+      segments: [],
+    });
     const verdict = (
       adjudication: Adjudication,
       evidence: string,

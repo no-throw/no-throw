@@ -1,3 +1,5 @@
+declare function decode(text: string): void;
+
 /** @nothrow */
 export function myEach<T>(xs: readonly T[], cb: (t: T) => void): void {
   for (let i = 0; i < xs.length; i += 1) cb(xs[i]);
@@ -5,5 +7,5 @@ export function myEach<T>(xs: readonly T[], cb: (t: T) => void): void {
 
 /** @nothrow */
 export function run(inputs: readonly string[]): void {
-  myEach(inputs, decodeURIComponent);
+  myEach(inputs, decode);
 }

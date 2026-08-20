@@ -1,4 +1,4 @@
-import type { DomMember } from "@nothrow/core/baseline";
+import { CONSTRUCT_SEGMENT, type DomMember } from "@no-throw/core/baseline";
 
 import type { IdlCorpus, IdlRow } from "./idl/corpus.js";
 
@@ -86,7 +86,8 @@ function idlRowFor(
   bases: ReadonlyMap<string, readonly string[]>,
   runtimeOwner: RuntimeOwner,
 ): IdlRow | undefined {
-  const wanted = member.name === "new" ? "constructor" : member.name;
+  const wanted =
+    member.name === CONSTRUCT_SEGMENT ? "constructor" : member.name;
   for (const owner of candidateOwners(member, corpus, bases, runtimeOwner)) {
     const rows = corpus.byMember.get(`${owner}.${wanted}`);
     if (rows === undefined) continue;
@@ -149,7 +150,7 @@ export function candidateOwners(
 }
 
 function fits(member: DomMember, row: IdlRow): boolean {
-  if (member.name === "new") return row.kind === "constructor";
+  if (member.name === CONSTRUCT_SEGMENT) return row.kind === "constructor";
   // An IDL constant is reachable from both the instance and the constructor, so
   // it fits either side; everything else has to agree on static-ness.
   if (row.kind === "const") return true;

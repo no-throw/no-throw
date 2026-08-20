@@ -107,12 +107,27 @@ export interface Step {
    * so without the chain such a site is unclassifiable prose.
    */
   readonly context: string;
+  /**
+   * The enclosing steps' text, outermost first: the conditions this step runs
+   * under. `context` folds these into one string for classification; a caller
+   * that has to know *what was already established* needs them apart.
+   */
+  readonly guards: readonly string[];
+  /**
+   * Where the step sits in the clause: the algorithm it belongs to, then its
+   * position in each list down to its own. Steps run in order within a list, so
+   * this is what says whether one step is *after* another rather than merely
+   * later in the flattened walk — two branches of an `If`/`Else` are both later
+   * than the `If`, and neither runs after the other.
+   */
+  readonly path: readonly number[];
   readonly index: number;
 }
 
 interface RawStep {
   readonly contentStart: number;
   readonly parent: RawStep | undefined;
+  readonly path: readonly number[];
   raw: string;
   text: string;
 }
@@ -121,9 +136,12 @@ const LIST_ITEM = /<(\/?)li\b[^>]*>/g;
 
 export function algorithmSteps(ownHtml: string): readonly Step[] {
   const raws: RawStep[] = [];
+  let algorithm = 0;
   for (const alg of ownHtml.matchAll(/<emu-alg>([\s\S]*?)<\/emu-alg>/g)) {
     const body = alg[1] ?? "";
     const stack: RawStep[] = [];
+    // How many steps each open list has taken, keyed by its owner's path.
+    const taken = new Map<string, number>();
     LIST_ITEM.lastIndex = 0;
     for (let tag = LIST_ITEM.exec(body); tag !== null; tag = LIST_ITEM.exec(body)) {
       if (tag[1] === "/") {
@@ -131,15 +149,21 @@ export function algorithmSteps(ownHtml: string): readonly Step[] {
         if (open !== undefined) open.raw = body.slice(open.contentStart, tag.index);
         continue;
       }
+      const parent = stack[stack.length - 1];
+      const list = (parent?.path ?? [algorithm]).join(".");
+      const position = taken.get(list) ?? 0;
+      taken.set(list, position + 1);
       const item: RawStep = {
         contentStart: tag.index + tag[0].length,
-        parent: stack[stack.length - 1],
+        parent,
+        path: [...(parent?.path ?? [algorithm]), position],
         raw: "",
         text: "",
       };
       raws.push(item);
       stack.push(item);
     }
+    algorithm++;
   }
 
   const steps: Step[] = [];
@@ -157,6 +181,8 @@ export function algorithmSteps(ownHtml: string): readonly Step[] {
       html,
       text: raw.text,
       context: ancestry.length === 0 ? raw.text : `${ancestry.join(" ")} ${raw.text}`,
+      guards: ancestry,
+      path: raw.path,
       index: steps.length,
     });
   }

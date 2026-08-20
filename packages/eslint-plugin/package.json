@@ -1,30 +1,49 @@
 {
-  "name": "@nothrow/eslint-plugin",
-  "version": "0.1.0",
+  "name": "@no-throw/eslint-plugin",
+  "version": "0.2.0",
   "type": "module",
   "description": "The ESLint adapter for no-throw. Contains no analysis.",
   "license": "MIT",
+  "keywords": [
+    "nothrow",
+    "no-throw",
+    "eslint",
+    "typescript",
+    "errors",
+    "exceptions",
+    "checked-exceptions"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/no-throw/no-throw.git",
+    "directory": "packages/eslint-plugin"
+  },
+  "homepage": "https://github.com/no-throw/no-throw#readme",
+  "bugs": "https://github.com/no-throw/no-throw/issues",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "files": [
+    "LICENSE",
     "dist"
   ],
   "dependencies": {
-    "@nothrow/core": "workspace:*",
+    "@no-throw/core": "workspace:*",
     "@typescript-eslint/utils": "^8.18.0"
   },
   "peerDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
     "eslint": "^9.0.0 || ^10.0.0",
-    "typescript": ">=5.0.0"
+    "typescript": ">=5.0.0 <7.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "@typescript-eslint/eslint-plugin": "^8.18.0",
     "eslint": "^9.17.0",
     "typescript": "^5.7.2"
   }

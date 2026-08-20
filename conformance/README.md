@@ -16,7 +16,7 @@ A fixture is a whole project, not a snippet:
 fixtures/tsconfig.base.json   what a fixture is compiled as unless it says otherwise
 fixtures/<name>/
   tsconfig.json     the project the fixture is analyzed as
-  expected.json     the diagnostics it must produce
+  expected.json     the diagnostics it must produce, or the refusal it must raise
   package.json      where the walk-up stops, for a fixture with dependencies
   nothrow.overrides.json   what the project asserts for itself
   src/**/*.ts       the code
@@ -26,7 +26,7 @@ fixtures/<name>/
     index.d.ts      what the consumer's program actually sees
     index.js        never analyzed, only hashed
     nothrow.json    the colors the package ships
-  node_modules/@nothrow/<overlay>/
+  node_modules/@no-throw/<overlay>/
     package.json    a name deliberately unlike its target's, since nothing reads it
     nothrow.json    the same shape, naming its target in `package`
 ```
@@ -49,16 +49,17 @@ line endings would fail every hash and turn the staleness fixtures into noise.
 Tampering is expressed the same way: the file simply differs from what the
 manifest recorded.
 
-Fixtures import nothing from `@nothrow/*` and contain no test-framework
+Fixtures import nothing from `@no-throw/*` and contain no test-framework
 constructs. They are what a user's project looks like.
 
-Until the standard-library baseline lands, every call into `lib.*.d.ts` floors,
-`new Error(…)` among them — so a fixture that wants to be green about something
-else keeps clear of `.trim()` and friends and throws a bare value, and one that
-wants a floor reaches for `JSON.parse`. Iterating a builtin is the same story:
-`for…of` over an array or a `Map` resolves to `lib.es2015.iterable.d.ts` and
-floors, so a fixture about something else walks an array by index, and one
-about iteration iterates a generator or an in-program iterable.
+The baseline colors `lib.*.d.ts`, so a fixture about something else can use the
+standard library as a user would: `JSON.parse` floors because it really throws,
+`s.trim()` and `for…of` over an array are green. Two shapes still cost a
+diagnostic and are worth avoiding in a fixture that is about something else —
+writing through an unnarrowable key (`xs[i] = v`, whose join reaches every
+accessor the receiver has) and the `map`/`filter`/`push` family, which ships
+throwing. A fixture that wants a bodyless floor rather than a carried one
+declares its own `declare function`, since nothing colors that.
 
 `expected.json`:
 
@@ -116,11 +117,42 @@ line endings a checkout happens to have are not part of it. An empty
 remedy the reader has to write by hand is not offered as an edit; omitting the
 key does not constrain the offer at all.
 
+`refuses` is what a fixture asserts when the run must not finish at all. Some
+things the engine reads are the project's own and cannot be fallen back from —
+a malformed `nothrow.overrides.json` is the one — and those stop everything
+rather than being reported per file. Each entry is text the refusal has to
+contain, so a fixture pins the sentence and not the machine-dependent path
+trailing it:
+
+```json
+{
+  "diagnostics": [],
+  "refuses": [
+    "`nothrow.overrides.json` cannot be read — it is not JSON"
+  ]
+}
+```
+
+A refusal is normative text like any diagnostic, so `check:docs` holds a
+README quotation to a fixture's `refuses` exactly as it holds one to a
+diagnostic's `message`. A fixture with no `refuses` that fails to run is a
+failure however it read.
+
 `config` says how the fixture is wired up, and defaults to `"rules"`: the driver
 turns each `nothrow` rule on by name. `"recommended"` installs the shipped
-preset instead — untouched, its own `files` scope included — so a fixture can
-assert what a user gets from the config they actually install, third-party rules
-in it and the files it declines to visit both.
+preset instead — untouched, its own `files` scope included, and handed the same
+typescript-eslint plugin object a consumer hands it — so a fixture can assert
+what a user gets from the config they actually install, third-party rules in it
+and the files it declines to visit both.
+
+What the preset does with a *wrong* argument is checked once, before any
+fixture: it must refuse an absent one, the `typescript-eslint` umbrella, a
+plugin without the float rule and something that is not an object at all, each
+time naming `tseslint.plugin`. That check lives beside the driver rather than in
+a fixture for the reason the driver exists — it is about the config a reader
+writes by hand, in the linter the driver knows about, and it exists before any
+project is on disk. A preset that quietly accepted the wrong object would put
+back the startup crash taking an argument exists to remove.
 
 Two properties hold across the whole suite rather than in any one fixture, and
 the driver turns a breach of either into a loud failure:
@@ -141,7 +173,7 @@ dependency's suggestion text here would assert nothing about us.
 ## The driver is thin, and swappable
 
 `src/driver-eslint.ts` runs a fixture through the real
-`@nothrow/eslint-plugin`, over the real typescript-eslint parser, and returns
+`@no-throw/eslint-plugin`, over the real typescript-eslint parser, and returns
 the diagnostics. It is the only part of the suite that knows a linter exists:
 driving the same fixtures through a standalone checker means writing a second
 driver, not touching a fixture.
@@ -155,11 +187,13 @@ against what it got — enough to act on from the CI log alone.
 
 ## The CLI, at the same seam
 
-`nothrow emit` is exercised as a **process over a package on disk**, never
-through an API. A case is a directory holding a `producer` — a whole npm
-package, source and built `dist` both, committed rather than built for the same
-reason a fixture's dependency is — and, where the case has one, a `consumer`
-project of the ordinary fixture shape.
+The binary is exercised as a **process over files on disk**, never through an
+API. An `emit` case is a directory holding a `producer` — a whole npm package,
+source and built `dist` both, committed rather than built for the same reason a
+fixture's dependency is — and, where the case has one, a `consumer` project of
+the ordinary fixture shape. A `check` case holds an ordinary project instead,
+carriers and dependencies and all, because what `check` reads is what a
+*consumer* wrote rather than what a publisher built.
 
 ```
 cli/<name>/
@@ -171,6 +205,7 @@ cli/<name>/
     dist/**         what a consumer resolves, and what the manifest hashes
   consumer/         a fixture project, with the producer as a dependency
     expected.json
+  <project>/        for a `check` case: a whole project, named by the step
 ```
 
 `case.json` is a list of steps, run in order against a copy of the case:
@@ -193,10 +228,37 @@ cli/<name>/
 `emit` runs the binary and holds its exit code to `ok`, `refused` or
 `cannot-run` — the last apart from the others, so a broken project cannot pass
 for a package that is merely unpublishable. `names` asserts what the output has
-to say, which is where the diagnostic contract for a refusal lives. `append`
-and `replace` are the changes `--check` has to notice — a rebuild that changed
-no declaration, and an edit to the source. `entries` asserts the facts of an
-emitted entry, because the wire format is the spec's and not the emitter's.
+to say, which is where the diagnostic contract for a refusal lives — and where
+the root README's quotations of it are held, since `scripts/check-docs.mjs`
+reads `names` the way it reads a fixture's `message`, so an entry may be a whole
+report rather than a fragment of one. `append` and `replace` are the changes
+`--check` has to notice — a rebuild that changed no declaration, and an edit to
+the source. `entries` asserts the facts of an emitted entry, because the wire
+format is the spec's and not the emitter's.
+
+`check` is the same shape one directory over: it runs `nothrow check` in the
+project named by `in` rather than in the producer, since the carriers it reads
+are a consumer's.
+
+```json
+{ "check": [], "in": "project", "expect": "refused", "names": ["reaches nothing"] }
+```
+
+`run` is the same shape again with nothing prepended: the whole argv, command
+word or none, in the workspace root. It is what reaches the invocations the
+tool answers for out of its own grammar rather than out of a project, which is
+where `--help` and an unknown command live.
+
+```json
+{ "run": ["--help"], "expect": "ok", "names": ["Usage:"] }
+```
+
+No step says which stream it expected, because none has a choice: exit code and
+stream are one fact in this tool — a run that succeeded says so on stdout, and a
+run that did not says so on stderr — so `expect` decides it, and every
+invocation is held to it. That is what separates help a reader asked for from a
+usage error announced at them, and `names` could never assert it: it holds what
+output contains, never which stream carried it.
 
 `consumer` is the one that matters: it installs the producer, emitted manifest
 and all, into the consumer's `node_modules` and runs that project through the
@@ -233,3 +295,22 @@ design.
 A superset property passes vacuously if the lever never moved, so the run also
 checks that turning inference off floored *something*. If it did not, the pass
 fails rather than reporting a green it did not earn.
+
+## The oxlint parity pass
+
+`conformance:oxlint` runs the `rules` fixtures a third time, through the real
+`oxlint` binary and `@no-throw/oxlint-plugin`, and holds both hosts to the
+same diagnostics at the same places with the same text — the claim that makes
+the adapters adapters. The four preset fixtures stay with the ESLint passes,
+since their subject is an ESLint installation shape, and refusals surface here
+as per-file plugin errors carrying the same text at the same non-zero exit.
+
+Two things oxlint's CLI output cannot carry are held another way. Its JSON has
+no messageId, so the driver recovers one by matching the message against the
+plugin's own catalog; and it has no suggestions, so the offer's *content*
+stays pinned by the ESLint passes while its *plumbing* gets probes of its own:
+`oxlint --fix` over a fixture with offers must change nothing, and
+`--fix-suggestions` — the reader accepting the offer — must produce exactly
+the file the fixture pins. Two hosting probes assert the diagnostics this host
+alone owes, for a file with no project above it and a file its nearest project
+leaves out — shapes no fixture can hold, because a fixture *is* a project.

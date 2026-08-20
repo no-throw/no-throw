@@ -1,12 +1,17 @@
 import ts from "typescript";
-import type { SymbolRef, TypeFacts } from "../type-facts.js";
+import { keySegment } from "../segments.js";
+import type { SymbolRef, TypeFacts, TypeRef } from "../type-facts.js";
 import { normalize, type PackageHome } from "./packages.js";
 
 /** Where a package's published surface reaches a declaration. */
 export interface ExportKey {
   /** The npm export subpath it is reached through. */
   readonly subpath: string;
-  /** A strict JSDoc-namepath subset: `name`, `Class#member`, `Class.static`. */
+  /**
+   * A strict JSDoc-namepath subset: `name`, `Class#member`, `Class.static`,
+   * plus the two segments for members with no name of their own —
+   * `Formatter#()` and `Wrapper#new()`.
+   */
   readonly symbolPath: string;
 }
 
@@ -21,6 +26,18 @@ export interface ExportKey {
  */
 export interface ExportSurface {
   keyOf(declaration: ts.Declaration): ExportKey | undefined;
+  /**
+   * Every symbol path a key lookup at this subpath can succeed with, sorted.
+   * The walk is the only thing that knows what a key could have been, so what
+   * an entry keyed at nothing should have said is read off it rather than
+   * guessed at — and read off the keys the walk *kept*, since a path it
+   * reached and then lost to first-path-wins is a path no lookup will find.
+   */
+  publishedAt(subpath: string): readonly string[];
+  /** The subpaths the walk reached anything through, sorted. */
+  subpaths(): readonly string[];
+  /** What a key reaches, which is what a rung would answer about. */
+  declarationsAt(subpath: string, symbolPath: string): readonly ts.Declaration[];
 }
 
 /**
@@ -68,14 +85,108 @@ export function surfaceOver(
       const sourceFile = sourceFileAt(file, program);
       if (sourceFile === undefined) continue;
       for (const module of modulesIn(sourceFile, facts)) {
-        for (const exported of facts.exportsOfModule(module)) {
-          record(keys, facts, subpath, facts.nameOf(exported), exported, 0);
+        for (const [name, exported] of publishedBy(module, facts)) {
+          record(keys, facts, subpath, name, exported, 0);
         }
       }
     }
   }
 
-  return { keyOf: (declaration) => keys.get(declaration) };
+  // Inverted from the keys themselves rather than collected during the walk:
+  // what a lookup can find is exactly what survived first-path-wins, and a
+  // path the walk reached and then lost would be a key nothing resolves.
+  const reached = new Map<string, Map<string, ts.Declaration[]>>();
+  for (const [declaration, { subpath, symbolPath }] of keys) {
+    const at = reached.get(subpath) ?? new Map<string, ts.Declaration[]>();
+    reached.set(subpath, at);
+    at.set(symbolPath, [...(at.get(symbolPath) ?? []), declaration]);
+  }
+
+  return {
+    keyOf: (declaration) => {
+      const direct = keys.get(declaration);
+      if (direct !== undefined) return direct;
+
+      const holder = typeHolderOf(declaration);
+      return holder === undefined ? undefined : keys.get(holder);
+    },
+    publishedAt: (subpath) =>
+      [...(reached.get(subpath)?.keys() ?? [])].sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    subpaths: () => [...reached.keys()].sort((a, b) => a.localeCompare(b)),
+    declarationsAt: (subpath, symbolPath) =>
+      reached.get(subpath)?.get(symbolPath) ?? [],
+  };
+}
+
+/**
+ * The names a module publishes, each with the symbol behind it.
+ *
+ * `export =` is the shape a CommonJS package's declarations take, and the
+ * checker reports no exports at all for one: there is no export table to walk,
+ * because the module *is* the exported value. What a consumer can name through
+ * it is what that value's type carries, so those are its published names —
+ * `m.red` reached the same way `export const red` would have been.
+ */
+function publishedBy(
+  module: SymbolRef,
+  facts: TypeFacts,
+): readonly (readonly [string, SymbolRef])[] {
+  const assigned = exportedValueOf(module, facts);
+  if (assigned !== undefined) {
+    return facts
+      .propertiesOfType(assigned)
+      .map((property) => [facts.nameOf(property), property] as const);
+  }
+  return facts
+    .exportsOfModule(module)
+    .map((exported) => [facts.nameOf(exported), exported] as const);
+}
+
+/** The type of what `export =` assigned, where the module assigned one. */
+function exportedValueOf(
+  module: SymbolRef,
+  facts: TypeFacts,
+): TypeRef | undefined {
+  const assignment = facts
+    .exportsOfSymbol(module)
+    .get(ts.InternalSymbolName.ExportEquals);
+  if (assignment === undefined) return undefined;
+
+  const resolved = aliasedSymbol(assignment, facts);
+  const at =
+    facts.valueDeclarationOf(resolved) ?? facts.declarationsOf(resolved)[0];
+  return at === undefined ? undefined : facts.typeOfSymbolAt(resolved, at);
+}
+
+/** What an alias names, and everything else as it stands. */
+function aliasedSymbol(symbol: SymbolRef, facts: TypeFacts): SymbolRef {
+  return facts.isAlias(symbol) ? facts.aliasedSymbol(symbol) : symbol;
+}
+
+/**
+ * The declaration a bare function type is the type *of*. Declaration emit turns
+ * a default-exported arrow and an arrow-valued field alike into a `const` or a
+ * property whose type is a function type, and that type node is what the
+ * checker resolves a call to. What the surface publishes is the declaration, so
+ * the type node has to reach it, or a key emit wrote could never be looked up.
+ *
+ * Only a declaration's own type counts: a function type nested inside a wider
+ * one is not something the surface reaches.
+ */
+function typeHolderOf(node: ts.Declaration): ts.Declaration | undefined {
+  if (!ts.isFunctionTypeNode(node) && !ts.isConstructorTypeNode(node)) {
+    return undefined;
+  }
+
+  const { parent } = node;
+  return (ts.isVariableDeclaration(parent) ||
+    ts.isPropertyDeclaration(parent) ||
+    ts.isPropertySignature(parent)) &&
+    parent.type === node
+    ? parent
+    : undefined;
 }
 
 /**
@@ -91,7 +202,7 @@ function record(
   symbol: SymbolRef,
   depth: number,
 ): void {
-  const resolved = facts.isAlias(symbol) ? facts.aliasedSymbol(symbol) : symbol;
+  const resolved = aliasedSymbol(symbol, facts);
 
   for (const declaration of facts.declarationsOf(resolved)) {
     // First path wins: a symbol two entry points both publish is one symbol
@@ -102,25 +213,22 @@ function record(
   if (depth >= MAX_DEPTH) return;
 
   for (const [name, member] of facts.membersOfSymbol(resolved)) {
-    if (isWritable(name)) {
-      record(keys, facts, subpath, `${symbolPath}#${name}`, member, depth + 1);
+    const segment = keySegment(name);
+    if (segment !== undefined) {
+      const path = `${symbolPath}#${segment}`;
+      record(keys, facts, subpath, path, member, depth + 1);
     }
   }
   // A class's statics and a namespace's contents are the same table, and both
   // are reached with a dot.
   for (const [name, member] of facts.exportsOfSymbol(resolved)) {
-    if (isWritable(name)) {
-      record(keys, facts, subpath, `${symbolPath}.${name}`, member, depth + 1);
+    const segment = keySegment(name);
+    if (segment !== undefined) {
+      const path = `${symbolPath}.${segment}`;
+      record(keys, facts, subpath, path, member, depth + 1);
     }
   }
 }
-
-/** A member the key grammar can hold: no computed names, no symbol members. */
-function isWritable(name: string): boolean {
-  return SEGMENT.test(name);
-}
-
-const SEGMENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/u;
 
 /**
  * The modules a file publishes. A file with top-level `export`s is one; a
@@ -163,5 +271,37 @@ function sourceFileAt(
     );
     files.set(program, index);
   }
-  return index.get(file);
+
+  for (const spelling of spellingsOf(file)) {
+    const found = index.get(spelling);
+    if (found !== undefined) return found;
+  }
+  return undefined;
 }
+
+/**
+ * How a program could be holding this entry point.
+ *
+ * A `package.json` names what a *runtime* resolves, and most of npm names
+ * nothing else — `"exports": { ".": "./index.js" }` beside an `index.d.ts` is
+ * the ordinary published shape. What a program holds for such a package is the
+ * declaration file, never the JavaScript, so an entry point is also asked for
+ * under the declaration extension TypeScript pairs it with: the same mapping
+ * module resolution itself applies, and the only spelling of that file the
+ * program has.
+ */
+function spellingsOf(file: string): readonly string[] {
+  for (const [runtime, declaration] of DECLARATIONS_FOR) {
+    if (file.endsWith(runtime)) {
+      return [file, `${file.slice(0, -runtime.length)}${declaration}`];
+    }
+  }
+  return [file];
+}
+
+const DECLARATIONS_FOR: readonly (readonly [string, string])[] = [
+  [".js", ".d.ts"],
+  [".jsx", ".d.ts"],
+  [".mjs", ".d.mts"],
+  [".cjs", ".d.cts"],
+];

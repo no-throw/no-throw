@@ -8,7 +8,7 @@
       "endLine": 7,
       "endColumn": 18,
       "messageId": "unbridgedHiddenTransfer",
-      "message": "Coercing `loose` to a primitive escapes this `@nothrow` function: the checker cannot resolve `loose` to a declaration, so nothing can say whether a body runs here. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Coercing `loose` to a primitive escapes this `@nothrow` function: the checker cannot resolve `loose` to a declaration, so nothing can say whether a body runs here. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     },
     {
       "file": "src/index.ts",
@@ -17,7 +17,7 @@
       "endLine": 12,
       "endColumn": 19,
       "messageId": "unbridgedHiddenTransfer",
-      "message": "Coercing `opaque` to a primitive escapes this `@nothrow` function: the checker cannot resolve `opaque` to a declaration, so nothing can say whether a body runs here. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Coercing `opaque` to a primitive escapes this `@nothrow` function: the checker cannot resolve `opaque` to a declaration, so nothing can say whether a body runs here. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     },
     {
       "file": "src/index.ts",
@@ -26,7 +26,7 @@
       "endLine": 17,
       "endColumn": 21,
       "messageId": "unbridgedHiddenTransfer",
-      "message": "Reading `loose.value` escapes this `@nothrow` function: the checker cannot resolve `loose.value` to a declaration, so nothing can say whether a body runs here. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Reading `loose.value` escapes this `@nothrow` function: the checker cannot resolve `loose.value` to a declaration, so nothing can say whether a body runs here. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     },
     {
       "file": "src/index.ts",
@@ -35,7 +35,7 @@
       "endLine": 22,
       "endColumn": 22,
       "messageId": "unbridgedHiddenTransfer",
-      "message": "Coercing `loose` to a primitive escapes this `@nothrow` function: the checker cannot resolve `loose` to a declaration, so nothing can say whether a body runs here. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@nothrow/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+      "message": "Coercing `loose` to a primitive escapes this `@nothrow` function: the checker cannot resolve `loose` to a declaration, so nothing can say whether a body runs here. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
     }
   ]
 }

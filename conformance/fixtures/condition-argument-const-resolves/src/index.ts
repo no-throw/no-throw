@@ -10,7 +10,7 @@ export function run(inputs: readonly string[]): void {
 }
 
 function record(text: string): void {
-  seen[seen.length] = text;
+  seen.last = text;
 }
 
-const seen: string[] = [];
+const seen = { last: "" };

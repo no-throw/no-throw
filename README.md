@@ -1,529 +1,633 @@
-# no-throw
+<h1 align="center">no-throw</h1>
 
-`no-throw` colors every function **throwing** or **non-throwing** and statically
-enforces that no throw escapes a non-throwing one.
+<p align="center">
+  <em>Statically enforce that no <code>throw</code> escapes a function marked <code>@nothrow</code>.</em>
+</p>
 
-Throwing is the default; non-throwing is opt-in. You mark a function
-`/** @nothrow */` and the tool holds you to it.
+<p align="center">
+  <a href="https://github.com/no-throw/no-throw/actions/workflows/ci.yml"><img src="https://github.com/no-throw/no-throw/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/@no-throw/eslint-plugin"><img src="https://img.shields.io/npm/v/@no-throw/eslint-plugin.svg" alt="npm version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/npm/l/@no-throw/eslint-plugin.svg" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#the-rules">Rules</a> ·
+  <a href="#what-counts-as-an-escape">What counts as an escape</a> ·
+  <a href="#async-one-color-over-the-whole-surface">Async</a> ·
+  <a href="#carriers-coloring-code-you-did-not-write">Carriers</a> ·
+  <a href="#the-cli">CLI</a>
+</p>
+
+---
+
+JavaScript has no checked exceptions and no way to ask whether a function throws.
+`no-throw` adds one claim you can make about a function — `/** @nothrow */` — and
+enforces it: every path out of that body is checked, and anything that could
+transfer control out of it as an exception is reported where it happens.
 
 ```ts
 /** @nothrow */
-export function fail(): void {
-  throw new Error("boom"); // Uncaught `throw` escapes this `@nothrow` function.
-}
-
-/** @nothrow */
-export function attempt(): void {
-  try {
-    throw new Error("boom");
-  } catch {
-    return; // bridged — the throw became a returned value
-  }
-}
-
-/** @nothrow */
 export function parse(text: string): unknown {
-  return JSON.parse(text); // Call to `JSON.parse` escapes this `@nothrow`
-                           // function: … Your outs, in precedence order: …
+  return JSON.parse(text); // ← reported: JSON.parse can throw
+}
+
+/** @nothrow */
+export function parse(text: string): Result<unknown> {
+  try {
+    return { ok: true, value: JSON.parse(text) };
+  } catch (error) {
+    return { ok: false, error }; // ← clean
+  }
 }
 ```
 
-**CI is where the guarantee lives; the editor is feedback.** In an editor, a
-diagnostic whose remedy is the bridge offers it as a suggestion — one click
-wraps the statement in `try`/`catch`, or in `try { await … } catch` where what
-escapes is a rejection. It is never an autofix: a bridge changes what your
-program does with an error, so `--fix` must never make that choice for you.
+The mark is a claim about a body, so it is always verified where the body is
+visible. It is never taken on faith and never inferred onto your API for you:
+you write it, and CI holds you to it.
 
-## Wiring it up
+## Why
 
-The rules are type-aware, so they need typescript-eslint's parser and a
-project:
+A `throw` is a non-local jump the type system does not model. Nothing in a
+signature says whether calling it can unwind your stack, so the only way to find
+out is to read the callee, and the callee's callees, forever — and the answer
+changes without any signature changing. In practice that means one of two
+outcomes: `try`/`catch` scattered defensively over calls that never throw, or a
+process that dies in production on a path nobody knew existed.
+
+Type-level `Result` libraries answer this by changing every signature in the
+program, which works and is a rewrite. `no-throw` answers it by leaving your
+signatures alone and adding a claim beside them:
+
+- **You choose the surface.** Marking is opt-in, function by function. An
+  unmarked function is unconstrained, so adoption never has a big-bang step.
+- **The claim is whole.** `@nothrow` means *no exception leaves this function* —
+  not "no `throw` statement in this body". A call that can throw, an iterator
+  that can throw while you consume it, a getter that runs on property access, an
+  implicit `toString`, a rejected promise you `await`: all of it is the same
+  invariant, and all of it is one rule.
+- **Everything is reported where you can act on it.** Every diagnostic names
+  what floored, why, and what your outs are, in the message itself — because the
+  CI log is the channel that survives into code review.
+
+What it does not do: it will not tell you *which* error a function throws, and
+it has no opinion about how you represent failure once you have caught it. It
+answers exactly one question, at compile time, for the functions you point it at.
+
+## Requirements
+
+| | |
+| --- | --- |
+| Node.js | >= 20.11 |
+| TypeScript | >= 5.0 < 7.0 |
+| ESLint | ^9 or ^10, flat config |
+| typescript-eslint | type-aware linting must be on |
+
+Every rule here is type-aware: the analysis runs off the same `ts.Program` your
+editor and `tsc` already build.
+
+The ESLint rows are the ESLint host's. The same rules load into oxlint —
+`^1.78`, no ESLint and no typescript-eslint installed — and the conformance
+suite holds both hosts to the same diagnostics; see [hosting in
+oxlint](#hosting-in-oxlint).
+
+## Quick start
+
+### 1. Install the preset
+
+```bash
+npm install --save-dev @no-throw/eslint-plugin
+```
 
 ```js
-// eslint.config.js
-import nothrow from "@nothrow/eslint-plugin";
+// eslint.config.mjs
 import tseslint from "typescript-eslint";
+import nothrow from "@no-throw/eslint-plugin";
 
 export default [
-  {
-    files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+  ...tseslint.config({
     languageOptions: {
-      parser: tseslint.parser,
-      parserOptions: { projectService: true },
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
-  },
-  nothrow.configs.recommended,
+  }),
+  nothrow.configs.recommended(tseslint.plugin),
 ];
 ```
 
-The preset carries that same `files` scope itself, so it sits at the end of the
-array unscoped and `eslint .` is safe: the `eslint.config.js` you just wrote is
-never handed to a type-aware rule. Keep the parser block in agreement with it.
-TypeScript the preset reaches but the parser does not falls to ESLint's default
-parser and crashes the same way; TypeScript the parser reaches that no
-`tsconfig.json` includes is a parse error, which is `projectService`'s business
-to settle and not ours.
+The preset is a **function taking typescript-eslint's plugin object**, and that
+is not ceremony. It registers a plugin under `@typescript-eslint`, and ESLint
+refuses a namespace registered twice with two different objects — so it uses the
+copy your config already has rather than resolving one of its own. Hand it the
+wrong thing and it says so, by name, before ESLint ever sees a config.
 
-`configs.recommended` is the whole contract, all at `error`:
+The preset turns on `nothrow/no-escaping-throw`, `nothrow/valid-mark` and
+`@typescript-eslint/no-floating-promises`, all as errors, and carries its own
+`files` scope (`.ts`, `.tsx`, `.mts`, `.cts`). It can sit before or after your
+own typescript-eslint config; order is not load-bearing. Everything is an error
+because CI is where the guarantee lives — a warning enforces nothing.
 
-| rule | what it holds you to |
-| --- | --- |
-| `nothrow/no-escaping-throw` | the entire invariant — no throw escapes a marked function |
-| `nothrow/valid-mark` | every `@nothrow` you write binds to a function |
-| `@typescript-eslint/no-floating-promises` | a promise is awaited or handled |
+Prefer to wire the rules up yourself? They are `nothrow/no-escaping-throw` and
+`nothrow/valid-mark`, and neither takes options.
 
-`@typescript-eslint/eslint-plugin` is a peer dependency of the plugin itself,
-not only of the preset — typed linting already requires it. Neither `nothrow`
-rule takes options; there is no configuration in which the guarantee means
-something different.
+#### Hosting in oxlint
 
-## Where a mark binds
+A project that lints with [oxlint](https://oxc.rs) installs the other adapter
+and writes the two rules into the config it already has — no ESLint, no
+`eslint.config.mjs`, no second lint command:
 
-`@nothrow` binds on a `function` declaration including `export default`; a
-single-declarator variable statement with a function or arrow initializer; a
-class method or constructor; an accessor, in a class or an object literal; and
-an object-literal method or function-valued property. Anywhere else is an error
-naming the nearest valid site, so a mark that binds to nothing is never a silent
-no-op you trust for years.
-
-Positions with no body reject the mark outright — `declare`/ambient
-declarations, interface members, abstract methods and overload signatures. On an
-overloaded function the mark goes on the implementation signature, which is the
-thing that throws. For an ambient declaration, assert the color in
-`nothrow.overrides.json` instead: an in-source `@nothrow` means *verified seed*
-and nothing else.
-
-The comment form and the spelling are checked before position, for the same
-reason. A mark is read only from a JSDoc block comment, so `// @nothrow` and
-`/* @nothrow */` are errors rather than nothing; and a tag that is the mark up
-to case and separators — `@NoThrow`, `@no-throw` — is an error naming the one
-spelling. Further out than that is a different tag and stays silent: `@nothrowx`
-is not a guess the tool is entitled to make.
-
-## What gets inferred
-
-Marking one function does not force you to mark its call tree. An unmarked
-function whose body is visible is *inferred* — clean when nothing in it can
-throw, throwing otherwise — and is never itself held to anything: throwing is
-the default, and only a mark is a promise. So a call to an inferred-throwing
-function is reported at the call, and nothing inside that function is.
-
-```ts
-/** @nothrow */
-export function read(text: string): unknown {
-  return parse(text); // Call to `parse` escapes this `@nothrow` function: its
-}                     // body was analyzed and can throw. …
-
-function parse(text: string): unknown {
-  return JSON.parse(text); // not reported — `parse` never promised anything
-}
+```bash
+npm install --save-dev @no-throw/oxlint-plugin
 ```
-
-Bridge inside `parse` and `read` goes green with no second mark.
-
-Mutual recursion is fine: a cycle contributes paths, not throw sites, so a
-recursive walk or parser stays clean. A cycle that reaches a throw anywhere
-colors *every* member of it throwing — no member of a cycle is colored before
-the whole group resolves.
-
-`new C()` is a call to the constructor's *effective* body: the constructor,
-plus the class's field initializers, plus the base-class chain through
-`super()`. So a throw in a base class's field initializer is reported at the
-`new`, and a `try`/`catch` around the `new` bridges it. Parameter defaults run
-on every call and are checked there too — including a generator's, whose
-parameter list is eager though its body is lazy.
-
-A callee with no visible body — a `.d.ts` declaration, or one the checker
-cannot resolve at all — is the carrier chain's question rather than the
-program's, and [the next section](#coloring-code-you-do-not-own) is that chain.
-Anything it cannot answer floors to throwing, and the diagnostic says which.
-
-## Coloring code you do not own
-
-Four carriers can answer for a bodyless declaration. They are asked in this
-order, **per key** — a rung that knows one export leaves the rest to the rungs
-below it:
-
-| rung | what it is | who writes it |
-| --- | --- | --- |
-| `nothrow.overrides.json` | one file at your project root | you |
-| an `@nothrow/*` overlay | an installed package of colors | anyone |
-| what the package ships | its own `nothrow.json`, else its surviving `@nothrow` tags | its author |
-| the baseline | colors for TypeScript's own libs, keyed by lib target | us |
-
-Under all four is the floor: unanswered means throwing.
-
-**You are never blocked.** Whatever nobody else has colored, you can color
-yourself, and nothing outranks you:
 
 ```json
 {
-  "$schema": "https://midnightdesign.github.io/no-throw/nothrow.overrides.schema.json",
+  "jsPlugins": ["@no-throw/oxlint-plugin"],
+  "rules": {
+    "nothrow/no-escaping-throw": "error",
+    "nothrow/valid-mark": "error"
+  }
+}
+```
+
+Same rule names, same messages, same suggestions in the language server — the
+adapters share one report layer in `@no-throw/core`, and [the conformance
+suite](#how-this-is-tested) runs the same fixtures through both binaries.
+Everything below this rung reads the same for either host.
+
+Three differences, all host-shaped. The rules are type-aware and oxlint hands
+a JS plugin no type information, so the plugin builds your program itself: the
+`tsconfig.json` above each file that includes it — the nearest first, then the
+ones above, walking past a solution-style config that holds no files — one
+program per config. A file no project includes — what the ESLint host surfaces
+as a `projectService` parse error — is here a diagnostic naming the
+`tsconfig.json` to fix: the same remedy, on the only channel a plugin has. And the preset's third rule is
+covered by oxlint itself: its type-aware mode carries
+`typescript/no-floating-promises`, so turn that on with `--type-aware` for the
+float hygiene the ESLint preset wires up.
+
+`oxlint --fix` never applies a bridge, exactly as `eslint --fix` never does.
+oxlint also has `--fix-suggestions`, which applies every offered edit in bulk
+— that is accepting every bridge blind, and the reason offers ride the
+suggestion channel is so that nothing does that without you typing the flag
+that says to.
+
+### 2. Mark your first function
+
+```ts
+/** @nothrow */
+export function double(value: number): number {
+  return value * 2;
+}
+```
+
+That is the whole syntax. It must be a **JSDoc block comment** immediately on a
+declaration whose body — or whose initializer, read through parentheses, `as`
+and `satisfies` — is exactly one function literal. `// @nothrow` is not a mark
+and `@noThrow` is not a mark; both are reported rather than silently ignored.
+
+Marking one function does not produce a wall of errors on the standard library.
+`no-throw` ships a **baseline** for `lib.*.d.ts`, generated from ECMA-262 and
+WebIDL and gated by a type-conformant fuzzer, so `Object.keys(config)`,
+`text.trim()` and `for…of` over an array are clean without you doing anything.
+What is left is the genuinely throwing members, and you get told exactly that:
+
+```text
+Call to `JSON.parse` escapes this `@nothrow` function: it is colored `throwing`
+by the shipped standard-library baseline, so calling it can throw. Your outs:
+bridge this call with `try`/`catch`; or, if it cannot throw, report it against
+the shipped standard-library baseline at
+https://github.com/no-throw/no-throw/issues — the other three carriers are keyed
+by npm package name, and no key in that grammar reaches a `lib.*.d.ts` member.
+```
+
+### 3. Coloring code you did not write
+
+Once your own functions are clean, what is left are calls into packages nobody
+has colored. A declaration with no visible body that no carrier speaks for
+**floors to throwing** — the safe answer — and says so:
+
+```text
+Call to `decode` escapes this `@nothrow` function: it is declared without a body
+— an ambient declaration, a `.d.ts`, or a value known only by its function type
+— and no mark, manifest, overlay, override or baseline entry colors it, so it is
+assumed to throw. Your outs, in precedence order: bridge this call with
+`try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an
+`@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow
+emit`.
+```
+
+The fastest of those is the first-party one. Drop a `nothrow.overrides.json` at
+your project root and assert what you know:
+
+```json
+{
+  "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
   "version": 1,
   "packages": {
     "flaky": {
       "exports": {
-        ".": { "safeParse": { "color": "non-throwing", "conditions": [] } }
+        ".": {
+          "safeParse": { "color": "non-throwing", "conditions": [] },
+          "boom": { "color": "throwing" }
+        }
       }
     }
   }
 }
 ```
 
-An **overlay** is that same shape for one package, published so everyone else
-gets it too: a `nothrow.json` with a `package` field naming its target, in a
-package under the `@nothrow` scope. It is matched by that field and never by
-its own npm name — `@nothrow/lodash` is a convention, not a lookup — so an
-overlay for a scoped target needs no escape from npm's flat scopes. The
-resolver is version-blind in v1.
+See [Carriers](#carriers-coloring-code-you-did-not-write) for the whole chain and
+what outranks what.
 
-Both are held to [a published schema](packages/core/schema) — the same file the
-engine validates them against, so what your editor accepts and what the tool
-honors cannot drift apart. Both may key **interface members** and state
-**accessor facts**, so `declare const _: LoDashStatic` is colorable — neither
-of which `nothrow emit` will ever write for a package whose source it verified.
+### 4. Publishing: ship a manifest
 
-A package's own manifest is verified against SRI hashes of the files it was
-written for. A mismatch floors **that manifest** and names the file that
-drifted; an overlay and an override are about a package rather than in it, so
-neither is touched.
+If you own the package, do not make your consumers assert anything. Lower your
+verified marks into a manifest they read automatically.
 
-## Higher-order functions
+The commands live in a **separate package** — the plugin does not depend on it,
+because `emit` and `check` are genuinely optional for a consumer who only wants
+the rules:
 
-A function that calls one of its own parameters is not throwing — it is
-non-throwing **given** that parameter. The condition is read off the body, not
-declared, so there is no annotation to keep in sync:
-
-```ts
-/** @nothrow */
-export function myEach<T>(xs: readonly T[], cb: (t: T) => void): void {
-  for (const x of xs) cb(x); // clean given `cb`
-}
-
-myEach(users, (u) => remember(u.name));  // fine — `remember` is inferred clean
-myEach(users, (u) => JSON.parse(u.raw)); // reported here, at the call
+```bash
+npm install --save-dev @no-throw/cli
 ```
 
-Only parameters the body actually *enters* are conditioned. One you merely hand
-onward is not, so a registry stays unconditionally clean; one you enter inside a
-`try`/`catch` is neutralized there, which is why a `safely()`-style wrapper —
-enter the callback inside `try`, return the error as a value — verifies with no
-help from the engine.
+```console
+$ npx nothrow emit
+Wrote nothrow.json: 5 entries across 1 subpath.
+```
 
-Conditions are paths, not positions: a body calling `repo.save(item)`
-conditions `repo.save`, so refactoring a callback into an object parameter does
-not make your function unmarkable. And when the argument you pass is itself one
-of *your* parameters, the condition propagates up to you instead of discharging
-— which is how a chain of helpers stays markable all the way down.
+`nothrow emit` builds a program, re-verifies every mark against its real body,
+and writes `nothrow.json` beside your `package.json`, keyed by public export
+name. **A mark it cannot verify refuses the whole emit** rather than publishing a
+claim that is not true:
 
-A condition is a precondition, exactly like a parameter type: it is discharged
-at every call, so no caller ever holds a promise it cannot cash. Where the
-argument cannot be resolved — a `let`, a function captured by a factory — the
-call floors, and the diagnostic names the parameter, where the body enters it,
-and your outs.
+```text
+Nothing was written: 1 mark cannot be published as it stands.
+```
 
-## Generators
+That refusal is what makes a published manifest true by construction rather than
+by discipline. Wire the check into `prepublishOnly` and a stale manifest can
+never ship:
 
-A generator's call and its iterator carry one color between them, and `@nothrow`
-covers both: the call is clean **and** consuming what it hands back is clean.
-
-Calling a generator runs no body, so a bare call is not an escape however the
-body ends — the escape is wherever the body actually runs. `for…of`, spread,
-array destructuring, `.next()`, `.return()` and `yield*` are those places, and
-each is reported and bridged there.
-
-```ts
-function* lines(): Generator<string> {
-  throw "boom";
-}
-
-/** @nothrow */
-export function count(): number {
-  const it = lines(); // fine — nothing has run yet
-  let n = 0;
-  for (const line of it) n += line.length; // Consuming this iterator escapes …
-  return n;
+```json
+{
+  "scripts": {
+    "prepublishOnly": "npm run build && nothrow emit && nothrow emit --check"
+  }
 }
 ```
 
-Which call produced the iterator is read off the syntax: a direct call, or a
-`const` initialized by one — the same rule `await` uses. Anything else — a
-`let`, a parameter, a property — floors, and the message says which problem it
-is. That is also what makes a plain function markable as an iterator producer:
-`return inner()` is provable, `return someIterator` is not.
+The manifest records SRI hashes of the files it was written for, so a rebuilt
+`.js` that changed no declaration is still drift — and `--check` catches it.
 
-A condition does not stretch to cover it: `@nothrow` given `make` says calling
-`make` is clean, and consuming what it hands back is a second promise the
-condition has no form for, so that floors too.
+## The rules
 
-`yield` is not a throw site — it can throw only because a consumer called
-`.throw()` — and `.throw()` itself always escapes, whatever the iterator makes
-of it: a throw cannot be laundered through one.
+### `no-escaping-throw`
 
-Iteration over anything else resolves through `[Symbol.iterator]` and the
-`next` it hands back, so an in-program iterable is colored by its own bodies.
-Builtin iterables are the baseline's to answer and floor until it is wired up.
+The invariant, whole and atomic. One rule, because "no exception leaves this
+function" is one claim: splitting it into a rule per escape kind would let a
+config turn half of it off and keep the name.
 
-## Async
+It reports at the escape site, never at the mark, and every message is built to
+be acted on from a CI log alone — the two-clause floor contract is *what*
+escaped, *why*, and *what your outs are*:
 
-`@nothrow` on a promise-producing function — `async` or not — asserts the
-whole consumption surface: the call never sync-throws **and** the promise it
-hands back never rejects. TypeScript never computes reject-ness, so it rides
-our color and nothing else, which is what makes this one mark rather than two.
-
-```ts
-async function fetchUser(): Promise<User> {
-  throw "boom";
-}
-
-/** @nothrow */
-export async function greeting(): Promise<string> {
-  const user = await fetchUser(); // Awaiting `fetchUser()` escapes this
-  return user.name;               // `@nothrow` function: the call that produced
-}                                 // it has a body that was analyzed and can …
+```text
+Uncaught `throw` escapes this `@nothrow` function.
 ```
 
-Which call produced an awaited promise is the generators' rule again — a direct
-call, or a `const` initialized by one, so starting early and awaiting later
-works. Anything else floors with the floor's usual outs, and the message keeps
-the two cases apart: a `let` is a refinement not yet made, while a parameter or
-a property is unknowable from here.
+Where the remedy really is a mechanical bridge, the diagnostic **offers an edit**
+— `Bridge this with try/catch.` — as a suggestion your editor can apply.
 
-**The bridge is `try { await … } catch`**, and it is the one that always works,
-so nobody has to reason about whether the callee is `async`: where the call *is*
-the awaited expression, the `await` answers for both channels. Drop the `await`
-and it is no bridge at all — on a visibly-`async` callee the `catch` can never
-fire, which gets a diagnostic of its own rather than a silent green.
+**It is never an autofix.** Not for any rule, not under any option. Wrapping a
+call in `try`/`catch` changes what your program does with an error, and `--fix`
+over a codebase would silently rewrite it into one that swallows everything and
+reports nothing. The suggestion channel asks; the fix channel does not. Where the
+way out is something a tool cannot decide — return the error instead of throwing
+it, await a returned promise and return a value in its place — nothing is offered
+at all, on purpose.
+
+### `valid-mark`
+
+Mark hygiene. A mark that binds to nothing is worse than no mark: it reads as a
+guarantee, enforces nothing, and nothing else complains. So every `@nothrow` tag
+must bind to a function, and one that cannot is a hard error naming the nearest
+valid site.
+
+```text
+`@nothrow` binds to nothing on an ambient declaration: there is no body to verify
+it against, and an in-source mark is always verified. Assert the color in
+`nothrow.overrides.json` instead.
+```
+
+It also catches the two near-misses that would otherwise be invisible: a mark in
+a `//` line comment, and a misspelling that differs from `@nothrow` only in case
+or separators.
+
+## What counts as an escape
+
+An escape site is **any expression that transfers control into a body**. Some you
+wrote, some you did not.
+
+**Visible transfers** — a `throw`, a call, a `new`, a tagged template.
+
+**Hidden transfers** — the ones with no call in the syntax, owned through the
+static type of the receiver:
+
+| you write | what runs |
+| --- | --- |
+| `obj.prop` | a getter |
+| `obj.prop = v` | a setter |
+| `obj.prop += v` | both |
+| `` `${obj}` ``, `obj + ""`, `+obj` | `toString` / `valueOf` / `Symbol.toPrimitive` |
+| `{ ...obj }`, `const { a } = obj` | every own enumerable getter it reaches |
+| `for (const x of xs)` | the iteration protocol |
+| `x instanceof C` | `Symbol.hasInstance` |
+
+A property the standard library declares as a plain property is not assumed to be
+data — the libs declare real getters that way, so silence is a question with no
+answer rather than an answer. The baseline states accessor facts positively, with
+independent `get` and `set` colors, and a member it says nothing about floors.
+
+**Bridging.** A `try` block neutralizes escapes inside it, and only inside it: a
+callback that runs later is not on that path, and a suggestion will never reach
+past one to pretend otherwise. A `catch` or `finally` that itself throws is an
+escape like any other.
+
+**Cycles.** Mutual recursion is resolved as an optimistic least fixpoint over
+strongly-connected components, so a clean cycle stays clean and one throwing
+member colors its whole group.
+
+## Async: one color over the whole surface
+
+A promise is a second channel a `throw` can leave on, and a mark that covered
+only the synchronous one would be a guarantee with a hole in it. So `@nothrow`
+on a promise-producing function means **it never sync-throws and never rejects**.
+
+That makes the three places a rejection is consumed part of the invariant —
+`await`, discard, and `return` — and each says something different:
+
+```ts
+/** @nothrow */
+export async function load(): Promise<Data | undefined> {
+  try {
+    return await fetchIt();     // await: the rejection becomes a throw here
+  } catch {
+    return undefined;
+  }
+}
+```
+
+A **terminal `.catch(h)`** whose handler is non-throwing is the other legal shape,
+which is why fire-and-forget has one at all. `@typescript-eslint/no-floating-promises`
+is in the preset for the same reason: a discarded promise is a rejection nothing
+handles, and Node escalates one to an uncaught exception.
+
+The trap this exists to catch is the bridge that cannot fire:
 
 ```ts
 /** @nothrow */
 export function pretendsToBridge(): void {
   try {
-    fetchUser(); // `fetchUser()` is `async`, so this `try`/`catch` can never
-  } catch {      // fire: an `async` function does not throw, it rejects, and a
-    return;      // `catch` with no `await` is not on that path. …
+    rejects();                  // async — the catch is not on the rejection's path
+  } catch {
+    return;
   }
 }
 ```
 
-**A discarded promise is an escape.** A visibly-`async` callee cannot
-sync-throw, so its bare call is not a sync escape — but dropping a throwing
-promise in statement position is one, `void` included, because Node escalates
-the unhandled rejection while the caller sees a clean return. A terminal
-`.catch(h)` with a non-throwing handler is the sanctioned fire-and-forget, and
-a rethrowing handler is simply a throwing `h`:
-
-```ts
-/** @nothrow */
-export function fireAndForget(): void {
-  sendTelemetry().catch(log); // clean — `log` is non-throwing
-}
+```text
+`rejects()` is `async`, so this `try`/`catch` can never fire: an `async` function
+does not throw, it rejects, and a `catch` with no `await` is not on that path.
+The promise is discarded here and the call that produced it has a body that was
+analyzed and can throw. Write `try { await … } catch` instead, or end the chain
+with a `.catch(h)` whose handler is non-throwing.
 ```
 
-Chains fold by the normative table, with handlers read as ordinary functions: an
-inline arrow inferred, a reference resolved, an opaque one flooring the link.
+One asymmetry worth knowing: a generator's body is lazy but **its parameter list
+is eager**, so an `async function*` can still sync-throw before it ever returns
+an iterator. And `@nothrow` on a function returning an iterator covers consuming
+it too — `.throw()` always escapes, since a throw cannot be laundered through an
+iterator.
 
-| link | non-throwing when |
-| --- | --- |
-| `f()` | `f` is |
-| `X.then(a)` | `X` and `a` are |
-| `X.then(a, b)` | `a` and `b` are — `b` discharges `X`'s rejection |
-| `X.catch(b)` | `X` is, else `b` is — `b` runs only on a rejection |
-| `X.finally(c)` | `X` and `c` are — `finally` discharges nothing |
+## Carriers: coloring code you did not write
 
-The fold is syntactic, so a stored partial chain and a dynamic method name
-floor. And it describes `Promise.prototype`: a thenable whose `then` has a
-visible body is an ordinary call, colored by the body that actually runs, since
-folding it would assume semantics the source is right there to contradict.
+A **carrier** is anything that states a color for a declaration whose body this
+program cannot see. For a declaration in an npm package there are four, consulted
+**per key**, highest first:
 
-Handing a promise on is covered too — `return <expr>` folds what that expression
-would reject with into the marked function's own promise, implicit arrow bodies
-included, so a one-line wrapper cannot launder a rejection.
+| | carrier | who writes it | matched by |
+| --- | --- | --- | --- |
+| 1 | `nothrow.overrides.json` | you, at your project root | npm package name |
+| 2 | `@no-throw/*` overlay | anyone, published to npm | its manifest's `package` field |
+| 3 | the package's `nothrow.json` | its author, via `nothrow emit` | the package it ships in |
+| 4 | `@nothrow` tags in its `.d.ts` | its author, in source | the declaration itself |
 
-`for await` resolves through `[Symbol.asyncIterator]`, falling back to the
-synchronous member the way the language does, with the same one-color surface as
-`for…of`. An `async function*` is exempt from the sync-throw carve-out for the
-generators' reason: its body is lazy but its parameter list is eager, so it can
-sync-throw where a plain `async` function cannot.
+The **shipped baselines** sit outside that order rather than at the bottom of it:
+they color `lib.*.d.ts`, every carrier above is keyed by npm package name, and no
+key in that grammar reaches a lib member. Nothing competes there, which is also
+why a wrong baseline entry is a bug report rather than something you can override.
 
-A condition does not stretch here either. `@nothrow` given `produce` says
-calling `produce` is clean, not that the promise it hands back never rejects;
-and a chain handler reached through a parameter is not something a call site can
-discharge. Both floor.
+Below all of it is the **floor**: a declaration nobody colors is throwing. Absence
+of a fact always means the strict reading — that is what makes adding a carrier
+monotone, and never a way to quietly make a real report disappear.
 
-## Calls you did not write
+Two rules keep the chain honest. A **valid `nothrow.json` answers for its whole
+package**, so it supersedes any surviving `@nothrow` tags in that package's
+`.d.ts` — a partial manifest is a statement about everything, not a set of hints.
+And a manifest whose **file hashes no longer match** is ignored entirely, at which
+point tags resume and overlays and overrides still stand, because they were never
+about that package's bytes.
 
-Some expressions run a body with no callee anywhere in the syntax. They are
-call sites all the same, and the static type is what finds them.
-
-```ts
-class Config {
-  get port(): number {
-    return Number(process.env["PORT"] ?? throwUnset());
-  }
-}
-
-/** @nothrow */
-export function show(config: Config): string {
-  return `${config.port}`; // Reading `config.port` escapes this `@nothrow`
-}                          // function: it runs the getter `port`, whose body …
-```
-
-**Accessors.** `o.x` and `o.x = v` are calls when the member is really a
-getter or setter, and the two carry **independent** colors — so reading a
-member that only throws on write costs you nothing. Which half a form consults
-is fixed: reads, object destructuring and template interpolation consult
-**get**; assignment consults **set**; `+=`, `++`, `--` and the logical
-assignments consult **both**; `delete o.x` consults neither. Spread and rest
-consult **get over own enumerable members only**, so spreading an object whose
-accessors live on its prototype — a class instance, a DOM element — touches
-nothing.
-
-**Dynamic keys** narrow, then join. If the checker knows the key's literal
-type, exactly those members are touched; otherwise every accessor the type has
-is joined. A type whose accessors are all clean stays clean, so a dynamic key
-is not a blanket floor.
-
-**Coercion** — `` `${o}` ``, `+o`, `==`, `String(o)`, `instanceof` — resolves
-through the static type too. A primitive runs no user code and is clean, which
-is the overwhelmingly common case. A type declaring its own `toString`,
-`valueOf` or `Symbol.toPrimitive` takes that member's color, and `any` or
-`unknown` floors.
-
-## Publishing a package
-
-Your marks are verified against your source, and a consumer never sees your
-source: `removeComments` strips the tags, and declaration emit erases `async`.
-`nothrow emit` writes down what survives that.
-
-```bash
-nothrow emit           # lower verified marks into nothrow.json
-nothrow emit --check   # fail if the manifest has drifted from the source
-```
-
-Run it after your build, from the package root — it reads `tsconfig.json` in
-the working directory unless `--project` names another one, and writes
-`nothrow.json` beside the first `package.json` above the project, which is
-where a consumer's walk-up finds it. What goes in are the marks the engine
-verifies, keyed by the name a consumer imports; what comes with them are the
-facts the `.d.ts` cannot carry — `async`, the paths a conditional mark is clean
-given, and SRI hashes of everything the build produced from that source, which
-is every body a color was read off.
-
-**Emit refuses what it cannot verify.** A mark whose body escapes, a mark that
-binds to nothing, a mark on an accessor — each exits non-zero naming the mark,
-and nothing is written. A published manifest is therefore true by construction
-rather than by discipline, which is what lets a consumer trust it over your
-declarations.
-
-The accessor case is a deliberate asymmetry. A manifest can state an accessor's
-color, and hand-written overlays need to; emit never does, because declaration
-emit preserves `get` and `set` — if you own the source, the accessor is already
-in your `.d.ts`, and what a consumer needs is a color you cannot verify for
-both halves at once. The same holds for interface members.
-
-Wire `--check` into the script that publishes, so a manifest cannot go out
-stale:
+An overlay is just a package whose `nothrow.json` names its target:
 
 ```json
 {
-  "scripts": {
-    "prepublishOnly": "tsc && nothrow emit --check"
+  "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.schema.json",
+  "version": 1,
+  "package": "flaky",
+  "exports": {
+    ".": {
+      "safeParse": { "color": "non-throwing", "conditions": [] },
+      "boom": { "color": "throwing" }
+    }
   }
 }
 ```
 
-It recomputes the manifest and compares. A rebuilt `.js` with identical
-declarations is drift like any other, because the hash is what your consumers
-check. Exit codes are `0` wrote or matched, `1` refused or drifted, `2` could
-not run.
+It is matched by that `package` field, never by its own npm name.
 
-## Status
+### Conditions
 
-This is early, and **nothing is published to npm yet**. What works today: the
-mark and its binding rules, the body walk, the `try`/`catch` bridge, the
-call-shaped escape sites — a call, `new C()`, `super()`, a tagged template and
-a parameter default — **hidden transfers** — accessors, dynamic keys, spread
-and coercion — **generators and the sync iteration protocol**, **async** —
-`await`, promise chains, floats and `for await` — **hybrid inference** for
-unmarked functions whose bodies are visible, **conditional cleanliness** for
-higher-order functions, **every rung of the carrier chain but the baseline** —
-a local `nothrow.overrides.json`, installed `@nothrow/*` overlays, and what a
-dependency ships, which is its own `nothrow.json` or, absent a valid one, its
-surviving `@nothrow` tags — **`nothrow emit` and `emit --check`**, and the
-`configs.recommended` preset. Everything the chain cannot answer floors to
-throwing with a diagnostic naming your outs, and every out it names is now a
-rung you can really reach for. The ES
-standard-library baseline ships as data in `@nothrow/core`,
-and so does the DOM baseline, but nothing consults either yet, so every
-standard-library and DOM call floors too — `new Error(…)` included, iterating
-an array or a `Map` with it, and with them the `map`/`forEach` family, whose
-conditional entries are what the call-site join will discharge — and so does
-every coercion of an object that inherits its `toString` and `valueOf` rather
-than declaring them.
+Plenty of functions are clean *given* something about what you hand them —
+`each(xs, fn)` throws only if `fn` does. That is recorded as a condition on a
+parameter position, and discharged at the call site by the argument in hand:
 
-That caveat, not the analysis, is most of what you will see today, and the
-ratio is worth knowing before you try it. Marking five pure functions over
-in-memory `Map`s — no I/O — in a real project produced 128 errors, of which
-about seven were about the program's own code; `for…of` alone accounted for 45
-and `Array.prototype.push` for 18. Consulting the baselines is what turns that
-around.
+```json
+{ "each": { "color": "non-throwing", "conditions": ["param1"] } }
+```
 
-Not built yet: the baseline rung. The design is locked and lives in
-[the v1 spec](https://github.com/MidnightDesign/no-throw/issues/30).
+`conditions: []` is unconditional cleanliness, stated positively. Absence means
+maximally conditioned. The path grammar is closed — `param0.member`, `param1[]`,
+`param0.@@iterator`, and `param0=undefined` / `param0=nullish` for a hazard
+guarded by an early return on an absent argument — so a reader that meets a form
+it does not know floors the entry rather than dropping the condition inside it.
+
+## The CLI
+
+```bash
+npm install --save-dev @no-throw/cli
+```
+
+```
+nothrow emit [--project <path>]           lower verified marks into nothrow.json
+nothrow emit --check [--project <path>]   fail if the manifest has drifted
+nothrow check [--project <path>]          name every carrier entry that colors nothing
+nothrow --help, nothrow -h                print the usage
+```
+
+`--project` names a `tsconfig.json`, or a directory holding one, and defaults to
+the working directory. The manifest is written beside the first `package.json`
+above the project — which is where a consumer's walk-up finds it.
+
+Exit codes: **0** wrote, matched or found nothing to refuse · **1** refused,
+drifted or coloring nothing · **2** could not run. Exit code and stream are one
+fact: a run that succeeded says so on stdout, and a run that did not says so on
+stderr.
+
+### Checking your carriers
+
+A carrier entry that colors nothing and a correct one come to the same silence at
+the call site, so a typo in `nothrow.overrides.json` is invisible exactly where it
+matters. `nothrow check` asks the question a call site cannot:
+
+```console
+$ npx nothrow check
+flaky → "." → `Flaky#safeParse`
+  publishes no symbol at this key
+...
+```
+
+```text
+5 entries checked. 3 reach nothing; 1 names a package this project does not hold.
+```
+
+It holds every entry the way the resolver chain holds it — against the same
+export surface, and against the package the *declaration* ships in rather than
+the one that re-exported it. An entry the **schema** rejects is named too, with
+the field that lost it: a misspelled `color` floors that one entry rather than
+refusing the file, and a floored entry keys as well as a correct one does, so
+nothing about the surface would catch it. One verdict is named and still passes:
+a **valid** entry for a package this project does not hold is **inert rather
+than wrong**, since a monorepo where one workspace has the dependency and another
+does not would otherwise fail over a file that is right.
+
+## The `safely()` pattern
+
+There is no `safely()` package, and there will not be one. It is four lines, it
+belongs in your codebase, and it verifies with no special-casing anywhere in the
+engine — which is the point:
+
+```ts
+export type Result<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly error: unknown };
+
+/** @nothrow */
+export function safely<T>(fn: () => T): Result<T> {
+  try {
+    return { ok: true, value: fn() };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+
+/** @nothrow */
+export function readJson(text: string): Result<unknown> {
+  return safely(() => JSON.parse(text)); // clean: the callback is entered inside a bridge
+}
+```
+
+It enters its callback inside a `try`, so it is unconditionally clean and a
+throwing callback is fine. Nothing recognizes it by name.
+
+## Performance
+
+Marking is type-aware linting, and the honest question is what it costs on top of
+a typed lint you already run. Measured against **microsoft/TypeScript** — 601
+files, 379,646 lines, 12,326 functions, 36,566 call edges — with 1,093 marks
+placed:
+
+| | |
+| --- | --- |
+| CI lint, whole `src` | **3.1 s of 33 s** is inference |
+| Editor re-lint after an edit | **~100 ms of ~800 ms** |
+| Eleven times the marks | +7% |
+| Edits that split or merge a cycle group | no worse than an ordinary body edit |
+
+Inference is a removable layer: with it off, the engine drops to a pure-declare
+floor that is strictly more conservative and never less sound. That lever exists
+so the answer to a performance wall is "ship declare-only", not "make inference
+cleverer" — and the conformance suite runs the entire corpus both ways on every
+commit to keep it true.
 
 ## Packages
 
-Three packages in the `@nothrow` npm scope, versioned in lockstep.
-
 | package | what it is |
 | --- | --- |
-| [`@nothrow/core`](packages/core) | the engine — color resolution and the escape-site walk |
-| [`@nothrow/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter; contains no analysis |
-| [`@nothrow/cli`](packages/cli) | the `nothrow` binary; hosts `emit` |
+| [`@no-throw/eslint-plugin`](packages/eslint-plugin) | the ESLint adapter and the preset. Contains no analysis. |
+| [`@no-throw/oxlint-plugin`](packages/oxlint-plugin) | the oxlint adapter. Contains no analysis. |
+| [`@no-throw/core`](packages/core) | the engine: color resolution, the SCC fixpoint, the escape-site walk, the resolver chain, the baselines, and the report layer both adapters speak. Knows nothing about any linter. |
+| [`@no-throw/cli`](packages/cli) | the `nothrow` binary. Builds a program and hands it to the core. |
 
-## Working on it
+The four release in lockstep on one version. The seam is deliberate: driving the
+same analysis from a standalone checker or another linter means writing an
+adapter, not touching the engine — the oxlint plugin is that sentence made
+good, and the conformance suite is what holds the two adapters to one behavior.
+
+## How this is tested
+
+Every behavior lands in [`conformance/`](conformance/README.md), and only there.
+The observable behavior of this tool is *given a TypeScript project on disk,
+which diagnostics appear, where, and with what text* — so nothing in the suite
+asserts a color, a memo, an SCC or any other internal.
+
+A fixture is a whole project, not a snippet: its own `tsconfig.json`, its real
+dependencies committed to disk as `.d.ts` and `.js` files no build step produces,
+its `nothrow.overrides.json`, its config files at the root where `eslint .` will
+reach them. Fixtures import nothing from `@no-throw/*` and contain no test
+framework. They are what your project looks like.
+
+Diagnostic text is normative, so this README is gated on it: every ` ```text `
+block above is a message some fixture asserts, character for character.
+
+The suite then runs the same fixtures through the real `oxlint` binary and
+holds both hosts to the same diagnostics — plus what oxlint's output cannot
+carry: `--fix` must change nothing, and `--fix-suggestions` must produce
+exactly the offer a fixture pins.
 
 ```bash
 pnpm install && pnpm test
 ```
 
-`pnpm test` builds, checks that the packages are in lockstep, and runs the
-[conformance suite](conformance) — fixture projects on disk paired with the
-diagnostics they must produce. Every behavior lands there, the CLI's included:
-`nothrow emit` is exercised as a process over producer packages, and what it
-writes is read back by a separate consumer project through the ordinary driver.
+## Contributing
 
-The plugin's `eslint` peer range names the majors a consumer may install it
-against. CI enumerates that range and holds it to two things per major: the
-suite passes there, and a packed tarball installs there under
-`strict-peer-dependencies=true`. Widening the claim widens what has to pass.
+Issues and pull requests are welcome at
+[github.com/no-throw/no-throw](https://github.com/no-throw/no-throw).
 
-```bash
-pnpm run gate:peer   # install what would be published, the way a consumer does
-```
+PR titles become commits on `main` and drive releases — prefix with a
+Conventional Commits type (`feat:` minor, `fix:`/`perf:` patch, `!` breaking).
+See [AGENTS.md](AGENTS.md) and [docs/releasing.md](docs/releasing.md).
 
-The suite half needs the workspace resolved on the major under test, which
-`node scripts/eslint-peer-matrix.mjs pin 10 && pnpm install --no-frozen-lockfile`
-does. That edits the root manifest and the lockfile; `git checkout -- package.json
-pnpm-lock.yaml` puts them back.
+Two things worth reading before proposing a change to the analysis: the
+[trust-base dials](docs/baseline-dials.md), which decide once and as doctrine
+where the baseline's guarantee ends, and the
+[performance gate](docs/dogfooding-performance-gate.md).
 
-The shipped baselines are generated data, so their correctness is CI over that
-data rather than a conformance fixture. Gates guard them, all run in CI and none
-needing the specs they were generated from:
+## License
 
-```bash
-pnpm run gate:fuzz          # attack every shipped clean ES entry with hostile, type-conformant values
-pnpm run gate:drift         # symbol-set diff of lib.*.d.ts; newcomers have no entry and floor
-pnpm run dom:gate:fuzz      # the same, over the DOM data, in a real DOM
-pnpm run dom:gate:deferred  # every callback-taking DOM member is adjudicated sync, queued or floored
-pnpm run dom:gate:drift     # symbol-set diff of lib.dom*.d.ts
-```
-
-Each takes `-- --self-check`, which plants a failure and requires the gate to
-catch it: a gate that cannot fail is not a gate.
-
-Regenerating the data is a maintainer task — see
-[`tools/es-baseline`](tools/es-baseline),
-[`tools/dom-baseline`](tools/dom-baseline) and the one-off
-[dial sign-off](docs/baseline-dials.md).
+[MIT](LICENSE).
