@@ -32,16 +32,30 @@ export type EntryState =
    */
   | { readonly kind: "unusable"; readonly faults: readonly string[] };
 
+/**
+ * One entry's address inside a table: the surface it is reached through, then
+ * the namepath into that surface.
+ *
+ * The first half is an npm export subpath in a `packages` table and an ambient
+ * module specifier in a `modules` one. Which of the two it is, is a fact about
+ * the table it was found in — the caller's half of the address — and nothing
+ * here needs to know it: the two halves are read and matched the same way
+ * either way, and a table that named them after one of its two callers would
+ * be lying to the other.
+ */
+export interface TableKey {
+  readonly through: string;
+  readonly symbolPath: string;
+}
+
 /** One entry, at the key the file wrote it under. */
-export interface WrittenEntry {
-  readonly subpath: string;
-  readonly key: string;
+export interface WrittenEntry extends TableKey {
   readonly state: EntryState;
 }
 
-/** One `exports` table — subpath, then symbol path — as something to ask. */
+/** One entry table — a surface, then a symbol path — as something to ask. */
 export interface ColorTable {
-  entryFor(subpath: string, key: string): EntryState | undefined;
+  entryFor(key: TableKey): EntryState | undefined;
   /**
    * Every entry written under this table, in the order the file wrote them.
    * A resolver asks by key and never needs this; a reader reporting on the
@@ -122,9 +136,8 @@ const VERSION = 1;
  * rather than in the envelope around them, and which entry each one falls in —
  * so there is no second statement to keep in step.
  *
- * A file may hold tables at several of them, and the two halves of a key are
- * always the last two segments of the path to an entry, whichever table it is
- * in: an npm subpath and a namepath, or a module specifier and a namepath.
+ * A file may hold tables at several of them, and a `TableKey` is always the
+ * last two segments of the path to an entry, whichever table it is in.
  */
 export type TablePath = readonly string[];
 
@@ -179,7 +192,7 @@ export function readColorDocument(
   };
 }
 
-/** An entry is a subpath and a key past its table, and its faults are past it. */
+/** An entry is a `TableKey` past its table, and its own faults are past it. */
 function isEntryFault(path: readonly string[], location: TablePath): boolean {
   return (
     path.length > location.length + 2 &&
@@ -214,11 +227,11 @@ function indexTable(
   }
   const table = valueAt(value, prefix);
 
-  const entryFor = (subpath: string, key: string): EntryState | undefined => {
-    const faults = unusable.get(identityOf([subpath, key]));
+  const entryFor = (key: TableKey): EntryState | undefined => {
+    const faults = unusable.get(identityOf([key.through, key.symbolPath]));
     if (faults !== undefined) return { kind: "unusable", faults: [...faults] };
-    const entries = isRecord(table) ? table[subpath] : undefined;
-    const entry = isRecord(entries) ? entries[key] : undefined;
+    const entries = isRecord(table) ? table[key.through] : undefined;
+    const entry = isRecord(entries) ? entries[key.symbolPath] : undefined;
     return isRecord(entry)
       ? { kind: "entry", entry: entry as ManifestEntry }
       : undefined;
@@ -229,11 +242,11 @@ function indexTable(
     written: () => {
       if (!isRecord(table)) return [];
       const written: WrittenEntry[] = [];
-      for (const [subpath, keys] of Object.entries(table)) {
+      for (const [through, keys] of Object.entries(table)) {
         if (!isRecord(keys)) continue;
-        for (const key of Object.keys(keys)) {
-          const state = entryFor(subpath, key);
-          if (state !== undefined) written.push({ subpath, key, state });
+        for (const symbolPath of Object.keys(keys)) {
+          const state = entryFor({ through, symbolPath });
+          if (state !== undefined) written.push({ through, symbolPath, state });
         }
       }
       return written;

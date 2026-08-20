@@ -4,6 +4,7 @@ import {
   reachesNothing,
   type CheckedCarrier,
   type CheckedEntry,
+  type PackageAddress,
 } from "@no-throw/core";
 import { openProject } from "./project.js";
 import { CANNOT_RUN, display, REFUSED, type CommandResult } from "./result.js";
@@ -126,17 +127,17 @@ function whyItReachesNothing(
         `${JSON.stringify(entry.module)} publishes this key, and what it reaches is ` +
           `declared in ${JSON.stringify(entry.declaredIn)} — which is the block a ` +
           "carrier is matched by, so this entry is never consulted.",
-        `Key it under ${JSON.stringify(entry.declaredIn)} instead.`,
+        // The table is named alongside the specifier because this line is also
+        // what a `packages` entry naming a block is answered with, and there
+        // the reader is being sent one table over.
+        `Key it under \`modules\` → ${JSON.stringify(entry.declaredIn)} instead.`,
       ];
     case "not-ambient":
       return [
         `${JSON.stringify(entry.module)} publishes this key, and what it reaches is ` +
           "declared in no `declare module` block at all, so it has an export " +
           "surface address rather than a module one.",
-        entry.shipsIn === undefined
-          ? "Nothing names the package it ships in, so nothing keyed anywhere " +
-            "reaches it until a `package.json` there names one."
-          : `Key it under \`packages\` → \`${entry.shipsIn}\` instead.`,
+        whereToKeyIt(entry.shipsIn, entry.keyAs),
       ];
     case "unusable":
       return [
@@ -174,14 +175,24 @@ function whyItReachesNothing(
             ]),
       ];
     }
-    case "keyed-as-a-package":
-      return [
+    case "keyed-as-a-package": {
+      const wrongTable =
         `nothing of \`${entry.package}\` is in this project, and ` +
-          `${JSON.stringify(entry.package)} is an ambient \`declare module\` block ` +
-          "this project does declare — so this is the right name under the " +
-          "wrong table.",
-        `Key it under \`modules\` → ${JSON.stringify(entry.package)} instead.`,
-      ];
+        `${JSON.stringify(entry.package)} is an ambient \`declare module\` block ` +
+        "this project does declare — so this is the right name under the " +
+        "wrong table.";
+      // What to write instead is the block's own answer about the same key, so
+      // it is rendered as that block's entry rather than restated here: a
+      // specifier that only re-exports the key is the next dead end along, and
+      // sending the reader to it would cost them a second red build over one
+      // entry. Only a key the block does reach has nothing further to say.
+      return entry.asModule.verdict === "reaches"
+        ? [
+            wrongTable,
+            `Key it under \`modules\` → ${JSON.stringify(entry.package)} instead.`,
+          ]
+        : [wrongTable, ...whyItReachesNothing(entry.asModule, schema, cwd)];
+    }
     case "no-key": {
       if (entry.kind === "module") {
         const publishes =
@@ -223,6 +234,30 @@ function whyItReachesNothing(
           "until a `package.json` there names one.",
       ];
   }
+}
+
+/**
+ * The package address to write instead, or why there is none to name. All
+ * three halves: an entry keyed by module specifier has none of them to carry
+ * over, so a line naming only the package would leave the reader to guess the
+ * other two.
+ */
+function whereToKeyIt(
+  shipsIn: string | undefined,
+  keyAs: PackageAddress | undefined,
+): string {
+  if (keyAs !== undefined) {
+    return (
+      "Key it under `packages` → " +
+      `\`${keyAs.package}\` → ${JSON.stringify(keyAs.subpath)} → ` +
+      `\`${keyAs.symbolPath}\` instead.`
+    );
+  }
+  return shipsIn === undefined
+    ? "Nothing names the package it ships in, so nothing keyed anywhere " +
+        "reaches it until a `package.json` there names one."
+    : `It ships in \`${shipsIn}\`, and nothing that package's entry points ` +
+        "publish reaches it, so no key under any table reaches it either.";
 }
 
 /**

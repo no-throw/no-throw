@@ -1,0 +1,11 @@
+{
+  "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
+  "version": 1,
+  "modules": {
+    "shim": {
+      "plain": { "color": "non-throwing", "conditions": [] },
+      "hidden": { "color": "non-throwing", "conditions": [] },
+      "stray": { "color": "non-throwing", "conditions": [] }
+    }
+  }
+}

@@ -22,12 +22,16 @@ import {
 import { exportSurfaceOf } from "./carrier/surface.js";
 
 /** The three halves of a key into a package's published surface. */
-export interface PackageEntryKey {
-  readonly kind: "package";
+export interface PackageAddress {
   /** The npm package the entry colors. */
   readonly package: string;
   readonly subpath: string;
   readonly symbolPath: string;
+}
+
+/** One such key, as a carrier wrote it. */
+export interface PackageEntryKey extends PackageAddress {
+  readonly kind: "package";
 }
 
 /** The two halves of a key into an ambient `declare module` block. */
@@ -78,7 +82,17 @@ type PackageVerdict =
    * Told apart from `unresolved` because the two are opposites: one may become
    * right when a dependency is installed, and this one never will.
    */
-  | { readonly verdict: "keyed-as-a-package" }
+  | {
+      readonly verdict: "keyed-as-a-package";
+      /**
+       * The same key, held against that block. What the reader is being sent
+       * to write has to be an address that reaches, and the specifier they
+       * named may be one that only re-exports the key — so the block answers
+       * here rather than on the next run, which would be a second red build
+       * over one entry.
+       */
+      readonly asModule: CheckedModuleEntry;
+    }
   /**
    * The package publishes no such subpath; these are the ones it has, and
    * these are the blocks it declares instead — which for a `@types` package is
@@ -121,12 +135,16 @@ type ModuleVerdict =
    */
   | {
       readonly verdict: "not-ambient";
-      /** The npm package to key it under, where the walk found a name. */
+      /** The npm package it ships in, where the walk found a name at all. */
       readonly shipsIn: string | undefined;
+      /**
+       * The whole address to write instead, where that package's surface
+       * publishes it. All three halves, because a module entry has none of
+       * them to carry over — and the namepath a package publishes it under
+       * need not be the one the block publishes it under.
+       */
+      readonly keyAs: PackageAddress | undefined;
     };
-
-/** One address with one verdict, distributed so `verdict` still discriminates. */
-type Checked<Key, Verdict> = Verdict extends unknown ? Key & Verdict : never;
 
 /**
  * What became of one entry. `reaches` is the whole point of the others
@@ -137,9 +155,9 @@ type Checked<Key, Verdict> = Verdict extends unknown ? Key & Verdict : never;
  * of being wrong, and pairing each with its own keeps a report from having to
  * defend against a combination that cannot arise.
  */
-export type CheckedEntry =
-  | Checked<PackageEntryKey, PackageVerdict>
-  | Checked<ModuleEntryKey, ModuleVerdict>;
+export type CheckedPackageEntry = PackageEntryKey & PackageVerdict;
+export type CheckedModuleEntry = ModuleEntryKey & ModuleVerdict;
+export type CheckedEntry = CheckedPackageEntry | CheckedModuleEntry;
 
 /**
  * Why nothing in a carrier was checked. A file that says nothing is not an
@@ -465,7 +483,7 @@ function tableEntries(
   packages: ReadonlyMap<string, PackageHome>,
   program: ts.Program,
 ): readonly CheckedEntry[] {
-  return table.written().map(({ subpath, key: symbolPath, state }) => {
+  return table.written().map(({ through: subpath, symbolPath, state }) => {
     const key = {
       kind: "package",
       package: packageName,
@@ -494,11 +512,11 @@ function moduleEntries(
   if (written.length === 0) return [];
 
   const ambient = ambientSurfaceOf(program);
-  return written.map(({ subpath: module, key: symbolPath, state }) => {
+  return written.map(({ through: module, symbolPath, state }) => {
     const key = { kind: "module", module, symbolPath } as const;
     return state.kind === "unusable"
       ? { ...key, verdict: "unusable" as const, faults: state.faults }
-      : moduleVerdictFor(module, symbolPath, ambient);
+      : moduleVerdictFor(module, symbolPath, ambient, program);
   });
 }
 
@@ -512,7 +530,8 @@ function moduleVerdictFor(
   module: string,
   symbolPath: string,
   ambient: AmbientSurface,
-): CheckedEntry {
+  program: ts.Program,
+): CheckedModuleEntry {
   const key = { kind: "module", module, symbolPath } as const;
 
   // Nothing here declares the block, so there is no surface to hold the entry
@@ -534,24 +553,57 @@ function moduleVerdictFor(
   if (!elsewhere) return { ...key, verdict: "reaches" };
 
   const declaredIn = ambientModuleOf(first);
-  return declaredIn === undefined
-    ? { ...key, verdict: "not-ambient", shipsIn: shipperOf(first)?.name }
-    : { ...key, verdict: "declared-elsewhere", declaredIn };
+  if (declaredIn !== undefined) {
+    return { ...key, verdict: "declared-elsewhere", declaredIn };
+  }
+
+  // Written in no block at all, so what reaches it is a package address —
+  // named in full, because a module entry has no half of one to carry over.
+  const shipper = shipperOf(first);
+  return {
+    ...key,
+    verdict: "not-ambient",
+    shipsIn: shipper?.name,
+    keyAs: addressOf(first, shipper, program),
+  };
+}
+
+/** Where the package a declaration ships in publishes it, if it does. */
+function addressOf(
+  declaration: ts.Declaration,
+  shipper: PackageHome | undefined,
+  program: ts.Program,
+): PackageAddress | undefined {
+  if (shipper?.name === undefined) return undefined;
+
+  const key = exportSurfaceOf(shipper, program).keyOf(declaration);
+  return key === undefined ? undefined : { package: shipper.name, ...key };
 }
 
 function verdictFor(
   key: PackageEntryKey,
   packages: ReadonlyMap<string, PackageHome>,
   program: ts.Program,
-): CheckedEntry {
+): CheckedPackageEntry {
   const ambient = ambientSurfaceOf(program);
   const home = packages.get(key.package);
   if (home === undefined) {
     // `packages: { "node:path": … }` is the guess this design invites and
     // cannot honor, so it is answered rather than shrugged at: the name is a
-    // block, and blocks are keyed one table over.
+    // block, and blocks are keyed one table over. Held against that block in
+    // the same breath, so the address the reader is sent to is one that
+    // reaches — the specifier they wrote may be another dead end along.
     return ambient.declares(key.package)
-      ? { ...key, verdict: "keyed-as-a-package" }
+      ? {
+          ...key,
+          verdict: "keyed-as-a-package",
+          asModule: moduleVerdictFor(
+            key.package,
+            key.symbolPath,
+            ambient,
+            program,
+          ),
+        }
       : // Nothing of this package is in the program, so there is no surface to
         // hold the entry against. Inert rather than wrong: a project may carry
         // colors for a dependency it has not imported yet.

@@ -7,6 +7,7 @@ import type {
   ColorTable,
   ColorTables,
   ManifestEntry,
+  TableKey,
 } from "./document.js";
 import { manifestAt } from "./manifest.js";
 import { overlaysFor } from "./overlays.js";
@@ -191,19 +192,31 @@ function statedBy(
   tables: CarrierTables,
   query: CarrierQuery,
 ): CarrierAnswer | undefined {
-  // Asked only where this rung has a table to answer from, which is what keeps
-  // the block walk off the path of a project that colors no ambient module.
+  // Asked only where this rung holds a `modules` table at all, which is what
+  // keeps the block walk off the path of a project that colors no ambient
+  // module — the ordinary case, since nothing writes the table by default.
   const moduleKey = tables.modules.length === 0 ? undefined : query.moduleKey();
   if (moduleKey !== undefined) {
+    const key: TableKey = {
+      through: moduleKey.module,
+      symbolPath: moduleKey.symbolPath,
+    };
     for (const table of tables.modules) {
-      const answer = answerFrom(table, {
-        subpath: moduleKey.module,
-        symbolPath: moduleKey.symbolPath,
-      });
+      const answer = answerFrom(table, key);
       if (answer !== undefined) return answer;
     }
   }
-  return answerFrom(tableFor(tables.packages, query.home), query.key);
+  return answerFrom(
+    tableFor(tables.packages, query.home),
+    tableKeyOf(query.key),
+  );
+}
+
+/** An export key, as the two segments the table holding it is keyed by. */
+function tableKeyOf(key: ExportKey | undefined): TableKey | undefined {
+  return key === undefined
+    ? undefined
+    : { through: key.subpath, symbolPath: key.symbolPath };
 }
 
 /** The table a rung holds for the package this declaration ships in. */
@@ -221,11 +234,11 @@ function tableFor(
  */
 function answerFrom(
   table: ColorTable | undefined,
-  key: ExportKey | undefined,
+  key: TableKey | undefined,
 ): CarrierAnswer | undefined {
   if (table === undefined || key === undefined) return undefined;
 
-  const entry = table.entryFor(key.subpath, key.symbolPath);
+  const entry = table.entryFor(key);
   if (entry === undefined) return undefined;
   return entry.kind === "unusable"
     ? { kind: "floor", reason: "unusable-entry" }
@@ -257,7 +270,7 @@ const shipped: CarrierRung = (query) => {
   // resurrect through a surviving comment exactly the lying mark emit refused
   // to write down.
   if (state.kind === "valid") {
-    const answer = answerFrom(state.table, key);
+    const answer = answerFrom(state.table, tableKeyOf(key));
     if (answer !== undefined) return answer;
     // A tag the manifest does not name is superseded rather than absent, and
     // the reader is owed the difference: what is missing is the entry.

@@ -26,9 +26,12 @@ export type {
   CarrierProblem,
   CheckedCarrier,
   CheckedEntry,
+  CheckedModuleEntry,
+  CheckedPackageEntry,
   CheckOutcome,
   EntryKey,
   ModuleEntryKey,
+  PackageAddress,
   PackageEntryKey,
 } from "./check.js";
 export type {

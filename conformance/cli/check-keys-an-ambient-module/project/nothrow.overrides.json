@@ -21,6 +21,16 @@
           }
         }
       }
+    },
+    "path": {
+      "exports": {
+        ".": {
+          "resolve": {
+            "color": "non-throwing",
+            "conditions": []
+          }
+        }
+      }
     }
   },
   "modules": {

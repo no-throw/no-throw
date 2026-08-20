@@ -596,10 +596,11 @@ does not would otherwise fail over a file that is right.
 
 A [`modules`](#ambient-modules) entry is held the same way, against the block a
 declaration is *written in* rather than one that re-exports it — and this is
-where the spellings a Node builtin invites get sorted out, with no row left as a
-dead end: the two package ones each say what to write instead, the block that
-only re-exports names the one to move to, and a specifier nothing here declares
-is inert rather than wrong:
+where the spellings a Node builtin invites get sorted out. No row is left as a
+dead end, and none is left one hop short of one: a name that is a block is held
+against that block in the same breath, so what it is told to write is an address
+that reaches rather than the next spelling along. Here every row that has an
+answer names `"path"`:
 
 ```text
 nothrow.overrides.json
@@ -607,13 +608,21 @@ nothrow.overrides.json
     nothing of `node:path` is in this project, and "node:path" is an ambient
     `declare module` block this project does declare — so this is the right
     name under the wrong table.
-    Key it under `modules` → "node:path" instead.
+    "node:path" publishes this key, and what it reaches is declared in "path" —
+    which is the block a carrier is matched by, so this entry is never
+    consulted.
+    Key it under `modules` → "path" instead.
   @types/node → "." → `join`
     `@types/node` publishes nothing at ".", and nothing at any other subpath.
     The walk from its entry points reached no name a carrier could key, so no
     entry under this package reaches anything.
     Its types are ambient `declare module` blocks, which no entry point
     publishes: key those under `modules`. It declares: "node:path", "path"
+  path → "." → `resolve`
+    nothing of `path` is in this project, and "path" is an ambient `declare
+    module` block this project does declare — so this is the right name under
+    the wrong table.
+    Key it under `modules` → "path" instead.
   modules → "path" → `basename`
     "path" declares no symbol at this key, so this entry colors nothing.
     What it declares: `join`, `resolve`
@@ -621,14 +630,17 @@ nothrow.overrides.json
     "node:path" publishes this key, and what it reaches is declared in "path" —
     which is the block a carrier is matched by, so this entry is never
     consulted.
-    Key it under "path" instead.
+    Key it under `modules` → "path" instead.
   modules → "node:crypto" → `hash`
     nothing here declares the ambient module "node:crypto", so there is no
     surface to hold this against. Inert rather than wrong.
 ```
 
 A specifier nothing here declares is inert for the same reason a package this
-project does not hold is.
+project does not hold is. The other direction is answered in full too: a key a
+block only re-exports from an ordinary package is named with all three halves of
+the package address to write instead, since a `modules` entry has none of them
+to carry over.
 
 ## The `safely()` pattern
 

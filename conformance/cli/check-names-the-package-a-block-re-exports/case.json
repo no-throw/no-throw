@@ -1,0 +1,16 @@
+{
+  "description": "The other direction across the two address spaces: a `modules` entry whose key reaches something no `declare module` block declares. A block that re-exports an ordinary package's symbol publishes it, so the key resolves — and a rung looks that declaration up under the package it ships in, so the entry is never consulted. The whole address is named rather than the package alone, because a module entry has none of its three halves to carry over and the namepath a package publishes it under need not be the block's. Both ways there is no address to name are named too, and they are different faults: a package whose entry points do not reach it is a package the reader could key nothing under, and a directory whose `package.json` names nothing has no key at all until one does.",
+  "steps": [
+    {
+      "check": [],
+      "in": "project",
+      "expect": "refused",
+      "names": [
+        "modules → \"shim\" → `plain`\n    \"shim\" publishes this key, and what it reaches is declared in no `declare module` block at all, so it has an export surface address rather than a module one.\n    Key it under `packages` → `wrapped` → \".\" → `plain` instead.",
+        "modules → \"shim\" → `hidden`\n    \"shim\" publishes this key, and what it reaches is declared in no `declare module` block at all, so it has an export surface address rather than a module one.\n    It ships in `wrapped`, and nothing that package's entry points publish reaches it, so no key under any table reaches it either.",
+        "modules → \"shim\" → `stray`\n    \"shim\" publishes this key, and what it reaches is declared in no `declare module` block at all, so it has an export surface address rather than a module one.\n    Nothing names the package it ships in, so nothing keyed anywhere reaches it until a `package.json` there names one.",
+        "3 entries checked. 3 reach nothing."
+      ]
+    }
+  ]
+}
