@@ -7,6 +7,7 @@ import {
   type Bodied,
 } from "./declarations.js";
 import { iterationEscapeAt, type IterationEscape } from "./iteration.js";
+import type { TypeFacts } from "./type-facts.js";
 
 /**
  * A site that transfers control into some other body, with the syntax naming
@@ -97,7 +98,7 @@ export function calleeExpression(transfer: Transfer): ts.Expression {
  */
 export function unbridgedEscapes(
   declaration: Bodied,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
   phase: Phase = "all",
 ): readonly Escape[] {
   const found: Escape[] = [];
@@ -111,7 +112,7 @@ export function unbridgedEscapes(
         bridged,
       });
     } else if (!bridged) {
-      found.push(...escapesAt(node, checker));
+      found.push(...escapesAt(node, facts));
     }
 
     node.forEachChild((child) => {
@@ -177,7 +178,7 @@ function regionsOf(declaration: Bodied, phase: Phase): readonly ts.Node[] {
  */
 function escapesAt(
   node: ts.Node,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): readonly Escape[] {
   if (ts.isThrowStatement(node)) return [{ kind: "throw", node }];
 
@@ -186,7 +187,7 @@ function escapesAt(
   // The iteration protocol claims a call before the call rule does: `it.next()`
   // enters a body the syntax does not name, and its own declaration — the
   // standard library's `Generator` — is not the one that runs.
-  const iterating = iterationEscapeAt(node, checker);
+  const iterating = iterationEscapeAt(node, facts);
   if (iterating !== undefined) {
     found.push(iterating);
   } else if (isTransfer(node)) {
@@ -202,7 +203,7 @@ function escapesAt(
     found.push({ kind: "instance-check", node });
   } else if (
     ts.isAwaitExpression(node) &&
-    !isConsuming(node.expression, checker)
+    !isConsuming(node.expression, facts)
   ) {
     // Awaiting `it.next()` is one site, not two: the iteration seam already
     // owns what the call enters, and the promise it hands back is that same
@@ -259,11 +260,8 @@ function discardedExpression(expression: ts.Expression): ts.Expression {
 }
 
 /** Whether the iteration seam already claims this expression. */
-function isConsuming(
-  expression: ts.Expression,
-  checker: ts.TypeChecker,
-): boolean {
-  return iterationEscapeAt(skipParens(expression), checker) !== undefined;
+function isConsuming(expression: ts.Expression, facts: TypeFacts): boolean {
+  return iterationEscapeAt(skipParens(expression), facts) !== undefined;
 }
 
 function isTransfer(node: ts.Node): node is Transfer {

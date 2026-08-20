@@ -14,6 +14,8 @@ import {
   OVERRIDES_SCHEMA_FILE,
 } from "./carrier/schemas.js";
 import { exportSurfaceOf } from "./carrier/surface.js";
+import type { TypeFacts } from "./type-facts.js";
+import { typeFactsOf } from "./type-facts/typescript.js";
 
 /** The three halves of a key, which is what a carrier writes an entry under. */
 export interface EntryKey {
@@ -119,6 +121,7 @@ export function reachesNothing(entry: CheckedEntry): boolean {
 export function checkCarriers(
   program: ts.Program,
   fallback: PackageHome | undefined,
+  facts: TypeFacts = typeFactsOf(program.getTypeChecker()),
 ): CheckOutcome {
   const packages = packagesIn(program);
   const carriers: CheckedCarrier[] = [];
@@ -126,8 +129,8 @@ export function checkCarriers(
 
   for (const asking of askingHomes(program, fallback)) {
     for (const carrier of [
-      overridesCarrier(overridesStateIn(asking), packages, program),
-      ...overlayCarriers(asking, packages, program),
+      overridesCarrier(overridesStateIn(asking), packages, program, facts),
+      ...overlayCarriers(asking, packages, program, facts),
     ]) {
       if (seen.has(carrier.path)) continue;
       seen.add(carrier.path);
@@ -163,6 +166,7 @@ function overridesCarrier(
   state: OverridesState,
   packages: ReadonlyMap<string, PackageHome>,
   program: ts.Program,
+  facts: TypeFacts,
 ): CheckedCarrier {
   const name = OVERRIDES;
   const schema = OVERRIDES_SCHEMA_FILE;
@@ -210,7 +214,7 @@ function overridesCarrier(
         path: state.path,
         schema,
         entries: [...state.tables].flatMap(([owner, table]) =>
-          tableEntries(table, owner, packages, program),
+          tableEntries(table, owner, packages, program, facts),
         ),
       };
   }
@@ -220,6 +224,7 @@ function overlayCarriers(
   asking: PackageHome,
   packages: ReadonlyMap<string, PackageHome>,
   program: ts.Program,
+  facts: TypeFacts,
 ): readonly CheckedCarrier[] {
   return installedOverlaysFor(asking).map(({ home: overlay, state }) => {
     const name = overlay.name ?? overlay.directory;
@@ -260,7 +265,7 @@ function overlayCarriers(
       name,
       path,
       schema,
-      entries: tableEntries(state.table, state.target, packages, program),
+      entries: tableEntries(state.table, state.target, packages, program, facts),
     };
   });
 }
@@ -292,12 +297,13 @@ function tableEntries(
   packageName: string,
   packages: ReadonlyMap<string, PackageHome>,
   program: ts.Program,
+  facts: TypeFacts,
 ): readonly CheckedEntry[] {
   return table.written().map(({ subpath, key: symbolPath, state }) => {
     const key = { package: packageName, subpath, symbolPath };
     return state.kind === "unusable"
       ? { ...key, verdict: "unusable" as const, faults: state.faults }
-      : verdictFor(key, packages, program);
+      : verdictFor(key, packages, program, facts);
   });
 }
 
@@ -305,6 +311,7 @@ function verdictFor(
   key: EntryKey,
   packages: ReadonlyMap<string, PackageHome>,
   program: ts.Program,
+  facts: TypeFacts,
 ): CheckedEntry {
   const home = packages.get(key.package);
   // Nothing of this package is in the program, so there is no surface to hold
@@ -312,7 +319,7 @@ function verdictFor(
   // a dependency it has not imported yet.
   if (home === undefined) return { ...key, verdict: "unresolved" };
 
-  const surface = exportSurfaceOf(home, program);
+  const surface = exportSurfaceOf(home, program, facts);
   const reached = surface.declarationsAt(key.subpath, key.symbolPath);
   const [first] = reached;
   if (first === undefined) {

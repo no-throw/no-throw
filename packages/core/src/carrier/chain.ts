@@ -1,6 +1,7 @@
 import ts from "typescript";
 import { baselineRung } from "../baseline/rung.js";
 import { hasDeclaredMark } from "../marks.js";
+import type { TypeFacts } from "../type-facts.js";
 import type { ColorTable, ColorTables, ManifestEntry } from "./document.js";
 import { manifestAt } from "./manifest.js";
 import { overlaysFor } from "./overlays.js";
@@ -44,13 +45,21 @@ export interface CarrierQuery {
    * type the project augments has two, and which one arrives here is overload
    * resolution's business rather than a fact about the member.
    */
-  readonly checker: ts.TypeChecker;
+  readonly facts: TypeFacts;
   /** The package the declaration ships in. */
   readonly home: PackageHome | undefined;
   /** The package the file being analyzed ships in. */
   readonly asking: PackageHome | undefined;
-  /** Where the package's published surface reaches it, if it reaches it. */
-  readonly key: ExportKey | undefined;
+  /**
+   * Where the package's published surface reaches it, if it reaches it.
+   *
+   * A question rather than a field: answering it walks the whole package's
+   * export surface, and a rung with no table for the package never needs the
+   * answer — which is the common case, since most packages a program pulls in
+   * carry nothing at all. #81 measured the eager form as ~29,000 of the ~29,100
+   * type-system queries a run of this engine over its own sources makes.
+   */
+  key(): ExportKey | undefined;
 }
 
 export type CarrierRung = (query: CarrierQuery) => CarrierAnswer | undefined;
@@ -75,6 +84,7 @@ export interface Carrier {
 export function createCarrier(
   sourceFile: ts.SourceFile,
   program: ts.Program,
+  facts: TypeFacts,
 ): Carrier {
   const asking = packageHomeOf(sourceFile.fileName);
   // The one rung whose file belongs to the project doing the asking, so it is
@@ -84,27 +94,38 @@ export function createCarrier(
   const rungs = [overriddenBy(overridesIn(asking)), ...RUNGS];
 
   const answers = new Map<ts.Declaration, CarrierAnswer | undefined>();
-  const checker = program.getTypeChecker();
 
   interface Located {
     readonly home: PackageHome | undefined;
-    readonly key: ExportKey | undefined;
+    key(): ExportKey | undefined;
   }
   const located = new Map<ts.Declaration, Located>();
 
   // Where the declaration ships and what its package publishes it as, which
-  // both questions below need and neither owns.
+  // both questions below need and neither owns. The home is a walk up the
+  // file's directories; the key is a walk of the package's whole export
+  // surface, so it is asked at most once per declaration and only by a caller
+  // that has something to look it up in. Absence is an answer, so the flag
+  // rather than the value is what records that it has been asked.
   const locate = (declaration: ts.Declaration): Located => {
     const known = located.get(declaration);
     if (known !== undefined) return known;
 
     const home = packageHomeOf(declaration.getSourceFile().fileName);
+    let asked = false;
+    let key: ExportKey | undefined;
     const at: Located = {
       home,
-      key:
-        home === undefined
-          ? undefined
-          : exportSurfaceOf(home, program).keyOf(declaration),
+      key: () => {
+        if (!asked) {
+          asked = true;
+          key =
+            home === undefined
+              ? undefined
+              : exportSurfaceOf(home, program, facts).keyOf(declaration);
+        }
+        return key;
+      },
     };
     located.set(declaration, at);
     return at;
@@ -117,7 +138,7 @@ export function createCarrier(
       const { home, key } = locate(declaration);
       const query: CarrierQuery = {
         declaration,
-        checker,
+        facts,
         home,
         asking,
         key,
@@ -132,7 +153,7 @@ export function createCarrier(
       answers.set(declaration, answer);
       return answer;
     },
-    keyFor: (declaration) => locate(declaration).key,
+    keyFor: (declaration) => locate(declaration).key(),
   };
 }
 
@@ -142,7 +163,7 @@ export function createCarrier(
  * else has colored, you can color here, and nothing outranks you.
  */
 function overriddenBy(overrides: ColorTables): CarrierRung {
-  return (query) => answerFrom(tableFor(overrides, query.home), query.key);
+  return (query) => answerFrom(tableFor(overrides, query.home), query);
 }
 
 /**
@@ -151,7 +172,7 @@ function overriddenBy(overrides: ColorTables): CarrierRung {
  * ships in — the overlay's own name is never read.
  */
 const overlaid: CarrierRung = (query) =>
-  answerFrom(tableFor(overlaysFor(query.asking), query.home), query.key);
+  answerFrom(tableFor(overlaysFor(query.asking), query.home), query);
 
 /** The table a rung holds for the package this declaration ships in. */
 function tableFor(
@@ -168,9 +189,11 @@ function tableFor(
  */
 function answerFrom(
   table: ColorTable | undefined,
-  key: ExportKey | undefined,
+  query: CarrierQuery,
 ): CarrierAnswer | undefined {
-  if (table === undefined || key === undefined) return undefined;
+  if (table === undefined) return undefined;
+  const key = query.key();
+  if (key === undefined) return undefined;
 
   const entry = table.entryFor(key.subpath, key.symbolPath);
   if (entry === undefined) return undefined;
@@ -188,7 +211,7 @@ function answerFrom(
  * `@nothrow` keeps one meaning — a verified seed.
  */
 const shipped: CarrierRung = (query) => {
-  const { home, asking, key } = query;
+  const { home, asking } = query;
   if (home === undefined || sameHome(home, asking)) return undefined;
 
   const state = manifestAt(home);
@@ -204,7 +227,7 @@ const shipped: CarrierRung = (query) => {
   // resurrect through a surviving comment exactly the lying mark emit refused
   // to write down.
   if (state.kind === "valid") {
-    const answer = answerFrom(state.table, key);
+    const answer = answerFrom(state.table, query);
     if (answer !== undefined) return answer;
     // A tag the manifest does not name is superseded rather than absent, and
     // the reader is owed the difference: what is missing is the entry.

@@ -1,0 +1,10 @@
+{
+  "name": "ts7-engine-spike",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "dependencies": {
+    "@nothrow/core": "file:../../packages/core",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2"
+  }
+}

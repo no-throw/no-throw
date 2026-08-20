@@ -9,6 +9,7 @@
  * use, so `[Symbol.iterator]` is `Array#@@iterator`.
  */
 import ts from "typescript";
+import type { TypeFacts } from "../type-facts.js";
 
 export function memberKey(owner: string, member: string): string {
   return `${owner}#${member}`;
@@ -64,9 +65,9 @@ export interface LibDeclaration {
  */
 export function libDeclarationsOf(
   declaration: ts.Declaration,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): readonly LibDeclaration[] {
-  return declarationsOfMember(declaration, checker).flatMap((declared) => {
+  return declarationsOfMember(declaration, facts).flatMap((declared) => {
     const libTarget = libTargetOfFileName(declared.getSourceFile().fileName);
     return libTarget === undefined ? [] : [{ declaration: declared, libTarget }];
   });
@@ -79,13 +80,12 @@ export function libDeclarationsOf(
  */
 function declarationsOfMember(
   declaration: ts.Declaration,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): readonly ts.Declaration[] {
   const name = ts.getNameOfDeclaration(declaration);
+  const symbol = name === undefined ? undefined : facts.symbolAt(name);
   const declarations =
-    name === undefined
-      ? undefined
-      : checker.getSymbolAtLocation(name)?.declarations;
+    symbol === undefined ? undefined : facts.declarationsOf(symbol);
   return declarations === undefined || declarations.length === 0
     ? [declaration]
     : declarations;

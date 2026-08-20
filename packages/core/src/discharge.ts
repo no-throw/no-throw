@@ -21,6 +21,7 @@ import {
   type Resolution,
   type Target,
 } from "./targets.js";
+import { boundDeclaration, type TypeFacts } from "./type-facts.js";
 
 /**
  * What one of a callee's conditions comes to at one call site. `propagate` is
@@ -61,7 +62,7 @@ export function dischargeAt(
         args,
         condition.path.paramIndex,
         condition.requires,
-        resolution.checker,
+        resolution.facts,
       );
 }
 
@@ -73,7 +74,7 @@ function absenceAt(
   args: readonly ts.Expression[] | undefined,
   paramIndex: number,
   requires: Absence,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): readonly Outcome[] {
   // A tagged template's arguments are the template's own strings and
   // substitutions, so there is no position there to read — but the question is
@@ -88,7 +89,7 @@ function absenceAt(
   }
 
   const argument = args[paramIndex];
-  return argument === undefined || namesNothing(argument, requires, checker)
+  return argument === undefined || namesNothing(argument, requires, facts)
     ? []
     : [{ kind: "present", reason: "argument-passed" }];
 }
@@ -100,7 +101,7 @@ function enteredAt(
   caller: Bodied,
   resolution: Resolution,
 ): readonly Outcome[] {
-  const { checker } = resolution;
+  const { facts } = resolution;
   const { paramIndex, members } = path;
 
   // A tagged template's arguments are the template's own strings and
@@ -133,10 +134,10 @@ function enteredAt(
   // function entered. The member is answered by the checker's symbol for it —
   // but on the value in hand, since a binding's declared type is a promise a
   // subclass is free to override the named member out from under.
-  const argumentPath = pathOf(argument, caller, checker);
+  const argumentPath = pathOf(argument, caller, facts);
   if (argumentPath !== undefined) return [propagate(argumentPath, members)];
 
-  const receiver = resolveReceiver(argument, checker);
+  const receiver = resolveReceiver(argument, facts);
   if (receiver.kind === "mutable") {
     return [{ kind: "floor", reason: "mutable-binding" }];
   }
@@ -169,12 +170,12 @@ function enteredAt(
 function namesNothing(
   argument: ts.Expression,
   requires: Absence,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): boolean {
   const written = skipParens(argument);
   if (written.kind === ts.SyntaxKind.NullKeyword) return requires === "nullish";
   if (!ts.isIdentifier(written) || written.text !== "undefined") return false;
-  return checker.getSymbolAtLocation(written)?.valueDeclaration === undefined;
+  return boundDeclaration(written, facts) === undefined;
 }
 
 /** The arguments a transfer passes positionally, where it passes any. */

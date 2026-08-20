@@ -3,6 +3,7 @@ import ts from "typescript";
 import type { CarrierAnswer, CarrierRung } from "../carrier/chain.js";
 import type { FloorSource } from "../colors.js";
 import { signatureSegment } from "../segments.js";
+import type { TypeFacts } from "../type-facts.js";
 import {
   baselineCoversOwner,
   lookupBaselineEntry,
@@ -36,7 +37,7 @@ import {
  * `@no-throw/core` release floors its newcomers by construction.
  */
 export const baselineRung: CarrierRung = (query): CarrierAnswer | undefined => {
-  const entries = libDeclarationsOf(query.declaration, query.checker).flatMap(
+  const entries = libDeclarationsOf(query.declaration, query.facts).flatMap(
     ({ declaration, libTarget }) => {
       const key = baselineKeyOf(declaration);
       if (key === undefined) return [];
@@ -80,9 +81,9 @@ export type Stated = "stated" | "unstated";
 export function floorSourceOf(
   declaration: ts.Declaration,
   stated: Stated,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): FloorSource {
-  const [declared] = libDeclarationsOf(declaration, checker);
+  const [declared] = libDeclarationsOf(declaration, facts);
   if (declared === undefined) return PACKAGE_SOURCE;
   return {
     reach: "lib",
@@ -102,9 +103,9 @@ export const PACKAGE_SOURCE: FloorSource = { reach: "package" };
  */
 export function baselineEnumerates(
   declaration: ts.Declaration,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): boolean {
-  return libDeclarationsOf(declaration, checker).some((declared) => {
+  return libDeclarationsOf(declaration, facts).some((declared) => {
     const owner = ownerOf(declared.declaration);
     return owner !== undefined && baselineCoversOwner(declared.libTarget, owner.name);
   });

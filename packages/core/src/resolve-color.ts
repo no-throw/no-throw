@@ -31,7 +31,7 @@ import {
 } from "./escapes.js";
 import { createFixpoint } from "./infer.js";
 import {
-  constituentsOf,
+  apparentConstituentsOf,
   isIteratorType,
   protocolMember,
   type Consumption,
@@ -62,6 +62,11 @@ import {
   type TransferColor,
   type TransferSite,
 } from "./transfers.js";
+import {
+  boundDeclaration,
+  type TypeFacts,
+  type TypeRef,
+} from "./type-facts.js";
 
 /**
  * One reason a body escapes. A transfer can produce several — a lost callee
@@ -314,7 +319,7 @@ interface HiddenSite {
 }
 
 export function createColorResolver(resolution: Resolution): ColorResolver {
-  const { checker } = resolution;
+  const { facts } = resolution;
   const policy = colorPolicy();
 
   const walks = new Map<Bodied, Map<Phase, readonly Escape[]>>();
@@ -388,7 +393,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     walks.set(body, byPhase);
     const known = byPhase.get(phase);
     if (known !== undefined) return known;
-    const found = unbridgedEscapes(body, checker, phase);
+    const found = unbridgedEscapes(body, facts, phase);
     byPhase.set(phase, found);
     return found;
   }
@@ -722,7 +727,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     // Reading them as ordinary calls would floor every chain on the standard
     // library's bodyless declaration and never reach the handlers, which are
     // where a chain's color actually comes from.
-    if (chainAt(site, checker) !== undefined) return;
+    if (chainAt(site, facts) !== undefined) return;
 
     if (target.kind === "floor") {
       if (!awaitedDirectly(site)) {
@@ -927,10 +932,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     const known = consumedAt.get(site.node);
     if (known !== undefined) return known;
 
-    const types = constituentsOf(
-      checker.getTypeAtLocation(site.typeAt),
-      checker,
-    );
+    const types = apparentConstituentsOf(facts.typeAt(site.typeAt), facts);
     const consumed = types.flatMap((type) =>
       constituentConsumed(site, type, body),
     );
@@ -945,14 +947,14 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
    */
   function constituentConsumed(
     site: Consumption,
-    type: ts.Type,
+    type: TypeRef,
     body: Bodied,
   ): readonly Consumed[] {
-    const iterator = isIteratorType(type, checker);
+    const iterator = isIteratorType(type, facts);
     const origin =
       site.source === undefined
         ? undefined
-        : originatingCall(site.source, checker);
+        : originatingCall(site.source, facts);
 
     if (iterator && origin !== undefined) {
       return targetsOf(origin, body).map((target) =>
@@ -968,13 +970,13 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       (consumed) => consumed.kind === "floor" && consumed.reason === "bodyless",
     );
     return iterator && bodyless
-      ? [floorConsumed(untracedReason(site.source, checker))]
+      ? [floorConsumed(untracedReason(site.source, facts))]
       : resolved;
   }
 
   /** The protocol members a site runs, resolved through the static type. */
   function protocolConsumed(
-    type: ts.Type,
+    type: TypeRef,
     protocol: Protocol,
     async: boolean,
   ): readonly Consumed[] {
@@ -988,11 +990,11 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     // carries, since the consumer picks and we do not see them pick.
     const parts: Consumed[] = [];
     for (const name of ["next", "return"] as const) {
-      if (protocolMember(type, name, checker, true) !== undefined) {
+      if (protocolMember(type, name, facts, true) !== undefined) {
         parts.push(memberConsumed(type, name, "call", true));
       }
     }
-    if (protocolMember(type, "iterator", checker, true) !== undefined) {
+    if (protocolMember(type, "iterator", facts, true) !== undefined) {
       parts.push(...iterableConsumed(type, true));
     }
     return parts.length === 0 ? [floorConsumed("unresolvable")] : parts;
@@ -1000,10 +1002,10 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
 
   /** `[Symbol.iterator]()` runs, and what it hands back is driven to done. */
   function iterableConsumed(
-    type: ts.Type,
+    type: TypeRef,
     async: boolean,
   ): readonly Consumed[] {
-    if (protocolMember(type, "iterator", checker, async) === undefined) {
+    if (protocolMember(type, "iterator", facts, async) === undefined) {
       return [floorConsumed("unresolvable")];
     }
     return [
@@ -1013,12 +1015,12 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   }
 
   function memberConsumed(
-    type: ts.Type,
+    type: TypeRef,
     name: ProtocolMemberName,
     facet: Facet,
     async: boolean,
   ): Consumed {
-    const member = protocolMember(type, name, checker, async);
+    const member = protocolMember(type, name, facts, async);
     return member === undefined
       ? floorConsumed("unresolvable")
       : consumedFrom(declarationTarget(member, resolution), facet);
@@ -1132,21 +1134,21 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     const expression = skipParens(expr);
     // Nothing that is not a promise can reject, and saying so here is what
     // keeps every site that asks free of the question.
-    if (!isPromiseType(checker.getTypeAtLocation(expression), checker)) {
+    if (!isPromiseType(facts.typeAt(expression), facts)) {
       return REJECTION_CLEAN;
     }
 
-    const chain = chainAt(expression, checker);
+    const chain = chainAt(expression, facts);
     if (chain !== undefined) return foldChain(chain, body);
 
-    const origin = originatingCall(expression, checker);
+    const origin = originatingCall(expression, facts);
     if (origin === undefined) {
       return floorRejection(untracedRejection(expression), "promise");
     }
     // The fold is syntactic. A chain reached through a binding is a stored
     // partial chain, and folding it would be claiming the handlers written
     // somewhere else are the ones this value carries.
-    if (origin !== expression && chainAt(origin, checker) !== undefined) {
+    if (origin !== expression && chainAt(origin, facts) !== undefined) {
       return floorRejection("untraced", "promise");
     }
 
@@ -1246,7 +1248,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   function untracedRejection(expression: ts.Expression): RejectionReason {
     if (!ts.isIdentifier(expression)) return "untraced";
     const declaration =
-      checker.getSymbolAtLocation(expression)?.valueDeclaration;
+      boundDeclaration(expression, facts);
     return declaration !== undefined &&
       ts.isVariableDeclaration(declaration) &&
       (ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const) === 0
@@ -1394,7 +1396,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     while (ts.isParenthesizedExpression(node.parent)) node = node.parent;
     return (
       ts.isAwaitExpression(node.parent) &&
-      isPromiseType(checker.getTypeAtLocation(site), checker)
+      isPromiseType(facts.typeAt(site), facts)
     );
   }
 
@@ -1446,7 +1448,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
 
     const found: BodyEscape[] = [];
     for (const expression of returnedExpressions(body)) {
-      if (!isIteratorType(checker.getTypeAtLocation(expression), checker)) {
+      if (!isIteratorType(facts.typeAt(expression), facts)) {
         continue;
       }
       const consumed = consumedReason(producedBy(expression, body), throwingOf);
@@ -1535,10 +1537,10 @@ function colorNodesIn(consumed: readonly Consumed[]): readonly ColorNode[] {
  */
 function untracedReason(
   source: ts.Expression | undefined,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): ConsumptionReason {
   if (source === undefined || !ts.isIdentifier(source)) return "untraced";
-  const declaration = checker.getSymbolAtLocation(source)?.valueDeclaration;
+  const declaration = boundDeclaration(source, facts);
   return declaration !== undefined && ts.isVariableDeclaration(declaration)
     ? "mutable-binding"
     : "untraced";

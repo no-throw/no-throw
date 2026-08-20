@@ -14,6 +14,8 @@ import { calleeExpression, type Transfer } from "./escapes.js";
 import { findMarks, type Span } from "./marks.js";
 import { createColorResolver, type BodyEscape } from "./resolve-color.js";
 import { textOf, type HiddenCallee, type TransferSite } from "./transfers.js";
+import type { TypeFacts } from "./type-facts.js";
+import { typeFactsOf } from "./type-facts/typescript.js";
 
 /**
  * Where a finding lands, which is two places rather than one. `node` is the
@@ -216,9 +218,15 @@ export type Finding =
 export function analyzeSourceFile(
   sourceFile: ts.SourceFile,
   program: ts.Program,
+  /**
+   * Where the type answers come from, for a host whose checker is not the
+   * program's own — a TypeScript 7 client, or an instrumented one. Hosts that
+   * have a `ts.Program` and nothing else omit it and get the program's checker,
+   * which is every consumer today.
+   */
+  facts: TypeFacts = typeFactsOf(program.getTypeChecker()),
 ): readonly Finding[] {
   const findings: Finding[] = [];
-  const checker = program.getTypeChecker();
   // The inference memo lives as long as one file's analysis. Sharing it across
   // a program is the incrementality question the dogfooding gate prices.
   //
@@ -226,8 +234,8 @@ export function analyzeSourceFile(
   // package is asking: your own bodyless declarations are the authoring side,
   // where an unverified assertion belongs in the overrides channel.
   const colors = createColorResolver({
-    checker,
-    carrier: createCarrier(sourceFile, program),
+    facts,
+    carrier: createCarrier(sourceFile, program, facts),
   });
 
   // Unmarked functions have nothing to enforce: throwing is the default, and

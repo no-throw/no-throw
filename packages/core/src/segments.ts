@@ -55,15 +55,18 @@ const RESERVED = /^__(?!_)/u;
  * The escaping is undone on the way out. A member table holds escaped names and
  * a key holds source ones, so a package publishing `__weird` is keyed for the
  * name its consumer can see rather than for the one the binder stored.
+ *
+ * The name arrives as a plain string, which is what a symbol table's keys are
+ * at runtime and all a table reached across a process boundary could carry.
+ * `__String` is TypeScript's own branding of that string, so undoing the
+ * escaping is the one place the brand is put back on.
  */
-export function keySegment(name: ts.__String): string | undefined {
-  if (typeof name !== "string") return undefined;
-
+export function keySegment(name: string): string | undefined {
   const signature = SIGNATURES.get(name);
   if (signature !== undefined) return signature;
   if (RESERVED.test(name)) return undefined;
 
-  const written = ts.unescapeLeadingUnderscores(name);
+  const written = ts.unescapeLeadingUnderscores(name as ts.__String);
   return IDENTIFIER.test(written) ? written : undefined;
 }
 

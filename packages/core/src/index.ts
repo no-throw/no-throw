@@ -67,3 +67,10 @@ export type {
 export { findMarks } from "./marks.js";
 export type { MarkProblem, MarkProblemKind, Marks, Span } from "./marks.js";
 export type { HiddenCallee, TransferSite } from "./transfers.js";
+export type {
+  SignatureRef,
+  SymbolRef,
+  TypeFacts,
+  TypeRef,
+} from "./type-facts.js";
+export { typeFactsOf } from "./type-facts/typescript.js";

@@ -6,7 +6,12 @@ import {
   isGenerator,
   type Bodied,
 } from "./declarations.js";
-import { constituentsOf } from "./iteration.js";
+import { apparentConstituentsOf } from "./iteration.js";
+import {
+  resolvedDeclaration,
+  type TypeFacts,
+  type TypeRef,
+} from "./type-facts.js";
 
 /**
  * One link of a promise chain: which of `then`/`catch`/`finally` runs, and the
@@ -36,7 +41,7 @@ export interface Chain {
  */
 export function chainAt(
   expression: ts.Expression,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
 ): Chain | undefined {
   if (!ts.isCallExpression(expression)) return undefined;
 
@@ -47,14 +52,14 @@ export function chainAt(
   if (name !== "then" && name !== "catch" && name !== "finally") return undefined;
 
   const source = callee.expression;
-  if (!isPromiseType(checker.getTypeAtLocation(source), checker)) {
+  if (!isPromiseType(facts.typeAt(source), facts)) {
     return undefined;
   }
 
   // The fold table describes `Promise.prototype`. A thenable whose `then` we
   // can read is an ordinary call, colored by the body that actually runs —
   // folding it would assume semantics the source is right there to contradict.
-  const declaration = checker.getResolvedSignature(expression)?.declaration;
+  const declaration = resolvedDeclaration(expression, facts);
   if (
     declaration !== undefined &&
     ts.isFunctionLike(declaration) &&
@@ -99,15 +104,12 @@ function handler(argument: ts.Expression | undefined): ts.Expression | undefined
  * for the same reason iteration joins one — the value runs whichever surface it
  * turns out to carry.
  */
-export function isPromiseType(
-  type: ts.Type,
-  checker: ts.TypeChecker,
-): boolean {
-  return constituentsOf(type, checker).some((constituent) => {
-    const then = checker.getPropertyOfType(constituent, "then");
+export function isPromiseType(type: TypeRef, facts: TypeFacts): boolean {
+  return apparentConstituentsOf(type, facts).some((constituent) => {
+    const then = facts.propertyOfType(constituent, "then");
     return (
       then !== undefined &&
-      checker.getTypeOfSymbol(then).getCallSignatures().length > 0
+      facts.callSignaturesOf(facts.typeOfSymbol(then)).length > 0
     );
   });
 }

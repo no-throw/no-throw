@@ -1,5 +1,6 @@
 import ts from "typescript";
 import { keySegment } from "../segments.js";
+import type { SymbolRef, TypeFacts, TypeRef } from "../type-facts.js";
 import { normalize, type PackageHome } from "./packages.js";
 
 /** Where a package's published surface reaches a declaration. */
@@ -51,6 +52,7 @@ const surfaces = new WeakMap<ts.Program, Map<string, ExportSurface>>();
 export function exportSurfaceOf(
   home: PackageHome,
   program: ts.Program,
+  facts: TypeFacts,
 ): ExportSurface {
   const byPackage = surfaces.get(program) ?? new Map<string, ExportSurface>();
   surfaces.set(program, byPackage);
@@ -58,7 +60,7 @@ export function exportSurfaceOf(
   const known = byPackage.get(home.directory);
   if (known !== undefined) return known;
 
-  const surface = surfaceOver(home.entryPoints, program);
+  const surface = surfaceOver(home.entryPoints, program, facts);
   byPackage.set(home.directory, surface);
   return surface;
 }
@@ -72,8 +74,8 @@ export function exportSurfaceOf(
 export function surfaceOver(
   entryPoints: ReadonlyMap<string, readonly string[]>,
   program: ts.Program,
+  facts: TypeFacts,
 ): ExportSurface {
-  const checker = program.getTypeChecker();
   const keys = new Map<ts.Declaration, ExportKey>();
 
   // Sorted so that a symbol two subpaths both publish is keyed the same way
@@ -82,9 +84,9 @@ export function surfaceOver(
     for (const file of entryPoints.get(subpath) ?? []) {
       const sourceFile = sourceFileAt(file, program);
       if (sourceFile === undefined) continue;
-      for (const module of modulesIn(sourceFile, checker)) {
-        for (const [name, exported] of publishedBy(module, checker)) {
-          record(keys, checker, subpath, name, exported, 0);
+      for (const module of modulesIn(sourceFile, facts)) {
+        for (const [name, exported] of publishedBy(module, facts)) {
+          record(keys, facts, subpath, name, exported, 0);
         }
       }
     }
@@ -128,33 +130,39 @@ export function surfaceOver(
  * `m.red` reached the same way `export const red` would have been.
  */
 function publishedBy(
-  module: ts.Symbol,
-  checker: ts.TypeChecker,
-): readonly (readonly [string, ts.Symbol])[] {
-  const assigned = exportedValueOf(module, checker);
+  module: SymbolRef,
+  facts: TypeFacts,
+): readonly (readonly [string, SymbolRef])[] {
+  const assigned = exportedValueOf(module, facts);
   if (assigned !== undefined) {
-    return checker
-      .getPropertiesOfType(assigned)
-      .map((property) => [property.getName(), property] as const);
+    return facts
+      .propertiesOfType(assigned)
+      .map((property) => [facts.nameOf(property), property] as const);
   }
-  return checker
-    .getExportsOfModule(module)
-    .map((exported) => [exported.getName(), exported] as const);
+  return facts
+    .exportsOfModule(module)
+    .map((exported) => [facts.nameOf(exported), exported] as const);
 }
 
 /** The type of what `export =` assigned, where the module assigned one. */
 function exportedValueOf(
-  module: ts.Symbol,
-  checker: ts.TypeChecker,
-): ts.Type | undefined {
-  const assignment = module.exports?.get(ts.InternalSymbolName.ExportEquals);
+  module: SymbolRef,
+  facts: TypeFacts,
+): TypeRef | undefined {
+  const assignment = facts
+    .exportsOfSymbol(module)
+    .get(ts.InternalSymbolName.ExportEquals);
   if (assignment === undefined) return undefined;
 
-  const resolved = aliasedSymbol(assignment, checker);
-  const at = resolved.valueDeclaration ?? resolved.declarations?.[0];
-  return at === undefined
-    ? undefined
-    : checker.getTypeOfSymbolAtLocation(resolved, at);
+  const resolved = aliasedSymbol(assignment, facts);
+  const at =
+    facts.valueDeclarationOf(resolved) ?? facts.declarationsOf(resolved)[0];
+  return at === undefined ? undefined : facts.typeOfSymbolAt(resolved, at);
+}
+
+/** What an alias names, and everything else as it stands. */
+function aliasedSymbol(symbol: SymbolRef, facts: TypeFacts): SymbolRef {
+  return facts.isAlias(symbol) ? facts.aliasedSymbol(symbol) : symbol;
 }
 
 /**
@@ -188,15 +196,15 @@ function typeHolderOf(node: ts.Declaration): ts.Declaration | undefined {
  */
 function record(
   keys: Map<ts.Declaration, ExportKey>,
-  checker: ts.TypeChecker,
+  facts: TypeFacts,
   subpath: string,
   symbolPath: string,
-  symbol: ts.Symbol,
+  symbol: SymbolRef,
   depth: number,
 ): void {
-  const resolved = aliasedSymbol(symbol, checker);
+  const resolved = aliasedSymbol(symbol, facts);
 
-  for (const declaration of resolved.declarations ?? []) {
+  for (const declaration of facts.declarationsOf(resolved)) {
     // First path wins: a symbol two entry points both publish is one symbol
     // with one color, and re-keying it would make the answer depend on order.
     if (!keys.has(declaration)) keys.set(declaration, { subpath, symbolPath });
@@ -204,28 +212,22 @@ function record(
 
   if (depth >= MAX_DEPTH) return;
 
-  for (const [name, member] of resolved.members ?? []) {
+  for (const [name, member] of facts.membersOfSymbol(resolved)) {
     const segment = keySegment(name);
     if (segment !== undefined) {
       const path = `${symbolPath}#${segment}`;
-      record(keys, checker, subpath, path, member, depth + 1);
+      record(keys, facts, subpath, path, member, depth + 1);
     }
   }
   // A class's statics and a namespace's contents are the same table, and both
   // are reached with a dot.
-  for (const [name, member] of resolved.exports ?? []) {
+  for (const [name, member] of facts.exportsOfSymbol(resolved)) {
     const segment = keySegment(name);
     if (segment !== undefined) {
       const path = `${symbolPath}.${segment}`;
-      record(keys, checker, subpath, path, member, depth + 1);
+      record(keys, facts, subpath, path, member, depth + 1);
     }
   }
-}
-
-function aliasedSymbol(symbol: ts.Symbol, checker: ts.TypeChecker): ts.Symbol {
-  return (symbol.flags & ts.SymbolFlags.Alias) === 0
-    ? symbol
-    : checker.getAliasedSymbol(symbol);
 }
 
 /**
@@ -235,16 +237,16 @@ function aliasedSymbol(symbol: ts.Symbol, checker: ts.TypeChecker): ts.Symbol {
  */
 function modulesIn(
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker,
-): readonly ts.Symbol[] {
-  const own = checker.getSymbolAtLocation(sourceFile);
+  facts: TypeFacts,
+): readonly SymbolRef[] {
+  const own = facts.symbolAt(sourceFile);
   if (own !== undefined) return [own];
 
-  const ambient: ts.Symbol[] = [];
+  const ambient: SymbolRef[] = [];
   for (const statement of sourceFile.statements) {
     if (!ts.isModuleDeclaration(statement)) continue;
     if (!ts.isStringLiteral(statement.name)) continue;
-    const symbol = checker.getSymbolAtLocation(statement.name);
+    const symbol = facts.symbolAt(statement.name);
     if (symbol !== undefined) ambient.push(symbol);
   }
   return ambient;
