@@ -558,9 +558,16 @@ throwing callback is fine. Nothing recognizes it by name.
 ## Performance
 
 Marking is type-aware linting, and the honest question is what it costs on top of
-a typed lint you already run. Measured against **microsoft/TypeScript** — 601
-files, 379,646 lines, 12,326 functions, 36,566 call edges — with 1,093 marks
-placed:
+the lint you already run. **The two adapters answer it differently**, because
+they get their types from different places, so the numbers are per host. Both
+were taken over **microsoft/TypeScript** on a developer laptop — over different
+slices of it, named below — and both are shapes rather than constants.
+
+### Under ESLint
+
+typescript-eslint has already built a program for its own type-aware rules, so
+what these rules add is the walk. Measured over 601 files, 379,646 lines, 12,326
+functions and 36,566 call edges, with 1,093 marks placed:
 
 | | |
 | --- | --- |
@@ -568,6 +575,35 @@ placed:
 | Editor re-lint after an edit | **~100 ms of ~800 ms** |
 | Eleven times the marks | +7% |
 | Edits that split or merge a cycle group | no worse than an ordinary body edit |
+
+The method and the caveats are in
+[the performance gate](docs/dogfooding-performance-gate.md).
+
+### Under oxlint
+
+oxlint hands a JS plugin no type information, so the adapter builds the program
+itself. That is a **fixed** cost the ESLint host never pays, and a fixed cost is
+what a percentage hides — which is why it gets its own number. Over
+`src/compiler`, which is 77 files and 192,559 lines of the same repository:
+
+| | |
+| --- | --- |
+| Nothing marked yet | **+1.5 s**, of which ~0.6 s is loading TypeScript |
+| 273 marks placed | +16 s |
+
+The first row is the one to read before you install anything: **a project with
+no marks builds no program**, because the adapter reads each file's text for a
+mark first and a file that never writes one has nothing to check. What is left
+is loading the TypeScript compiler, once per run. On a 38-file slice the same
+row is +0.6 s, essentially all of it that load.
+
+The second row is what marks cost, and it is the same analysis the ESLint
+section prices — plus one program build, because nobody built one for us.
+
+Method, the before-and-after and the caveats are in
+[what the oxlint adapter costs](docs/oxlint-adapter-cost.md).
+
+### The lever behind both
 
 Inference is a removable layer: with it off, the engine drops to a pure-declare
 floor that is strictly more conservative and never less sound. That lever exists

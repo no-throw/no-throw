@@ -9,7 +9,7 @@ import { join } from "node:path";
  */
 const PLUGIN = import.meta.resolve("@no-throw/eslint-plugin");
 
-export type Arm = "baseline" | "preset" | "preset-compat";
+export type EslintArm = "baseline" | "preset" | "preset-compat";
 
 /** #4's lever, as the two values `NOTHROW_COLOR_POLICY` selects between. */
 export type Policy = "hybrid" | "declare";
@@ -23,8 +23,10 @@ export type Policy = "hybrid" | "declare";
  * shape a project that already registers that plugin needs, and the one that
  * makes the arms comparable when the untouched preset will not load.
  */
-export function writeArmConfigs(targetDirectory: string): Record<Arm, string> {
-  const files: Record<Arm, string> = {
+export function writeEslintConfigs(
+  targetDirectory: string,
+): Record<EslintArm, string> {
+  const files: Record<EslintArm, string> = {
     baseline: join(targetDirectory, "dogfood.baseline.eslint.config.mjs"),
     preset: join(targetDirectory, "dogfood.preset.eslint.config.mjs"),
     "preset-compat": join(

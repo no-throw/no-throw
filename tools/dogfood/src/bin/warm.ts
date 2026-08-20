@@ -2,14 +2,18 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import { writeArmConfigs, type Arm, type Policy } from "../configs.js";
+import {
+  writeEslintConfigs,
+  type EslintArm,
+  type Policy,
+} from "../configs.js";
 import { hostModule, hostVersions } from "../host.js";
 import { targetNamed, type Target } from "../targets.js";
 import { applySeeds, restoreTree } from "../tree.js";
 
 interface Sample {
   readonly edit: string;
-  readonly arm: Arm;
+  readonly arm: EslintArm;
   readonly policy: Policy;
   readonly ms: number;
   readonly errors: number;
@@ -35,7 +39,7 @@ async function main(): Promise<void> {
 
   const target = targetNamed(name);
   const iterations = Number(iterationText ?? "5");
-  const configs = writeArmConfigs(targetDirectory);
+  const configs = writeEslintConfigs(targetDirectory);
   const warmPath = join(targetDirectory, target.warm.file);
 
   const seeds = applySeeds(targetDirectory, target, target.warm.seeds);
@@ -46,13 +50,13 @@ async function main(): Promise<void> {
     "eslint",
   );
 
-  const arms: { arm: Arm; policy: Policy }[] = [
+  const arms: { arm: EslintArm; policy: Policy }[] = [
     { arm: "baseline", policy: "hybrid" },
     { arm: "preset-compat", policy: "hybrid" },
     { arm: "preset-compat", policy: "declare" },
   ];
 
-  const linters = new Map<Arm, InstanceType<typeof ESLint>>();
+  const linters = new Map<EslintArm, InstanceType<typeof ESLint>>();
   for (const { arm } of arms) {
     if (linters.has(arm)) continue;
     linters.set(
@@ -69,7 +73,7 @@ async function main(): Promise<void> {
   const lint = async (
     editName: string,
     text: string,
-    arm: Arm,
+    arm: EslintArm,
     policy: Policy,
   ): Promise<void> => {
     writeFileSync(warmPath, text);

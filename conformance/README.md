@@ -119,10 +119,19 @@ key does not constrain the offer at all.
 
 `refuses` is what a fixture asserts when the run must not finish at all. Some
 things the engine reads are the project's own and cannot be fallen back from —
-a malformed `nothrow.overrides.json` is the one — and those stop everything
-rather than being reported per file. Each entry is text the refusal has to
-contain, so a fixture pins the sentence and not the machine-dependent path
-trailing it:
+a malformed `nothrow.overrides.json` is the one — and those stop the analysis
+rather than being reported as one more diagnostic to triage.
+
+What they stop is the analysis of a file that has marks. A carrier answers for
+what a marked body calls, so a file that claims nothing never asks it anything,
+and a project that has marked nothing anywhere is never analyzed against the
+file at all — there is nothing there to be silently discarded, which is what
+the refusal exists to prevent. `nothrow check` is what answers for a carrier
+regardless of marks, and `overrides-refuses-nothing-in-an-unmarked-project`
+pins the linter's silence so it is a decision rather than a gap.
+
+Each entry is text the refusal has to contain, so a fixture pins the sentence
+and not the machine-dependent path trailing it:
 
 ```json
 {
@@ -311,6 +320,15 @@ plugin's own catalog; and it has no suggestions, so the offer's *content*
 stays pinned by the ESLint passes while its *plumbing* gets probes of its own:
 `oxlint --fix` over a fixture with offers must change nothing, and
 `--fix-suggestions` — the reader accepting the offer — must produce exactly
-the file the fixture pins. Two hosting probes assert the diagnostics this host
-alone owes, for a file with no project above it and a file its nearest project
-leaves out — shapes no fixture can hold, because a fixture *is* a project.
+the file the fixture pins.
+
+Five hosting probes assert what this host alone owes — shapes no fixture can
+hold, because a fixture *is* a project. Three are the answers themselves: a
+file with no project above it, a file its nearest project leaves out, and a
+project that cannot be read at all. The other two are about how an answer is
+reached rather than what it is, because this host reads a file's mark-shaped
+text before deciding whether to build a program at all: a *marked* file its
+project leaves out arrives at the same answer through the program rather than
+through the config's globbed list, and a file the globs miss and an import
+reaches is included on either route — the one case the cheap answer could get
+wrong, and therefore the one it must be held to.

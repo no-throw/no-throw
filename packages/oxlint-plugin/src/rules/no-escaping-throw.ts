@@ -2,6 +2,7 @@ import {
   escapeMessages,
   escapeReports,
   locationOf,
+  mayHoldMark,
   type EscapeOffer,
 } from "@no-throw/core";
 import type ts from "typescript";
@@ -70,7 +71,18 @@ export const noEscapingThrow: HostRule = {
     return {
       Program(): void {
         const text = context.sourceCode.text;
-        const answer = projectFor(context.filename, text);
+        // The walk starts at the marks, so a file that never writes one has
+        // nothing to walk and needs no program to establish it. What it is
+        // still owed is the hosting answer — a file no project holds is told
+        // so whether or not it has claimed anything — and that costs a read
+        // of the `tsconfig.json`, not a build of everything it names.
+        const answer = projectFor(
+          context.filename,
+          text,
+          mayHoldMark(text) ? "program" : "hosting",
+        );
+
+        if (answer.kind === "included") return;
 
         if (answer.kind !== "program") {
           context.report({

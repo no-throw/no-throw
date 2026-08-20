@@ -1,0 +1,14 @@
+{
+  "description": "A JSDoc tag name is an identifier, so any of its characters may be written as a `\\uXXXX` escape and the parser still reads the mark. It is enforced, because what a mark is cannot depend on how its letters were spelled — and because the cheap text scan a host uses to decide whether a file is worth analyzing has to say yes here, which is the one direction that scan is allowed to be wrong in.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 3,
+      "endLine": 3,
+      "endColumn": 16,
+      "messageId": "uncaughtThrow",
+      "message": "Uncaught `throw` escapes this `@nothrow` function."
+    }
+  ]
+}

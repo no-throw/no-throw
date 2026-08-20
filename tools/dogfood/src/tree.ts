@@ -12,25 +12,24 @@ import type { Target } from "./targets.js";
 const BACKUP = ".dogfood-backup";
 
 /**
- * Mark `count` real functions across the target's seed files, spread evenly
- * over the files and evenly within each, and hand back what was marked. The
- * tree is restored first, so the count is absolute rather than cumulative.
+ * Mark `count` real functions across `files`, spread evenly over them and
+ * evenly within each, and hand back what was marked. Restoring first is the
+ * caller's — each gate has its own idea of which files are in play, and that
+ * set is wider than the one being marked wherever a gate also edits.
  *
  * A file with fewer candidates than its share contributes what it has: the
  * number that goes in the report is the number placed, not the number asked
  * for.
  */
-export function applySeeds(
+export function markFiles(
   targetDirectory: string,
-  target: Target,
+  files: readonly string[],
   count: number,
 ): readonly Seed[] {
-  restoreTree(targetDirectory, target);
-
-  const share = Math.ceil(count / target.seedFiles.length);
+  const share = Math.ceil(count / files.length);
   const seeds: Seed[] = [];
 
-  for (const file of target.seedFiles) {
+  for (const file of files) {
     if (seeds.length >= count) break;
 
     const path = join(targetDirectory, file);
@@ -51,15 +50,33 @@ export function applySeeds(
   return seeds;
 }
 
-export function restoreTree(targetDirectory: string, target: Target): void {
-  for (const file of [
-    ...target.seedFiles,
-    ...target.cycleEdits.map((edit) => edit.file),
-  ]) {
+/** Every named file as it was before the harness first wrote to it. */
+export function restoreFiles(
+  targetDirectory: string,
+  files: readonly string[],
+): void {
+  for (const file of files) {
     const saved = join(targetDirectory, BACKUP, file);
     if (!existsSync(saved)) continue;
     writeFileSync(join(targetDirectory, file), readFileSync(saved, "utf8"));
   }
+}
+
+/** The ESLint gate's pair, over the files its target descriptor names. */
+export function applySeeds(
+  targetDirectory: string,
+  target: Target,
+  count: number,
+): readonly Seed[] {
+  restoreTree(targetDirectory, target);
+  return markFiles(targetDirectory, target.seedFiles, count);
+}
+
+export function restoreTree(targetDirectory: string, target: Target): void {
+  restoreFiles(targetDirectory, [
+    ...target.seedFiles,
+    ...target.cycleEdits.map((edit) => edit.file),
+  ]);
 }
 
 /** Only the first write of a file is its original; later ones are our own. */
