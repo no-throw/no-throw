@@ -112,21 +112,33 @@ export function emitManifest(
     );
   }
 
+  const build = buildOf(commandLine);
   const sources = sourcesOf(program, home);
-  const published = publishedFiles(sources, commandLine);
+  const entryPoints = entryPointSources(home, sources, build);
+  const published = publishedFiles(sources, entryPoints, program, build);
+  if (published.kind === "unpublished") {
+    return blocked(
+      "this build emits nothing, and nothing its `package.json` publishes " +
+        "is a source in it — so there is no file to hash, and a manifest " +
+        "whose `files` is empty is a staleness check that passes on " +
+        "anything. Name the package's entry points in `exports`, or in " +
+        "`main` if it predates them; a package that publishes nothing " +
+        "needs no manifest.",
+    );
+  }
+
   if (published.kind === "missing") {
     return blocked(
       `\`${relativeTo(home, published.file)}\` does not exist, so the ` +
         "package's own files cannot be hashed. `nothrow emit` runs after the " +
         "build, on what is about to be published — that is what makes a " +
-        "consumer's staleness check mean anything.",
+        "consumer's staleness check mean anything. A package that has no " +
+        "build publishes the TypeScript it wrote, and says so with " +
+        "`noEmit`: emit hashes those sources instead.",
     );
   }
 
-  const surface = surfaceOver(
-    entryPointSources(home, sources, commandLine),
-    program,
-  );
+  const surface = surfaceOver(entryPoints, program);
   const collected = collectEntries(sources, program, surface);
   if (collected.kind === "refused") return collected;
 
@@ -385,15 +397,55 @@ function sourcesOf(
     .sort((a, b) => a.fileName.localeCompare(b.fileName));
 }
 
+/**
+ * What the compiler was told to build: its configuration, and the inputs that
+ * configuration names, each under the spelling the command line gave it. The
+ * two travel together because an output path is only defined for a file the
+ * command line names, and a program holds files nobody named — a `.json` a
+ * module imports, a source a root file reaches sideways.
+ *
+ * The spelling is carried rather than the mere fact of membership because the
+ * program may have reached a file by a path that differs in case from the one
+ * the configuration expanded, and `ts.getOutputFileNames` matches its command
+ * line exactly. Asking under the compiler's own spelling is what makes the
+ * question answerable on a case-insensitive disk.
+ */
+interface Build {
+  readonly commandLine: ts.ParsedCommandLine;
+  readonly inputs: ReadonlyMap<string, string>;
+}
+
+function buildOf(commandLine: ts.ParsedCommandLine): Build {
+  return {
+    commandLine,
+    inputs: new Map(
+      commandLine.fileNames.map((fileName) => [normalize(fileName), fileName]),
+    ),
+  };
+}
+
 type PublishedFiles =
   | { readonly kind: "files"; readonly files: readonly string[] }
-  | { readonly kind: "missing"; readonly file: string };
+  | { readonly kind: "missing"; readonly file: string }
+  /** Nothing this build holds is published, so there is nothing to hash. */
+  | { readonly kind: "unpublished" };
 
 /**
  * What this build puts on disk for the package's sources: its JavaScript and
  * its declarations both, because drift lives in `.js` bodies and is invisible
  * at declaration granularity — hashing the declarations alone would validate
  * happily while shipped behavior changed.
+ *
+ * A build told to emit nothing puts nothing there, and a package with no build
+ * publishes the TypeScript it wrote — so its sources are what get hashed. That
+ * is the same rule read off a different build: hash the file a consumer
+ * resolves for a body, which is where the color was read.
+ *
+ * Not every source, though. A build's outputs live under an `outDir` a package
+ * publishes whole, and its sources do not: tests, config and scripts sit in
+ * the program and outside the tarball both, and a hash over one of those
+ * reports drift on every install of a package that is perfectly fresh. So the
+ * sources hashed are the ones an entry point reaches.
  *
  * Files this build does not produce are not hashed, and need not be: an entry
  * is only ever written for a symbol reached from a source file in this
@@ -403,12 +455,26 @@ type PublishedFiles =
  */
 function publishedFiles(
   sources: readonly ts.SourceFile[],
-  commandLine: ts.ParsedCommandLine,
+  entryPoints: ReadonlyMap<string, readonly string[]>,
+  program: ts.Program,
+  build: Build,
 ): PublishedFiles {
+  if (build.commandLine.options.noEmit === true) {
+    const reached = reachedSources(entryPoints, sources, program);
+    // An empty `files` is not a manifest hashing nothing, it is a staleness
+    // check that passes on anything — the vacuous check the missing-build
+    // refusal exists to prevent, reached from the other side. A build with
+    // outputs cannot get here: those are hashed whether or not a
+    // `package.json` names them.
+    return reached.length === 0
+      ? { kind: "unpublished" }
+      : { kind: "files", files: reached };
+  }
+
   const files: string[] = [];
 
   for (const sourceFile of sources) {
-    for (const output of outputsOf(sourceFile.fileName, commandLine)) {
+    for (const output of outputsOf(sourceFile.fileName, build)) {
       if (!existsSync(output)) return { kind: "missing", file: output };
       files.push(output);
     }
@@ -418,16 +484,109 @@ function publishedFiles(
 }
 
 /**
+ * The package's own sources an entry point reaches, by import, transitively.
+ *
+ * Which files npm puts in a tarball is `files` and `.npmignore`'s question,
+ * and this reads neither — it does not have to. The hashes exist to catch
+ * drift in the bodies the entries were read off, and a body an entry's color
+ * depends on is reachable from an entry point by import: that reachability is
+ * what makes it the entry's color in the first place. A file the closure
+ * reaches and the tarball leaves out is a package broken for its consumers at
+ * run time, so reporting it stale is the true answer rather than a false
+ * alarm.
+ *
+ * A JSON module is not one of these even where an entry imports it. No color
+ * is read off a `.json`, so it can carry no drift; and `package.json` — the
+ * one a package imports sooner or later, for its own version string — is
+ * rewritten as npm packs, so hashing it would fail on every install.
+ */
+function reachedSources(
+  entryPoints: ReadonlyMap<string, readonly string[]>,
+  sources: readonly ts.SourceFile[],
+  program: ts.Program,
+): readonly string[] {
+  const own = new Map(
+    sources.map((sourceFile) => [normalize(sourceFile.fileName), sourceFile]),
+  );
+  const checker = program.getTypeChecker();
+  // Keyed by the normalized name so a file is walked once, holding the
+  // program's own spelling because that is what goes on the wire: a manifest
+  // written on a case-insensitive disk still has to name files a consumer
+  // installing on a case-sensitive one can find.
+  const reached = new Map<string, ts.SourceFile>();
+
+  const walk = (sourceFile: ts.SourceFile): void => {
+    const key = normalize(sourceFile.fileName);
+    if (reached.has(key)) return;
+    reached.set(key, sourceFile);
+    for (const imported of importedFiles(sourceFile, checker)) {
+      const next = own.get(normalize(imported.fileName));
+      if (next !== undefined) walk(next);
+    }
+  };
+
+  for (const files of entryPoints.values()) {
+    for (const file of files) {
+      const entry = own.get(file);
+      if (entry !== undefined) walk(entry);
+    }
+  }
+
+  return [...reached.values()]
+    .map((sourceFile) => sourceFile.fileName)
+    .filter((fileName) => !fileName.endsWith(ts.Extension.Json));
+}
+
+/**
+ * The files a source file imports, as the program resolved them.
+ *
+ * Every module specifier is a string literal, and only a string literal in
+ * that position resolves to a module — so the walk asks the checker about all
+ * of them rather than enumerating the syntax that can hold one. An enumeration
+ * is the thing that silently goes short: `import type`, `export … from`,
+ * `import()` in a type position and `import =` are four spellings of the same
+ * edge, and a fifth would be missed rather than reported.
+ */
+function importedFiles(
+  sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker,
+): readonly ts.SourceFile[] {
+  const found: ts.SourceFile[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isStringLiteralLike(node)) {
+      for (const declaration of checker.getSymbolAtLocation(node)?.declarations ??
+        []) {
+        if (ts.isSourceFile(declaration)) found.push(declaration);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  ts.forEachChild(sourceFile, visit);
+
+  return found;
+}
+
+/**
  * A source file's outputs, source maps excluded: a map changes no behavior and
  * a consumer never resolves one, so hashing it would report drift for a
  * rebuild that changed nothing.
+ *
+ * A file this build does not name has none, and asking for them is a crash
+ * rather than an answer. Nor is the silence a hole: an emitting build refuses
+ * an input outside the root it computed from its own command line, so what is
+ * left unnamed here is what no color was read off anyway — the `.json` a
+ * module imports being the shape that really turns up.
  */
-function outputsOf(
-  fileName: string,
-  commandLine: ts.ParsedCommandLine,
-): readonly string[] {
+function outputsOf(fileName: string, build: Build): readonly string[] {
+  const named = build.inputs.get(normalize(fileName));
+  if (named === undefined) return [];
   return ts
-    .getOutputFileNames(commandLine, fileName, !ts.sys.useCaseSensitiveFileNames)
+    .getOutputFileNames(
+      build.commandLine,
+      named,
+      !ts.sys.useCaseSensitiveFileNames,
+    )
     .filter((output) => !output.endsWith(".map"));
 }
 
@@ -440,7 +599,7 @@ function outputsOf(
 function entryPointSources(
   home: PackageHome,
   sources: readonly ts.SourceFile[],
-  commandLine: ts.ParsedCommandLine,
+  build: Build,
 ): ReadonlyMap<string, readonly string[]> {
   // Both sides of the lookup are normalized: an entry point is spelled the way
   // its `package.json` author typed it, and a source file the way the program
@@ -449,7 +608,7 @@ function entryPointSources(
   for (const sourceFile of sources) {
     const normalized = normalize(sourceFile.fileName);
     bySource.set(normalized, normalized);
-    for (const output of outputsOf(sourceFile.fileName, commandLine)) {
+    for (const output of outputsOf(sourceFile.fileName, build)) {
       bySource.set(normalize(output), normalized);
     }
   }

@@ -1,0 +1,11 @@
+{
+  "description": "The shape a private application is in: TypeScript run under type stripping, no build, and a `package.json` that names no entry point because nothing about it is published. Emit has nothing to hash, and writing the empty `files` it could would be worse than writing nothing — a consumer's staleness check over no files passes on anything, which is the vacuous manifest the missing-build refusal exists to prevent, reached from the other side. So it stops, the way a project that would not open stops, and says which half is missing rather than leaving the reader to infer it from a manifest that looked fine.",
+  "steps": [
+    {
+      "emit": [],
+      "expect": "cannot-run",
+      "names": ["passes on anything", "`exports`"]
+    },
+    { "absent": "nothrow.json" }
+  ]
+}

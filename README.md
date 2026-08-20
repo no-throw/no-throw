@@ -284,6 +284,13 @@ never ship:
 The manifest records SRI hashes of the files it was written for, so a rebuilt
 `.js` that changed no declaration is still drift — and `--check` catches it.
 
+Those files are whatever your build puts on disk. A package that has no build —
+one running its TypeScript under type stripping, or publishing sources for a
+consumer's toolchain to handle — says so with `noEmit`, and `emit` hashes the
+sources themselves, since those are what a consumer resolves. It hashes the ones
+your entry points reach, so a test or a script beside them is not mistaken for
+something you ship.
+
 ## The rules
 
 ### `no-escaping-throw`

@@ -1,0 +1,18 @@
+{
+  "description": "A package with no build step: it publishes the TypeScript it wrote and runs it under type stripping, so its `tsconfig.json` says `noEmit` and there is no `.js` for emit to run after. What a consumer resolves for a body is then the source the body is written in, so that is what the manifest hashes, and an edit to one is drift exactly as a rebuilt `.js` is. Which sources is the whole of it. `src/double.ts` is hashed though nothing publishes it directly, because the entry point reaches it and its body is where a published color was read; `src/double.test.ts` is not, though the program holds it, because no entry point reaches it and npm will not pack it — a hash over that file would report drift on every install of a package that is perfectly fresh. Nor is the `.json` the reached source imports: no color is read off one, and `package.json`, the one a package imports for its own version string, is rewritten as npm packs. The count in the report is what pins all three. There is no consumer step: a dependency shipped as source has visible bodies, so its colors are read rather than carried, and a manifest no reader consults would prove nothing about the wire. Without the guard on asking the compiler for an unnamed file's outputs, the `.json` alone turns this case into a stack trace.",
+  "steps": [
+    { "emit": [], "expect": "ok", "names": ["2 files"] },
+    {
+      "entries": {
+        ".": { "twice": { "color": "non-throwing", "conditions": [] } }
+      }
+    },
+    { "emit": ["--check"], "expect": "ok" },
+    { "replace": "src/double.ts", "find": "step.by", "with": "2" },
+    {
+      "emit": ["--check"],
+      "expect": "refused",
+      "names": ["./src/double.ts", "hashes differently"]
+    }
+  ]
+}
