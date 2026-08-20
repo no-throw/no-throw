@@ -208,6 +208,14 @@ cli/<name>/
   <project>/        for a `check` case: a whole project, named by the step
 ```
 
+A producer need not have a `dist`. A package that publishes the TypeScript it
+wrote says so with `noEmit`, and then its sources are both — what a consumer
+resolves and what the manifest hashes — so the whole package is its `src`. Which
+of those sources get hashed is the case's subject as much as the colors are: a
+source an entry point reaches carries a published body, and one it does not
+reach is a test or a script npm will not pack. Emit's own report counts them, so
+a step naming that count pins the set without a step shape for reading `files`.
+
 `case.json` is a list of steps, run in order against a copy of the case:
 
 ```json
