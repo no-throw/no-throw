@@ -29,6 +29,12 @@ export interface Invocation {
   readonly expect: Verdict;
   /** Text the output must contain — what the diagnostic has to name. */
   readonly names: readonly string[];
+  /**
+   * Text the output must *not* contain. What `names` cannot reach: a report
+   * whose fix is a line that is no longer there has nothing new to assert, and
+   * a containment check passes over the line's return without noticing.
+   */
+  readonly never: readonly string[];
 }
 
 /**
@@ -110,7 +116,7 @@ function loadCase(root: string, name: string): CliCase {
 }
 
 /** What a step spelling an invocation may carry beyond the argv it keys on. */
-const INVOCATION_KEYS = ["expect", "names"] as const;
+const INVOCATION_KEYS = ["expect", "names", "never"] as const;
 
 const STEP_KEYS: Record<string, readonly string[]> = {
   emit: ["emit", ...INVOCATION_KEYS],
@@ -200,6 +206,7 @@ function readInvocation(
     args: readStrings(record, kind, where),
     expect: readVerdict(record, where),
     names: readOptionalStrings(record, "names", where),
+    never: readOptionalStrings(record, "never", where),
   };
 }
 

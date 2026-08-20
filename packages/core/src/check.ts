@@ -288,34 +288,40 @@ function overridesCarrier(
         entries: [],
       };
     case "read": {
-      const { packages: byPackage, modules } = state.tables;
-      const entries = [
-        ...[...byPackage].flatMap(([owner, table]) =>
-          tableEntries(table, owner, packages, program),
-        ),
-        ...moduleEntries(modules, program),
-      ];
-
       // A file naming neither table is the one shape the schema cannot turn
-      // away: its grammar has no "one of these two", and requiring both would
-      // make a project that colors only ambient modules write an empty
-      // `packages` to say nothing with. So the report catches it, which is
-      // what a `packagez` comes to as well.
-      return byPackage.size === 0 && modules.length === 0
-        ? {
-            name,
-            path: state.path,
-            schema,
-            problem: {
-              message:
-                "it names neither `packages` nor `modules`, so it asserts " +
-                "nothing. Those are the two tables read; a key spelled any " +
-                "other way is not one of them.",
-              fatal: false,
-            },
-            entries,
-          }
-        : { name, path: state.path, schema, entries };
+      // away: both are optional, since requiring both would make a project
+      // that colors only ambient modules write an empty `packages` to say
+      // nothing with. So the report catches it, which is what a `packagez`
+      // comes to as well — and it is caught off what the file *names*, since
+      // a table its author left empty is one they wrote.
+      if (state.named.length === 0) {
+        return {
+          name,
+          path: state.path,
+          schema,
+          problem: {
+            message:
+              "it names neither `packages` nor `modules`, so it asserts " +
+              "nothing. Those are the two tables read; a key spelled any " +
+              "other way is not one of them.",
+            fatal: false,
+          },
+          entries: [],
+        };
+      }
+
+      const { packages: byPackage, modules } = state.tables;
+      return {
+        name,
+        path: state.path,
+        schema,
+        entries: [
+          ...[...byPackage].flatMap(([owner, table]) =>
+            tableEntries(table, owner, packages, program),
+          ),
+          ...moduleEntries(modules, program),
+        ],
+      };
     }
   }
 }

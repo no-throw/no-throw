@@ -1,0 +1,19 @@
+{
+  "description": "A table its author wrote and left empty is a table that is there. `check` names a file that holds neither `packages` nor `modules`, because a table spelled `packagez` validates and is read as no table at all — but that message is read off what the file *names*, never off what its tables came to. Read off the count instead and a file holding an empty `packages` is told it holds no `packages`, which sends its author to write a second one; the same reading told a project that colors only ambient modules the same thing about `modules`. Both spellings are asserted by what the report must *not* say, since the fix is a line that is no longer there.",
+  "steps": [
+    {
+      "check": [],
+      "in": "empty-packages",
+      "expect": "ok",
+      "names": ["No carrier entry to check."],
+      "never": ["it names neither"]
+    },
+    {
+      "check": [],
+      "in": "empty-modules",
+      "expect": "ok",
+      "names": ["No carrier entry to check."],
+      "never": ["it names neither"]
+    }
+  ]
+}

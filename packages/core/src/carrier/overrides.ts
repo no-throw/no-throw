@@ -63,6 +63,13 @@ export type OverridesState =
       readonly kind: "read";
       readonly path: string;
       /**
+       * The tables the file names, whether or not they hold anything. Read off
+       * whether a table is *there* rather than off what it produced: an empty
+       * one is a table its author wrote, and telling them it is missing sends
+       * them to add it twice.
+       */
+      readonly named: readonly string[];
+      /**
        * One table per package named, in the order they were written, and one
        * for the ambient modules the file colors.
        */
@@ -174,26 +181,33 @@ function readOverrides(asking: PackageHome): OverridesState {
     return { kind: "refused", path, refusal: document.refusal };
   }
 
-  // A file holding neither table is still a file somebody wrote, and it is
-  // read as one: reporting it as absent would tell its author there is nothing
-  // there, which is exactly the reading a table spelled `packagez` needs the
-  // report *not* to give. The schema cannot say "one of these two" — its
-  // grammar has no such form — so the report is where that is caught.
+  // Both tables are optional, so a file holding neither is still a file
+  // somebody wrote and is read as one: reporting it as absent would tell its
+  // author there is nothing there, which is exactly the reading a table
+  // spelled `packagez` needs the report *not* to give. That is the reader's to
+  // catch, and it is caught off `named` — what the file *names* — since an
+  // empty table is one its author wrote and a table that came to nothing is
+  // not a table that is missing.
   const packaged = document.value["packages"];
   const moduled = document.value["modules"];
-  const packages = isRecord(packaged) ? Object.keys(packaged) : [];
-  const modules = isRecord(moduled) ? Object.keys(moduled) : [];
 
   const byPackage = new Map<string, ColorTable>();
-  for (const name of packages) {
-    byPackage.set(name, document.tableAt(PACKAGES, [name]));
+  if (isRecord(packaged)) {
+    for (const name of Object.keys(packaged)) {
+      byPackage.set(name, document.tableAt(PACKAGES, [name]));
+    }
   }
+
   return {
     kind: "read",
     path,
+    named: [
+      ...(isRecord(packaged) ? ["packages"] : []),
+      ...(isRecord(moduled) ? ["modules"] : []),
+    ],
     tables: {
       packages: byPackage,
-      modules: modules.length === 0 ? [] : [document.tableAt(MODULES, [])],
+      modules: isRecord(moduled) ? [document.tableAt(MODULES, [])] : [],
     },
   };
 }
