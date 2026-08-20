@@ -8,7 +8,17 @@ import ts from "typescript";
  * build a program from it, and keep it for the files that follow. Hosting,
  * not analysis — the same job `projectService` does on the other side, with
  * the same answer for a file no project includes.
+ *
+ * A program is the expensive half of that and the rarely needed one, so the
+ * two questions are asked apart. *Which project holds this file* is answered
+ * from the config's own globbed list, which costs a parse of the config and
+ * nothing per file. *What are this file's types* is answered from a program,
+ * built the first time something actually needs one — which is the first
+ * marked file, and never at all in a project that has marked nothing.
  */
+
+/** What the caller has to have: the file's types, or only where it belongs. */
+export type ProjectNeed = "program" | "hosting";
 
 export type ProjectAnswer =
   | {
@@ -16,6 +26,8 @@ export type ProjectAnswer =
       readonly program: ts.Program;
       readonly sourceFile: ts.SourceFile;
     }
+  /** A project holds the file, and no program was built to find that out. */
+  | { readonly kind: "included" }
   /** No `tsconfig.json` anywhere above the file. */
   | { readonly kind: "no-project" }
   /** Configs were found and read, and every file set leaves this file out. */
@@ -28,7 +40,12 @@ export type ProjectAnswer =
     };
 
 interface Project {
-  program: ts.Program;
+  /** The config as it was last read: options, file list and references. */
+  commandLine: ts.ParsedCommandLine;
+  /** That file list, keyed the way the compiler keys files. */
+  rootNames: ReadonlySet<string>;
+  /** Built on the first question the file list alone cannot answer. */
+  program: ts.Program | undefined;
   /**
    * Text the host holds that disk does not — an editor buffer mid-edit. Keyed
    * the way the compiler keys files, so a rebuilt program reads the buffer
@@ -51,7 +68,11 @@ interface Project {
  */
 const projects = new Map<string, Project>();
 
-export function projectFor(fileName: string, text: string): ProjectAnswer {
+export function projectFor(
+  fileName: string,
+  text: string,
+  need: ProjectNeed,
+): ProjectAnswer {
   // The nearest config is asked first, and on a miss the walk continues to
   // the configs above it — a monorepo file held by a root config rather than
   // the leaf one beside it is that config's file, not an orphan. What this
@@ -73,7 +94,7 @@ export function projectFor(fileName: string, text: string): ProjectAnswer {
     previous = configPath;
     nearest ??= configPath;
 
-    const answer = fromProject(configPath, fileName, text);
+    const answer = fromProject(configPath, fileName, text, need);
     if (answer !== undefined) return answer;
 
     searched = dirname(dirname(configPath));
@@ -85,58 +106,102 @@ function fromProject(
   configPath: string,
   fileName: string,
   text: string,
+  need: ProjectNeed,
 ): ProjectAnswer | undefined {
   let project = projects.get(configPath);
   if (project === undefined) {
-    const built = build(configPath, new Map());
-    if (typeof built === "string") {
-      return { kind: "broken-project", configPath, message: built };
+    const parsed = parse(configPath);
+    if (typeof parsed === "string") {
+      return { kind: "broken-project", configPath, message: parsed };
     }
-    project = { program: built, overrides: new Map(), outside: new Set() };
+    project = {
+      commandLine: parsed,
+      rootNames: rootNameKeys(parsed),
+      program: undefined,
+      overrides: new Map(),
+      outside: new Set(),
+    };
     projects.set(configPath, project);
   }
 
   const key = keyOf(fileName);
-  let sourceFile = project.program.getSourceFile(fileName);
+
+  // A file the config globbed is this config's file, and saying so needs no
+  // program. Everything a program would add — what the file's types are, and
+  // whether an import reaches a file the globs missed — is the other need.
+  //
+  // The text is kept on the way past, because a file with no mark of its own is
+  // still a *dependency* of one that has them: a program built later in the run
+  // has to read what the host handed over here rather than what is on disk, or
+  // a marked file gets analyzed against a stale version of what it calls into.
+  // Keeping it beats comparing it — the comparison is a read per file, and
+  // there is nothing yet to compare against but the disk.
+  //
+  // Only while there is no program, though. Once one exists, the walk below is
+  // where a changed buffer is noticed, and it costs a lookup rather than a read.
+  if (need === "hosting" && project.program === undefined) {
+    if (project.rootNames.has(key)) {
+      project.overrides.set(key, text);
+      return { kind: "included" };
+    }
+  }
+
+  // The first program comes from the config as it was already read; only a
+  // question that read one answer stale reads the config again.
+  let program = (project.program ??= build(project));
+
+  let sourceFile = program.getSourceFile(fileName);
 
   // A file the program has never seen may have been created since the program
   // was built, so the verdict is only settled by one fresh look — after
   // which a repeat of the same miss is answered from memory.
   if (sourceFile === undefined && !project.outside.has(key)) {
     const rebuilt = rebuild(configPath, project);
-    if (rebuilt !== undefined) return rebuilt;
-    sourceFile = project.program.getSourceFile(fileName);
+    if (typeof rebuilt === "string") {
+      return { kind: "broken-project", configPath, message: rebuilt };
+    }
+    program = rebuilt;
+    sourceFile = program.getSourceFile(fileName);
     if (sourceFile === undefined) project.outside.add(key);
   }
 
   if (sourceFile !== undefined && sourceFile.text !== text) {
     project.overrides.set(key, text);
     const rebuilt = rebuild(configPath, project);
-    if (rebuilt !== undefined) return rebuilt;
-    sourceFile = project.program.getSourceFile(fileName);
+    if (typeof rebuilt === "string") {
+      return { kind: "broken-project", configPath, message: rebuilt };
+    }
+    program = rebuilt;
+    sourceFile = program.getSourceFile(fileName);
   }
 
   if (sourceFile === undefined) return undefined;
-  return { kind: "program", program: project.program, sourceFile };
+  // A file the globs missed and an import reached is held by this config all
+  // the same, and a host that only asked where it belongs is owed that answer
+  // rather than the program that produced it.
+  return need === "hosting"
+    ? { kind: "included" }
+    : { kind: "program", program, sourceFile };
 }
 
-/** Rebuild in place; an answer comes back only when the config went bad. */
-function rebuild(
-  configPath: string,
-  project: Project,
-): ProjectAnswer | undefined {
-  const built = build(configPath, project.overrides);
-  if (typeof built === "string") {
-    return { kind: "broken-project", configPath, message: built };
-  }
-  project.program = built;
-  return undefined;
+/**
+ * Re-read the config, re-glob it and build again, in place. What comes back on
+ * a config that no longer parses is what is wrong with it — a project that
+ * built once and has since gone bad is the same broken project a first read
+ * would have reported.
+ */
+function rebuild(configPath: string, project: Project): ts.Program | string {
+  const parsed = parse(configPath);
+  if (typeof parsed === "string") return parsed;
+
+  project.commandLine = parsed;
+  project.rootNames = rootNameKeys(parsed);
+  project.program = build(project);
+  return project.program;
 }
 
-function build(
-  configPath: string,
-  overrides: ReadonlyMap<string, string>,
-): ts.Program | string {
+/** The config, read and expanded, or what is wrong with it. */
+function parse(configPath: string): ts.ParsedCommandLine | string {
   const read = ts.readConfigFile(configPath, ts.sys.readFile);
   if (read.error !== undefined) return format([read.error]);
 
@@ -153,8 +218,11 @@ function build(
   const errors = commandLine.errors.filter(
     (error) => error.code !== 18002 && error.code !== 18003,
   );
-  if (errors.length > 0) return format(errors);
+  return errors.length > 0 ? format(errors) : commandLine;
+}
 
+function build(project: Project): ts.Program {
+  const { commandLine, overrides } = project;
   const host = ts.createCompilerHost(commandLine.options, true);
   if (overrides.size > 0) {
     const readFile = host.readFile.bind(host);
@@ -169,6 +237,13 @@ function build(
       ? {}
       : { projectReferences: commandLine.projectReferences }),
   });
+}
+
+/** The globbed file list, as keys inclusion can be asked of directly. */
+function rootNameKeys(
+  commandLine: ts.ParsedCommandLine,
+): ReadonlySet<string> {
+  return new Set(commandLine.fileNames.map(keyOf));
 }
 
 /** The compiler's own file identity: slashes normalized, case where it is data. */

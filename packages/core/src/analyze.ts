@@ -217,8 +217,23 @@ export function analyzeSourceFile(
   sourceFile: ts.SourceFile,
   program: ts.Program,
 ): readonly Finding[] {
-  const findings: Finding[] = [];
+  // Asking for the checker binds the program, and binding is what sets the
+  // parent pointers `findMarks` climbs to attribute a JSDoc comment. A host
+  // may parse without them — `projectService` does, and so does a bare
+  // `createProgram` — so the marks must not be read before this line.
   const checker = program.getTypeChecker();
+
+  // Unmarked functions have nothing to enforce: throwing is the default, and
+  // inference reads their bodies without holding them to anything. A mark that
+  // binds to nothing enforces nothing either — it is `valid-mark`'s to report.
+  //
+  // The seeds are read before anything is built over them, so a file holding
+  // none is answered without a carrier or a resolver: a file that makes no
+  // claim is not charged for the apparatus that checks claims.
+  const seeds = findMarks(sourceFile).bound;
+  if (seeds.length === 0) return [];
+
+  const findings: Finding[] = [];
   // The inference memo lives as long as one file's analysis. Sharing it across
   // a program is the incrementality question the dogfooding gate prices.
   //
@@ -230,10 +245,7 @@ export function analyzeSourceFile(
     carrier: createCarrier(sourceFile, program),
   });
 
-  // Unmarked functions have nothing to enforce: throwing is the default, and
-  // inference reads their bodies without holding them to anything. A mark that
-  // binds to nothing enforces nothing either — it is `valid-mark`'s to report.
-  for (const seed of findMarks(sourceFile).bound) {
+  for (const seed of seeds) {
     for (const escape of colors.escapesIn(seed)) {
       findings.push(findingFor(escape));
     }

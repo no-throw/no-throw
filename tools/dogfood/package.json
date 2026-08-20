@@ -8,15 +8,18 @@
     "scc": "node --max-old-space-size=8192 dist/bin/scc.js",
     "cycles": "node --max-old-space-size=8192 dist/bin/cycles.js",
     "cold": "node dist/bin/cold.js",
-    "warm": "node --max-old-space-size=8192 dist/bin/warm.js"
+    "warm": "node --max-old-space-size=8192 dist/bin/warm.js",
+    "oxlint-cost": "node dist/bin/oxlint-cost.js"
   },
   "dependencies": {
     "@no-throw/core": "workspace:*",
     "@no-throw/eslint-plugin": "workspace:*",
+    "@no-throw/oxlint-plugin": "workspace:*",
     "typescript": "^5.7.2"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "eslint": "^9.17.0"
+    "eslint": "^9.17.0",
+    "oxlint": "^1.78.0"
   }
 }

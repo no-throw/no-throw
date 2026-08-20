@@ -11,7 +11,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compare, section, type Diagnostic } from "./diagnostics.js";
-import { runFixtureOxlint, runOxlintFix } from "./driver-oxlint.js";
+import {
+  runFixtureOxlint,
+  runOxlintFix,
+  type OxlintRun,
+} from "./driver-oxlint.js";
 import { loadFixtures, type Fixture } from "./fixtures.js";
 
 /**
@@ -111,12 +115,7 @@ async function reportOf(fixture: Fixture): Promise<readonly string[]> {
     return report;
   }
 
-  if (run.pluginErrors.length > 0) {
-    report.push(
-      "a rule died on a file:",
-      ...run.pluginErrors.map((line) => `  ${line.split("\n", 3).join(" ")}`),
-    );
-  }
+  report.push(...diedOn(run));
 
   const mismatch = compare(
     fixture.expected.map(withoutOffers),
@@ -136,6 +135,18 @@ async function reportOf(fixture: Fixture): Promise<readonly string[]> {
   }
 
   return report;
+}
+
+/**
+ * A rule that threw on a file, as lines to report. oxlint carries the whole
+ * stack, and the first few lines are the part worth reading from a CI log.
+ */
+function diedOn(run: OxlintRun): readonly string[] {
+  if (run.pluginErrors.length === 0) return [];
+  return [
+    "a rule died on a file:",
+    ...run.pluginErrors.map((line) => `  ${line.split("\n", 3).join(" ")}`),
+  ];
 }
 
 /**
@@ -235,25 +246,39 @@ async function fixerProbes(): Promise<void> {
 }
 
 /**
- * The two answers this host gives where the ESLint side leaves the problem to
- * `projectService`'s parse errors: a file with no project above it, and a file
- * its nearest project leaves out. No fixture can hold either — a fixture *is*
- * a project — so the runner builds the two shapes itself, and the messages
- * have an artifact behind them the way every other normative text does.
+ * The answers this host gives where the ESLint side leaves the problem to
+ * `projectService`'s parse errors: a file with no project above it, a file its
+ * nearest project leaves out, and a project that cannot be read at all. No
+ * fixture can hold any of them — a fixture *is* a project — so the runner
+ * builds the shapes itself, and the messages have an artifact behind them the
+ * way every other normative text does.
+ *
+ * The last two probes are about *how* the answer is reached rather than what
+ * it is. This host reads a file's mark-shaped text before it decides whether
+ * to build a program at all, so an unmarked file and a marked one arrive at
+ * inclusion by different routes: one from the config's globbed list, one from
+ * the program the globs produced. Both routes owe the same answer, and a file
+ * the globs miss and an import reaches is included on either.
  */
 async function hostingProbes(): Promise<void> {
   const workspace = mkdtempSync(join(tmpdir(), "nothrow-oxlint-hosting-"));
+
+  const project = (name: string, include: string): string => {
+    const directory = join(workspace, name);
+    mkdirSync(join(directory, "src"), { recursive: true });
+    writeFileSync(
+      join(directory, "tsconfig.json"),
+      `${JSON.stringify({ compilerOptions: { strict: true }, include: [include] })}\n`,
+    );
+    return directory;
+  };
+
   try {
     const loose = join(workspace, "loose");
     mkdirSync(join(loose, "src"), { recursive: true });
     writeFileSync(join(loose, "src", "index.ts"), "export const n = 1;\n");
 
-    const scoped = join(workspace, "scoped");
-    mkdirSync(join(scoped, "src"), { recursive: true });
-    writeFileSync(
-      join(scoped, "tsconfig.json"),
-      `${JSON.stringify({ compilerOptions: { strict: true }, include: ["src"] })}\n`,
-    );
+    const scoped = project("scoped", "src");
     writeFileSync(join(scoped, "src", "included.ts"), "export const n = 1;\n");
     writeFileSync(join(scoped, "stray.ts"), "export const s = 1;\n");
 
@@ -262,29 +287,58 @@ async function hostingProbes(): Promise<void> {
     writeFileSync(join(broken, "tsconfig.json"), "{ not a project\n");
     writeFileSync(join(broken, "src", "index.ts"), "export const n = 1;\n");
 
+    const marked = project("marked-stray", "src");
+    writeFileSync(join(marked, "src", "included.ts"), "export const n = 1;\n");
+    writeFileSync(
+      join(marked, "stray.ts"),
+      "/** @nothrow */\nexport function s(): number {\n  return 1;\n}\n",
+    );
+
+    // The globs name `src`, and `src/index.ts` imports its way out to a file
+    // they never listed. That file is the project's all the same, and only a
+    // program can say so — which is the one thing the config's list cannot
+    // answer, and therefore the one thing it must not answer wrongly.
+    const reached = project("reached", "src");
+    writeFileSync(
+      join(reached, "src", "index.ts"),
+      'import { helper } from "../lib/helper.js";\n\nexport const n = helper();\n',
+    );
+    mkdirSync(join(reached, "lib"), { recursive: true });
+    writeFileSync(
+      join(reached, "lib", "helper.ts"),
+      "export function helper(): number {\n  return 1;\n}\n",
+    );
+
     const probes: readonly {
       readonly name: string;
       readonly directory: string;
-      readonly messageId: string;
-      readonly file: string;
+      /** Every diagnostic the run must produce, and nothing besides. */
+      readonly expected: readonly { messageId: string; file: string }[];
     }[] = [
       {
         name: "a file with no project above it",
         directory: loose,
-        messageId: "noProject",
-        file: "src/index.ts",
+        expected: [{ messageId: "noProject", file: "src/index.ts" }],
       },
       {
         name: "a file its nearest project leaves out",
         directory: scoped,
-        messageId: "outsideProject",
-        file: "stray.ts",
+        expected: [{ messageId: "outsideProject", file: "stray.ts" }],
       },
       {
         name: "a file whose project cannot be read",
         directory: broken,
-        messageId: "brokenProject",
-        file: "src/index.ts",
+        expected: [{ messageId: "brokenProject", file: "src/index.ts" }],
+      },
+      {
+        name: "a marked file its nearest project leaves out",
+        directory: marked,
+        expected: [{ messageId: "outsideProject", file: "stray.ts" }],
+      },
+      {
+        name: "a file the globs miss and an import reaches",
+        directory: reached,
+        expected: [],
       },
     ];
 
@@ -292,24 +346,30 @@ async function hostingProbes(): Promise<void> {
     for (const probe of probes) {
       const problems: string[] = [];
       const run = await runFixtureOxlint(probe.directory);
-      const found = run.diagnostics.filter(
-        (diagnostic) =>
-          diagnostic.messageId === probe.messageId &&
-          diagnostic.file === probe.file,
-      );
-      if (found.length !== 1) {
-        problems.push(
-          `expected one ${probe.messageId} on ${probe.file}, saw ${found.length}`,
+
+      for (const want of probe.expected) {
+        const found = run.diagnostics.filter(
+          (diagnostic) =>
+            diagnostic.messageId === want.messageId &&
+            diagnostic.file === want.file,
         );
+        if (found.length !== 1) {
+          problems.push(
+            `expected one ${want.messageId} on ${want.file}, saw ${found.length}`,
+          );
+        }
       }
-      if (run.diagnostics.length !== 1) {
+      if (run.diagnostics.length !== probe.expected.length) {
         problems.push(
-          `expected nothing else, saw: ${run.diagnostics
+          `expected ${probe.expected.length} diagnostics, saw: ${run.diagnostics
             .map((diagnostic) => `${diagnostic.file} ${diagnostic.messageId}`)
             .join(", ")}`,
         );
       }
-      if (run.exitCode === 0) problems.push("the run exited 0");
+      problems.push(...diedOn(run));
+      if ((run.exitCode === 0) !== (probe.expected.length === 0)) {
+        problems.push(`the run exited ${run.exitCode}`);
+      }
 
       console.log(
         `${problems.length === 0 ? "PASS" : "FAIL"}  hosting probe — ${probe.name}`,

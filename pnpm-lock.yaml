@@ -108,6 +108,9 @@ importers:
       '@no-throw/eslint-plugin':
         specifier: workspace:*
         version: link:../../packages/eslint-plugin
+      '@no-throw/oxlint-plugin':
+        specifier: workspace:*
+        version: link:../../packages/oxlint-plugin
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -118,6 +121,9 @@ importers:
       eslint:
         specifier: ^9.17.0
         version: 9.39.5
+      oxlint:
+        specifier: ^1.78.0
+        version: 1.78.0
 
   tools/dom-baseline:
     dependencies:

@@ -1,6 +1,10 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { writeArmConfigs, type Arm, type Policy } from "../configs.js";
+import {
+  writeEslintConfigs,
+  type EslintArm,
+  type Policy,
+} from "../configs.js";
 import { hostVersions } from "../host.js";
 import { coldLint, type ColdRun } from "../lint.js";
 import { targetNamed } from "../targets.js";
@@ -9,14 +13,14 @@ import { applySeeds, restoreTree } from "../tree.js";
 interface Cell {
   /** Marks actually placed, which is what the arm measured. */
   readonly seeds: number;
-  readonly arm: Arm;
+  readonly arm: EslintArm;
   readonly policy: Policy;
   readonly runs: readonly ColdRun[];
 }
 
 /** Every arm to run, and under which policy, in the order a repeat runs them. */
-function armsOf(arms: readonly Arm[]): { arm: Arm; policy: Policy }[] {
-  return arms.flatMap((arm): { arm: Arm; policy: Policy }[] =>
+function armsOf(arms: readonly EslintArm[]): { arm: EslintArm; policy: Policy }[] {
+  return arms.flatMap((arm): { arm: EslintArm; policy: Policy }[] =>
     arm === "baseline"
       ? [{ arm, policy: "hybrid" }]
       : [
@@ -48,13 +52,13 @@ async function main(): Promise<void> {
   }
 
   const target = targetNamed(name);
-  const configs = writeArmConfigs(targetDirectory);
+  const configs = writeEslintConfigs(targetDirectory);
   const paths =
     pathList === undefined || pathList === ""
       ? target.lintPaths
       : pathList.split(",");
   const repeat = Number(repeatText);
-  const arms = armList.split(",") as Arm[];
+  const arms = armList.split(",") as EslintArm[];
   const cells: Cell[] = [];
 
   const schedule = armsOf(arms);
@@ -66,7 +70,7 @@ async function main(): Promise<void> {
 
     const runs = new Map<string, ColdRun[]>();
     const run = async (
-      arm: Arm,
+      arm: EslintArm,
       policy: Policy,
       keep: boolean,
     ): Promise<void> => {

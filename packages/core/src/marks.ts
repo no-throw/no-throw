@@ -61,6 +61,8 @@ export interface Marks {
  * written in a comment JSDoc does not read, are reported too.
  */
 export function findMarks(sourceFile: ts.SourceFile): Marks {
+  if (!mayHoldMark(sourceFile.text)) return { bound: [], problems: [] };
+
   const problems: MarkProblem[] = [];
   // A function has one color however many times it is claimed, so a repeated
   // tag must not enforce — or emit — the same body twice.
@@ -230,6 +232,44 @@ const MARK = "nothrow";
  */
 function normalize(name: string): string {
   return name.toLowerCase().replace(/[-_]/g, "");
+}
+
+/**
+ * The same recognition rule, read off the raw text instead of off a tree: an
+ * `@` and then the mark's letters, with the separators `normalize` strips
+ * allowed between them. Spelled out of `MARK` itself so the two cannot drift.
+ */
+const MARK_IN_TEXT = new RegExp(`@[-_]*${[...MARK].join("[-_]*")}`, "i");
+
+/**
+ * A tag name the parser will read differently than the bytes do: JSDoc names
+ * are identifiers, and an identifier may spell any of its characters as a
+ * `\uXXXX` escape, so `@nothrow` reaches the binder as the mark. Resolving
+ * those here would be a second scanner to keep in step with the real one, so
+ * the escape is simply a reason to stop guessing and look properly.
+ *
+ * `\u` is the whole of it: an identifier admits no other escape, so nothing
+ * else can hide a letter. Narrowing to it rather than to any backslash is what
+ * keeps an ordinary regex literal matching `@link` followed by `\s` out — a
+ * shape that really does occur, and would otherwise cost a program.
+ */
+const ESCAPED_TAG_NAME = /@[\w$-]*\\u/;
+
+/**
+ * Whether a file could hold a mark at all. It over-approximates on purpose —
+ * `@nothrow` in prose passes it, and only `findMarks` decides what a tag
+ * binds to — but it never says no to a file that holds one, so a host may read
+ * it as *there is nothing here to enforce* and skip whatever it would only have
+ * built in order to find that out. The saving is the point: a project that has
+ * marked nothing yet should not pay for the machinery that checks marks.
+ *
+ * The direction of the approximation is the whole safety argument, so it is
+ * worth stating plainly: a *yes* costs a little work that turns out to be
+ * unnecessary, and a *no* is a mark that is never enforced — the silent no-op
+ * the rest of this design exists to rule out. When in doubt this says yes.
+ */
+export function mayHoldMark(text: string): boolean {
+  return MARK_IN_TEXT.test(text) || ESCAPED_TAG_NAME.test(text);
 }
 
 /** The comment forms the parser reads no tags out of at all. */

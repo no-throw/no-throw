@@ -39,7 +39,8 @@
     "dogfood:scc": "pnpm --filter @no-throw/dogfood run scc",
     "dogfood:cycles": "pnpm --filter @no-throw/dogfood run cycles",
     "dogfood:cold": "pnpm --filter @no-throw/dogfood run cold",
-    "dogfood:warm": "pnpm --filter @no-throw/dogfood run warm"
+    "dogfood:warm": "pnpm --filter @no-throw/dogfood run warm",
+    "dogfood:oxlint-cost": "pnpm --filter @no-throw/dogfood run oxlint-cost"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
