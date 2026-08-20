@@ -59,3 +59,8 @@ export function ofAPlainMap(): number {
 export function ofAnOverridingSubclass(): number {
   return paramIsMap(new LazilyThrowingMap());
 }
+
+/** @nothrow */
+export function ofAnOverridingSubclassThroughTheAlias(): number {
+  return viaLocalAlias({ items: new LazilyThrowingMap() });
+}

@@ -12,6 +12,7 @@ import type {
 } from "./colors.js";
 import {
   conditionKey,
+  parametersOf,
   pathKey,
   skipParens,
   type Condition,
@@ -368,6 +369,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   const targetsAt = new Map<Transfer, readonly Target[]>();
   const outcomesAt = new Map<Transfer, Map<string, readonly Outcome[]>>();
   const consumedAt = new Map<ts.Node, readonly Consumed[]>();
+  const handedBackAt = new Map<Bodied, Map<string, boolean>>();
   const rejectionAt = new Map<ts.Expression, Rejection>();
   const interned = new Map<Bodied, Map<Facet, ColorNode>>();
 
@@ -552,44 +554,73 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   }
 
   /**
-   * Whether consuming what a callee hands back is a question with an answer.
-   * A generator *is* its iterator; anything else produces one only where what
-   * it returns carries the protocol. Asked because the iteration facet of a
-   * callee that hands back nothing consumable is not silence: `producedThrows`
-   * reads a return that is not an iterator as a hazard, which is what a real
-   * consumption site needs and what a demand made sight unseen must not meet.
+   * What a condition demands of the argument that lands at its path. One
+   * color, full surface: `@nothrow` promises both that calling a function is
+   * clean and that consuming what it hands back is, so a condition — which
+   * says the same thing about a function it cannot see — has to be answered on
+   * both. That is what lets a condition stand in for the surface at a site
+   * holding nothing but the argument.
+   *
+   * The iteration facet is asked for only where an iterator can arrive,
+   * because the facet of a callee that hands back nothing consumable is not
+   * silence: `producedThrows` reads a return that is not an iterator as a
+   * hazard, which is what a real consumption site needs and what a demand made
+   * sight unseen must not meet.
    */
-  const producesConsumable = memoize((declaration: Bodied): boolean => {
-    if (isGenerator(declaration)) return true;
-    if (ts.isClassLike(declaration)) return false;
-    const signature = checker.getSignatureFromDeclaration(declaration);
-    if (signature === undefined) return false;
-    return constituentsOf(signature.getReturnType(), checker).some(
-      (type) =>
-        isIteratorType(type, checker) ||
-        protocolMember(type, "iterator", checker, true) !== undefined,
-    );
-  });
-
-  /**
-   * Every color a callee's whole surface is made of. One color, full surface:
-   * `@nothrow` is a promise about calling it *and* about consuming what it
-   * hands back, so anything demanding a callee be non-throwing has to read
-   * both — which is what lets a condition stand in for the surface at a site
-   * that only holds the argument.
-   */
-  function surfaceNodes(declaration: Bodied): readonly ColorNode[] {
+  function demandedOf(
+    condition: Condition,
+    declaration: Bodied,
+  ): readonly ColorNode[] {
     const call = nodeFor(declaration, "call");
-    return producesConsumable(declaration)
+    return handsBackAnIteratorAt(condition)
       ? [call, nodeFor(declaration, "iteration")]
       : [call];
   }
 
-  function surfaceThrows(
-    declaration: Bodied,
-    throwingOf: (callee: ColorNode) => boolean,
-  ): boolean {
-    return surfaceNodes(declaration).some(throwingOf);
+  /**
+   * Whether an iterator can arrive at a condition's path — read off the *path*
+   * and never off the argument standing at it. The owner's parameter type is
+   * what bounds the consuming its body can do, and it was fixed where the
+   * condition was written; an argument's own return type is not, since `any`
+   * erases the protocol and a producer declared to hand one back would dodge
+   * the very demand it exists for.
+   *
+   * A path that answers nothing is read as consumable. Unreadable is a
+   * question this cannot close, and over-demanding there costs precision where
+   * the other guess would cost the invariant.
+   */
+  function handsBackAnIteratorAt(condition: Condition): boolean {
+    const byPath =
+      handedBackAt.get(condition.owner) ?? new Map<string, boolean>();
+    handedBackAt.set(condition.owner, byPath);
+    const key = pathKey(condition.path);
+    const known = byPath.get(key);
+    if (known !== undefined) return known;
+    const answer = iteratorReachesPath(condition);
+    byPath.set(key, answer);
+    return answer;
+  }
+
+  function iteratorReachesPath(condition: Condition): boolean {
+    const parameter = parametersOf(condition.owner)[condition.path.paramIndex];
+    if (parameter === undefined) return true;
+
+    let type = checker.getTypeAtLocation(parameter);
+    for (const member of condition.path.members) {
+      const symbol = checker.getApparentType(type).getProperty(member);
+      if (symbol === undefined) return true;
+      type = checker.getTypeOfSymbolAtLocation(symbol, parameter);
+    }
+
+    const signatures = checker.getApparentType(type).getCallSignatures();
+    if (signatures.length === 0) return true;
+    return signatures.some((signature) =>
+      constituentsOf(signature.getReturnType(), checker).some(
+        (returned) =>
+          isIteratorType(returned, checker) ||
+          protocolMember(returned, "iterator", checker, true) !== undefined,
+      ),
+    );
   }
 
   function dependenciesOf(node: ColorNode): readonly ColorNode[] {
@@ -616,13 +647,13 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       if (target.kind === "function" && !target.marked) {
         dependencies.push(nodeFor(target.declaration, "call"));
       }
-      for (const { outcome } of dischargesAt(
+      for (const { condition, outcome } of dischargesAt(
         site,
         conditionsOfTarget(target, settledConditions),
         declaration,
       )) {
         if (outcome.kind === "function" && !outcome.marked) {
-          dependencies.push(...surfaceNodes(outcome.declaration));
+          dependencies.push(...demandedOf(condition, outcome.declaration));
         }
       }
     }
@@ -894,6 +925,13 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
       : undefined;
   }
 
+  /**
+   * Why entering a callee escapes, or nothing where it does not. The call
+   * facet and only it: a site that *enters* a body runs that body, and what it
+   * hands back is read where the syntax consumes it. An argument handed over
+   * is the other case and reads the whole surface, because nothing at the site
+   * that passes it will ever see what the body it lands in does with it.
+   */
   function flooredCallee(
     target: BodiedTarget,
     throwingOf: (callee: ColorNode) => boolean,
@@ -949,7 +987,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
 
     if (!outcome.marked) {
       if (policy === "declare") return floored("unmarked");
-      if (surfaceThrows(outcome.declaration, throwingOf)) {
+      if (demandedOf(condition, outcome.declaration).some(throwingOf)) {
         return { kind: "argument-throwing", node: site, condition };
       }
     }

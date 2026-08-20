@@ -17,6 +17,10 @@ function handsOnAThrower(): Generator<number> {
   return throwsLater();
 }
 
+function handsBackAny(): any {
+  return throwsLater();
+}
+
 /** @nothrow */
 export function ofClean(): number | undefined {
   return first(yieldsOne);
@@ -30,4 +34,9 @@ export function ofLazyThrower(): number | undefined {
 /** @nothrow */
 export function ofProducer(): number | undefined {
   return first(handsOnAThrower);
+}
+
+/** @nothrow */
+export function ofAnErasedProducer(): number | undefined {
+  return first(handsBackAny);
 }
