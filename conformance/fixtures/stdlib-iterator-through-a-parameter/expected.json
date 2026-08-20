@@ -1,0 +1,14 @@
+{
+  "description": "A concrete standard-library member reached through a parameter is colored by the baseline, and consuming what it hands back is covered by the condition the receiver path carries — so the five shapes a real codebase writes are green, and writing the receiver as a local first changes nothing. What the condition buys is paid out at the call site: `ofAnOverridingSubclass` passes a subclass whose `values` throws after its first yield and is reported there, so the green is precision rather than silence. `ofAnOverridingSubclassThroughTheAlias` is the same argument through the aliased spelling and is reported nowhere, because the alias root drops the condition before any of this — a gap this fixture pins rather than hides, tracked in #158.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 60,
+      "column": 10,
+      "endLine": 60,
+      "endColumn": 20,
+      "messageId": "conditionArgumentThrowing",
+      "message": "Call to `paramIsMap` escapes this `@nothrow` function: it is non-throwing given `map.values`, and the argument passed for `map.values` is throwing — its body was analyzed and can throw. `paramIsMap` enters `map.values` at src/index.ts:23. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `map.values`."
+    }
+  ]
+}

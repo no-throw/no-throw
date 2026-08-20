@@ -127,11 +127,6 @@ export type RejectionReason =
    */
   | "untraced"
   /**
-   * The producing call's callee is a parameter. A condition says calling it is
-   * clean and has no form for "and the promise it hands back never rejects".
-   */
-  | "conditioned-producer"
-  /**
    * A handler in the chain is reached through a parameter. Conditioning a chain
    * handler is a mechanism the engine does not have.
    */
@@ -170,10 +165,4 @@ export interface Rejects {
 export type ConsumptionReason =
   | ThrowingReason
   /** Nothing in the syntax names the call that produced it. */
-  | "untraced"
-  /**
-   * The producing call's callee is a parameter. A condition says calling it is
-   * clean and has no form for "and consuming what it hands back is too", so
-   * there is nothing a caller could discharge.
-   */
-  | "conditioned-producer";
+  | "untraced";

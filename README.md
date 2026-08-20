@@ -471,6 +471,13 @@ parameter position, and discharged at the call site by the argument in hand:
 { "each": { "color": "non-throwing", "conditions": ["param1"] } }
 ```
 
+A condition demands exactly what a mark promises: **one color over the whole
+surface**. An argument satisfies `param1` only if calling it never throws, the
+promise it hands back never rejects, and consuming what it hands back never
+throws. So a body is free to drive `fn()`'s iterator or `await` its promise
+without flooring, and a generator that throws after its first `yield` is
+reported where it is *passed*, not where it is consumed.
+
 `conditions: []` is unconditional cleanliness, stated positively. Absence means
 maximally conditioned. The path grammar is closed — `param0.member`, `param1[]`,
 `param0.@@iterator`, and `param0=undefined` / `param0=nullish` for a hazard

@@ -1,0 +1,32 @@
+{
+  "description": "A condition demands its argument be non-throwing, and non-throwing is one color over the whole surface — so consuming what a parameter's call hands back needs no floor of its own, and the demand is answered at the call site by the argument's iterator as well as by its call. A generator that throws after its first yield, a plain function that hands one on, and one whose return type erases the protocol to `any` are all reported there — the last because the demand is read off the parameter's type, which the owner's body was checked against, and never off the argument, which is free to say less.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 31,
+      "column": 10,
+      "endLine": 31,
+      "endColumn": 15,
+      "messageId": "conditionArgumentThrowing",
+      "message": "Call to `first` escapes this `@nothrow` function: it is non-throwing given `make`, and the argument passed for `make` is throwing — its body was analyzed and can throw. `first` enters `make` at src/index.ts:3. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `make`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 36,
+      "column": 10,
+      "endLine": 36,
+      "endColumn": 15,
+      "messageId": "conditionArgumentThrowing",
+      "message": "Call to `first` escapes this `@nothrow` function: it is non-throwing given `make`, and the argument passed for `make` is throwing — its body was analyzed and can throw. `first` enters `make` at src/index.ts:3. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `make`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 41,
+      "column": 10,
+      "endLine": 41,
+      "endColumn": 15,
+      "messageId": "conditionArgumentThrowing",
+      "message": "Call to `first` escapes this `@nothrow` function: it is non-throwing given `make`, and the argument passed for `make` is throwing — its body was analyzed and can throw. `first` enters `make` at src/index.ts:3. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `make`."
+    }
+  ]
+}
