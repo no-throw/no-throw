@@ -334,7 +334,10 @@ function findingFor(escape: BodyEscape): Finding {
         pointsAtTheMember[site] ? nameOf(node) : node,
       );
       // A transfer the type could not name has no body anything could have
-      // read, so it is a floor however it got here.
+      // read, so it is a floor however it got here — and *which* floor still
+      // has to survive: a value nothing could ever have named and a binding
+      // whose narrowing was read past have different answers. `inferred` names
+      // a body that was read, so it cannot arrive here.
       if (target === undefined) {
         return {
           kind: "unbridged-hidden-transfer",
@@ -342,7 +345,7 @@ function findingFor(escape: BodyEscape): Finding {
           site,
           text,
           target,
-          reason: "unresolvable",
+          reason: escape.reason === "inferred" ? "unresolvable" : escape.reason,
         };
       }
       return escape.reason === "inferred"

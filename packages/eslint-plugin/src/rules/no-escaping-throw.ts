@@ -482,6 +482,32 @@ function whyCalleeFloored(
   );
 }
 
+/**
+ * Why a site the static type could not name floors. Two shapes reach here and
+ * they are not the same problem: a value nothing could ever have named, and one
+ * whose narrowing was read past because something can write the binding. Only
+ * the second has an edit the reader can make to the binding itself.
+ */
+function whyUnnameable(reason: FloorReason, text: string): string {
+  return reason === "mutable-binding"
+    ? "it is reached through a `let`, whose value the engine does not track " +
+        "across assignments — so what the binding was declared as is what " +
+        "answers here, and that says nothing about what runs"
+    : `the checker cannot resolve \`${text}\` to a declaration, so nothing ` +
+        "can say whether a body runs here";
+}
+
+/**
+ * A binding read past its narrowing is the reader's own value, so none of the
+ * package-keyed carriers can answer for it. The edits that can are on the
+ * binding: stop it being writable, or declare it as something that names what
+ * runs.
+ */
+const SETTLED_OUTS =
+  "Your outs: bridge this with `try`/`catch`; make the binding `const`, whose " +
+  "narrowing nothing can outrun; or declare it as a type every value it can " +
+  "hold really keeps.";
+
 /** The same contract for the argument that was supposed to discharge a path. */
 const whyUndischarged: Record<
   Exclude<UndischargedReason, "stale-manifest">,
@@ -1015,20 +1041,25 @@ function reportFor(
               outs: returnPromiseOuts(source),
             },
           };
-    case "unbridged-hidden-transfer":
+    case "unbridged-hidden-transfer": {
+      const unnameable = finding.target === undefined;
       return {
         messageId: "unbridgedHiddenTransfer",
         data: {
           site: describeSite[finding.site](finding.text),
-          reason:
-            finding.target === undefined
-              ? `the checker cannot resolve \`${finding.text}\` to a ` +
-                "declaration, so nothing can say whether a body runs here"
-              : `it runs ${describeTarget(finding.target)}, which ` +
-                whyCalleeFloored(finding.reason, finding.staleFile, source),
-          outs: outs("call", source),
+          reason: unnameable
+            ? whyUnnameable(finding.reason, finding.text)
+            : `it runs ${describeTarget(finding.target)}, which ` +
+              whyCalleeFloored(finding.reason, finding.staleFile, source),
+          // A binding read past its narrowing is the one floor whose answer is
+          // not at a package boundary, so it is the one that names other outs.
+          outs:
+            unnameable && finding.reason === "mutable-binding"
+              ? SETTLED_OUTS
+              : outs("call", source),
         },
       };
+    }
     case "inferred-throwing-hidden-transfer":
       return {
         messageId: "inferredThrowingHiddenTransfer",

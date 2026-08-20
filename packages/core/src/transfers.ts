@@ -9,7 +9,7 @@ import type {
   Escape,
 } from "./escapes.js";
 import { signatureSegment } from "./segments.js";
-import { memberTypeOf, settledType, type Resolution } from "./targets.js";
+import { settledType, type Resolution } from "./targets.js";
 
 /** How a hidden transfer reads in a diagnostic: the verb the site is. */
 export type TransferSite =
@@ -159,9 +159,14 @@ function accessTransfers(
   site: "read" | "write" | "update",
   resolution: Resolution,
 ): readonly Transfer[] {
+  const { checker } = resolution;
   const text = textOf(node);
-  const receiver = receiverType(node.expression, resolution.checker);
-  if (receiver === undefined) return [unnameable(node, site, text)];
+  const receiver = receiverType(node.expression, checker);
+  if (receiver === undefined) {
+    return [
+      unnameable(node, site, text, opaqueReason(node.expression, checker)),
+    ];
+  }
 
   const half: Half =
     site === "read" ? "get" : site === "write" ? "set" : "both";
@@ -356,7 +361,16 @@ function destructuringTransfers(
     ? bindingTargets(node, resolution)
     : assignmentTargets(node, resolution);
 
-  if (targets === undefined) return [unnameable(node, "destructure", text)];
+  if (targets === undefined) {
+    return [
+      unnameable(
+        node,
+        "destructure",
+        text,
+        opaqueReason(destructuredSource(node), resolution.checker),
+      ),
+    ];
+  }
   return targets.length === 0
     ? []
     : [{ node, site: "destructure", text, targets }];
@@ -368,7 +382,7 @@ function bindingTargets(
   resolution: Resolution,
 ): readonly TransferTarget[] | undefined {
   const { checker } = resolution;
-  const source = patternSource(element.parent, checker);
+  const source = receiverType(element.parent, checker);
   if (source === undefined) return undefined;
   if (element.dotDotDotToken !== undefined) {
     return ownEnumerableTargets(source, resolution);
@@ -401,8 +415,11 @@ function assignmentTargets(
   resolution: Resolution,
 ): readonly TransferTarget[] | undefined {
   const { checker } = resolution;
+  const assigned = assignedSourceNode(element.parent);
+  const source =
+    assigned === undefined ? undefined : receiverType(assigned, checker);
+
   if (ts.isSpreadAssignment(element)) {
-    const source = assignedSource(element.parent, checker);
     return source === undefined
       ? undefined
       : ownEnumerableTargets(source, resolution);
@@ -410,7 +427,6 @@ function assignmentTargets(
 
   const { name } = element;
   if (!ts.isIdentifier(name)) return undefined;
-  const source = assignedSource(element.parent, checker);
   if (source !== undefined) {
     return memberNamed(source, name.text, checker).flatMap((symbol) =>
       accessorTargets(symbol, "get", resolution),
@@ -420,55 +436,30 @@ function assignmentTargets(
   return symbol === undefined ? [] : accessorTargets(symbol, "get", resolution);
 }
 
-/**
- * The value a binding pattern takes apart, settled. The checker's type *at* a
- * pattern is the one it took from what fed the pattern as narrowed, so what
- * the syntax names is read instead wherever it names anything: the
- * declaration's initializer, or, for a nested pattern, the member of its own
- * source that spells it. A pattern nothing names — a parameter's, a `for…of`
- * element's — is already declared rather than narrowed, and answers for
- * itself.
- */
-function patternSource(
-  pattern: ts.BindingPattern,
-  checker: ts.TypeChecker,
-): ts.Type | undefined {
-  return fedFrom(pattern, checker) ?? receiverType(pattern, checker);
-}
-
-function fedFrom(
-  pattern: ts.BindingPattern,
-  checker: ts.TypeChecker,
-): ts.Type | undefined {
+/** The value a destructuring pattern is assigned, where the syntax says. */
+function assignedSourceNode(
+  pattern: ts.ObjectLiteralExpression,
+): ts.Expression | undefined {
   const { parent } = pattern;
-  if (ts.isBindingElement(parent)) {
-    const outer = fedFrom(parent.parent, checker);
-    const name = parent.propertyName ?? parent.name;
-    if (outer === undefined || !ts.isIdentifier(name)) return undefined;
-    const member = memberTypeOf(outer, name.text, checker);
-    return member === undefined ? undefined : readable(member, checker);
-  }
-  // A parameter's initializer is its *default* — it runs only when the
-  // argument is missing, so it does not name what the pattern destructures.
-  return ts.isVariableDeclaration(parent) && parent.initializer !== undefined
-    ? receiverType(parent.initializer, checker)
+  return ts.isBinaryExpression(parent) &&
+    parent.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+    parent.left === pattern
+    ? parent.right
     : undefined;
 }
 
-/** The value a destructuring pattern is assigned, where the syntax says. */
-function assignedSource(
-  pattern: ts.ObjectLiteralExpression,
-  checker: ts.TypeChecker,
-): ts.Type | undefined {
-  const { parent } = pattern;
-  if (
-    !ts.isBinaryExpression(parent) ||
-    parent.operatorToken.kind !== ts.SyntaxKind.EqualsToken ||
-    parent.left !== pattern
-  ) {
-    return undefined;
-  }
-  return receiverType(parent.right, checker);
+/**
+ * The syntax a destructuring site takes apart, where the syntax names it. A
+ * pattern is only the shape, so which floor a site here is comes down to the
+ * type of *this* — and a pattern assigned by something the syntax does not name
+ * has no type that could have been widened.
+ */
+function destructuredSource(
+  element: DestructuringElement,
+): ts.Node | undefined {
+  return ts.isBindingElement(element)
+    ? element.parent
+    : assignedSourceNode(element.parent);
 }
 
 function spreadTransfers(
@@ -477,8 +468,11 @@ function spreadTransfers(
   resolution: Resolution,
 ): readonly Transfer[] {
   const text = textOf(source);
-  const type = receiverType(source, resolution.checker);
-  if (type === undefined) return [unnameable(node, "spread", text)];
+  const { checker } = resolution;
+  const type = receiverType(source, checker);
+  if (type === undefined) {
+    return [unnameable(node, "spread", text, opaqueReason(source, checker))];
+  }
 
   const targets = ownEnumerableTargets(type, resolution);
   return targets.length === 0 ? [] : [{ node, site: "spread", text, targets }];
@@ -542,7 +536,7 @@ function coercionTransfers(
   const text = textOf(value);
   const type = settledType(value, checker);
   if ((type.flags & OPAQUE_TYPE) !== 0) {
-    return [unnameable(value, "coercion", text)];
+    return [unnameable(value, "coercion", text, opaqueReason(value, checker))];
   }
   if (isPrimitive(type)) return [];
   // A type parameter is not itself a primitive, but a constraint that is bounds
@@ -577,7 +571,14 @@ function instanceCheckTransfers(
   const text = textOf(node);
   const constructor = settledType(node.right, checker);
   if ((constructor.flags & OPAQUE_TYPE) !== 0) {
-    return [unnameable(node, "instance-check", text)];
+    return [
+      unnameable(
+        node,
+        "instance-check",
+        text,
+        opaqueReason(node.right, checker),
+      ),
+    ];
   }
 
   // Only a declared `Symbol.hasInstance` is consulted. Inheriting
@@ -607,7 +608,7 @@ function callTransfers(
       // A spread argument's sources are the elements of whatever it spreads,
       // and the syntax names none of them.
       ts.isSpreadElement(source)
-        ? [unnameable(source, "spread", textOf(source))]
+        ? [unnameable(source, "spread", textOf(source), "unresolvable")]
         : spreadTransfers(source, source, resolution),
     );
   }
@@ -733,6 +734,24 @@ function readable(
   return (apparent.flags & OPAQUE_TYPE) === 0 ? apparent : undefined;
 }
 
+/**
+ * Which floor an unreadable type is, which are two different problems with two
+ * different fixes. Settling reads past a narrowing, so a type the checker could
+ * have read here and this could not is one the widening made unreadable: the
+ * binding is a `let` whose assignments the engine does not track, not a value
+ * nothing could ever have named. Only the first has `const` as its answer, and
+ * none of a floor's package-boundary outs can reach either.
+ */
+function opaqueReason(
+  node: ts.Node | undefined,
+  checker: ts.TypeChecker,
+): FloorReason {
+  if (node === undefined) return "unresolvable";
+  return readable(checker.getTypeAtLocation(node), checker) === undefined
+    ? "unresolvable"
+    : "mutable-binding";
+}
+
 function constituentsOf(type: ts.Type): readonly ts.Type[] {
   return type.isUnion() ? type.types : [type];
 }
@@ -759,12 +778,18 @@ function memberName(symbol: ts.Symbol): string {
   return wellKnown === undefined ? symbol.getName() : `[Symbol.${wellKnown}]`;
 }
 
-const UNNAMEABLE: TransferTarget = {
-  target: undefined,
-  color: { kind: "declaration", declaration: undefined },
-};
+const UNNAMEABLE: TransferTarget = unnameableTarget("unresolvable");
+
+function unnameableTarget(reason: FloorReason): TransferTarget {
+  return { target: undefined, color: { kind: "floor", reason } };
+}
 
 /** A site that runs *something* the type cannot name, so it floors. */
-function unnameable(node: ts.Node, site: TransferSite, text: string): Transfer {
-  return { node, site, text, targets: [UNNAMEABLE] };
+function unnameable(
+  node: ts.Node,
+  site: TransferSite,
+  text: string,
+  reason: FloorReason,
+): Transfer {
+  return { node, site, text, targets: [unnameableTarget(reason)] };
 }

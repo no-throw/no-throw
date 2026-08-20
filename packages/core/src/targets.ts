@@ -342,18 +342,62 @@ function hasExactType(expr: ts.Expression, checker: ts.TypeChecker): boolean {
  * nothing.
  */
 export function settledType(node: ts.Node, checker: ts.TypeChecker): ts.Type {
+  return declaredTypeOf(node, checker) ?? checker.getTypeAtLocation(node);
+}
+
+/**
+ * What the syntax names, where it names anything. No branch here reads a type
+ * *at* a node: each reaches the declaration or the member the source wrote
+ * down, so a narrowing never gets the chance to answer. Where the syntax names
+ * nothing the caller falls back to the checker rather than inventing a type.
+ */
+function declaredTypeOf(
+  node: ts.Node,
+  checker: ts.TypeChecker,
+): ts.Type | undefined {
   if (ts.isIdentifier(node)) {
     const declaration = writableDeclarationOf(node, checker);
-    if (declaration !== undefined) return checker.getTypeAtLocation(declaration);
-  } else if (ts.isPropertyAccessExpression(node)) {
-    const declared = memberTypeOf(
+    return declaration === undefined
+      ? undefined
+      : checker.getTypeAtLocation(declaration);
+  }
+  if (ts.isPropertyAccessExpression(node)) {
+    return memberTypeOf(
       settledType(node.expression, checker),
       node.name.text,
       checker,
     );
-    if (declared !== undefined) return declared;
   }
-  return checker.getTypeAtLocation(node);
+  if (ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) {
+    return patternSource(node, checker);
+  }
+  return undefined;
+}
+
+/**
+ * The value a binding pattern takes apart. The checker's type *at* a pattern is
+ * the one it took from what fed the pattern, as narrowed, so what the syntax
+ * names is read instead: the declaration's initializer, or, for a nested
+ * pattern, the member of its own source that spells it. A pattern nothing names
+ * — a parameter's, a `for…of` element's — is already declared rather than
+ * narrowed, and answers for itself.
+ */
+function patternSource(
+  pattern: ts.BindingPattern,
+  checker: ts.TypeChecker,
+): ts.Type | undefined {
+  const { parent } = pattern;
+  if (ts.isBindingElement(parent)) {
+    const name = parent.propertyName ?? parent.name;
+    return ts.isIdentifier(name)
+      ? memberTypeOf(settledType(parent.parent, checker), name.text, checker)
+      : undefined;
+  }
+  // A parameter's initializer is its *default* — it runs only when the argument
+  // is missing, so it does not name what the pattern destructures.
+  return ts.isVariableDeclaration(parent) && parent.initializer !== undefined
+    ? settledType(parent.initializer, checker)
+    : undefined;
 }
 
 /**
@@ -362,7 +406,7 @@ export function settledType(node: ts.Node, checker: ts.TypeChecker): ts.Type {
  * access compiles only because something narrowed the receiver — and the
  * caller falls back to what the checker says rather than inventing one.
  */
-export function memberTypeOf(
+function memberTypeOf(
   receiver: ts.Type,
   name: string,
   checker: ts.TypeChecker,
@@ -386,14 +430,21 @@ function writableDeclarationOf(
 ): ts.Declaration | undefined {
   const symbol = checker.getSymbolAtLocation(identifier);
   if (symbol === undefined) return undefined;
-  const bound =
-    (symbol.flags & ts.SymbolFlags.Alias) === 0
-      ? symbol
-      : checker.getAliasedSymbol(symbol);
-  const declaration = bound.valueDeclaration;
-  return declaration !== undefined && isWritable(declaration)
-    ? declaration
+  const { valueDeclaration } = boundSymbol(symbol, checker);
+  return valueDeclaration !== undefined && isWritable(valueDeclaration)
+    ? valueDeclaration
     : undefined;
+}
+
+/**
+ * What a symbol really is, through the import that brought it here. An alias
+ * declares nothing of its own: the specifier is how a name arrived, never what
+ * it names.
+ */
+function boundSymbol(symbol: ts.Symbol, checker: ts.TypeChecker): ts.Symbol {
+  return (symbol.flags & ts.SymbolFlags.Alias) === 0
+    ? symbol
+    : checker.getAliasedSymbol(symbol);
 }
 
 function isWritable(declaration: ts.Declaration): boolean {
@@ -601,12 +652,7 @@ function keyDeclarationFor(
   const { checker } = resolution;
   const named = checker.getSymbolAtLocation(callee);
   if (named === undefined) return declaration;
-  const resolved =
-    (named.flags & ts.SymbolFlags.Alias) === 0
-      ? named
-      : checker.getAliasedSymbol(named);
-
-  return resolved.declarations?.[0] ?? declaration;
+  return boundSymbol(named, checker).declarations?.[0] ?? declaration;
 }
 
 /**

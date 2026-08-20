@@ -1,0 +1,32 @@
+{
+  "description": "Settling reads past a narrowing, and where the declared type is `any` that leaves nothing to name — so the site floors. Which floor it is has to survive: a binding the engine read past is a `let` whose assignments it does not track, and the answer is on the binding, not in a carrier keyed by package name. `declaredAny` is the control — nothing was widened there, so it keeps the unresolvable floor and the carriers that go with it — and a `const` keeps its narrowing and stays clean.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 11,
+      "column": 13,
+      "endLine": 11,
+      "endColumn": 18,
+      "messageId": "unbridgedHiddenTransfer",
+      "message": "Coercing `value` to a primitive escapes this `@nothrow` function: it is reached through a `let`, whose value the engine does not track across assignments — so what the binding was declared as is what answers here, and that says nothing about what runs. Your outs: bridge this with `try`/`catch`; make the binding `const`, whose narrowing nothing can outrun; or declare it as a type every value it can hold really keeps."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 18,
+      "column": 10,
+      "endLine": 18,
+      "endColumn": 22,
+      "messageId": "unbridgedHiddenTransfer",
+      "message": "Reading `value.length` escapes this `@nothrow` function: it is reached through a `let`, whose value the engine does not track across assignments — so what the binding was declared as is what answers here, and that says nothing about what runs. Your outs: bridge this with `try`/`catch`; make the binding `const`, whose narrowing nothing can outrun; or declare it as a type every value it can hold really keeps."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 23,
+      "column": 10,
+      "endLine": 23,
+      "endColumn": 22,
+      "messageId": "unbridgedHiddenTransfer",
+      "message": "Reading `value.length` escapes this `@nothrow` function: the checker cannot resolve `value.length` to a declaration, so nothing can say whether a body runs here. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json`; install or write an `@no-throw/*` overlay; or, if you own the package, ship a manifest with `nothrow emit`."
+    }
+  ]
+}

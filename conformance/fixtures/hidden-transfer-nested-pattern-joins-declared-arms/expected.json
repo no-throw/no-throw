@@ -1,0 +1,14 @@
+{
+  "description": "A nested binding pattern reads the member of its own source, and that source is settled: the outer pattern names `holder`, whose declared `inner` admits `Risky` however a guard narrowed it, so the inner pattern meets the throwing getter. `nestedClean` is the control — the same syntax over a member declared as one clean type stays clean, so the settled read is not simply flooring every nested pattern.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 30,
+      "column": 14,
+      "endLine": 30,
+      "endColumn": 15,
+      "messageId": "inferredThrowingHiddenTransfer",
+      "message": "Destructuring `p` escapes this `@nothrow` function: it runs the getter `p`, whose body was analyzed and can throw. Your outs: bridge it with `try`/`catch`, or make the getter `p` non-throwing — mark it `@nothrow` and the escapes inside it are reported too."
+    }
+  ]
+}
