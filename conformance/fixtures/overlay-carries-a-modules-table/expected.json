@@ -1,0 +1,4 @@
+{
+  "description": "An overlay carries ambient-module colors too, so the answer to `node:*` is shareable rather than something every consumer writes out again. The overlay names no `package` and holds no `exports`, and neither is a defect here: a `declare module` block is nobody's export surface, so a `modules` table is about no package, is read whether or not the file names one, and is the whole of what an overlay for `node:*` has to say.",
+  "diagnostics": []
+}

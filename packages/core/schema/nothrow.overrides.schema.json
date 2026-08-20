@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://no-throw.github.io/no-throw/schema/v1/nothrow.overrides.schema.json",
   "title": "no-throw overrides",
-  "description": "Colors packages you did not write, from a project you do. `nothrow.overrides.json` sits at your project root, beside its `package.json`, and outranks every other carrier — it is the rung nobody else has to act for you. Each value is the manifest shape minus `files` and `package`: hashes are about a package's own bytes, and the package these colors are about is the key.",
+  "description": "Colors code you did not write, from a project you do. `nothrow.overrides.json` sits at your project root, beside its `package.json`, and outranks every other carrier — it is the rung nobody else has to act for you. Each value is the manifest shape minus `files` and `package`: hashes are about a package's own bytes, and the package these colors are about is the key.",
   "type": "object",
-  "required": ["version", "packages"],
+  "required": ["version"],
   "properties": {
     "$schema": { "type": "string" },
     "version": {
@@ -15,6 +15,10 @@
       "description": "npm package name to the colors asserted for it.",
       "type": "object",
       "additionalProperties": { "$ref": "#/$defs/package" }
+    },
+    "modules": {
+      "description": "Ambient module specifier to the colors asserted for what that `declare module` block declares. The address for everything no package entry point publishes — `node:path` and its siblings among them.",
+      "$ref": "https://no-throw.github.io/no-throw/schema/v1/nothrow.schema.json#/$defs/modules"
     }
   },
   "$defs": {

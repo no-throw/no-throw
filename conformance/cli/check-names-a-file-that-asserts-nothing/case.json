@@ -1,0 +1,14 @@
+{
+  "description": "The one shape the schema cannot turn away. `packages` and `modules` are both optional — requiring both would make a project that colors only ambient modules write an empty `packages` to say nothing with, and the schema's grammar has no way to ask for one of two — so a table misspelled `packagez` validates and is read as no table at all. Reporting that file as absent would tell its author there is nothing there, so `check` names it instead: the file was read, and neither table it reads was in it. Not a refusal — there is nothing here being ignored, only nothing here — so it still exits 0.",
+  "steps": [
+    {
+      "check": [],
+      "in": "project",
+      "expect": "ok",
+      "names": [
+        "nothrow.overrides.json\n  it names neither `packages` nor `modules`, so it asserts nothing. Those are the two tables read; a key spelled any other way is not one of them.",
+        "No carrier entry to check."
+      ]
+    }
+  ]
+}

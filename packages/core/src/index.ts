@@ -26,8 +26,13 @@ export type {
   CarrierProblem,
   CheckedCarrier,
   CheckedEntry,
+  CheckedModuleEntry,
+  CheckedPackageEntry,
   CheckOutcome,
   EntryKey,
+  ModuleEntryKey,
+  PackageAddress,
+  PackageEntryKey,
 } from "./check.js";
 export type {
   AbsenceReason,
@@ -39,7 +44,7 @@ export type {
   Rejects,
   UndischargedReason,
 } from "./colors.js";
-export { emitManifest, manifestDrift } from "./emit.js";
+export { emitManifest, manifestDrift, unwritableManifest } from "./emit.js";
 export type {
   EmitOutcome,
   EmitSite,

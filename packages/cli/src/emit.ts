@@ -2,6 +2,7 @@ import {
   emitManifest,
   manifestDrift,
   OverridesError,
+  unwritableManifest,
   type EmitSite,
   type ManifestDocument,
   type MarkRefusal,
@@ -64,6 +65,21 @@ export function runEmit(options: EmitOptions): CommandResult {
 
   const path = display(options.cwd, outcome.path);
 
+  // What emit may not write over is asked on both paths, because it is not a
+  // difference to reconcile: the file holds something no run of emit produces,
+  // and `--check` telling the reader to run emit would be telling them to
+  // delete it.
+  const onDisk = manifestOnDisk(outcome.path);
+  const unwritable =
+    onDisk.kind === "read" ? unwritableManifest(onDisk.value) : undefined;
+  if (unwritable !== undefined) {
+    return {
+      code: REFUSED,
+      out: "",
+      err: `nothrow: ${path} was not written: ${unwritable}.\n`,
+    };
+  }
+
   if (!options.check) {
     writeFileSync(outcome.path, outcome.text);
     return {
@@ -73,7 +89,7 @@ export function runEmit(options: EmitOptions): CommandResult {
     };
   }
 
-  const drift = driftOf(outcome.path, outcome.document);
+  const drift = driftOf(onDisk, outcome.document);
   if (drift !== undefined) {
     return {
       code: REFUSED,
@@ -88,29 +104,41 @@ export function runEmit(options: EmitOptions): CommandResult {
 }
 
 /**
+ * The manifest already there, as something to compare against — or why there is
+ * nothing to compare against, which `--check` reports as drift and a write
+ * simply passes over.
+ */
+type ManifestOnDisk =
+  | { readonly kind: "read"; readonly value: unknown }
+  | { readonly kind: "missing"; readonly why: string };
+
+function manifestOnDisk(path: string): ManifestOnDisk {
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch {
+    return { kind: "missing", why: "there is no manifest there at all" };
+  }
+
+  try {
+    return { kind: "read", value: JSON.parse(text) as unknown };
+  } catch {
+    return { kind: "missing", why: "it is not valid JSON" };
+  }
+}
+
+/**
  * How the manifest on disk differs from the one this source produces. A file
  * that is missing or unreadable is drift like any other: what a consumer would
  * get is not what this source says.
  */
 function driftOf(
-  path: string,
+  onDisk: ManifestOnDisk,
   fresh: ManifestDocument,
 ): string | undefined {
-  let text: string;
-  try {
-    text = readFileSync(path, "utf8");
-  } catch {
-    return "there is no manifest there at all";
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text) as unknown;
-  } catch {
-    return "it is not valid JSON";
-  }
-
-  return manifestDrift(parsed, fresh);
+  return onDisk.kind === "missing"
+    ? onDisk.why
+    : manifestDrift(onDisk.value, fresh);
 }
 
 function summary(document: ManifestDocument): string {

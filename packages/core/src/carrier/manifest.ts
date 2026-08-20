@@ -20,6 +20,14 @@ export type ManifestState =
       readonly kind: "valid";
       readonly table: ColorTable;
       /**
+       * What the file says about ambient modules, which only an overlay is
+       * read for. A package's own manifest is `nothrow emit`'s output and emit
+       * writes only marks it verified against a body — a `declare module` block
+       * has none — so a table here would be one the next emit clobbers, and
+       * emit refuses the file rather than leaving that to happen quietly.
+       */
+      readonly modules: ColorTable | undefined;
+      /**
        * The npm package these colors are about: an overlay's target, and a
        * shipped manifest's own name. It is the only thing an overlay is matched
        * by — never the npm name the overlay itself was published under.
@@ -32,8 +40,9 @@ export type ManifestState =
 
 const ABSENT: ManifestState = { kind: "absent" };
 
-/** One table, at `exports`. */
-const TABLES: TablePath = ["exports"];
+/** One table at `exports`, and one at `modules`. */
+const EXPORTS: TablePath = ["exports"];
+const MODULES: TablePath = ["modules"];
 
 const states = new Map<string, ManifestState>();
 
@@ -59,7 +68,12 @@ function readManifest(home: PackageHome): ManifestState {
   const path = join(home.directory, "nothrow.json");
   if (!existsSync(path)) return ABSENT;
 
-  const document = readColorDocument(path, manifestSchema(), [], TABLES);
+  const document = readColorDocument(
+    path,
+    manifestSchema(),
+    [],
+    [EXPORTS, MODULES],
+  );
   if (document.kind !== "read") {
     // A manifest that does not describe what it claims to hands the package
     // back to its surviving tags, which is what an absent one does — so the
@@ -73,7 +87,10 @@ function readManifest(home: PackageHome): ManifestState {
   const target = document.value["package"];
   return {
     kind: "valid",
-    table: document.tableAt([]),
+    table: document.tableAt(EXPORTS, []),
+    modules: isRecord(document.value["modules"])
+      ? document.tableAt(MODULES, [])
+      : undefined,
     target: typeof target === "string" ? target : undefined,
   };
 }

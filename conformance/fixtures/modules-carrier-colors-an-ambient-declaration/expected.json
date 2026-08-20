@@ -1,0 +1,14 @@
+{
+  "description": "The carrier that reaches what no package entry point publishes. `join` is keyed under the block it is written in and goes green — the out the floor names is an out that opens, which is the whole claim. `resolve` is keyed under `node:path`, the specifier the import actually says, and floors: that block only re-exports what `path` declares, and a carrier is matched by where a declaration ships and never by what re-exported it. `nothrow check` is where a reader learns which of the two they wrote.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 10,
+      "column": 10,
+      "endLine": 10,
+      "endColumn": 22,
+      "messageId": "unbridgedCall",
+      "message": "Call to `path.resolve` escapes this `@nothrow` function: it is declared without a body — an ambient declaration, a `.d.ts`, or a value known only by its function type — and no mark, manifest, overlay, override or baseline entry colors it, so it is assumed to throw. Your outs, in precedence order: bridge this call with `try`/`catch`; assert the color in `nothrow.overrides.json` under `modules` → \"path\" → `resolve`; or install or write an `@no-throw/*` overlay carrying that same key. It is declared in an ambient `declare module` block, which no package entry point publishes, so no manifest can key it."
+    }
+  ]
+}

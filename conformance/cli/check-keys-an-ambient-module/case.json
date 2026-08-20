@@ -1,0 +1,14 @@
+{
+  "description": "Every way of addressing a Node builtin, and what each one comes to. Node's builtins are ambient `declare module` blocks inside `@types/node`, laid out here the way the real package lays them out — an entry point that is a hub of `/// <reference>` directives, so the walk that assigns package keys reaches no block and every package spelling fails. None of them is left as a dead end, and none of them is left one hop short of one: the name that is a block is held against that block in the same breath, so what it is told to write is an address that reaches rather than the next spelling along. `path` colors `join`, and every other row — the two package spellings of `node:path`, the package that declares them both, and the block that only re-exports — names `path` or says why it has no name to offer. The whole report is named here rather than fragments of it, because the README quotes it and the docs gate holds the quotation to this.",
+  "steps": [
+    {
+      "check": [],
+      "in": "project",
+      "expect": "refused",
+      "names": [
+        "nothrow.overrides.json\n  node:path → \".\" → `join`\n    nothing of `node:path` is in this project, and \"node:path\" is an ambient `declare module` block this project does declare — so this is the right name under the wrong table.\n    \"node:path\" publishes this key, and what it reaches is declared in \"path\" — which is the block a carrier is matched by, so this entry is never consulted.\n    Key it under `modules` → \"path\" instead.\n  @types/node → \".\" → `join`\n    `@types/node` publishes nothing at \".\", and nothing at any other subpath.\n    The walk from its entry points reached no name a carrier could key, so no entry under this package reaches anything.\n    Its types are ambient `declare module` blocks, which no entry point publishes: key those under `modules`. It declares: \"node:path\", \"path\"\n  path → \".\" → `resolve`\n    nothing of `path` is in this project, and \"path\" is an ambient `declare module` block this project does declare — so this is the right name under the wrong table.\n    Key it under `modules` → \"path\" instead.\n  modules → \"path\" → `basename`\n    \"path\" declares no symbol at this key, so this entry colors nothing.\n    What it declares: `join`, `resolve`\n  modules → \"node:path\" → `resolve`\n    \"node:path\" publishes this key, and what it reaches is declared in \"path\" — which is the block a carrier is matched by, so this entry is never consulted.\n    Key it under `modules` → \"path\" instead.\n  modules → \"node:crypto\" → `hash`\n    nothing here declares the ambient module \"node:crypto\", so there is no surface to hold this against. Inert rather than wrong.",
+        "7 entries checked. 5 reach nothing; 1 names an ambient module nothing here declares."
+      ]
+    }
+  ]
+}

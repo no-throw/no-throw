@@ -83,8 +83,11 @@ export function surfaceOver(
       const sourceFile = sourceFileAt(file, program);
       if (sourceFile === undefined) continue;
       for (const module of modulesIn(sourceFile, checker)) {
-        for (const [name, exported] of publishedBy(module, checker)) {
-          record(keys, checker, subpath, name, exported, 0);
+        for (const [declaration, symbolPath] of namepathsIn(module, checker)) {
+          // First path wins across subpaths too, for the reason it wins within
+          // one: a symbol two entry points both publish is one symbol.
+          if (keys.has(declaration)) continue;
+          keys.set(declaration, { subpath, symbolPath });
         }
       }
     }
@@ -167,7 +170,7 @@ function exportedValueOf(
  * Only a declaration's own type counts: a function type nested inside a wider
  * one is not something the surface reaches.
  */
-function typeHolderOf(node: ts.Declaration): ts.Declaration | undefined {
+export function typeHolderOf(node: ts.Declaration): ts.Declaration | undefined {
   if (!ts.isFunctionTypeNode(node) && !ts.isConstructorTypeNode(node)) {
     return undefined;
   }
@@ -182,14 +185,32 @@ function typeHolderOf(node: ts.Declaration): ts.Declaration | undefined {
 }
 
 /**
+ * Every declaration one module publishes, by the namepath a consumer writes.
+ *
+ * The walk stops at the module: what wraps it — an npm export subpath, or the
+ * specifier an ambient `declare module` block was written under — is the
+ * caller's half of the address, and the two carriers that have one compute this
+ * half the same way rather than each walking a surface of its own.
+ */
+export function namepathsIn(
+  module: ts.Symbol,
+  checker: ts.TypeChecker,
+): ReadonlyMap<ts.Declaration, string> {
+  const keys = new Map<ts.Declaration, string>();
+  for (const [name, exported] of publishedBy(module, checker)) {
+    record(keys, checker, name, exported, 0);
+  }
+  return keys;
+}
+
+/**
  * Record every declaration this published name reaches, then its own members.
  * An alias is followed first: what a manifest keys is the name the consumer
  * writes, and the declaration behind it is wherever the package put it.
  */
 function record(
-  keys: Map<ts.Declaration, ExportKey>,
+  keys: Map<ts.Declaration, string>,
   checker: ts.TypeChecker,
-  subpath: string,
   symbolPath: string,
   symbol: ts.Symbol,
   depth: number,
@@ -197,9 +218,9 @@ function record(
   const resolved = aliasedSymbol(symbol, checker);
 
   for (const declaration of resolved.declarations ?? []) {
-    // First path wins: a symbol two entry points both publish is one symbol
-    // with one color, and re-keying it would make the answer depend on order.
-    if (!keys.has(declaration)) keys.set(declaration, { subpath, symbolPath });
+    // First path wins: one symbol has one key, and re-keying it would make the
+    // answer depend on the order the walk happened to reach it in.
+    if (!keys.has(declaration)) keys.set(declaration, symbolPath);
   }
 
   if (depth >= MAX_DEPTH) return;
@@ -207,8 +228,7 @@ function record(
   for (const [name, member] of resolved.members ?? []) {
     const segment = keySegment(name);
     if (segment !== undefined) {
-      const path = `${symbolPath}#${segment}`;
-      record(keys, checker, subpath, path, member, depth + 1);
+      record(keys, checker, `${symbolPath}#${segment}`, member, depth + 1);
     }
   }
   // A class's statics and a namespace's contents are the same table, and both
@@ -216,8 +236,7 @@ function record(
   for (const [name, member] of resolved.exports ?? []) {
     const segment = keySegment(name);
     if (segment !== undefined) {
-      const path = `${symbolPath}.${segment}`;
-      record(keys, checker, subpath, path, member, depth + 1);
+      record(keys, checker, `${symbolPath}.${segment}`, member, depth + 1);
     }
   }
 }

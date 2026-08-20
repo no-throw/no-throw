@@ -154,6 +154,11 @@ function binaryStep(
       report.push(`the output never names ${JSON.stringify(name)}`);
     }
   }
+  for (const name of step.never) {
+    if (output.includes(name)) {
+      report.push(`the output names ${JSON.stringify(name)}, and must not`);
+    }
+  }
 
   return report.length === 0
     ? []

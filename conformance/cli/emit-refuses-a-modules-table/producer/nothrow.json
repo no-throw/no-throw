@@ -1,0 +1,21 @@
+{
+  "$schema": "https://no-throw.github.io/no-throw/schema/v1/nothrow.schema.json",
+  "version": 1,
+  "package": "honest",
+  "exports": {
+    ".": {
+      "nonesuch": {
+        "color": "throwing"
+      }
+    }
+  },
+  "modules": {
+    "nodeish/path": {
+      "join": {
+        "color": "non-throwing",
+        "conditions": []
+      }
+    }
+  },
+  "files": {}
+}

@@ -161,6 +161,28 @@ export function emitManifest(
 }
 
 /**
+ * Why emit must not write over the manifest already there, or nothing where it
+ * may. Asked before drift, because it is not a difference to reconcile: a
+ * `modules` table is something no run of emit could ever produce, so "run
+ * `nothrow emit` and commit the result" would be an instruction to delete it.
+ *
+ * The table is legal in the two files that are read for one — a project's
+ * `nothrow.overrides.json` and an overlay — and refused here rather than
+ * ignored, because a carrier quietly having no effect is the silent no-op the
+ * rest of this design exists to rule out.
+ */
+export function unwritableManifest(onDisk: unknown): string | undefined {
+  return isRecord(onDisk) && "modules" in onDisk
+    ? "it holds a `modules` table, and emit writes only marks it verified " +
+        "against a body — an ambient `declare module` block has none, so no " +
+        "run of emit could produce that table and writing this file would " +
+        "discard it. Colors for an ambient module belong in a project's " +
+        "`nothrow.overrides.json`, or in a `@no-throw/*` overlay, which are " +
+        "the carriers read for one"
+    : undefined;
+}
+
+/**
  * How a manifest on disk differs from the one emit would write now, in one
  * sentence, or nothing where it does not. Drift is *any* difference: a
  * rebuilt `.js` with identical declarations changes no color and still

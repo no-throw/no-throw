@@ -33,17 +33,51 @@ import type { HiddenCallee, TransferSite } from "./transfers.js";
  * The outs a floor must name, in precedence order. They live in the message
  * text and never behind a docs URL: the CI log is the channel that survives
  * into code review, and acting on a floor from it alone is the whole contract.
+ *
+ * `whose` is the only thing that varies: what floored is sometimes a callee and
+ * sometimes the *producer* of a value, and telling a reader to assert "the
+ * color" over one of those names nothing they can act on.
  */
-const CARRIERS =
-  "assert the color in `nothrow.overrides.json`; install or write an " +
+const carriers = (whose: string): string =>
+  `assert ${whose} in \`nothrow.overrides.json\`; install or write an ` +
   "`@no-throw/*` overlay; or, if you own the package, ship a manifest with " +
   "`nothrow emit`.";
 
-/** The same rungs where what floored is something a *producer* colors. */
-const PRODUCER_CARRIERS =
-  "assert the producer's color in `nothrow.overrides.json`; install or write " +
-  "an `@no-throw/*` overlay; or, if you own the package, ship a manifest with " +
-  "`nothrow emit`.";
+/**
+ * The same rungs over a declaration inside an ambient `declare module` block,
+ * where the key is the block's specifier rather than any package's subpath.
+ *
+ * The key is spelled out rather than left to be worked out, because nothing at
+ * the call site names it: `process.stdout.write` is written in one module,
+ * reached through the type of a global declared in a second, and keyed under
+ * the third that actually declares it. And the manifest is not among the outs —
+ * `nothrow emit` writes only marks it verified against a body, a `declare
+ * module` block has none, so a modules table in one would be a table the next
+ * emit refuses.
+ */
+const ambientCarriers = (
+  whose: string,
+  module: string,
+  key: string,
+): string =>
+  `assert ${whose} in \`nothrow.overrides.json\` under \`modules\` → ` +
+  `${JSON.stringify(module)} → \`${key}\`; or install or write an ` +
+  "`@no-throw/*` overlay carrying that same key. It is declared in an " +
+  "ambient `declare module` block, which no package entry point publishes, " +
+  "so no manifest can key it.";
+
+/**
+ * The one floor in this design with a single out. The block a declaration is
+ * written in is the only surface that could key it, and this one publishes it
+ * under no name — so there is no carrier to send the reader to, and naming one
+ * would be naming a door with no handle.
+ */
+const unkeyableAmbient = (module: string): string =>
+  `it is declared in the ambient module ${JSON.stringify(module)}, which ` +
+  "publishes it under no name, so no carrier has a key that reaches it.";
+
+/** What floored, where the message's subject is a *producer* of a value. */
+const PRODUCER_COLOR = "the producer's color";
 
 /**
  * What those three come to for a `lib.*.d.ts` member: nothing. An override and
@@ -72,19 +106,26 @@ const BASELINE_NAME: Record<BaselineSource, string> = {
 
 /**
  * One message's outs: the edit it names first, then whichever carriers can
- * really answer for what floored. The two tails are not a default and an
- * override — they are the two disjoint reaches, so a message cannot name a
- * carrier the reader has no key for, and only the package branch has a tail
- * worth varying.
+ * really answer for what floored. The tails are not a default and its
+ * exceptions — they are the disjoint reaches, so a message cannot name a
+ * carrier the reader has no key for.
  */
 function outsOf(
   first: string,
   source: FloorSource,
-  packageCarriers: string = CARRIERS,
+  whose = "the color",
 ): string {
-  return source.reach === "package"
-    ? `Your outs, in precedence order: ${first}; ${packageCarriers}`
-    : `Your outs: ${first}; ${baselineCarrier(source.baseline)}`;
+  switch (source.reach) {
+    case "package":
+      return `Your outs, in precedence order: ${first}; ${carriers(whose)}`;
+    case "lib":
+      return `Your outs: ${first}; ${baselineCarrier(source.baseline)}`;
+    case "ambient":
+      return source.key === undefined
+        ? `Your out: ${first} — ${unkeyableAmbient(source.module)}`
+        : `Your outs, in precedence order: ${first}; ` +
+            ambientCarriers(whose, source.module, source.key);
+  }
 }
 
 const outs = (what: string, source: FloorSource): string =>
@@ -99,7 +140,7 @@ const returnOuts = (source: FloorSource): string =>
     "return the iterator from a call this rule can trace — a direct call, or " +
       "a `const` initialized by one",
     source,
-    PRODUCER_CARRIERS,
+    PRODUCER_COLOR,
   );
 
 /**
@@ -127,7 +168,7 @@ const returnPromiseOuts = (source: FloorSource): string =>
   outsOf(
     "`await` it inside a `try`/`catch` and return a value instead",
     source,
-    PRODUCER_CARRIERS,
+    PRODUCER_COLOR,
   );
 
 const diagnostics = {
@@ -428,7 +469,7 @@ function baselineClause(
     | RejectionReason,
   source: FloorSource,
 ): string | undefined {
-  if (source.reach === "package") return undefined;
+  if (source.reach !== "lib") return undefined;
   const { baseline } = source;
   if (reason === "carried-throwing") return baselineThrowing(baseline);
   if (reason === "bodyless") return noBaselineEntry(baseline);
@@ -684,7 +725,7 @@ function baselineRejectionClause(
   reason: RejectionReason,
   source: FloorSource,
 ): string | undefined {
-  if (source.reach === "package") return undefined;
+  if (source.reach !== "lib") return undefined;
   return reason === "carried-throwing"
     ? baselineRejecting(source.baseline)
     : baselineClause(reason, source);

@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://no-throw.github.io/no-throw/schema/v1/nothrow.schema.json",
   "title": "no-throw manifest",
-  "description": "Colors a package's exported surface. `nothrow.json` sits beside a package's `package.json`; the same shape minus `files` and `package`, nested under a `packages` key, is `nothrow.overrides.json`. Readers ignore unknown fields, and absence of a fact always means the strict reading.",
+  "description": "Colors a package's exported surface, and — in an overlay — the ambient modules nobody's export surface reaches. `nothrow.json` sits beside a package's `package.json`; the same shape minus `files` and `package`, with its `exports` nested under a `packages` key, is `nothrow.overrides.json`. Readers ignore unknown fields, and absence of a fact always means the strict reading.",
   "type": "object",
-  "required": ["version", "exports"],
+  "required": ["version"],
   "properties": {
     "$schema": { "type": "string" },
     "version": {
@@ -15,7 +15,11 @@
       "description": "The npm package these colors are about. Overlays name their target here; it is how an overlay is matched, never by its own npm name.",
       "type": "string"
     },
-    "exports": { "$ref": "#/$defs/exports" },
+    "exports": {
+      "description": "What the package's entry points publish. Written by `nothrow emit` and required of anything it produces; an overlay carrying only a `modules` table has nothing to put here and leaves it out.",
+      "$ref": "#/$defs/exports"
+    },
+    "modules": { "$ref": "#/$defs/modules" },
     "files": {
       "description": "SRI hashes of the files these colors were written for. Any mismatch floors the manifest; required by `nothrow emit`, absent in overlays.",
       "type": "object",
@@ -26,10 +30,15 @@
     "exports": {
       "description": "npm export subpath to the symbols reachable through it.",
       "type": "object",
-      "patternProperties": { "^\\.(/.+)?$": { "$ref": "#/$defs/subpath" } },
+      "patternProperties": { "^\\.(/.+)?$": { "$ref": "#/$defs/symbols" } },
       "additionalProperties": false
     },
-    "subpath": {
+    "modules": {
+      "description": "Ambient module specifier — the string a `declare module` block was written under, `node:path` or `stream` — to the symbols that block declares. This is the address for everything no package entry point publishes, and it is read from an overlay and from `nothrow.overrides.json` only: a package's own manifest is `nothrow emit`'s output, emit writes only marks it verified against a body, and a `declare module` block has none. Emit refuses a manifest holding one rather than overwriting it.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/symbols" }
+    },
+    "symbols": {
       "type": "object",
       "patternProperties": { "^[A-Za-z_$][A-Za-z0-9_$]*([.#](new\\(\\)|\\(\\)|[A-Za-z_$][A-Za-z0-9_$]*))*$": { "$ref": "#/$defs/entry" } },
       "additionalProperties": false
