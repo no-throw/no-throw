@@ -85,7 +85,10 @@ reaches it until every gate is green.
 
 Re-running the **Release** workflow by hand runs the publish job on its own.
 That is for a publish that failed with the tag already cut; it is not how a
-release is normally made.
+release is normally made. It resumes rather than restarts: a package the
+registry already holds at that version is skipped, so a run that stopped
+halfway finishes the packages that never went out instead of dying on the first
+one it had already published.
 
 ### Naming a version by hand
 
@@ -98,6 +101,46 @@ first release used it, and so would a jump to `1.0.0`.
 there to paste above the generated section of a GitHub release body, for the
 releases that deserve more than a list of commit subjects.
 
+### Adding a package
+
+A package new to this repository cannot be released by the pipeline, and the
+reason is structural rather than a gap someone forgot to close. Trusted
+publishing is configured per package on npm, and there is nothing to configure
+until the package exists — so the short-lived credential the job mints carries
+no rights to a name the registry has never seen. npm answers the upload with a
+`404`, which reads like the package is missing and means that the credential may
+not create it.
+
+So the first version of a new package goes up by hand, from the release commit:
+
+```console
+$ cd packages/<name>
+$ pnpm pack
+no-throw-<name>-<version>.tgz
+$ npm publish no-throw-<name>-<version>.tgz --access public --provenance=false
++ @no-throw/<name>@<version>
+```
+
+**pnpm** packs here for the same reason it packs in the workflow: `npm pack`
+would leave `workspace:*` in the manifest verbatim, and publish a dependency
+range no consumer can resolve. Reading the packed `package.json` before
+uploading is worth the ten seconds — the internal dependency should name an
+exact version.
+
+`--provenance=false` is required rather than a preference. The manifest's
+`publishConfig` asks for provenance, which can only be generated in CI, so a
+local publish that does not opt out is refused outright. That one version ships
+unattested, as the first version of every package here did; configure its
+trusted publisher straight afterwards and every version after it is attested
+like the rest.
+
+The step named **The registry has heard of every package** refuses the release
+before anything is published if one of them is still missing. That is the whole
+reason it exists, and why it runs ahead of the gates rather than beside the
+publish: without it the loop meets the new package partway through, after its
+predecessors are on the registry and past recall, and no amount of proving the
+tree changes what the registry will accept.
+
 ### What the pipeline depends on
 
 Four things live outside the repo. They are set up; this is what to check when
@@ -105,10 +148,12 @@ one expires or a release fails at a step that used to work.
 
 - **A trusted publisher on each of the four packages** — set at
   `npmjs.com/package/<name>/access`, naming this repository, the workflow
-  filename `release.yml`, and the `release` environment. npm trades the job's
+  filename `release.yml`, the `release` environment, and `npm publish` as the
+  only allowed action, since nothing here stages a publish. npm trades the job's
   OIDC token for a short-lived credential, so there is no publish token stored
-  anywhere and nothing to rotate or leak. All four must be configured; the
-  publish stops at the first package that is not.
+  anywhere and nothing to rotate or leak. All four must be configured; a
+  package without one cannot be published by this pipeline at all, which is
+  what *Adding a package* above is about.
 - **The `release` environment** — a required reviewer, since the publish is the
   one step in this repo nothing can undo, and a branch policy admitting only
   `main`. The trusted publisher names this environment, so it is part of the
