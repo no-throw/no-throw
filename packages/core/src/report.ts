@@ -576,10 +576,6 @@ const whyConsumptionFloored: Record<
   untraced:
     "nothing in the syntax names the call that produced it, so nothing can " +
     "say whether consuming it throws",
-  "conditioned-producer":
-    "it is produced by a call to one of this function's own parameters, and " +
-    "a condition can say that calling a parameter is clean but not that " +
-    "consuming what it hands back is",
   conditioned:
     "what consuming it runs is non-throwing only given conditions of its own, " +
     "and consuming an iterator hands nothing over that could discharge them",
@@ -658,10 +654,6 @@ const whyRejects: Record<Exclude<RejectionReason, "stale-manifest">, string> = {
   untraced:
     "is named by no call in the syntax, and a parameter, a property, a " +
     "non-call initializer or a stored partial chain is unknowable from here",
-  "conditioned-producer":
-    "comes from a call to one of this function's own parameters, and a " +
-    "condition can say that calling a parameter is clean but not that the " +
-    "promise it hands back never rejects",
   "conditioned-handler":
     "is reached through a parameter of this function, and a chain handler is " +
     "not something a call site can discharge",

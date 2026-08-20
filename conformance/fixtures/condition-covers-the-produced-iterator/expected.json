@@ -1,0 +1,23 @@
+{
+  "description": "A condition demands its argument be non-throwing, and non-throwing is one color over the whole surface — so consuming what a parameter's call hands back needs no floor of its own, and the demand is answered at the call site by the argument's iterator as well as by its call: a generator that throws after its first yield and a plain function that hands one on are both reported there.",
+  "diagnostics": [
+    {
+      "file": "src/index.ts",
+      "line": 27,
+      "column": 10,
+      "endLine": 27,
+      "endColumn": 15,
+      "messageId": "conditionArgumentThrowing",
+      "message": "Call to `first` escapes this `@nothrow` function: it is non-throwing given `make`, and the argument passed for `make` is throwing — its body was analyzed and can throw. `first` enters `make` at src/index.ts:3. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `make`."
+    },
+    {
+      "file": "src/index.ts",
+      "line": 32,
+      "column": 10,
+      "endLine": 32,
+      "endColumn": 15,
+      "messageId": "conditionArgumentThrowing",
+      "message": "Call to `first` escapes this `@nothrow` function: it is non-throwing given `make`, and the argument passed for `make` is throwing — its body was analyzed and can throw. `first` enters `make` at src/index.ts:3. Your outs: bridge this call with `try`/`catch`, or pass something non-throwing for `make`."
+    }
+  ]
+}

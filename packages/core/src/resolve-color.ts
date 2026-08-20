@@ -193,9 +193,11 @@ export interface ColorResolver {
  * declaration itself. For every other function kind the call facet is the whole
  * body, and the iteration facet is whatever its `return` hands back.
  *
- * Conditions need no facets: which parameters a body enters is one fact about
- * it whenever the entering happens, and the call is where the argument that
- * will be entered is fixed either way.
+ * Conditions need no facets on either side. Which parameters a body enters is
+ * one fact about it whenever the entering happens, and the call is where the
+ * argument that will be entered is fixed either way; and what a condition
+ * *demands* is the whole surface rather than a facet of it, since non-throwing
+ * is one color over all of it.
  */
 type Facet = "call" | "iteration";
 
@@ -549,6 +551,47 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
     return node.facet === "iteration" && !isGenerator(node.declaration);
   }
 
+  /**
+   * Whether consuming what a callee hands back is a question with an answer.
+   * A generator *is* its iterator; anything else produces one only where what
+   * it returns carries the protocol. Asked because the iteration facet of a
+   * callee that hands back nothing consumable is not silence: `producedThrows`
+   * reads a return that is not an iterator as a hazard, which is what a real
+   * consumption site needs and what a demand made sight unseen must not meet.
+   */
+  const producesConsumable = memoize((declaration: Bodied): boolean => {
+    if (isGenerator(declaration)) return true;
+    if (ts.isClassLike(declaration)) return false;
+    const signature = checker.getSignatureFromDeclaration(declaration);
+    if (signature === undefined) return false;
+    return constituentsOf(signature.getReturnType(), checker).some(
+      (type) =>
+        isIteratorType(type, checker) ||
+        protocolMember(type, "iterator", checker, true) !== undefined,
+    );
+  });
+
+  /**
+   * Every color a callee's whole surface is made of. One color, full surface:
+   * `@nothrow` is a promise about calling it *and* about consuming what it
+   * hands back, so anything demanding a callee be non-throwing has to read
+   * both — which is what lets a condition stand in for the surface at a site
+   * that only holds the argument.
+   */
+  function surfaceNodes(declaration: Bodied): readonly ColorNode[] {
+    const call = nodeFor(declaration, "call");
+    return producesConsumable(declaration)
+      ? [call, nodeFor(declaration, "iteration")]
+      : [call];
+  }
+
+  function surfaceThrows(
+    declaration: Bodied,
+    throwingOf: (callee: ColorNode) => boolean,
+  ): boolean {
+    return surfaceNodes(declaration).some(throwingOf);
+  }
+
   function dependenciesOf(node: ColorNode): readonly ColorNode[] {
     const { declaration } = node;
 
@@ -579,7 +622,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
         declaration,
       )) {
         if (outcome.kind === "function" && !outcome.marked) {
-          dependencies.push(nodeFor(outcome.declaration, "call"));
+          dependencies.push(...surfaceNodes(outcome.declaration));
         }
       }
     }
@@ -906,7 +949,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
 
     if (!outcome.marked) {
       if (policy === "declare") return floored("unmarked");
-      if (throwingOf(nodeFor(outcome.declaration, "call"))) {
+      if (surfaceThrows(outcome.declaration, throwingOf)) {
         return { kind: "argument-throwing", node: site, condition };
       }
     }
@@ -1026,15 +1069,14 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
 
   /**
    * One facet of a target, as something consuming it can enter. A callee
-   * reached through a parameter is the one target this cannot follow: a
-   * condition says the argument's *call* is clean, and there is no form for
-   * "and consuming what it hands back is too", so it floors rather than passing
-   * upward a question no caller could answer.
+   * reached through a parameter needs no facet of its own: the condition the
+   * path carries demands the argument be non-throwing, and non-throwing is one
+   * color over the whole surface — consuming what it hands back included — so
+   * the obligation is already the caller's and repeating it here would floor a
+   * question that has an answer.
    */
   function consumedFrom(target: Target, facet: Facet): Consumed {
-    if (target.kind === "condition") {
-      return floorConsumed("conditioned-producer");
-    }
+    if (target.kind === "condition") return CONSUMED_CLEAN;
     if (target.kind === "floor") {
       return floorConsumed(target.reason, target.staleFile, target.source);
     }
@@ -1206,9 +1248,10 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   /**
    * A target as something whose promise can reject, named the way a message
    * has to name it. A parameter means different things in the two positions:
-   * reaching the *producer* through one leaves the promise itself uncolorable,
-   * while reaching a *handler* through one is a mechanism the engine does not
-   * have — so each says so in its own terms.
+   * the *producer* is a callee, so the condition its path carries covers the
+   * promise it hands back along with the rest of its surface, while a *handler*
+   * is reached through no transfer the walk records and so carries no condition
+   * for anyone to discharge.
    */
   function rejectedFrom(
     target: Target,
@@ -1216,7 +1259,7 @@ export function createColorResolver(resolution: Resolution): ColorResolver {
   ): Rejection {
     if (target.kind === "condition") {
       return subject === "producer"
-        ? floorRejection("conditioned-producer", "promise")
+        ? REJECTION_CLEAN
         : floorRejection("conditioned-handler", "handler");
     }
     if (target.kind === "floor") {
